@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/qxnw/hydra/context"
 )
 
 type Handler interface {
@@ -30,7 +32,7 @@ type Context struct {
 	req *http.Request
 	ResponseWriter
 	route    *Route
-	params   Params
+	params   context.Params
 	callArgs []reflect.Value
 	matched  bool
 	stage    byte
@@ -85,11 +87,16 @@ func (ctx *Context) Route() *Route {
 	return ctx.route
 }
 
-func (ctx *Context) Params() *Params {
+func (ctx *Context) Params() *context.Params {
 	ctx.newAction()
 	return &ctx.params
 }
-
+func (ctx *Context) Service() string {
+	return ctx.Req().URL.Path
+}
+func (ctx *Context) Method() string {
+	return ctx.Req().Method
+}
 func (ctx *Context) IP() string {
 	proxy := []string{}
 	if ips := ctx.Req().Header.Get("X-Forwarded-For"); ips != "" {

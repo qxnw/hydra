@@ -4,12 +4,9 @@
 
 package web
 
-import (
-	"errors"
-	"html/template"
-	"strconv"
-)
+import "github.com/qxnw/hydra/context"
 
+/*
 type (
 	param struct {
 		Name  string
@@ -262,7 +259,7 @@ func (p *Params) MustBool(key string, defaults ...bool) bool {
 	}
 	return r
 }
-
+*/
 func (ctx *Context) Param(key string, defaults ...string) string {
 	return ctx.Params().MustString(key, defaults...)
 }
@@ -311,30 +308,8 @@ func (ctx *Context) ParamBool(key string, defaults ...bool) bool {
 	return ctx.Params().MustBool(key, defaults...)
 }
 
-func (p *Params) Set(key, value string) {
-	if len(key) == 0 {
-		return
-	}
-	if key[0] != ':' && key[0] != '*' {
-		key = ":" + key
-	}
-
-	for i, v := range *p {
-		if v.Name == key {
-			(*p)[i].Value = value
-			return
-		}
-	}
-
-	*p = append(*p, param{key, value})
-}
-
 type Paramer interface {
-	SetParams([]param)
-}
-
-func (p *Params) SetParams(params []param) {
-	*p = params
+	SetParams([]context.Param)
 }
 
 func Param() HandlerFunc {

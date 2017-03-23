@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/qxnw/hydra/context"
 )
 
 type RouteType byte
@@ -87,7 +89,7 @@ func (r *Route) newAction() reflect.Value {
 
 type Router interface {
 	Route(methods interface{}, path string, handler interface{}, middlewares ...Handler)
-	Match(requestPath, method string) (*Route, Params)
+	Match(requestPath, method string) (*Route, context.Params)
 }
 
 var specialBytes = []byte(`.\+*?|[]{}^$`)
@@ -291,7 +293,7 @@ func (r *router) addRoute(method, path string, h *Route) {
 	//r.printTrees()
 }
 
-func (r *router) matchNode(n *node, url string, params Params) (*node, Params) {
+func (r *router) matchNode(n *node, url string, params context.Params) (*node, context.Params) {
 	if n.tp == snode {
 		if strings.HasPrefix(url, n.content) {
 			if len(url) == len(n.content) {
@@ -308,22 +310,22 @@ func (r *router) matchNode(n *node, url string, params Params) (*node, Params) {
 		for _, c := range n.edges {
 			idx := strings.LastIndex(url, c.content)
 			if idx > -1 {
-				params = append(params, param{n.content, url[:idx]})
+				params = append(params, context.Param{n.content, url[:idx]})
 				return r.matchNode(c, url[idx:], params)
 			}
 		}
-		return n, append(params, param{n.content, url})
+		return n, append(params, context.Param{n.content, url})
 	} else if n.tp == nnode {
 		for _, c := range n.edges {
 			idx := strings.Index(url, c.content)
 			if idx > -1 {
-				params = append(params, param{n.content, url[:idx]})
+				params = append(params, context.Param{n.content, url[:idx]})
 				return r.matchNode(c, url[idx:], params)
 			}
 		}
 		idx := strings.IndexByte(url, '/')
 		if idx < 0 {
-			params = append(params, param{n.content, url})
+			params = append(params, context.Param{n.content, url})
 			return n, params
 		}
 	} else if n.tp == rnode {
@@ -333,7 +335,7 @@ func (r *router) matchNode(n *node, url string, params Params) (*node, Params) {
 				for _, c := range n.edges {
 					h, newParams := r.matchNode(c, url[idx:], params)
 					if h != nil {
-						return h, append([]param{param{n.content, url[:idx]}}, newParams...)
+						return h, append([]context.Param{context.Param{n.content, url[:idx]}}, newParams...)
 					}
 				}
 			}
@@ -343,13 +345,13 @@ func (r *router) matchNode(n *node, url string, params Params) (*node, Params) {
 		for _, c := range n.edges {
 			idx := strings.Index(url, c.content)
 			if idx > -1 && n.regexp.MatchString(url[:idx]) {
-				params = append(params, param{n.content, url[:idx]})
+				params = append(params, context.Param{n.content, url[:idx]})
 				return r.matchNode(c, url[idx:], params)
 			}
 		}
 
 		if n.regexp.MatchString(url) {
-			params = append(params, param{n.content, url})
+			params = append(params, context.Param{n.content, url})
 			return n, params
 		}
 	}
@@ -357,12 +359,12 @@ func (r *router) matchNode(n *node, url string, params Params) (*node, Params) {
 }
 
 // Match for request url, match router
-func (r *router) Match(url, method string) (*Route, Params) {
+func (r *router) Match(url, method string) (*Route, context.Params) {
 	cn, ok := r.trees[method]
 	if !ok {
 		return nil, nil
 	}
-	var params = make(Params, 0, strings.Count(url, "/"))
+	var params = make(context.Params, 0, strings.Count(url, "/"))
 	for _, n := range cn.edges {
 		e, newParams := r.matchNode(n, url, params)
 		if e != nil {

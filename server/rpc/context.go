@@ -11,9 +11,9 @@ import (
 	"os"
 	"reflect"
 
-	"golang.org/x/net/context"
-
+	hydra "github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/rpc/pb"
+	"golang.org/x/net/context"
 )
 
 type HandlerFunc func(ctx *Context)
@@ -40,7 +40,7 @@ type Context struct {
 	context  context.Context
 	request  *pb.RequestContext
 	route    *Route
-	params   Params
+	params   hydra.Params
 	callArgs []reflect.Value
 	matched  bool
 	method   string
@@ -71,13 +71,16 @@ func (ctx *Context) HandleError() {
 func (ctx *Context) Req() *pb.RequestContext {
 	return ctx.request
 }
-func (ctx *Context) Method() string {
-	return ctx.method
-}
 func (ctx *Context) Service() string {
 	return ctx.Req().Service
 }
-func (ctx *Context) Params() *Params {
+func (ctx *Context) Method() string {
+	return ctx.method
+}
+func (ctx *Context) IP() string {
+	return ctx.Req().Args["ip"]
+}
+func (ctx *Context) Params() *hydra.Params {
 	ctx.newAction()
 	return &ctx.params
 }
@@ -90,12 +93,6 @@ func (ctx *Context) IP() string {
 func (ctx *Context) Action() interface{} {
 	ctx.newAction()
 	return ctx.action
-}
-
-type IServiceContext interface {
-	Params() *Params
-	Service() string
-	Method() string
 }
 
 func (ctx *Context) ActionValue() reflect.Value {

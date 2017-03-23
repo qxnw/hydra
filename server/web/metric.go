@@ -51,6 +51,7 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 		if ctx.Result == nil {
 			ctx.Result = NotFound()
 		}
+
 		ctx.HandleError()
 	}
 
