@@ -58,8 +58,8 @@ func NewTask(span time.Duration, handle func(), opts ...TaskOption) *Task {
 	return t
 }
 
-//WheelTimer 基于HashedWheelTimer算法的定时任务
-type WheelTimer struct {
+//JobServer 基于HashedWheelTimer算法的定时任务
+type JobServer struct {
 	length    int
 	index     int
 	span      time.Duration
@@ -70,15 +70,15 @@ type WheelTimer struct {
 	mu        sync.Mutex
 }
 
-//NewWheelTimer 构建定时任务
-func NewWheelTimer(length int, span time.Duration) (w *WheelTimer) {
-	w = &WheelTimer{length: length, span: span, index: -1, startTime: time.Now()}
+//NewJobServer 构建定时任务
+func NewJobServer(length int, span time.Duration) (w *JobServer) {
+	w = &JobServer{length: length, span: span, index: -1, startTime: time.Now()}
 	w.close = make(chan struct{}, 1)
 	w.slots = make([][]*Task, length, length)
 	go w.move()
 	return w
 }
-func (w *WheelTimer) handle(task *Task) {
+func (w *JobServer) handle(task *Task) {
 	task.handle()
 	if task.tp == Cycle && (task.max == 0 || task.executed < task.max) {
 		w.Add(task)
@@ -86,7 +86,7 @@ func (w *WheelTimer) handle(task *Task) {
 }
 
 //GetOffset 获取当前任务的偏移量
-func (w *WheelTimer) getOffset(task *Task) (offset int, round int) {
+func (w *JobServer) getOffset(task *Task) (offset int, round int) {
 	deadline := time.Now().Add(task.span).Sub(w.startTime) //剩余时间
 	tick := int(deadline / w.span)                         //总格数
 	remain := w.length - w.index - 1
@@ -100,7 +100,7 @@ func (w *WheelTimer) getOffset(task *Task) (offset int, round int) {
 }
 
 //Add 添加任务
-func (w *WheelTimer) Add(task *Task) (offset int, round int) {
+func (w *JobServer) Add(task *Task) (offset int, round int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	offset, round = w.getOffset(task)
@@ -110,18 +110,18 @@ func (w *WheelTimer) Add(task *Task) (offset int, round int) {
 }
 
 //Reset 重置
-func (w *WheelTimer) Reset() {
+func (w *JobServer) Reset() {
 	w.mu.Lock()
 	w.slots = make([][]*Task, w.length, w.length)
 	w.mu.Unlock()
 }
 
 //Close 关闭
-func (w *WheelTimer) Close() {
+func (w *JobServer) Close() {
 	w.done = true
 	w.close <- struct{}{}
 }
-func (w *WheelTimer) execute() {
+func (w *JobServer) execute() {
 	w.startTime = time.Now()
 	w.mu.Lock()
 	w.index = (w.index + 1) % w.length
@@ -136,7 +136,7 @@ func (w *WheelTimer) execute() {
 	}
 	w.mu.Unlock()
 }
-func (w *WheelTimer) move() {
+func (w *JobServer) move() {
 START:
 	for {
 		select {
