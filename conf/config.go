@@ -3,57 +3,50 @@ package conf
 import "fmt"
 
 //Config 配置提供从配置文件中读取参数的方法
-type Config interface {
+type Conf interface {
 	String(key string, def ...string) string      //support section::key type in key string when using ini and json type; Int,Int64,Bool,Float,DIY are same.
 	Strings(key string, def ...[]string) []string //get string slice
 	Int(key string, def ...int) (int, error)
 	Bool(key string, def ...bool) (bool, error)
-	GetSection(section string) (Config, error)
-	GetSections(section string) (cs []Config, err error)
+	GetSection(section string) (Conf, error)
+	GetSections(section string) (cs []Conf, err error)
 	Len() int
+}
+type Updater struct {
+	Conf Conf
+	Op   int
 }
 
 //ConfWatcher 配置文件监控器
 type ConfWatcher interface {
-	Notify() chan []Config
-	Get() []Config
+	Next() (chan []Updater, error)
 }
 
 //ConfigAdapter 定义配置文件转换方法
-type ConfigAdapter interface {
-	Parse(key ...string) (Config, error)
-	ParseData(data []byte) (Config, error)
+type ConfResolver interface {
+	Resolve(key ...string) (ConfWatcher, error)
 }
 
-var adapters = make(map[string]ConfigAdapter)
+var confResolvers = make(map[string]ConfResolver)
 
 //Register 注册配置文件适配器
-func Register(name string, adapter ConfigAdapter) {
-	if adapter == nil {
+func Register(name string, resolver ConfResolver) {
+	if resolver == nil {
 		panic("config: Register adapter is nil")
 	}
-	if _, ok := adapters[name]; ok {
+	if _, ok := confResolvers[name]; ok {
 		panic("config: Register called twice for adapter " + name)
 	}
-	adapters[name] = adapter
+	confResolvers[name] = resolver
 }
 
 //NewConfig 根据适配器名称及参数返回配置处理器
-func NewConfig(adapterName string, args ...string) (Config, error) {
-	adapter, ok := adapters[adapterName]
+func NewResolver(adapterName string, args ...string) (ConfWatcher, error) {
+	resolver, ok := confResolvers[adapterName]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adaptername %q (forgotten import?)", adapterName)
 	}
-	return adapter.Parse(args...)
-}
-
-//NewConfigData 根据配置数据生成配置处理器
-func NewConfigData(adapterName string, data []byte) (Config, error) {
-	adapter, ok := adapters[adapterName]
-	if !ok {
-		return nil, fmt.Errorf("config: unknown adaptername %q (forgotten import?)", adapterName)
-	}
-	return adapter.ParseData(data)
+	return resolver.Resolve(args...)
 }
 
 //ParseBool 将字符串转换为bool值
