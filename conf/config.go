@@ -17,6 +17,12 @@ type Updater struct {
 	Op   int
 }
 
+const (
+	ADD = iota + 1
+	DEL
+	CHANGE
+)
+
 //ConfWatcher 配置文件监控器
 type ConfWatcher interface {
 	Next() (chan []Updater, error)

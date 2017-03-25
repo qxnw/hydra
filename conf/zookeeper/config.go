@@ -49,7 +49,7 @@ func (w *zookeeperConfWatcher) Next() (chan []Updater, error) {
 			//if not empty, return the updates or watcher new dir
 			if l := len(addrs); l != 0 {
 				for i := range addrs {
-					updates = append(updates, &conf.Update{Op: naming.Add, Addr: addrs[i]})
+					updates = append(updates, &conf.Update{Op: conf.ADD, Addr: addrs[i]})
 				}
 				return updates, nil
 			}
