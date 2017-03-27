@@ -2,6 +2,8 @@ package conf
 
 import "fmt"
 
+var WatchServers = []string{"api", "web", "rpc", "job"}
+
 //Config 配置提供从配置文件中读取参数的方法
 type Conf interface {
 	String(key string, def ...string) string      //support section::key type in key string when using ini and json type; Int,Int64,Bool,Float,DIY are same.
@@ -25,7 +27,9 @@ const (
 
 //ConfWatcher 配置文件监控器
 type ConfWatcher interface {
-	Next() (chan []Updater, error)
+	Start() error
+	Notify() (chan Updater, error)
+	Close() error
 }
 
 //ConfigAdapter 定义配置文件转换方法
