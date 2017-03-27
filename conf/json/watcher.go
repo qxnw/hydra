@@ -12,11 +12,12 @@ import (
 
 type jsonConfWatcher struct {
 	watchConfChan  chan string
+	watchingMap    map[string]chan struct{}
 	deleteConfChan chan string
 	watchRootChan  chan string
 	cacheAddress   map[string]time.Time
 	cacheConf      map[string]conf.Conf
-	notifyConfChan chan conf.Updater
+	notifyConfChan chan *conf.Updater
 	isInitialized  bool
 	done           bool
 	mu             sync.Mutex
@@ -27,9 +28,10 @@ type jsonConfWatcher struct {
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
 func NewJSONConfWatcher() *jsonConfWatcher {
 	return &jsonConfWatcher{
-		notifyConfChan: make(chan conf.Updater, 1),
-		watchConfChan:  make(chan string, 1),
-		deleteConfChan: make(chan string, 1),
+		watchingMap:    make(map[string]chan struct{}),
+		notifyConfChan: make(chan *conf.Updater),
+		watchConfChan:  make(chan string, 2),
+		deleteConfChan: make(chan string, 2),
 		watchRootChan:  make(chan string, 10),
 		cacheAddress:   make(map[string]time.Time),
 		cacheConf:      make(map[string]conf.Conf),
@@ -58,7 +60,7 @@ func (w *jsonConfWatcher) Close() error {
 }
 
 //Notify 节点变化后通知
-func (w *jsonConfWatcher) Notify() (chan conf.Updater, error) {
+func (w *jsonConfWatcher) Notify() (chan *conf.Updater, error) {
 	return w.notifyConfChan, nil
 }
 
@@ -81,6 +83,16 @@ START:
 				break START
 			}
 			go w.watchConf(p)
+		case del := <-w.deleteConfChan:
+			w.mu.Lock()
+			fmt.Println("delete:chan")
+			fmt.Printf("dddd:%v\n", len(w.notifyConfChan))
+			if ch, ok := w.watchingMap[del]; ok {
+				ch <- struct{}{}
+				fmt.Println("add to delete ch")
+				delete(w.watchingMap, del)
+			}
+			w.mu.Unlock()
 		}
 	}
 }
@@ -127,19 +139,7 @@ START:
 				}
 			}
 			w.mu.Unlock()
-		case del := <-w.deleteConfChan:
-			w.mu.Lock()
-			if w.done {
-				w.mu.Unlock()
-				break START
-			}
-			fmt.Printf("delete..%s,%+v\n", del, w.cacheConf)
-			if c, ok := w.cacheConf[del]; ok { //配置已删除
-				fmt.Println("delete now..", del)
-				w.notifyConfChan <- conf.Updater{Conf: c, Op: conf.DEL}
-				delete(w.cacheConf, del)
-			}
-			w.mu.Unlock()
+
 		}
 	}
 	return
@@ -147,9 +147,32 @@ START:
 
 //watchConf 监控配置项变化，变化后发送通知
 func (w *jsonConfWatcher) watchConf(path string) (err error) {
+	w.mu.Lock()
+	if _, ok := w.watchingMap[path]; ok {
+		w.mu.Unlock()
+		return
+	}
+
+	ch := make(chan struct{}, 10)
+	w.watchingMap[path] = ch
+	w.mu.Unlock()
 START:
 	for {
 		select {
+		case <-ch:
+			w.mu.Lock()
+			if w.done {
+				w.mu.Unlock()
+				break START
+			}
+			if c, ok := w.cacheConf[path]; ok { //配置已删除
+				fmt.Println("delelte:", path)
+				updater := &conf.Updater{Conf: c, Op: conf.DEL}
+				w.notifyConfChan <- updater
+				fmt.Printf("dddd:%+v\n", len(w.notifyConfChan))
+			}
+			w.mu.Unlock()
+			break START
 		case <-time.After(w.timeSpan):
 			w.mu.Lock()
 			if w.done {
@@ -162,7 +185,7 @@ START:
 				continue
 			}
 
-			updater := conf.Updater{}
+			updater := &conf.Updater{}
 			if v, ok := w.cacheAddress[path]; !ok {
 				updater.Op = conf.ADD //检查配置项变化
 			} else if modify != v {

@@ -28,7 +28,7 @@ const (
 //ConfWatcher 配置文件监控器
 type ConfWatcher interface {
 	Start() error
-	Notify() (chan Updater, error)
+	Notify() (chan *Updater, error)
 	Close() error
 }
 

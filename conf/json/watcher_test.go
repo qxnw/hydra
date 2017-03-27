@@ -35,13 +35,15 @@ func TestWatcher1(t *testing.T) {
 		expect(t, updater.Op, conf.CHANGE)
 		expect(t, updater.Conf.String("name"), "merchant.api")
 	}
+	go func() {
+		select {
+		case updater := <-f:
+			expect(t, updater.Op, conf.DEL)
+			expect(t, updater.Conf.String("name"), "merchant.api")
+		}
+	}()
 	checker.files = map[string]string{}
 	checker.modTime = time.Now().Add(time.Second)
-	select {
-	case updater := <-f:
-		expect(t, updater.Op, conf.DEL)
-		expect(t, updater.Conf.String("name"), "merchant.api")
-	}
 
 }
 
