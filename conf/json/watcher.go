@@ -187,8 +187,11 @@ START:
 
 			updater := &conf.Updater{}
 			if v, ok := w.cacheAddress[path]; !ok {
+				w.cacheAddress[path] = modify
 				updater.Op = conf.ADD //检查配置项变化
-			} else if modify != v {
+			} else if modify.Sub(v) != 0 {
+				fmt.Printf("%+v----%+v", modify, v)
+				w.cacheAddress[path] = modify
 				updater.Op = conf.CHANGE //检查配置项变化
 			} else {
 				w.mu.Unlock()
