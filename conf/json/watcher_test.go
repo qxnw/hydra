@@ -13,11 +13,12 @@ func TestWatcher1(t *testing.T) {
 	watcher := NewJSONConfWatcher()
 	checker := &testfileChecker{modTime: time.Now(), apis: map[string]string{
 		"../api": "../api",
+		"../api/merchant.api/conf/conf.json": "../api/merchant.api/conf/conf.json",
 	}, files: map[string]string{
 		"../api/merchant.api/conf/conf.json": "../api/merchant.api/conf/conf.json",
 	}}
 	watcher.checker = checker
-	watcher.timeSpan = time.Millisecond * 1000
+	watcher.timeSpan = time.Millisecond * 100
 	f, err := watcher.Notify()
 	watcher.Start()
 	if err != nil {
@@ -26,18 +27,17 @@ func TestWatcher1(t *testing.T) {
 
 	updater := <-f
 	expect(t, updater.Op, conf.ADD)
+	expect(t, len(f), 0)
 	expect(t, updater.Conf.String("name"), "merchant.api")
-
 	checker.modTime = time.Now().Add(time.Second)
 	updater = <-f
 
 	expect(t, updater.Op, conf.CHANGE)
+	expect(t, len(f), 0)
 	expect(t, updater.Conf.String("name"), "merchant.api")
-	/*
-		checker.files = map[string]string{}
-		checker.modTime = time.Now().Add(time.Second)
-		u := <-f
-		expect(t, u.Op, conf.DEL)*/
+	watcher.checker = &testfileChecker{}
+	updater = <-f
+	expect(t, updater.Op, conf.DEL)
 }
 
 func expect(t *testing.T, a interface{}, b interface{}) {

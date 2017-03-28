@@ -21,8 +21,8 @@ type Updater struct {
 
 const (
 	ADD = iota + 1
-	DEL
 	CHANGE
+	DEL
 )
 
 //ConfWatcher 配置文件监控器
