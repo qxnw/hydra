@@ -17,7 +17,9 @@ type jsonConfWatcher struct {
 	watchRootChan  chan string
 	cacheAddress   map[string]time.Time
 	cacheConf      map[string]conf.Conf
+	cacheDir       map[string]bool
 	notifyConfChan chan *conf.Updater
+	defTime        time.Time
 	isInitialized  bool
 	done           bool
 	mu             sync.Mutex
@@ -26,18 +28,22 @@ type jsonConfWatcher struct {
 }
 
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
-func NewJSONConfWatcher() *jsonConfWatcher {
-	return &jsonConfWatcher{
+func NewJSONConfWatcher() (w *jsonConfWatcher) {
+	w = &jsonConfWatcher{
 		watchingMap:    make(map[string]chan struct{}),
 		notifyConfChan: make(chan *conf.Updater),
 		watchConfChan:  make(chan string, 2),
 		deleteConfChan: make(chan string, 2),
 		watchRootChan:  make(chan string, 10),
 		cacheAddress:   make(map[string]time.Time),
+		cacheDir:       make(map[string]bool),
 		cacheConf:      make(map[string]conf.Conf),
 		checker:        fileChecker{},
 		timeSpan:       time.Second,
 	}
+	w.defTime, _ = time.Parse("2000-01-01", "2006-01-02")
+	return
+
 }
 func (w *jsonConfWatcher) Start() error {
 	w.mu.Lock()
@@ -47,7 +53,9 @@ func (w *jsonConfWatcher) Start() error {
 	}
 	w.isInitialized = true
 	for _, v := range conf.WatchServers {
-		w.watchRootChan <- fmt.Sprintf("../%s", v)
+		path := fmt.Sprintf("../%s", v)
+		w.cacheDir[path] = false
+		w.watchRootChan <- path
 	}
 	go w.watch()
 	return nil
@@ -110,6 +118,9 @@ START:
 			}
 			b := w.checker.Exists(path)
 			if !b {
+				if w.cacheDir[path] {
+
+				}
 				w.mu.Unlock()
 				continue
 			}
@@ -121,6 +132,7 @@ START:
 			for _, v := range children { //检查当前配置地址未缓存
 				name := fmt.Sprintf("%s/%s/conf/conf.json", path, v)
 				if _, ok := w.cacheAddress[name]; !ok {
+					w.cacheAddress[name] = w.defTime
 					w.watchConfChan <- name
 				}
 			}
@@ -186,7 +198,7 @@ START:
 			}
 
 			updater := &conf.Updater{}
-			if v, ok := w.cacheAddress[path]; !ok {
+			if v, ok := w.cacheAddress[path]; ok && v == w.defTime {
 				w.cacheAddress[path] = modify
 				updater.Op = conf.ADD //检查配置项变化
 			} else if modify.Sub(v) != 0 {

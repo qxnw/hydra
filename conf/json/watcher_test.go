@@ -17,37 +17,27 @@ func TestWatcher1(t *testing.T) {
 		"../api/merchant.api/conf/conf.json": "../api/merchant.api/conf/conf.json",
 	}}
 	watcher.checker = checker
-	watcher.timeSpan = time.Millisecond * 100
+	watcher.timeSpan = time.Millisecond * 1000
 	f, err := watcher.Notify()
 	watcher.Start()
 	if err != nil {
 		t.Error(err)
 	}
 
-	select {
-	case updater := <-f:
-		expect(t, updater.Op, conf.ADD)
-		expect(t, updater.Conf.String("name"), "merchant.api")
-	}
-	checker.modTime = time.Now()
-	select {
-	case updater := <-f:
-		expect(t, updater.Op, conf.CHANGE)
-		expect(t, updater.Conf.String("name"), "merchant.api")
-	}
-	go func(f chan *conf.Updater) {
-		select {
-		case u, ok := <-f:
-			if ok {
-				expect(t, u.Op, 9)
-			}
-		}
-	}(f)
+	updater := <-f
+	expect(t, updater.Op, conf.ADD)
+	expect(t, updater.Conf.String("name"), "merchant.api")
+
+	checker.modTime = time.Now().Add(time.Second)
+	updater = <-f
+
+	expect(t, updater.Op, conf.CHANGE)
+	expect(t, updater.Conf.String("name"), "merchant.api")
 	/*
 		checker.files = map[string]string{}
 		checker.modTime = time.Now().Add(time.Second)
-	*/
-	time.Sleep(time.Second)
+		u := <-f
+		expect(t, u.Op, conf.DEL)*/
 }
 
 func expect(t *testing.T, a interface{}, b interface{}) {
