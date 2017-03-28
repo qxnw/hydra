@@ -36,7 +36,10 @@ func (r *registry) WatchValue(path string) (data chan string, err error) {
 	return
 }
 func (r *registry) GetChildren(path string) (data []string, err error) {
-	data = make([]string, 0, 0)
+	if strings.HasSuffix(path, "api") {
+		data = <-r.children
+		return
+	}
 	return
 }
 func (r *registry) GetValue(path string) (data string, err error) {

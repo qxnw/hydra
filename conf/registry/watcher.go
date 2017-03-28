@@ -103,7 +103,7 @@ START:
 			w.cacheAddress.IterCb(func(key string, value interface{}) bool {
 
 				if strings.HasPrefix(key, del) {
-					fmt.Println(":::", key, del)
+					fmt.Println(">> close2:", key, del)
 					value.(*watcherPath).close <- struct{}{}
 				}
 				return true
@@ -138,6 +138,7 @@ WATCH_EXISTS:
 	if err != nil {
 		return
 	}
+	fmt.Println("get chilren:", path, len(children))
 	w.cacheDir.Set(path, true)
 	w.notifyPathChange(path, children)
 
@@ -281,14 +282,14 @@ func (w *registryConfWatcher) notifyPathChange(path string, children []string) {
 	w.cacheAddress.IterCb(func(key string, value interface{}) bool {
 		exists := false
 		for _, v := range children {
-			fmt.Println(">>:", key, fmt.Sprintf("%s/%s/conf/%s", path, v, w.tag), key == fmt.Sprintf("%s/%s/conf/%s", path, v, w.tag))
-			if key == fmt.Sprintf("%s/%s/conf/%s", path, v, w.tag) {
-				exists = true
+			exists = key == fmt.Sprintf("%s/%s/conf/%s", path, v, w.tag)
+			fmt.Println(">>:", key, exists)
+			if exists {
 				break
 			}
 		}
 		if !exists {
-			fmt.Println(">> close:", path)
+			fmt.Println(">> close:", key)
 			value.(*watcherPath).close <- struct{}{}
 		}
 		return false
