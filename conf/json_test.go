@@ -1,20 +1,19 @@
 package conf
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
-
-	"github.com/qxnw/hydra/conf"
 )
 
 func TestConfig1(t *testing.T) {
-	c := NewJSONConfig(getMap())
+	c := NewJSONConf(getMap())
 	root := c.String("root")
 	expect(t, len(c.data), 8)
 	expect(t, root, "api/merchant.api")
 }
 func TestConfig2(t *testing.T) {
-	c := NewJSONConfig(getMap())
+	c := NewJSONConf(getMap())
 	qps, err := c.Int("QPS")
 	if err != nil {
 		t.Error(err)
@@ -22,7 +21,7 @@ func TestConfig2(t *testing.T) {
 	expect(t, qps, 1000)
 }
 func TestConfig3(t *testing.T) {
-	c := NewJSONConfig(getMap())
+	c := NewJSONConf(getMap())
 	limiter, err := c.GetSections("limit")
 	if err != nil {
 		t.Error(err)
@@ -30,7 +29,7 @@ func TestConfig3(t *testing.T) {
 	expect(t, len(limiter), 2)
 }
 func TestConfig4(t *testing.T) {
-	c := NewJSONConfig(getMap())
+	c := NewJSONConf(getMap())
 	routes, err := c.GetSections("routes")
 	if err != nil {
 		t.Error(err)
@@ -40,8 +39,8 @@ func TestConfig4(t *testing.T) {
 
 }
 func TestConfig5(t *testing.T) {
-	c := NewJSONConfig(getMap())
-	r := getMap2()
+	c := NewJSONConf(getMap())
+	r := NewJSONConf(getMap2())
 	expect(t, c.Len(), r.Len())
 	router1, err := c.GetSections("routes")
 	if err != nil {
@@ -62,7 +61,7 @@ func expect(t *testing.T, a interface{}, b interface{}) {
 	}
 }
 
-func getMap2() conf.Config {
+func getMap2() map[string]interface{} {
 	str := `{
     "type": "api",
     "name": "merchant.api",
@@ -91,9 +90,9 @@ func getMap2() conf.Config {
         }
     ]
 }`
-	adpter := &jsonAdapter{}
-	r, _ := adpter.ParseData([]byte(str))
-	return r
+	c := make(map[string]interface{})
+	json.Unmarshal([]byte(str), &c)
+	return c
 }
 func getMap() map[string]interface{} {
 	data := map[string]interface{}{
@@ -124,5 +123,6 @@ func getMap() map[string]interface{} {
 			},
 		},
 	}
+
 	return data
 }
