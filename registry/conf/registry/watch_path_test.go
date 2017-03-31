@@ -6,12 +6,12 @@ import (
 
 	"errors"
 
-	"github.com/qxnw/hydra/conf/server"
-	"github.com/qxnw/lib4go/registry"
+	"github.com/qxnw/hydra/registry/conf"
+	rx "github.com/qxnw/lib4go/registry"
 )
 
 type pathRegistry struct {
-	watchChan chan registry.ChildrenWatcher
+	watchChan chan rx.ChildrenWatcher
 	watchErr  error
 	exists    map[string]bool
 	children  []string
@@ -23,7 +23,7 @@ func (r *pathRegistry) Exists(path string) (bool, error) {
 	}
 	return false, nil
 }
-func (r *pathRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
+func (r *pathRegistry) WatchValue(path string) (data chan rx.ValueWatcher, err error) {
 	return nil, nil
 }
 
@@ -31,7 +31,7 @@ func (r *pathRegistry) GetValue(path string) (data []byte, err error) {
 	return nil, nil
 }
 
-func (r *pathRegistry) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
+func (r *pathRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
 	data = r.watchChan
 	err = r.watchErr
 	return
@@ -40,12 +40,20 @@ func (r *pathRegistry) GetChildren(path string) (data []string, err error) {
 	data = r.children
 	return
 }
-
+func (r *pathRegistry) CreatePersistentNode(path string, data string) (err error) {
+	return nil
+}
+func (r *pathRegistry) CreateTempNode(path string, data string) (err error) {
+	return nil
+}
+func (r *pathRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
+	return "", nil
+}
 func TestPathWatcher1(t *testing.T) {
 	r := &pathRegistry{
-		watchChan: make(chan registry.ChildrenWatcher, 1),
+		watchChan: make(chan rx.ChildrenWatcher, 1),
 	}
-	updater := make(chan *server.Updater, 4)
+	updater := make(chan *conf.Updater, 4)
 	watcher := NewWatchPath("/hydra", "192.168.0.1:001", "/hydra/servers", r, updater, time.Millisecond*10)
 	go watcher.watch()
 

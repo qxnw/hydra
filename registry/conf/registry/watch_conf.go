@@ -7,22 +7,22 @@ import (
 
 	"sync"
 
-	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/conf/server"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/registry/conf"
 )
 
 type watchConf struct {
 	path           string
-	registry       Registry
+	registry       registry.Registry
 	timeSpan       time.Duration
-	notifyConfChan chan *server.Updater
-	conf           conf.Conf
+	notifyConfChan chan *conf.Updater
+	conf           registry.Conf
 	done           bool
 	notifyCount    int
 	mu             sync.Mutex
 }
 
-func NewWatchConf(path string, registry Registry, updater chan *server.Updater, timeSpan time.Duration) *watchConf {
+func NewWatchConf(path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
 	return &watchConf{path: path, registry: registry, notifyConfChan: updater, timeSpan: timeSpan}
 }
 
@@ -85,11 +85,11 @@ LOOP:
 func (w *watchConf) notifyConfChange(content []byte) (err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	op := conf.ADD
+	op := registry.ADD
 	if w.notifyCount > 0 {
-		op = conf.CHANGE
+		op = registry.CHANGE
 	}
-	updater := &server.Updater{Op: op}
+	updater := &conf.Updater{Op: op}
 	updater.Conf, err = w.getConf(content)
 	if err != nil {
 		return
@@ -101,20 +101,20 @@ func (w *watchConf) notifyConfChange(content []byte) (err error) {
 }
 
 //getConf 获取配置
-func (w *watchConf) getConf(content []byte) (cf conf.Conf, err error) {
+func (w *watchConf) getConf(content []byte) (cf registry.Conf, err error) {
 	c := make(map[string]interface{})
 	err = json.Unmarshal(content, &c)
 	if err != nil {
 		return
 	}
-	return conf.NewJSONConf(c), nil
+	return registry.NewJSONConf(c), nil
 }
 
 func (w *watchConf) NotifyConfDel() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf != nil { //配置已删除
-		updater := &server.Updater{Conf: w.conf, Op: conf.DEL}
+		updater := &conf.Updater{Conf: w.conf, Op: registry.DEL}
 		w.notifyConfChan <- updater
 	}
 }

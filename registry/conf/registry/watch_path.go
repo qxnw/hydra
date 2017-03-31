@@ -7,17 +7,18 @@ import (
 
 	"errors"
 
-	"github.com/qxnw/hydra/conf/server"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/registry/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 )
 
 type watchPath struct {
-	updater       chan *server.Updater
+	updater       chan *conf.Updater
 	cacheAddress  cmap.ConcurrentMap
 	exists        bool
 	watchRootChan chan string
 	path          string
-	registry      Registry
+	registry      registry.Registry
 	timeSpan      time.Duration
 	tag           string
 	domain        string
@@ -25,7 +26,7 @@ type watchPath struct {
 	mu            sync.Mutex
 }
 
-func NewWatchPath(domain string, tag string, path string, registry Registry, updater chan *server.Updater, timeSpan time.Duration) *watchPath {
+func NewWatchPath(domain string, tag string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchPath {
 	return &watchPath{
 		cacheAddress:  cmap.New(),
 		watchRootChan: make(chan string, 1),
@@ -115,7 +116,7 @@ func (w *watchPath) checkChildrenChange(children []string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, v := range children { //检查当前配置地址未缓存
-		for _, sv := range server.WatchServices {
+		for _, sv := range conf.WatchServices {
 			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.tag)
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
@@ -131,7 +132,7 @@ func (w *watchPath) checkChildrenChange(children []string) {
 	w.cacheAddress.RemoveIterCb(func(key string, value interface{}) bool {
 		exists := false
 		for _, v := range children {
-			for _, sv := range server.WatchServices {
+			for _, sv := range conf.WatchServices {
 				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.tag)
 				if exists {
 					break

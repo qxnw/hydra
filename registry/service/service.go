@@ -3,8 +3,10 @@ package service
 import "fmt"
 
 type ServiceWatcher interface {
-	Start() error
-	Notify() chan []*ServiceUpdater
+	Notify() (chan []*ServiceUpdater, error)
+	Publish(string, string, string) error
+	ConsumeCurrent(string, string, string) error
+	Consume(string, string, string, string, string) error
 	Close() error
 }
 
@@ -13,27 +15,27 @@ type ServiceUpdater struct {
 	Op    int
 }
 
-//ConfResolver 定义配置文件转换方法
-type ConfResolver interface {
+//ServiceResolver 定义配置文件转换方法
+type ServiceResolver interface {
 	Resolve(adapter string, domain string, tag string, args ...string) (ServiceWatcher, error)
 }
 
-var confResolvers = make(map[string]ConfResolver)
+var srvResolvers = make(map[string]ServiceResolver)
 
 //Register 注册配置文件适配器
-func Register(name string, resolver ConfResolver) {
+func Register(name string, resolver ServiceResolver) {
 	if resolver == nil {
 		panic("config: Register adapter is nil")
 	}
-	if _, ok := confResolvers[name]; ok {
+	if _, ok := srvResolvers[name]; ok {
 		panic("config: Register called twice for adapter " + name)
 	}
-	confResolvers[name] = resolver
+	srvResolvers[name] = resolver
 }
 
 //NewWatcher 根据适配器名称及参数返回配置处理器
 func NewWatcher(adapter string, domain string, tag string, args ...string) (ServiceWatcher, error) {
-	resolver, ok := confResolvers[adapter]
+	resolver, ok := srvResolvers[adapter]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
 	}

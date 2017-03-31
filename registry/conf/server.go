@@ -1,16 +1,16 @@
-package server
+package conf
 
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/registry"
 )
 
 //WatchServices /api，web，rpc，job
 var WatchServices = []string{"api", "web", "rpc", "job"}
 
 type Updater struct {
-	Conf conf.Conf
+	Conf registry.Conf
 	Op   int
 }
 

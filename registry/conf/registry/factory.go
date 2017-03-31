@@ -5,10 +5,11 @@ import (
 
 	"fmt"
 
+	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/zk"
 )
 
-func getRegistry(name string, args ...string) (Registry, error) {
+func getRegistry(name string, args ...string) (registry.Registry, error) {
 	switch name {
 	case "zookeeper":
 		return zk.New(args, time.Second)

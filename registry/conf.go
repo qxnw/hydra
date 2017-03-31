@@ -1,6 +1,20 @@
-package conf
+package registry
 
 import "fmt"
+
+import "github.com/qxnw/lib4go/registry"
+
+//Registry 注册中心接口
+type Registry interface {
+	Exists(path string) (bool, error)
+	WatchChildren(path string) (data chan registry.ChildrenWatcher, err error)
+	WatchValue(path string) (data chan registry.ValueWatcher, err error)
+	GetChildren(path string) (data []string, err error)
+	GetValue(path string) (data []byte, err error)
+	CreatePersistentNode(path string, data string) (err error)
+	CreateTempNode(path string, data string) (err error)
+	CreateSeqNode(path string, data string) (rpath string, err error)
+}
 
 //Config 配置提供从配置文件中读取参数的方法
 type Conf interface {

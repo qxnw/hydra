@@ -1,4 +1,4 @@
-package conf
+package registry
 
 import (
 	"encoding/json"

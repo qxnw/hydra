@@ -6,17 +6,18 @@ import (
 
 	"sync"
 
-	"github.com/qxnw/hydra/conf/server"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/registry/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 )
 
 type registryConfWatcher struct {
 	watchRootChan  chan string
 	watchPaths     cmap.ConcurrentMap
-	notifyConfChan chan *server.Updater
+	notifyConfChan chan *conf.Updater
 	isInitialized  bool
 	done           bool
-	registry       Registry
+	registry       registry.Registry
 	timeSpan       time.Duration
 	mu             sync.Mutex
 	domain         string
@@ -24,10 +25,10 @@ type registryConfWatcher struct {
 }
 
 //NewRegistryConfWatcher 创建zookeeper配置文件监控器
-func NewRegistryConfWatcher(domain string, tag string, registry Registry) (w *registryConfWatcher) {
+func NewRegistryConfWatcher(domain string, tag string, registry registry.Registry) (w *registryConfWatcher) {
 	w = &registryConfWatcher{
 		watchRootChan:  make(chan string, 10),
-		notifyConfChan: make(chan *server.Updater, 1),
+		notifyConfChan: make(chan *conf.Updater, 1),
 		watchPaths:     cmap.New(),
 		registry:       registry,
 		timeSpan:       time.Second,
@@ -84,6 +85,6 @@ func (w *registryConfWatcher) Close() error {
 }
 
 //Notify 节点变化后通知
-func (w *registryConfWatcher) Notify() chan *server.Updater {
+func (w *registryConfWatcher) Notify() chan *conf.Updater {
 	return w.notifyConfChan
 }

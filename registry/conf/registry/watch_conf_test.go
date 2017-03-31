@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/conf/server"
-	"github.com/qxnw/lib4go/registry"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/registry/conf"
+	rx "github.com/qxnw/lib4go/registry"
 )
 
 type kv struct {
@@ -21,7 +21,7 @@ type ckv struct {
 }
 
 type confRegistry struct {
-	watchChan chan registry.ValueWatcher
+	watchChan chan rx.ValueWatcher
 	watchErr  error
 	value     []byte
 	exists    map[string]bool
@@ -33,7 +33,7 @@ func (r *confRegistry) Exists(path string) (bool, error) {
 	}
 	return false, nil
 }
-func (r *confRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
+func (r *confRegistry) WatchValue(path string) (data chan rx.ValueWatcher, err error) {
 	data = r.watchChan
 	err = r.watchErr
 	return
@@ -44,19 +44,27 @@ func (r *confRegistry) GetValue(path string) (data []byte, err error) {
 	return
 }
 
-func (r *confRegistry) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
+func (r *confRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
 	return nil, nil
 }
 func (r *confRegistry) GetChildren(path string) (data []string, err error) {
 	return nil, nil
 }
-
+func (r *confRegistry) CreatePersistentNode(path string, data string) (err error) {
+	return nil
+}
+func (r *confRegistry) CreateTempNode(path string, data string) (err error) {
+	return nil
+}
+func (r *confRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
+	return "", nil
+}
 func TestConfWacher2(t *testing.T) {
 	r := &confRegistry{
-		watchChan: make(chan registry.ValueWatcher, 1),
+		watchChan: make(chan rx.ValueWatcher, 1),
 		value:     []byte(str),
 	}
-	updater := make(chan *server.Updater, 1)
+	updater := make(chan *conf.Updater, 1)
 	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
@@ -69,7 +77,7 @@ func TestConfWacher2(t *testing.T) {
 	case <-time.After(time.Millisecond * 200):
 		expect(t, nil, "conf.add")
 	case v := <-updater:
-		expect(t, v.Op, conf.ADD)
+		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
 		expect(t, v.Conf.String("name"), "merchant.api")
 	}
@@ -83,10 +91,10 @@ func TestConfWacher2(t *testing.T) {
 
 func TestConfWacher1(t *testing.T) {
 	r := &confRegistry{
-		watchChan: make(chan registry.ValueWatcher, 1),
+		watchChan: make(chan rx.ValueWatcher, 1),
 		value:     []byte(str),
 	}
-	updater := make(chan *server.Updater, 1)
+	updater := make(chan *conf.Updater, 1)
 	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
@@ -99,7 +107,7 @@ func TestConfWacher1(t *testing.T) {
 	case <-time.After(time.Millisecond * 200):
 		expect(t, nil, "conf.add")
 	case v := <-updater:
-		expect(t, v.Op, conf.ADD)
+		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
 		expect(t, v.Conf.String("name"), "merchant.api")
 	}
@@ -110,7 +118,7 @@ func TestConfWacher1(t *testing.T) {
 	case <-time.After(time.Millisecond * 200):
 		expect(t, nil, "conf.change")
 	case v := <-updater:
-		expect(t, v.Op, conf.CHANGE)
+		expect(t, v.Op, registry.CHANGE)
 		expect(t, len(updater), 0)
 		expect(t, v.Conf.String("name"), "merchant.api")
 	}
@@ -120,7 +128,7 @@ func TestConfWacher1(t *testing.T) {
 	case <-time.After(time.Millisecond * 200):
 		expect(t, nil, "conf.CHANGE")
 	case v := <-updater:
-		expect(t, v.Op, conf.CHANGE)
+		expect(t, v.Op, registry.CHANGE)
 		expect(t, len(updater), 0)
 		expect(t, v.Conf.String("name"), "merchant.api")
 	}
@@ -149,10 +157,10 @@ func TestConfWacher1(t *testing.T) {
 
 func TestConfWacher3(t *testing.T) {
 	r := &confRegistry{
-		watchChan: make(chan registry.ValueWatcher, 1),
+		watchChan: make(chan rx.ValueWatcher, 1),
 		value:     []byte(str),
 	}
-	updater := make(chan *server.Updater, 1)
+	updater := make(chan *conf.Updater, 1)
 	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
@@ -163,14 +171,14 @@ func TestConfWacher3(t *testing.T) {
 	r.value = []byte(str)
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.ADD)
+		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
 		expect(t, v.Conf.String("name"), "merchant.api")
 	}
 	watcher.NotifyConfDel()
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.DEL)
+		expect(t, v.Op, registry.DEL)
 	default:
 	}
 }

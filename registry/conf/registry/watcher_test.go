@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/lib4go/registry"
+	"github.com/qxnw/hydra/registry"
+	rx "github.com/qxnw/lib4go/registry"
 )
 
 type watcherRegistry struct {
-	watchChilrenChan chan registry.ChildrenWatcher
-	watchValueChan   chan registry.ValueWatcher
+	watchChilrenChan chan rx.ChildrenWatcher
+	watchValueChan   chan rx.ValueWatcher
 	watchErr         error
 	exists           map[string]bool
 	children         []string
@@ -24,7 +24,7 @@ func (r *watcherRegistry) Exists(path string) (bool, error) {
 	}
 	return false, nil
 }
-func (r *watcherRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
+func (r *watcherRegistry) WatchValue(path string) (data chan rx.ValueWatcher, err error) {
 	data = r.watchValueChan
 	return
 }
@@ -33,7 +33,7 @@ func (r *watcherRegistry) GetValue(path string) (data []byte, err error) {
 	return r.value, nil
 }
 
-func (r *watcherRegistry) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
+func (r *watcherRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
 	data = r.watchChilrenChan
 	err = r.watchErr
 	return
@@ -42,11 +42,19 @@ func (r *watcherRegistry) GetChildren(path string) (data []string, err error) {
 	data = r.children
 	return
 }
-
+func (r *watcherRegistry) CreatePersistentNode(path string, data string) (err error) {
+	return nil
+}
+func (r *watcherRegistry) CreateTempNode(path string, data string) (err error) {
+	return nil
+}
+func (r *watcherRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
+	return "", nil
+}
 func TestWatcher1(t *testing.T) {
 	r := &watcherRegistry{
-		watchValueChan:   make(chan registry.ValueWatcher, 1),
-		watchChilrenChan: make(chan registry.ChildrenWatcher, 1),
+		watchValueChan:   make(chan rx.ValueWatcher, 1),
+		watchChilrenChan: make(chan rx.ChildrenWatcher, 1),
 	}
 	r.exists = map[string]bool{
 		"/hydra/servers":                                    true,
@@ -76,21 +84,21 @@ func TestWatcher1(t *testing.T) {
 	}
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.ADD)
+		expect(t, v.Op, registry.ADD)
 	default:
 	}
 
 	r.watchChilrenChan <- &valuesEntity{values: []string{}}
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.DEL)
+		expect(t, v.Op, registry.DEL)
 	default:
 	}
 	expect(t, len(r.watchChilrenChan), 0)
 	r.watchChilrenChan <- &valuesEntity{values: []string{"merchant"}}
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.ADD)
+		expect(t, v.Op, registry.ADD)
 	default:
 	}
 	time.Sleep(time.Millisecond * 10)
@@ -103,7 +111,7 @@ func TestWatcher1(t *testing.T) {
 	r.watchChilrenChan <- &valuesEntity{values: []string{"merchant"}}
 	select {
 	case v := <-updater:
-		expect(t, v.Op, conf.DEL)
+		expect(t, v.Op, registry.DEL)
 	default:
 	}
 }
