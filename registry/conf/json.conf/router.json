@@ -1,0 +1,10 @@
+{
+    "routers": [
+        {
+            "from": "/:module/:action/:id",
+            "method": "request",
+            "to": "../@type/@name/script/@module_@action:@method",
+            "params": "db=@domain/var/db/influxdb"
+        }
+    ]
+}
