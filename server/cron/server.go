@@ -1,4 +1,4 @@
-package job
+package cron
 
 import (
 	"sync"
@@ -58,8 +58,8 @@ func NewTask(span time.Duration, handle func(), opts ...TaskOption) *Task {
 	return t
 }
 
-//JobServer 基于HashedWheelTimer算法的定时任务
-type JobServer struct {
+//CronServer 基于HashedWheelTimer算法的定时任务
+type CronServer struct {
 	length    int
 	index     int
 	span      time.Duration
@@ -70,15 +70,15 @@ type JobServer struct {
 	mu        sync.Mutex
 }
 
-//NewJobServer 构建定时任务
-func NewJobServer(length int, span time.Duration) (w *JobServer) {
-	w = &JobServer{length: length, span: span, index: -1, startTime: time.Now()}
+//NewCronServer 构建定时任务
+func NewCronServer(length int, span time.Duration) (w *CronServer) {
+	w = &CronServer{length: length, span: span, index: -1, startTime: time.Now()}
 	w.close = make(chan struct{}, 1)
 	w.slots = make([][]*Task, length, length)
 	go w.move()
 	return w
 }
-func (w *JobServer) handle(task *Task) {
+func (w *CronServer) handle(task *Task) {
 	task.handle()
 	if task.tp == Cycle && (task.max == 0 || task.executed < task.max) {
 		w.Add(task)
@@ -86,7 +86,7 @@ func (w *JobServer) handle(task *Task) {
 }
 
 //GetOffset 获取当前任务的偏移量
-func (w *JobServer) getOffset(task *Task) (offset int, round int) {
+func (w *CronServer) getOffset(task *Task) (offset int, round int) {
 	deadline := time.Now().Add(task.span).Sub(w.startTime) //剩余时间
 	tick := int(deadline / w.span)                         //总格数
 	remain := w.length - w.index - 1
@@ -100,7 +100,7 @@ func (w *JobServer) getOffset(task *Task) (offset int, round int) {
 }
 
 //Add 添加任务
-func (w *JobServer) Add(task *Task) (offset int, round int) {
+func (w *CronServer) Add(task *Task) (offset int, round int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	offset, round = w.getOffset(task)
@@ -110,18 +110,18 @@ func (w *JobServer) Add(task *Task) (offset int, round int) {
 }
 
 //Reset 重置
-func (w *JobServer) Reset() {
+func (w *CronServer) Reset() {
 	w.mu.Lock()
 	w.slots = make([][]*Task, w.length, w.length)
 	w.mu.Unlock()
 }
 
 //Close 关闭
-func (w *JobServer) Close() {
+func (w *CronServer) Close() {
 	w.done = true
 	w.close <- struct{}{}
 }
-func (w *JobServer) execute() {
+func (w *CronServer) execute() {
 	w.startTime = time.Now()
 	w.mu.Lock()
 	w.index = (w.index + 1) % w.length
@@ -136,7 +136,7 @@ func (w *JobServer) execute() {
 	}
 	w.mu.Unlock()
 }
-func (w *JobServer) move() {
+func (w *CronServer) move() {
 START:
 	for {
 		select {
