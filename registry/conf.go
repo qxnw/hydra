@@ -9,20 +9,22 @@ type Registry interface {
 	Exists(path string) (bool, error)
 	WatchChildren(path string) (data chan registry.ChildrenWatcher, err error)
 	WatchValue(path string) (data chan registry.ValueWatcher, err error)
-	GetChildren(path string) (data []string, err error)
-	GetValue(path string) (data []byte, err error)
+	GetChildren(path string) (data []string, version int32, err error)
+	GetValue(path string) (data []byte, version int32, err error)
 	CreatePersistentNode(path string, data string) (err error)
 	CreateTempNode(path string, data string) (err error)
 	CreateSeqNode(path string, data string) (rpath string, err error)
 }
 
-//Config 配置提供从配置文件中读取参数的方法
+//Conf 配置提供从配置文件中读取参数的方法
 type Conf interface {
+	GetVersion() int32
 	String(key string, def ...string) string      //support section::key type in key string when using ini and json type; Int,Int64,Bool,Float,DIY are same.
 	Strings(key string, def ...[]string) []string //get string slice
 	Int(key string, def ...int) (int, error)
 	Bool(key string, def ...bool) (bool, error)
 	GetSection(section string) (Conf, error)
+	GetNode(section string) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
 	Len() int
 }

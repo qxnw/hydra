@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,23 +11,47 @@ import (
 
 //JSONConf json配置文件
 type JSONConf struct {
-	data  map[string]interface{}
-	cache map[string]interface{}
+	data    map[string]interface{}
+	cache   map[string]interface{}
+	handle  func(path string) (Conf, error)
+	version int32
 	*transform.Transform
 }
 
-//NewJSONConf 构建JSON配置文件
-func NewJSONConf(m map[string]interface{}) *JSONConf {
+func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf, error)) (r *JSONConf, err error) {
+	m := make(map[string]interface{})
+	err = json.Unmarshal([]byte(c), &m)
+	if err != nil {
+		return
+	}
 	return &JSONConf{
 		data:      m,
 		cache:     make(map[string]interface{}),
 		Transform: transform.NewMaps(m),
+		version:   version,
+		handle:    handle,
+	}, nil
+}
+
+//NewJSONConfWithHandle 根据map和动态获取函数构建
+func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(path string) (Conf, error)) *JSONConf {
+	return &JSONConf{
+		data:      m,
+		cache:     make(map[string]interface{}),
+		Transform: transform.NewMaps(m),
+		version:   version,
+		handle:    handle,
 	}
 }
 
 //Len 参数个数
 func (j *JSONConf) Len() int {
 	return len(j.data)
+}
+
+//GetVersion 获取当前配置的版本号
+func (j *JSONConf) GetVersion() int32 {
+	return j.version
 }
 
 //String 获取字符串
@@ -105,6 +130,23 @@ func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
 	return
 }
 
+//GetNode 获取节点值
+func (j *JSONConf) GetNode(section string) (r Conf, err error) {
+	if j.handle == nil {
+		return nil, errors.New("未指定NODE获取方式")
+	}
+	value := j.String(section)
+	if !strings.HasPrefix(value, "#") {
+		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s")
+	}
+	r, err = j.handle(j.Translate(value[1:]))
+	if err != nil {
+		return
+	}
+	j.cache[section] = r
+	return
+}
+
 //GetSection 获取块节点
 func (j *JSONConf) GetSection(section string) (r Conf, err error) {
 	if value, ok := j.cache[section]; ok {
@@ -113,7 +155,7 @@ func (j *JSONConf) GetSection(section string) (r Conf, err error) {
 	val := j.data[section]
 	if val != nil {
 		if v, ok := val.(map[string]interface{}); ok {
-			r = NewJSONConf(v)
+			r = NewJSONConfWithHandle(v, j.version, j.handle)
 			j.cache[section] = r
 			return
 		}
@@ -143,7 +185,7 @@ func (j *JSONConf) GetSections(section string) (cs []Conf, err error) {
 						nmap[x] = y
 					}
 				}
-				cs = append(cs, NewJSONConf(nmap))
+				cs = append(cs, NewJSONConfWithHandle(nmap, j.version, j.handle))
 			}
 		}
 		j.cache[section] = cs

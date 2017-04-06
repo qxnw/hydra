@@ -58,12 +58,12 @@ LOOP:
 			}
 		}
 	}
-	children, err := w.registry.GetChildren(w.path)
+	children, version, err := w.registry.GetChildren(w.path)
 	if err != nil {
 		goto LOOP
 	}
 	w.exists = isExists
-	w.checkChildrenChange(children)
+	w.checkChildrenChange(children, version)
 	//监控子节点变化
 	ch, err := w.registry.WatchChildren(w.path)
 	if err != nil {
@@ -112,7 +112,7 @@ func (w *watchPath) Close() {
 		return true
 	})
 }
-func (w *watchPath) checkChildrenChange(children []string) {
+func (w *watchPath) checkChildrenChange(children []string, version int32) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, v := range children { //检查当前配置地址未缓存
@@ -122,6 +122,11 @@ func (w *watchPath) checkChildrenChange(children []string) {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
 					f := NewWatchConf(path, w.registry, w.updater, w.timeSpan)
+					f.args = map[string]string{
+						"domain": w.domain,
+						"root":   fmt.Sprintf("%s/%s/%s/conf", w.path, v, sv),
+						"path":   name,
+					}
 					go f.watch()
 					return f, nil
 				}, name)

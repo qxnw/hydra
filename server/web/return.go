@@ -14,6 +14,7 @@ import (
 type StatusResult struct {
 	Code   int
 	Result interface{}
+	Type   int
 }
 
 const (
@@ -84,6 +85,7 @@ func Return() HandlerFunc {
 		if res, ok := ctx.Result.(*StatusResult); ok {
 			statusCode = res.Code
 			result = res.Result
+			rt = res.Type
 		}
 
 		if rt == JsonResponse {
@@ -115,7 +117,7 @@ func Return() HandlerFunc {
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
-					"content": res,
+					"data": res,
 				})
 			case []byte:
 				if statusCode == 0 {
@@ -123,7 +125,7 @@ func Return() HandlerFunc {
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
-					"content": string(res),
+					"data": string(res),
 				})
 			default:
 				if statusCode == 0 {

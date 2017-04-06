@@ -10,8 +10,10 @@ import (
 
 	"sync"
 
-	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/conf/server"
+	"os"
+
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/registry/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 )
 
@@ -21,7 +23,7 @@ type jsonConfWatcher struct {
 	watchRootChan  chan string
 	cacheAddress   cmap.ConcurrentMap
 	cacheDir       cmap.ConcurrentMap
-	notifyConfChan chan *server.Updater
+	notifyConfChan chan *conf.Updater
 	defTime        time.Time
 	isInitialized  bool
 	done           bool
@@ -35,14 +37,15 @@ type jsonConfWatcher struct {
 type watcherPath struct {
 	close   chan struct{}
 	modTime time.Time
-	conf    conf.Conf
+	conf    registry.Conf
+	root    string
 	send    bool
 }
 
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
 func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher) {
 	w = &jsonConfWatcher{
-		notifyConfChan: make(chan *server.Updater),
+		notifyConfChan: make(chan *conf.Updater),
 		watchConfChan:  make(chan string, 2),
 		deleteConfChan: make(chan string, 2),
 		watchRootChan:  make(chan string, 10),
@@ -130,10 +133,12 @@ START:
 			}
 			w.cacheDir.Set(path, true)
 			for _, v := range children { //检查当前配置地址未缓存
-				for _, sv := range server.WatchServices {
+				for _, sv := range conf.WatchServices {
 					name := fmt.Sprintf("%s/%s/%s/conf/%s.json", path, v, sv, w.tag)
 					if _, ok := w.cacheAddress.Get(name); !ok {
-						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime, close: make(chan struct{}, 1)})
+						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
+							root:  fmt.Sprintf("%s/%s/%s/conf", path, v, sv),
+							close: make(chan struct{}, 1)})
 						w.watchConfChan <- name
 					}
 				}
@@ -141,7 +146,7 @@ START:
 			w.cacheAddress.IterCb(func(key string, value interface{}) bool {
 				exists := false
 				for _, v := range children {
-					for _, sv := range server.WatchServices {
+					for _, sv := range conf.WatchServices {
 						if key == fmt.Sprintf("%s/%s/%s/conf/%s.json", path, v, sv, w.tag) {
 							exists = true
 							break
@@ -172,7 +177,7 @@ START:
 			if c, ok := w.cacheAddress.Get(path); ok && c.(*watcherPath).send { //配置已删除
 				w.cacheAddress.Remove(path)
 				if c.(*watcherPath).conf != nil {
-					updater := &server.Updater{Conf: c.(*watcherPath).conf, Op: conf.DEL}
+					updater := &conf.Updater{Conf: c.(*watcherPath).conf, Op: registry.DEL}
 					w.notifyConfChan <- updater
 				}
 			}
@@ -192,16 +197,16 @@ START:
 			if err != nil {
 				continue
 			}
-			updater := &server.Updater{}
+			updater := &conf.Updater{}
 			cc, ok := w.cacheAddress.Get(path)
 			v := cc.(*watcherPath)
 			if !ok {
 				break START
 			} else {
 				if v.modTime == w.defTime {
-					updater.Op = conf.ADD
+					updater.Op = registry.ADD
 				} else if v.modTime != modify {
-					updater.Op = conf.CHANGE //检查配置项变化
+					updater.Op = registry.CHANGE //检查配置项变化
 				} else {
 					continue
 				}
@@ -220,7 +225,11 @@ START:
 }
 
 //getConf 获取配置
-func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
+func (w *jsonConfWatcher) getConf(path string) (cf registry.Conf, err error) {
+	f, err := os.Stat(path)
+	if err != nil {
+		return
+	}
 	buf, err := w.checker.ReadAll(path)
 	if err != nil {
 		return
@@ -233,7 +242,13 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	if err != nil {
 		return
 	}
-	return conf.NewJSONConf(c), nil
+	c["domain"] = w.domain
+	c["path"] = path
+	if cc, ok := w.cacheAddress.Get(path); ok {
+		v := cc.(*watcherPath)
+		c["root"] = v.root
+	}
+	return registry.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf), nil
 }
 
 //Close 关闭所有监控项
@@ -245,6 +260,6 @@ func (w *jsonConfWatcher) Close() error {
 }
 
 //Notify 节点变化后通知
-func (w *jsonConfWatcher) Notify() chan *server.Updater {
+func (w *jsonConfWatcher) Notify() chan *conf.Updater {
 	return w.notifyConfChan
 }

@@ -20,10 +20,16 @@ type watchConf struct {
 	done           bool
 	notifyCount    int
 	mu             sync.Mutex
+	args           map[string]string
 }
 
 func NewWatchConf(path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
-	return &watchConf{path: path, registry: registry, notifyConfChan: updater, timeSpan: timeSpan}
+	return &watchConf{path: path,
+		registry:       registry,
+		notifyConfChan: updater,
+		timeSpan:       timeSpan,
+		args:           make(map[string]string),
+	}
 }
 
 //watchConf 监控配置项变化，当发生错误时持续监控节点变化，只有明确节点不存在时才会通知关闭
@@ -45,11 +51,11 @@ LOOP:
 	}
 
 	//获取节点值
-	data, err := w.registry.GetValue(w.path)
+	data, version, err := w.registry.GetValue(w.path)
 	if err != nil {
 		goto LOOP
 	}
-	if err = w.notifyConfChange(data); err != nil {
+	if err = w.notifyConfChange(data, version); err != nil {
 		goto LOOP
 	}
 
@@ -82,7 +88,7 @@ LOOP:
 	}
 }
 
-func (w *watchConf) notifyConfChange(content []byte) (err error) {
+func (w *watchConf) notifyConfChange(content []byte, version int32) (err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	op := registry.ADD
@@ -90,7 +96,7 @@ func (w *watchConf) notifyConfChange(content []byte) (err error) {
 		op = registry.CHANGE
 	}
 	updater := &conf.Updater{Op: op}
-	updater.Conf, err = w.getConf(content)
+	updater.Conf, err = w.getConf(content, version)
 	if err != nil {
 		return
 	}
@@ -101,15 +107,24 @@ func (w *watchConf) notifyConfChange(content []byte) (err error) {
 }
 
 //getConf 获取配置
-func (w *watchConf) getConf(content []byte) (cf registry.Conf, err error) {
+func (w *watchConf) getConf(content []byte, version int32) (cf registry.Conf, err error) {
 	c := make(map[string]interface{})
 	err = json.Unmarshal(content, &c)
 	if err != nil {
 		return
 	}
-	return registry.NewJSONConf(c), nil
+	for k, v := range w.args {
+		c[k] = v
+	}
+	return registry.NewJSONConfWithHandle(c, version, w.getValue), nil
 }
-
+func (w *watchConf) getValue(path string) (r registry.Conf, err error) {
+	buf, version, err := w.registry.GetValue(path)
+	if err != nil {
+		return
+	}
+	return w.getConf(buf, version)
+}
 func (w *watchConf) NotifyConfDel() {
 	w.mu.Lock()
 	defer w.mu.Unlock()

@@ -212,7 +212,7 @@ func (ctx *Context) execute() {
 			ctx.Result = ret[0].Interface()
 		} else if len(ret) == 2 {
 			if code, ok := ret[0].Interface().(int); ok {
-				ctx.Result = &StatusResult{code, ret[1].Interface()}
+				ctx.Result = &StatusResult{code, ret[1].Interface(), 0}
 			}
 		}
 		// not route matched

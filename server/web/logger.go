@@ -22,8 +22,8 @@ type Logger interface {
 	Error(v ...interface{})
 }
 
-func NewLogger(out io.Writer) Logger {
-	l := log.New(out, "[WebServer] ", log.Ldefault())
+func NewLogger(name string, out io.Writer) Logger {
+	l := log.New(out, "["+name+"] ", log.Ldefault())
 	l.SetOutputLevel(log.Ldebug)
 	return l
 }

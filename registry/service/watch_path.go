@@ -57,12 +57,12 @@ LOOP:
 			}
 		}
 	}
-	children, err := w.registry.GetChildren(w.path)
+	children, version, err := w.registry.GetChildren(w.path)
 	if err != nil {
 		goto LOOP
 	}
 	w.exists = isExists
-	w.checkChildrenChange(children)
+	w.checkChildrenChange(children, version)
 	//监控子节点变化
 	ch, err := w.registry.WatchChildren(w.path)
 	if err != nil {
@@ -111,7 +111,7 @@ func (w *watchPath) Close() {
 		return true
 	})
 }
-func (w *watchPath) checkChildrenChange(children []string) {
+func (w *watchPath) checkChildrenChange(children []string, version int32) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, v := range children { //检查当前配置地址未缓存
