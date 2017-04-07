@@ -44,6 +44,7 @@ type MQConsumer struct {
 func NewMQConsumer(name string, address string, version string, opts ...TaskOption) (s *MQConsumer, err error) {
 	s = &MQConsumer{serverName: name}
 	s.taskOption = &taskOption{}
+	s.handlers = make([]Handler, 3)
 	for _, opt := range opts {
 		opt(s.taskOption)
 	}

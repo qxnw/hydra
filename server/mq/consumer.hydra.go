@@ -65,7 +65,7 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 	//设置路由
 	routers, err := conf.GetNode("queue")
 	if err != nil {
-		return fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 	}
 	if v, ok := w.versions["queues"]; !ok || v != routers.GetVersion() {
 		w.versions["queues"] = routers.GetVersion()
@@ -85,7 +85,7 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 			queues = append(queues, task{name: queue, service: service, method: method, params: params})
 		}
 		for _, task := range queues {
-			w.server.Use(task.name, w.handle(task.service, task.method, task.params))
+			go w.server.Use(task.name, w.handle(task.service, task.method, task.params))
 		}
 
 	}
