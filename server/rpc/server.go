@@ -27,7 +27,7 @@ type RPCServer struct {
 	ErrHandler Handler
 	*serverOption
 	port int
-	ip   string
+
 	Router
 	mu sync.RWMutex
 }
@@ -38,6 +38,7 @@ func Version() string {
 }
 
 type serverOption struct {
+	ip       string
 	logger   Logger
 	handlers []Handler
 	metric   *InfluxMetric
@@ -49,8 +50,8 @@ type serverOption struct {
 //Option 配置选项
 type Option func(*serverOption)
 
-//WithServerLogger 设置日志记录组件
-func WithServerLogger(logger Logger) Option {
+//WithLogger 设置日志记录组件
+func WithLogger(logger Logger) Option {
 	return func(o *serverOption) {
 		o.logger = logger
 	}
@@ -62,6 +63,13 @@ func WithInfluxMetric(host string, dataBase string, userName string, password st
 		o.metric = NewInfluxMetric()
 		o.handlers = append(o.handlers, o.metric)
 		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	}
+}
+
+//WithIP 设置ip地址
+func WithIP(ip string) Option {
+	return func(o *serverOption) {
+		o.ip = ip
 	}
 }
 

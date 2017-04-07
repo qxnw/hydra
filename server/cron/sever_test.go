@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetOffset1(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	tsk := NewTask("-", time.Second*8, time.Second*8, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.getOffset(tsk.next)
 	ut.Expect(t, offset, 7)
@@ -16,14 +16,14 @@ func TestGetOffset1(t *testing.T) {
 
 }
 func TestGetOffset2(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	tsk := NewTask("-", time.Second*91, time.Second*91, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.getOffset(tsk.next)
 	ut.Expect(t, offset, 1)
 	ut.Expect(t, round, 9)
 }
 func TestGetOffset3(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	timer.index = 4
 	tsk := NewTask("-", time.Second*10, time.Second*10, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.getOffset(tsk.next)
@@ -31,7 +31,7 @@ func TestGetOffset3(t *testing.T) {
 	ut.Expect(t, round, 1)
 }
 func TestGetOffset4(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	timer.index = 4
 	task := NewTask("-", time.Second*10, time.Second*10, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.Add(task)
@@ -40,7 +40,7 @@ func TestGetOffset4(t *testing.T) {
 	ut.Expect(t, len(timer.slots[offset]), 1)
 }
 func TestGetOffset5(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	timer.index = 4
 	task := NewTask("cron.server", time.Second*2, time.Second*2, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.Add(task)
@@ -53,7 +53,7 @@ func TestGetOffset5(t *testing.T) {
 	ut.Expect(t, len(timer.slots[offset]), 0)
 }
 func TestGetOffset6(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	timer.index = 4
 	value := 0
 	task := NewTask("order.report", time.Second*2, time.Second*2, func(t *Task) error {
@@ -77,7 +77,7 @@ func TestGetOffset6(t *testing.T) {
 	ut.Expect(t, value, 1)
 }
 func TestGetOffset7(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second, nil)
+	timer := NewCronServer("cron.server", 10, time.Second)
 	timer.index = 4
 	task := NewTask("-", time.Second*2, time.Second*2, func(t *Task) error { return nil }, "order.report")
 	offset, round := timer.Add(task)

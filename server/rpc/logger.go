@@ -16,12 +16,6 @@ type Logger interface {
 	Warn(v ...interface{})
 	Errorf(format string, v ...interface{})
 	Error(v ...interface{})
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Fatalln(args ...interface{})
-	Print(args ...interface{})
-	Printf(format string, args ...interface{})
-	Println(args ...interface{})
 }
 
 type nLogger struct {

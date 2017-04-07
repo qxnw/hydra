@@ -31,7 +31,7 @@ type hydraWebServer struct {
 func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		versions: make(map[string]int32),
-		server:   New(conf.String("name", "api.server"), WithLogger(logger))}
+		server:   New(conf.String("name", "api.server"), WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
 	h.server.register = r
 	err = h.setConf(conf)
 
@@ -45,7 +45,7 @@ func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 		delete(w.versions, k)
 	}
 	w.conf = nil
-	w.server = New(conf.String("name", "api.server"))
+	w.server = New(conf.String("name", "api.server"), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
@@ -118,7 +118,6 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 	//设置基本参数
 	w.server.SetName(conf.String("name", "api.server"))
 	w.server.SetHost(conf.String("host"))
-	w.server.ip = net.GetLocalIPAddress(conf.String("mask"))
 	w.conf = conf
 	return nil
 }

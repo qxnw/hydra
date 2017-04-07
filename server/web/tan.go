@@ -23,9 +23,8 @@ func Version() string {
 
 //WebServer web服务器
 type WebServer struct {
-	serverName string
 	server     *http.Server
-	ip         string
+	serverName string
 	proto      string
 	port       int
 	Router

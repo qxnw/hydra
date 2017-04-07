@@ -28,7 +28,7 @@ func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistr
 	h = &hydraCronServer{handler: handler,
 		logger:   logger,
 		versions: make(map[string]int32),
-		server:   NewCronServer(conf.String("name", "cron.server"), 60, time.Second, logger),
+		server:   NewCronServer(conf.String("name", "cron.server"), 60, time.Second, WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
 	h.server.registry = r
 	err = h.setConf(conf)
@@ -42,7 +42,8 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 		delete(w.versions, k)
 	}
 	w.conf = nil
-	w.server = NewCronServer(conf.String("name", "cron.server"), 60, time.Second, w.logger)
+	w.server = NewCronServer(conf.String("name", "cron.server"), 60,
+		time.Second, WithLogger(w.logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
@@ -59,7 +60,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	//设置路由
 	routers, err := conf.GetNode("task")
 	if err != nil {
-		return fmt.Errorf("任务未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	if v, ok := w.versions["tasks"]; !ok || v != routers.GetVersion() {
 		w.versions["tasks"] = routers.GetVersion()
@@ -75,14 +76,14 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 			method := c.String("method")
 			interval, err := time.ParseDuration(c.String("interval"))
 			if err != nil {
-				return fmt.Errorf("任务配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
+				return fmt.Errorf("task配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
 			}
 			next, err := time.Parse("2006/01/02 15:04:05", c.String("next"))
 			if err != nil {
-				return fmt.Errorf("任务配置错误:next值必须为时间格式yyyy/mm/dd HH:mm:ss（%s,%s）(%v)", name, c.String("next"), err)
+				return fmt.Errorf("task配置错误:next值必须为时间格式yyyy/mm/dd HH:mm:ss（%s,%s）(%v)", name, c.String("next"), err)
 			}
 			if name == "" {
-				return fmt.Errorf("路由配置错误:name不能为空（name:%s）", name)
+				return fmt.Errorf("task配置错误:name不能为空（name:%s）", name)
 			}
 			tasks = append(tasks, NewTask(name,
 				time.Duration(next.Sub(time.Now()).Seconds()),
@@ -109,7 +110,6 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	}
 	//设置基本参数
 	w.server.SetName(conf.String("name", "cron.server"))
-	w.server.address = net.GetLocalIPAddress(conf.String("mask"))
 	w.conf = conf
 	return nil
 
@@ -137,7 +137,7 @@ func (w *hydraCronServer) handle(service, method, params string) func(task *Task
 
 //GetAddress 获取服务器地址
 func (w *hydraCronServer) GetAddress() string {
-	return w.server.address
+	return w.server.ip
 }
 
 //Start 启用服务

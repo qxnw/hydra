@@ -21,6 +21,7 @@ type hydraRPCServer struct {
 	server   *RPCServer
 	opts     []Option
 	conf     registry.Conf
+	logger   context.Logger
 	handler  context.EngineHandler
 	versions map[string]int32
 	mu       sync.Mutex
@@ -29,8 +30,9 @@ type hydraRPCServer struct {
 //newHydraRPCServer 构建基本配置参数的web server
 func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
+		logger:   logger,
 		versions: make(map[string]int32),
-		server:   NewRPCServer(conf.String("name", "rpc.server")),
+		server:   NewRPCServer(conf.String("name", "rpc.server"), WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
 	h.server.registry = r
 	err = h.setConf(conf)
@@ -45,7 +47,7 @@ func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 		delete(w.versions, k)
 	}
 	w.conf = nil
-	w.server = NewRPCServer(conf.String("name", "rpc.server"))
+	w.server = NewRPCServer(conf.String("name", "rpc.server"), WithLogger(w.logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
@@ -117,7 +119,6 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 	}
 	//设置基本参数
 	w.server.SetName(conf.String("name", "rpc.server"))
-	w.server.ip = net.GetLocalIPAddress(conf.String("mask"))
 	w.conf = conf
 	return nil
 }

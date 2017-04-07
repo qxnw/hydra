@@ -56,12 +56,12 @@ func (m *InfluxMetric) execute(task *Context) {
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Context) {
 	service := ctx.taskName
-	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.COUNTER, "server", ctx.server.address, "service", service)
-	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.address, "service", service)
+	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.COUNTER, "server", ctx.server.ip, "service", service)
+	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "service", service)
 
-	totalName := metrics.MakeName(ctx.server.serverName+".request", metrics.METER, "server", ctx.server.address, "service", service)
-	successName := metrics.MakeName(ctx.server.serverName+".success", metrics.METER, "server", ctx.server.address, "service", service)
-	failedName := metrics.MakeName(ctx.server.serverName+".failed", metrics.METER, "server", ctx.server.address, "service", service)
+	totalName := metrics.MakeName(ctx.server.serverName+".request", metrics.METER, "server", ctx.server.ip, "service", service)
+	successName := metrics.MakeName(ctx.server.serverName+".success", metrics.METER, "server", ctx.server.ip, "service", service)
+	failedName := metrics.MakeName(ctx.server.serverName+".failed", metrics.METER, "server", ctx.server.ip, "service", service)
 
 	process := metrics.GetOrRegisterCounter(processName, metrics.DefaultRegistry)
 	process.Inc(1)

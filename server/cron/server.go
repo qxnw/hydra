@@ -17,8 +17,10 @@ const (
 )
 
 type taskOption struct {
-	tp  int
-	max int
+	ip     string
+	tp     int
+	max    int
+	logger context.Logger
 }
 
 //TaskOption 任务设置选项
@@ -38,10 +40,24 @@ func WithCycle() TaskOption {
 	}
 }
 
+//WithIP 设置为循环执行任务
+func WithIP(ip string) TaskOption {
+	return func(o *taskOption) {
+		o.ip = ip
+	}
+}
+
 //WithMax 设置最大执行次数
 func WithMax(max int) TaskOption {
 	return func(o *taskOption) {
 		o.max = max
+	}
+}
+
+//WithLogger 设置日志记录组件
+func WithLogger(logger context.Logger) TaskOption {
+	return func(o *taskOption) {
+		o.logger = logger
 	}
 }
 
@@ -58,7 +74,6 @@ func (h HandlerFunc) Handle(ctx *Task) {
 //CronServer 基于HashedWheelTimer算法的定时任务
 type CronServer struct {
 	serverName string
-	address    string
 	logger     context.Logger
 	length     int
 	index      int
@@ -71,18 +86,24 @@ type CronServer struct {
 	registry   context.IServiceRegistry
 	handlers   []Handler
 	mu         sync.Mutex
+	*taskOption
 }
 
 //NewCronServer 构建定时任务
-func NewCronServer(name string, length int, span time.Duration, logger context.Logger) (w *CronServer) {
+func NewCronServer(name string, length int, span time.Duration, opts ...TaskOption) (w *CronServer) {
 	w = &CronServer{serverName: name, length: length, span: span, index: -1, startTime: time.Now()}
+	w.taskOption = &taskOption{}
 	w.close = make(chan struct{}, 1)
 	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([][]*Task, length, length)
 	w.metric = NewInfluxMetric()
 	w.handlers = append(w.handlers, w.metric)
 	w.handlers = append(w.handlers, []Handler{Logging(), Recovery()}...)
-	if logger == nil {
+	for _, opt := range opts {
+		opt(w.taskOption)
+	}
+
+	if w.logger == nil {
 		w.logger = NewLogger(name, os.Stdout)
 	}
 	return w

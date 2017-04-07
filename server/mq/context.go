@@ -1,5 +1,7 @@
 package mq
 
+import "github.com/qxnw/lib4go/mq"
+
 type Handler interface {
 	Handle(*Context)
 }
@@ -11,6 +13,7 @@ func (h HandlerFunc) Handle(ctx *Context) {
 }
 
 type Context struct {
+	msg        mq.IMessage
 	taskName   string
 	idx        int
 	server     *MQConsumer
