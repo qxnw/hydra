@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/qxnw/hydra/context"
 )
 
 //Version 系统版本号
@@ -51,6 +53,7 @@ var (
 type webServerOption struct {
 	ip        string
 	logger    Logger
+	register  context.IServiceRegistry
 	metric    *InfluxMetric
 	hostNames []string
 	host      Handler
@@ -150,6 +153,7 @@ func (t *WebServer) Run(address ...interface{}) error {
 	if err != nil {
 		t.logger.Error(err)
 	}
+	t.registerService()
 	return err
 }
 
@@ -163,6 +167,7 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 	if err != nil {
 		t.logger.Error(err)
 	}
+	t.registerService()
 	return err
 }
 
@@ -217,6 +222,7 @@ func New(name string, opts ...Option) *WebServer {
 
 //Shutdown shutdown server
 func (t *WebServer) Shutdown(timeout time.Duration) {
+	t.unRegisterService()
 	if t.server != nil {
 		xt, _ := ctx.WithTimeout(ctx.Background(), timeout)
 		t.server.Shutdown(xt)

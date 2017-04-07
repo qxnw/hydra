@@ -12,6 +12,8 @@ type process struct {
 
 //Request 客户端处理客户端请求
 func (r *process) Request(context context.Context, request *pb.RequestContext) (p *pb.ResponseContext, err error) {
+	r.srv.mu.RLock()
+	defer r.srv.mu.RUnlock()
 	ctx := &Context{}
 	ctx.server = r.srv
 	ctx.reset("REQUEST", context, request)
@@ -25,6 +27,8 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 
 //Request 客户端处理客户端请求
 func (r *process) Query(context context.Context, request *pb.RequestContext) (p *pb.ResponseContext, err error) {
+	r.srv.mu.RLock()
+	defer r.srv.mu.RUnlock()
 	ctx := &Context{}
 	ctx.server = r.srv
 	ctx.reset("QUERY", context, request)
@@ -50,6 +54,8 @@ func (r *process) Update(context context.Context, request *pb.RequestContext) (p
 
 //Request 客户端处理客户端请求
 func (r *process) Delete(context context.Context, request *pb.RequestContext) (p *pb.ResponseNoResultContext, err error) {
+	r.srv.mu.RLock()
+	defer r.srv.mu.RUnlock()
 	ctx := &Context{}
 	ctx.server = r.srv
 	ctx.reset("DELETE", context, request)
@@ -62,6 +68,8 @@ func (r *process) Delete(context context.Context, request *pb.RequestContext) (p
 
 //Request 客户端处理客户端请求
 func (r *process) Insert(context context.Context, request *pb.RequestContext) (p *pb.ResponseNoResultContext, err error) {
+	r.srv.mu.RLock()
+	defer r.srv.mu.RUnlock()
 	ctx := &Context{}
 	ctx.server = r.srv
 	ctx.reset("INSERT", context, request)

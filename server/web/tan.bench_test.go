@@ -2,14 +2,10 @@ package web
 
 import (
 	"errors"
-	"fmt"
 	"strings"
-	"testing"
-	"time"
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/lib4go/ut"
 )
 
 type benchtHandler struct {
@@ -32,6 +28,8 @@ func (h benchtHandler) GetPath(p string) (registry.Conf, error) {
 	}
 	return nil, errors.New("not find")
 }
+
+/*
 func TestNotify(t *testing.T) {
 	handler := &benchtHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr_b1, 100, handler.GetPath)
@@ -51,7 +49,7 @@ func TestNotify(t *testing.T) {
 	time.Sleep(time.Hour)
 
 }
-
+*/
 var confstr_b1 = `{
     "type": "api.server01",
     "name": "merchant.api",

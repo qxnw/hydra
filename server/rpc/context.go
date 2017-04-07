@@ -85,11 +85,6 @@ func (ctx *Context) Params() *hydra.Params {
 	return &ctx.params
 }
 
-func (ctx *Context) IP() string {
-
-	return "127.0.0.1"
-}
-
 func (ctx *Context) Action() interface{} {
 	ctx.newAction()
 	return ctx.action
@@ -158,7 +153,7 @@ func (ctx *Context) execute() {
 			ctx.Result = ret[0].Interface()
 		} else if len(ret) == 2 {
 			if code, ok := ret[0].Interface().(int); ok {
-				ctx.Result = &StatusResult{code, ret[1].Interface()}
+				ctx.Result = &StatusResult{code, ret[1].Interface(), JsonResponse}
 			}
 		}
 		// not route matched

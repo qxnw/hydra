@@ -379,6 +379,13 @@ func (ctx *Context) NotFound(message ...string) {
 	}
 	ctx.Abort(http.StatusNotFound, message[0])
 }
+func (ctx *Context) BadRequest(message ...string) {
+	if len(message) == 0 {
+		ctx.Abort(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return
+	}
+	ctx.Abort(http.StatusBadRequest, message[0])
+}
 
 // Abort is a helper method that sends an HTTP header and an optional
 // body. It is useful for returning 4xx or 5xx errors.

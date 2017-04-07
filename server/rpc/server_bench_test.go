@@ -7,11 +7,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/qxnw/lib4go/rpc/server/pb"
+	"github.com/qxnw/hydra/server/rpc/pb"
 )
 
 func BenchmarkItems(t *testing.B) {
-	srv := NewServer("rpc", "127.0.0.1:8989")
+	srv := NewRPCServer("rpc")
 	srv.Request("/:name/:request/:id", func(c *Context) string {
 		return c.Param("id")
 	})

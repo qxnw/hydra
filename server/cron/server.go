@@ -3,6 +3,10 @@ package cron
 import (
 	"sync"
 	"time"
+
+	"os"
+
+	"github.com/qxnw/hydra/context"
 )
 
 const (
@@ -12,14 +16,6 @@ const (
 	Cycle
 )
 
-//Task 任务
-type Task struct {
-	span     time.Duration
-	round    int
-	executed int
-	handle   func()
-	*taskOption
-}
 type taskOption struct {
 	tp  int
 	max int
@@ -49,52 +45,72 @@ func WithMax(max int) TaskOption {
 	}
 }
 
-//NewTask 构建执行任务
-func NewTask(span time.Duration, handle func(), opts ...TaskOption) *Task {
-	t := &Task{span: span, handle: handle, taskOption: &taskOption{}}
-	for _, opt := range opts {
-		opt(t.taskOption)
-	}
-	return t
+type Handler interface {
+	Handle(*Task)
+}
+
+type HandlerFunc func(ctx *Task)
+
+func (h HandlerFunc) Handle(ctx *Task) {
+	h(ctx)
 }
 
 //CronServer 基于HashedWheelTimer算法的定时任务
 type CronServer struct {
-	length    int
-	index     int
-	span      time.Duration
-	done      bool
-	close     chan struct{}
-	slots     [][]*Task
-	startTime time.Time
-	mu        sync.Mutex
+	serverName string
+	address    string
+	logger     context.Logger
+	length     int
+	index      int
+	metric     *InfluxMetric
+	span       time.Duration
+	done       bool
+	close      chan struct{}
+	slots      [][]*Task
+	startTime  time.Time
+	registry   context.IServiceRegistry
+	handlers   []Handler
+	mu         sync.Mutex
 }
 
 //NewCronServer 构建定时任务
-func NewCronServer(length int, span time.Duration) (w *CronServer) {
-	w = &CronServer{length: length, span: span, index: -1, startTime: time.Now()}
+func NewCronServer(name string, length int, span time.Duration, logger context.Logger) (w *CronServer) {
+	w = &CronServer{serverName: name, length: length, span: span, index: -1, startTime: time.Now()}
 	w.close = make(chan struct{}, 1)
+	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([][]*Task, length, length)
-	go w.move()
+	w.metric = NewInfluxMetric()
+	w.handlers = append(w.handlers, w.metric)
+	w.handlers = append(w.handlers, []Handler{Logging(), Recovery()}...)
+	if logger == nil {
+		w.logger = NewLogger(name, os.Stdout)
+	}
 	return w
 }
 func (w *CronServer) handle(task *Task) {
-	task.handle()
+	task.invoke()
 	if task.tp == Cycle && (task.max == 0 || task.executed < task.max) {
+		task.next = task.span
 		w.Add(task)
 	}
 }
+func (w *CronServer) Start() {
+	go w.move()
+}
 
 //GetOffset 获取当前任务的偏移量
-func (w *CronServer) getOffset(task *Task) (offset int, round int) {
-	deadline := time.Now().Add(task.span).Sub(w.startTime) //剩余时间
-	tick := int(deadline / w.span)                         //总格数
+func (w *CronServer) getOffset(span time.Duration) (offset int, round int) {
+	deadline := time.Now().Add(span).Sub(w.startTime) //剩余时间
+	tick := int(deadline / w.span)                    //总格数
 	remain := w.length - w.index - 1
 	offset = tick + w.index //相当于当前位置的偏移量
 	round = 0
 	if tick > remain {
 		round = (tick-remain)/w.length + 1
 		offset = (tick - remain) % w.length
+	}
+	if offset < 0 {
+		offset = 0
 	}
 	return
 }
@@ -103,7 +119,8 @@ func (w *CronServer) getOffset(task *Task) (offset int, round int) {
 func (w *CronServer) Add(task *Task) (offset int, round int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	offset, round = w.getOffset(task)
+	task.server = w
+	offset, round = w.getOffset(task.next)
 	task.round = round
 	w.slots[offset] = append(w.slots[offset], task)
 	return
@@ -120,6 +137,7 @@ func (w *CronServer) Reset() {
 func (w *CronServer) Close() {
 	w.done = true
 	w.close <- struct{}{}
+	w.slots = make([][]*Task, 0, 0)
 }
 func (w *CronServer) execute() {
 	w.startTime = time.Now()
@@ -146,4 +164,19 @@ START:
 			w.execute()
 		}
 	}
+}
+
+//SetInfluxMetric 重置metric
+func (w *CronServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
+	w.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+}
+
+//StopInfluxMetric stop metric
+func (w *CronServer) StopInfluxMetric() {
+	w.metric.Stop()
+}
+
+//SetName 设置组件的server name
+func (w *CronServer) SetName(name string) {
+	w.serverName = name
 }

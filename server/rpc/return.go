@@ -14,10 +14,11 @@ import (
 type StatusResult struct {
 	Code   int
 	Result interface{}
+	Type   int
 }
 
 const (
-	//AutoResponse = iota
+	AutoResponse = iota
 	JsonResponse = iota
 	XmlResponse
 )
@@ -111,7 +112,7 @@ func Return() HandlerFunc {
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
-					"content": res,
+					"data": res,
 				})
 			case []byte:
 				if statusCode == 0 {
@@ -119,7 +120,7 @@ func Return() HandlerFunc {
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
-					"content": string(res),
+					"data": string(res),
 				})
 			default:
 				if statusCode == 0 {

@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/qxnw/lib4go/rpc/server/pb"
+	"github.com/qxnw/hydra/server/rpc/pb"
 )
 
 func TestServer1(t *testing.T) {
-	srv := NewServer("rpc", "127.0.0.1:8989")
+	srv := NewRPCServer("rpc")
 	srv.Request("/:name/:request", func(c *Context) string {
 		return "OK"
 	})
@@ -23,7 +23,7 @@ func TestServer1(t *testing.T) {
 	expect(t, string(result.Result), "OK")
 }
 func TestServer2(t *testing.T) {
-	srv := NewServer("rpc", "127.0.0.1:8989")
+	srv := NewRPCServer("rpc")
 	srv.Request("/:name/:request", func(c *Context) string {
 		return "OK"
 	})
@@ -37,7 +37,7 @@ func TestServer2(t *testing.T) {
 }
 
 func TestServer3(t *testing.T) {
-	srv := NewServer("rpc", "127.0.0.1:8989")
+	srv := NewRPCServer("rpc")
 	srv.Insert("/:name/:request", func(c *Context) string {
 		return "OK"
 	})
@@ -50,7 +50,7 @@ func TestServer3(t *testing.T) {
 }
 
 func TestServer4(t *testing.T) {
-	srv := NewServer("rpc", "127.0.0.1:8989")
+	srv := NewRPCServer("rpc")
 	srv.Insert("/:name/:request", func(c *Context) {
 		c.NotFound()
 	})

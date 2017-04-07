@@ -1,10 +1,18 @@
 package mq
 
-import "github.com/qxnw/lib4go/mq"
+import (
+	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/mq"
+)
 
 //MQConsumer 消息消费队列服务器
 type MQConsumer struct {
-	consumer *mq.StompConsumer
+	consumer   *mq.StompConsumer
+	registry   context.IServiceRegistry
+	handlers   []Handler
+	serverName string
+	address    string
+	logger     context.Logger
 }
 
 //NewMQConsumer 构建服务器

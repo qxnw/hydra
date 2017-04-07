@@ -12,6 +12,13 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
+type rpcRouter struct {
+	Method      []string
+	Path        string
+	Handler     interface{}
+	Middlewares []Handler
+	params      map[string]string
+}
 type RouteType byte
 
 const (

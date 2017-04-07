@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"fmt"
 	"net"
 	"os/signal"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"os"
 
+	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/rpc/pb"
 	"google.golang.org/grpc"
 )
@@ -24,7 +26,10 @@ type RPCServer struct {
 	ctxPool    sync.Pool
 	ErrHandler Handler
 	*serverOption
+	port int
+	ip   string
 	Router
+	mu sync.RWMutex
 }
 
 //Version 获取当前版本号
@@ -35,9 +40,10 @@ func Version() string {
 type serverOption struct {
 	logger   Logger
 	handlers []Handler
+	metric   *InfluxMetric
 	limiter  *Limiter
 	services []string
-	register IServiceRegister
+	registry context.IServiceRegistry
 }
 
 //Option 配置选项
@@ -53,7 +59,9 @@ func WithServerLogger(logger Logger) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *serverOption) {
-		o.handlers = append(o.handlers, NewInfluxMetric(host, dataBase, userName, password, timeSpan))
+		o.metric = NewInfluxMetric()
+		o.handlers = append(o.handlers, o.metric)
+		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
 	}
 }
 
@@ -66,9 +74,9 @@ func WithLimiter(limit map[string]int) Option {
 }
 
 //WithRegister 设置服务注册组件
-func WithRegister(i IServiceRegister, services ...string) Option {
+func WithRegister(i context.IServiceRegistry, services ...string) Option {
 	return func(o *serverOption) {
-		o.register = i
+		o.registry = i
 		o.services = services
 	}
 }
@@ -92,16 +100,25 @@ var (
 )
 
 //NewRPCServer 初始化
-func NewRPCServer(name string, address string, opts ...Option) *RPCServer {
-	s := &RPCServer{serverName: name, address: getAddress(address), Router: NewRouter()}
+func NewRPCServer(name string, opts ...Option) *RPCServer {
+	s := &RPCServer{serverName: name, Router: NewRouter()}
 	s.serverOption = &serverOption{}
-	s.logger = NewLogger(os.Stdout)
+
 	s.process = &process{srv: s}
 	s.ErrHandler = Errors()
-	s.Use(ClassicHandlers...)
+
 	for _, opt := range opts {
 		opt(s.serverOption)
 	}
+	if s.logger == nil {
+		s.logger = NewLogger(name, os.Stdout)
+	}
+	if s.metric == nil {
+		s.metric = NewInfluxMetric()
+		s.handlers = append(s.handlers, s.metric)
+	}
+	s.Use(s.handlers...)
+	s.Use(ClassicHandlers...)
 	return s
 }
 
@@ -111,18 +128,23 @@ func (s *RPCServer) Use(handlers ...Handler) {
 }
 
 //Run 运行服务堵塞当前线程直到系统被中断退出
-func (s *RPCServer) Run() {
-	s.Start()
+func (s *RPCServer) Run(address string) (err error) {
+	err = s.Start(address)
+	if err != nil {
+		return
+	}
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
 	<-ch
 	s.Close()
+	return nil
 }
 
 //Start 启动RPC服务器
-func (s *RPCServer) Start() (err error) {
-	s.logger.Info("Listening on " + s.address)
-	lis, err := net.Listen("tcp", s.address)
+func (s *RPCServer) Start(address string) (err error) {
+	addr := s.getAddress(address)
+	s.logger.Info("Listening on " + addr)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return
 	}
@@ -135,14 +157,15 @@ func (s *RPCServer) Start() (err error) {
 	if err != nil {
 		return
 	}
-	register(s.register, s.services, s.address)
+	s.registerService()
 	return
 }
 
 //Close 关闭连接
 func (s *RPCServer) Close() {
-	unRegister(s.register, s.services, s.address)
+	s.unRegisterService()
 	if s.server != nil {
+		s.logger.Error("rpc: Server closed")
 		s.server.GracefulStop()
 	}
 }
@@ -156,6 +179,31 @@ func (s *RPCServer) Logger() Logger {
 func (s *RPCServer) UpdateLimiter(limit map[string]int) {
 	if s.limiter != nil {
 		s.limiter.Update(limit)
+	}
+}
+
+//SetInfluxMetric 重置metric
+func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
+	s.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+}
+
+//StopInfluxMetric stop metric
+func (s *RPCServer) StopInfluxMetric() {
+	s.metric.Stop()
+}
+
+//SetName 设置组件的server name
+func (s *RPCServer) SetName(name string) {
+	s.serverName = name
+}
+
+//SetRouters 设置路由规则
+func (s *RPCServer) SetRouters(routers ...*rpcRouter) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Router = NewRouter()
+	for _, v := range routers {
+		s.Route(v.Method, v.Path, v.Handler, v.Middlewares...)
 	}
 }
 
@@ -183,7 +231,7 @@ func (s *RPCServer) Delete(service string, c interface{}, middlewares ...Handler
 func (s *RPCServer) Update(service string, c interface{}, middlewares ...Handler) {
 	s.Route([]string{"UPDATE"}, service, c, middlewares...)
 }
-func getAddress(args ...interface{}) string {
+func (s *RPCServer) getAddress(args ...interface{}) string {
 	var host string
 	var port int
 
@@ -211,11 +259,21 @@ func getAddress(args ...interface{}) string {
 	}
 
 	if len(host) == 0 {
-		host = "0.0.0.0"
+		host = s.ip
+		if host == "" {
+			host = "0.0.0.0"
+		}
+
 	}
 	if port == 0 {
 		port = 8000
 	}
-
+	s.port = port
 	return host + ":" + strconv.FormatInt(int64(port), 10)
+}
+
+//GetAddress 获取当前服务地址
+func (s *RPCServer) GetAddress() string {
+	return fmt.Sprintf("%s:%d", s.ip, s.port)
+	//return fmt.Sprintf("tcp://%s:%d", s.ip, s.port)
 }

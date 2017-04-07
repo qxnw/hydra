@@ -32,8 +32,8 @@ func (n *nLogger) Fatalln(args ...interface{}) {
 	n.Fatal(args...)
 }
 
-func NewLogger(out io.Writer) Logger {
-	l := log.New(out, "[rpc] ", log.Ldefault())
+func NewLogger(name string, out io.Writer) Logger {
+	l := log.New(out, "["+name+"] ", log.Ldefault())
 	l.SetOutputLevel(log.Ldebug)
 	return &nLogger{Logger: l}
 }

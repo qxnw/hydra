@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"time"
+
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -24,6 +26,7 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 	if err != nil {
 		return
 	}
+	m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
 		data:      m,
 		cache:     make(map[string]interface{}),
@@ -35,6 +38,7 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 
 //NewJSONConfWithHandle 根据map和动态获取函数构建
 func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(path string) (Conf, error)) *JSONConf {
+	m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
 		data:      m,
 		cache:     make(map[string]interface{}),

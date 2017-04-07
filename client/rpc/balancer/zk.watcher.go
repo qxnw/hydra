@@ -34,7 +34,7 @@ func (w *ZKWatcher) Next() ([]*naming.Update, error) {
 	if !w.isInitialized {
 		// query addresses from etcd
 		servicePath := fmt.Sprintf("%s", w.re.service)
-		resp, err := w.client.GetChildren(servicePath)
+		resp, _, err := w.client.GetChildren(servicePath)
 		w.isInitialized = true
 		if err == nil {
 			addrs := w.extractAddrs(resp)
@@ -49,11 +49,16 @@ func (w *ZKWatcher) Next() ([]*naming.Update, error) {
 	}
 
 	// generate etcd Watcher
-	resp, err := w.client.WatchChildren(servicePath)
+	watcherCh, err := w.client.WatchChildren(servicePath)
 	if err != nil {
 		return nil, err
 	}
-	addrs := w.extractAddrs(resp)
+	watcher := <-watcherCh
+	if err = watcher.GetError(); err != nil {
+		return nil, err
+	}
+	chilren, _ := watcher.GetValue()
+	addrs := w.extractAddrs(chilren)
 	newCache := make(map[string]bool)
 	for i := 0; i < len(addrs); i++ {
 		if _, ok := w.caches[addrs[i]]; !ok {
