@@ -36,6 +36,12 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 	}, nil
 }
 
+func NewJSONConfWithEmpty() *JSONConf {
+	return NewJSONConfWithHandle(make(map[string]interface{}), 0, func(string) (Conf, error) {
+		return NewJSONConfWithEmpty(), nil
+	})
+}
+
 //NewJSONConfWithHandle 根据map和动态获取函数构建
 func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(path string) (Conf, error)) *JSONConf {
 	m["now"] = time.Now().Format("2006/01/02 15:04:05")
@@ -139,9 +145,13 @@ func (j *JSONConf) GetNode(section string) (r Conf, err error) {
 	if j.handle == nil {
 		return nil, errors.New("未指定NODE获取方式")
 	}
+	if value, ok := j.cache[section]; ok {
+		r = value.(Conf)
+		return
+	}
 	value := j.String(section)
 	if !strings.HasPrefix(value, "#") {
-		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s")
+		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s", section)
 	}
 	r, err = j.handle(j.Translate(value[1:]))
 	if err != nil {

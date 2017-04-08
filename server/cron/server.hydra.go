@@ -60,7 +60,10 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraCronServer) setConf(conf registry.Conf) error {
-	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
+	if w.conf == nil {
+		w.conf = registry.NewJSONConfWithEmpty()
+	}
+	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
 	//设置路由
@@ -68,8 +71,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if v, ok := w.versions["tasks"]; !ok || v != routers.GetVersion() {
-		w.versions["tasks"] = routers.GetVersion()
+	if r, ok := v.conf.GetNode("task"); ok && r.eGtVersion() != routers.GetVersion() || !ok {
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
 			return err
@@ -101,8 +103,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	}
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if v, ok := w.versions["metric"]; err == nil && (!ok || v != metric.GetVersion()) {
-		w.versions["metric"] = metric.GetVersion()
+	if r, ok := v.conf.GetNode("metric"); ok && r.eGtVersion() != metric.GetVersion() || !ok {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
