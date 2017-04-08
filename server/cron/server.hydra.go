@@ -11,6 +11,7 @@ import (
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
@@ -125,6 +126,7 @@ func (w *hydraCronServer) handle(service, method, params string) func(task *Task
 	return func(task *Task) error {
 		//处理输入参数
 		hydraContext := make(map[string]interface{})
+		hydraContext["__func_param_getter_"] = transform.NewGetter(utility.GetMapWithQuery(params))
 
 		//执行服务调用
 		response, err := w.handler.Handle(task.taskName, method, service, params, hydraContext)

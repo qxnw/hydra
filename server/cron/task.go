@@ -5,7 +5,7 @@ import "time"
 //Task 任务
 type Task struct {
 	taskName   string
-	params     interface{}
+	params     map[string]string
 	server     *CronServer
 	next       time.Duration
 	span       time.Duration
