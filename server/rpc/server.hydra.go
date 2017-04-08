@@ -19,7 +19,7 @@ import (
 //hydraWebServer web server适配器
 type hydraRPCServer struct {
 	server   *RPCServer
-	opts     []Option
+	registry context.IServiceRegistry
 	conf     registry.Conf
 	logger   context.Logger
 	handler  context.EngineHandler
@@ -31,10 +31,13 @@ type hydraRPCServer struct {
 func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		logger:   logger,
+		registry: r,
 		versions: make(map[string]int32),
-		server:   NewRPCServer(conf.String("name", "rpc.server"), WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask")))),
+		server: NewRPCServer(conf.String("name", "rpc.server"),
+			WithRegistry(r),
+			WithLogger(logger),
+			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
-	h.server.registry = r
 	err = h.setConf(conf)
 	return
 }
@@ -46,14 +49,15 @@ func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 	for k := range w.versions {
 		delete(w.versions, k)
 	}
-	w.conf = nil
-	w.server = NewRPCServer(conf.String("name", "rpc.server"), WithLogger(w.logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+	w.server = NewRPCServer(conf.String("name", "rpc.server"),
+		WithRegistry(w.registry),
+		WithLogger(w.logger),
+		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
 	}
-	w.Start()
-	return
+	return w.Start()
 }
 
 //SetConf 设置配置参数
@@ -117,6 +121,25 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 		}
 		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
 	}
+	limiter, err := conf.GetNode("limiter")
+	if v, ok := w.versions["limiter"]; err == nil && (!ok || v != limiter.GetVersion()) {
+		w.versions["limiter"] = limiter.GetVersion()
+		lmts, err := limiter.GetSections("qos")
+		if err != nil {
+			return err
+		}
+		limiters:=map[string]int
+		for _,v:=range lmts{
+			name:=v.String("name")
+			lm,err:=v.Int("value")
+			if err!=nil{
+				return fmt.Errorf("limiter配置错误:qos.value值必须为数字（%s）", v.String(max))
+			}
+			limiters[name]=lm
+		}
+		w.server.UpdateLimiter(limiters)
+	}
+
 	//设置基本参数
 	w.server.SetName(conf.String("name", "rpc.server"))
 	w.conf = conf
@@ -173,10 +196,7 @@ func (w *hydraRPCServer) Notify(conf registry.Conf) error {
 	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
 		return errors.New("版本无变化")
 	}
-	oldHost := w.conf.String("address")
-	newHost := conf.String("address")
-
-	if oldHost != newHost { //服务器地址已变化，则重新启动新的server,并停止当前server
+	if w.conf != nil && w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
 		return w.restartServer(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效

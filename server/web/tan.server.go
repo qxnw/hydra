@@ -20,21 +20,23 @@ import (
 //hydraWebServer web server适配器
 type hydraWebServer struct {
 	server   *WebServer
-	opts     []Option
 	conf     registry.Conf
+	registry context.IServiceRegistry
 	handler  context.EngineHandler
 	versions map[string]int32
 	mu       sync.Mutex
 }
 
 //newHydraWebServer 构建基本配置参数的web server
-func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler context.EngineHandler, registry context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		versions: make(map[string]int32),
-		server:   New(conf.String("name", "api.server"), WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
-	h.server.register = r
+		registry: registry,
+		server: New(conf.String("name", "api.server"),
+			WithRegistry(registry),
+			WithLogger(logger),
+			WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
 	err = h.setConf(conf)
-
 	return
 }
 
@@ -44,14 +46,15 @@ func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 	for k := range w.versions {
 		delete(w.versions, k)
 	}
-	w.conf = nil
-	w.server = New(conf.String("name", "api.server"), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+	w.server = New(conf.String("name", "api.server"),
+		WithRegistry(w.registry),
+		WithLogger(w.logger),
+		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
 	}
-	w.Start()
-	return
+	return w.Start()
 }
 
 //SetConf 设置配置参数
@@ -200,10 +203,8 @@ func (w *hydraWebServer) Notify(conf registry.Conf) error {
 	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
 		return errors.New("版本无变化")
 	}
-	oldHost := w.conf.String("address")
-	newHost := conf.String("address")
 
-	if oldHost != newHost { //服务器地址已变化，则重新启动新的server,并停止当前server
+	if w.conf != nil && w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
 		return w.restartServer(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效

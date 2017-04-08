@@ -60,8 +60,6 @@ func WithLogger(logger Logger) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *serverOption) {
-		o.metric = NewInfluxMetric()
-		o.handlers = append(o.handlers, o.metric)
 		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
 	}
 }
@@ -76,15 +74,20 @@ func WithIP(ip string) Option {
 //WithLimiter 设置流量限制组件
 func WithLimiter(limit map[string]int) Option {
 	return func(o *serverOption) {
-		o.limiter = NewLimiter(limit)
 		o.handlers = append(o.handlers, o.limiter)
 	}
 }
 
 //WithRegister 设置服务注册组件
-func WithRegister(i context.IServiceRegistry, services ...string) Option {
+func WithRegister(i context.IServiceRegistry) Option {
 	return func(o *serverOption) {
 		o.registry = i
+	}
+}
+
+//WithServices 设置服务注册组件
+func WithServices(services ...string) Option {
+	return func(o *serverOption) {
 		o.services = services
 	}
 }
@@ -110,7 +113,7 @@ var (
 //NewRPCServer 初始化
 func NewRPCServer(name string, opts ...Option) *RPCServer {
 	s := &RPCServer{serverName: name, Router: NewRouter()}
-	s.serverOption = &serverOption{}
+	s.serverOption = &serverOption{logger: NewLogger(name, os.Stdout), metric: NewInfluxMetric(),limiter:NewLimiter(map[string]int{}}
 
 	s.process = &process{srv: s}
 	s.ErrHandler = Errors()
@@ -118,15 +121,14 @@ func NewRPCServer(name string, opts ...Option) *RPCServer {
 	for _, opt := range opts {
 		opt(s.serverOption)
 	}
-	if s.logger == nil {
-		s.logger = NewLogger(name, os.Stdout)
-	}
-	if s.metric == nil {
-		s.metric = NewInfluxMetric()
-		s.handlers = append(s.handlers, s.metric)
-	}
-	s.Use(s.handlers...)
-	s.Use(ClassicHandlers...)
+	s.Use(Logging(),
+		Recovery(false),
+		s.metric,
+		s.limiter,
+		s.handlers...,
+		Return(),
+		Param(),
+		Contexts())
 	return s
 }
 

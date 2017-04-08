@@ -17,6 +17,7 @@ import (
 type hydraMQConsumer struct {
 	server   *MQConsumer
 	logger   context.Logger
+	registry context.IServiceRegistry
 	conf     registry.Conf
 	handler  context.EngineHandler
 	versions map[string]int32
@@ -27,13 +28,18 @@ type hydraMQConsumer struct {
 func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		logger:   logger,
+		registry: r,
 		versions: make(map[string]int32),
 	}
-	h.server, err = NewMQConsumer(conf.String("name", "mq.consumer"), conf.String("address"), conf.String("version"), WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+	h.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
+		conf.String("address"),
+		conf.String("version"),
+		WithLogger(logger),
+		WithRegister(r),
+		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
 		return
 	}
-	h.server.registry = r
 	err = h.setConf(conf)
 	return
 }
@@ -44,8 +50,13 @@ func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 	for k := range w.versions {
 		delete(w.versions, k)
 	}
-	w.conf = nil
-	w.server, err = NewMQConsumer(conf.String("name", "mq.consumer"), conf.String("address"), conf.String("version"), WithLogger(w.logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+
+	w.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
+		conf.String("address"),
+		conf.String("version"),
+		WithLogger(w.logger),
+		WithRegister(w.registry),
+		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
 		return
 	}
@@ -53,8 +64,7 @@ func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 	if err != nil {
 		return
 	}
-	w.Start()
-	return
+	return w.Start()
 }
 
 //SetConf 设置配置参数
@@ -75,12 +85,12 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 		}
 		queues := make([]task, 0, len(rts))
 		for _, c := range rts {
-			queue := c.String("queue")
+			queue := c.String("name")
 			service := c.String("service")
 			method := c.String("method")
 			params := c.String("params")
 			if queue == "" || service == "" || method == "" {
-				return fmt.Errorf("queue配置错误:service 和 queue不能为空（queue:%s，service:%s）", queue, service)
+				return fmt.Errorf("queue配置错误:service 和 name不能为空（name:%s，service:%s）", queue, service)
 			}
 			queues = append(queues, task{name: queue, service: service, method: method, params: params})
 		}
@@ -147,7 +157,6 @@ func (w *hydraMQConsumer) Notify(conf registry.Conf) error {
 		return errors.New("版本无变化")
 	}
 	return w.restartServer(conf)
-
 }
 
 //Shutdown 关闭服务

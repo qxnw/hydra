@@ -17,10 +17,12 @@ const (
 )
 
 type taskOption struct {
-	ip     string
-	tp     int
-	max    int
-	logger context.Logger
+	ip       string
+	tp       int
+	max      int
+	logger   context.Logger
+	registry context.IServiceRegistry
+	metric   *InfluxMetric
 }
 
 //TaskOption 任务设置选项
@@ -44,6 +46,13 @@ func WithCycle() TaskOption {
 func WithIP(ip string) TaskOption {
 	return func(o *taskOption) {
 		o.ip = ip
+	}
+}
+
+//WithRegister 设置服务注册组件
+func WithRegister(i context.IServiceRegistry) TaskOption {
+	return func(o *taskOption) {
+		o.registry = i
 	}
 }
 
@@ -74,38 +83,31 @@ func (h HandlerFunc) Handle(ctx *Task) {
 //CronServer 基于HashedWheelTimer算法的定时任务
 type CronServer struct {
 	serverName string
-	logger     context.Logger
 	length     int
 	index      int
-	metric     *InfluxMetric
-	span       time.Duration
-	done       bool
-	close      chan struct{}
-	slots      [][]*Task
-	startTime  time.Time
-	registry   context.IServiceRegistry
-	handlers   []Handler
-	mu         sync.Mutex
+
+	span      time.Duration
+	done      bool
+	close     chan struct{}
+	slots     [][]*Task
+	startTime time.Time
+
+	handlers []Handler
+	mu       sync.Mutex
 	*taskOption
 }
 
 //NewCronServer 构建定时任务
 func NewCronServer(name string, length int, span time.Duration, opts ...TaskOption) (w *CronServer) {
 	w = &CronServer{serverName: name, length: length, span: span, index: -1, startTime: time.Now()}
-	w.taskOption = &taskOption{}
+	w.taskOption = &taskOption{metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)}
 	w.close = make(chan struct{}, 1)
 	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([][]*Task, length, length)
-	w.metric = NewInfluxMetric()
-	w.handlers = append(w.handlers, w.metric)
-	w.handlers = append(w.handlers, []Handler{Logging(), Recovery()}...)
 	for _, opt := range opts {
 		opt(w.taskOption)
 	}
-
-	if w.logger == nil {
-		w.logger = NewLogger(name, os.Stdout)
-	}
+	w.handlers = append(w.handlers, Logging(), Recovery(), w.metric)
 	return w
 }
 func (w *CronServer) handle(task *Task) {

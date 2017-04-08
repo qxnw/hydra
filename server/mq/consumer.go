@@ -9,9 +9,10 @@ import (
 )
 
 type taskOption struct {
-	metric *InfluxMetric
-	ip     string
-	logger context.Logger
+	metric   *InfluxMetric
+	ip       string
+	logger   context.Logger
+	registry context.IServiceRegistry
 }
 
 //TaskOption 任务设置选项
@@ -21,6 +22,13 @@ type TaskOption func(*taskOption)
 func WithLogger(logger context.Logger) TaskOption {
 	return func(o *taskOption) {
 		o.logger = logger
+	}
+}
+
+//WithRegister 设置服务注册组件
+func WithRegister(i context.IServiceRegistry) Option {
+	return func(o *serverOption) {
+		o.registry = i
 	}
 }
 
@@ -34,7 +42,6 @@ func WithIP(ip string) TaskOption {
 //MQConsumer 消息消费队列服务器
 type MQConsumer struct {
 	consumer   *mq.StompConsumer
-	registry   context.IServiceRegistry
 	handlers   []Handler
 	serverName string
 	*taskOption
@@ -42,18 +49,16 @@ type MQConsumer struct {
 
 //NewMQConsumer 构建服务器
 func NewMQConsumer(name string, address string, version string, opts ...TaskOption) (s *MQConsumer, err error) {
-	s = &MQConsumer{serverName: name}
-	s.taskOption = &taskOption{}
-	s.handlers = make([]Handler, 3)
+	s = &MQConsumer{serverName: name, handlers: make([]Handler, 3)}
+	s.taskOption = &taskOption{logger: NewLogger(name, os.Stdout), metric: NewInfluxMetric()}
 	for _, opt := range opts {
 		opt(s.taskOption)
 	}
-	if s.taskOption.logger == nil {
-		s.taskOption.logger = NewLogger(name, os.Stdout)
-	}
-	s.taskOption.metric = NewInfluxMetric()
-	s.handlers = append(s.handlers, s.metric)
-	s.handlers = append(s.handlers, []Handler{Logging(), Recovery()}...)
+	s.handlers = append(s.handlers,
+		Logging(),
+		Recovery(),
+		s.metric)
+
 	s.consumer, err = mq.NewStompConsumer(mq.ConsumerConfig{Address: address, Version: version, Persistent: "persistent"})
 	return
 }
@@ -83,7 +88,7 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 	return s.consumer.Consume(queue, func(m mq.IMessage) {
 		r := &Context{msg: m, server: s, params: m.GetMessage(), handle: handle}
 		r.invoke()
-		if r.err == nil {
+		if r.err == nil && r.statusCode == 200 {
 			m.Ack()
 		}
 	})

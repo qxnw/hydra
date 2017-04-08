@@ -79,9 +79,6 @@ func WithIP(ip string) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *webServerOption) {
-		if o.metric == nil {
-			o.metric = NewInfluxMetric()
-		}
 		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
 	}
 }
@@ -89,11 +86,14 @@ func WithInfluxMetric(host string, dataBase string, userName string, password st
 //WithHost 添加插件
 func WithHost(host string) Option {
 	return func(o *webServerOption) {
-		if o.host == nil {
-			o.host = Host()
-		}
 		o.hostNames = strings.Split(host, ",")
+	}
+}
 
+//WithRegistry 添加服务注册组件
+func WithRegistry(r context.IServiceRegistry) Option {
+	return func(o *webServerOption) {
+		o.register = r
 	}
 }
 
@@ -175,34 +175,24 @@ func New(name string, opts ...Option) *WebServer {
 	t := &WebServer{
 		serverName:      name,
 		Router:          NewRouter(),
-		handlers:        make([]Handler, 0),
 		ErrHandler:      Errors(),
-		webServerOption: &webServerOption{},
+		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)},
 	}
 	//转换配置项
 	for _, opt := range opts {
 		opt(t.webServerOption)
 	}
-	//设置日志
-	if t.webServerOption.logger == nil {
-		t.webServerOption.logger = NewLogger(name, os.Stdout)
-	}
+	handlers = append(handlers,
+		Logging(),
+		t.webServerOption.host,
+		t.webServerOption.metric,
+		Compresses([]string{}),
+		Static(StaticOptions{Prefix: "public"}),
+		Return(),
+		Param(),
+		Contexts(),
+		t.webServerOption.handlers...)
 
-	//处理外部插件
-	if t.webServerOption.host == nil {
-		t.webServerOption.host = Host()
-	}
-	if t.webServerOption.metric == nil {
-		t.webServerOption.metric = NewInfluxMetric()
-	}
-
-	handlers := make([]Handler, 0, len(t.webServerOption.handlers)+len(ClassicHandlers)+2)
-	handlers = append(handlers, t.webServerOption.host)
-	handlers = append(handlers, t.webServerOption.metric)
-	if len(t.webServerOption.handlers) > 0 {
-		handlers = append(handlers, t.webServerOption.handlers...)
-	}
-	handlers = append(handlers, ClassicHandlers...)
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
 		return &Context{

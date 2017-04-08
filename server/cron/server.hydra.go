@@ -28,9 +28,13 @@ func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistr
 	h = &hydraCronServer{handler: handler,
 		logger:   logger,
 		versions: make(map[string]int32),
-		server:   NewCronServer(conf.String("name", "cron.server"), 60, time.Second, WithLogger(logger), WithIP(net.GetLocalIPAddress(conf.String("mask")))),
+		server: NewCronServer(conf.String("name", "cron.server"),
+			60,
+			time.Second,
+			WithRegistry(r),
+			WithLogger(logger),
+			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
-	h.server.registry = r
 	err = h.setConf(conf)
 	return
 }
@@ -41,15 +45,17 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 	for k := range w.versions {
 		delete(w.versions, k)
 	}
-	w.conf = nil
-	w.server = NewCronServer(conf.String("name", "cron.server"), 60,
-		time.Second, WithLogger(w.logger), WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+	w.server = NewCronServer(conf.String("name", "cron.server"),
+		60,
+		time.Second,
+		WithRegister(w.registry),
+		WithLogger(w.logger),
+		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
 	}
-	w.Start()
-	return
+	return w.Start()
 }
 
 //SetConf 设置配置参数

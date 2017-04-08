@@ -81,7 +81,7 @@ var metricStr1 = `{
 var queue1 = `{
     "queues": [
         {
-            "queue": "hydra",     
+            "name": "hydra",     
             "service": "/order/request",
 			"method": "request",
             "params": "db=@domain/var/db/influxdb"
