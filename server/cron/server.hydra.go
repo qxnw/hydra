@@ -80,7 +80,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 			params := c.String("params")
 			service := c.String("service")
 			method := c.String("method")
-			interval, err := time.ParseDuration(c.String("interval"))
+			interval, err := time.ParseDuration(c.String("interval", -1))
 			if err != nil {
 				return fmt.Errorf("task配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
 			}

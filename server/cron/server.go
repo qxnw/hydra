@@ -9,17 +9,8 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-const (
-	//Once 单次执行任务
-	Once = iota
-	//Cycle 循环执行任务
-	Cycle
-)
-
 type taskOption struct {
 	ip       string
-	tp       int
-	max      int
 	logger   context.Logger
 	registry context.IServiceRegistry
 	metric   *InfluxMetric
@@ -27,20 +18,6 @@ type taskOption struct {
 
 //TaskOption 任务设置选项
 type TaskOption func(*taskOption)
-
-//WithOnce 设置为单次执行任务
-func WithOnce() TaskOption {
-	return func(o *taskOption) {
-		o.tp = Once
-	}
-}
-
-//WithCycle 设置为循环执行任务
-func WithCycle() TaskOption {
-	return func(o *taskOption) {
-		o.tp = Cycle
-	}
-}
 
 //WithIP 设置为循环执行任务
 func WithIP(ip string) TaskOption {
@@ -53,13 +30,6 @@ func WithIP(ip string) TaskOption {
 func WithRegister(i context.IServiceRegistry) TaskOption {
 	return func(o *taskOption) {
 		o.registry = i
-	}
-}
-
-//WithMax 设置最大执行次数
-func WithMax(max int) TaskOption {
-	return func(o *taskOption) {
-		o.max = max
 	}
 }
 
@@ -85,12 +55,11 @@ type CronServer struct {
 	serverName string
 	length     int
 	index      int
-
-	span      time.Duration
-	done      bool
-	close     chan struct{}
-	slots     [][]*Task
-	startTime time.Time
+	span       time.Duration
+	done       bool
+	close      chan struct{}
+	slots      [][]*Task
+	startTime  time.Time
 
 	handlers []Handler
 	mu       sync.Mutex
@@ -112,11 +81,13 @@ func NewCronServer(name string, length int, span time.Duration, opts ...TaskOpti
 }
 func (w *CronServer) handle(task *Task) {
 	task.invoke()
-	if task.tp == Cycle && (task.max == 0 || task.executed < task.max) {
+	if task.span >= 0 {
 		task.next = task.span
 		w.Add(task)
 	}
 }
+
+//Start start cron server
 func (w *CronServer) Start() {
 	go w.move()
 }
