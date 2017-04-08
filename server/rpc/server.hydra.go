@@ -23,7 +23,6 @@ type hydraRPCServer struct {
 	conf     registry.Conf
 	logger   context.Logger
 	handler  context.EngineHandler
-	versions map[string]int32
 	mu       sync.Mutex
 }
 
@@ -32,7 +31,6 @@ func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry
 	h = &hydraRPCServer{handler: handler,
 		logger:   logger,
 		registry: r,
-		versions: make(map[string]int32),
 		server: NewRPCServer(conf.String("name", "rpc.server"),
 			WithRegistry(r),
 			WithLogger(logger),
@@ -73,7 +71,7 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("router"); ok && r.eGtVersion() != routers.GetVersion()|| !ok  {
+	if r, ok := v.conf.GetNode("router"); ok && r.GetVersion() != routers.GetVersion()|| !ok  {
 		w.versions["routers"] = routers.GetVersion()
 		rts, err := routers.GetSections("routers")
 		if err != nil {
@@ -112,7 +110,7 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.eGtVersion() != metric.GetVersion() || !ok {
+	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")

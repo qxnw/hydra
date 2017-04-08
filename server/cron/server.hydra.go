@@ -15,19 +15,17 @@ import (
 
 //hydraWebServer web server适配器
 type hydraCronServer struct {
-	server   *CronServer
-	logger   context.Logger
-	conf     registry.Conf
-	handler  context.EngineHandler
-	versions map[string]int32
-	mu       sync.Mutex
+	server  *CronServer
+	logger  context.Logger
+	conf    registry.Conf
+	handler context.EngineHandler
+	mu      sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
 func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
-		logger:   logger,
-		versions: make(map[string]int32),
+		logger: logger,
 		server: NewCronServer(conf.String("name", "cron.server"),
 			60,
 			time.Second,
@@ -71,7 +69,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("task"); ok && r.eGtVersion() != routers.GetVersion() || !ok {
+	if r, ok := v.conf.GetNode("task"); ok && r.GetVersion() != routers.GetVersion() || !ok {
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
 			return err
@@ -103,7 +101,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	}
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.eGtVersion() != metric.GetVersion() || !ok {
+	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")

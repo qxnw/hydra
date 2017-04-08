@@ -23,14 +23,12 @@ type hydraWebServer struct {
 	conf     registry.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
-	versions map[string]int32
 	mu       sync.Mutex
 }
 
 //newHydraWebServer 构建基本配置参数的web server
 func newHydraWebServer(handler context.EngineHandler, registry context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
-		versions: make(map[string]int32),
 		registry: registry,
 		server: New(conf.String("name", "api.server"),
 			WithRegistry(registry),
@@ -70,7 +68,7 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("router"); ok && r.eGtVersion() != routers.GetVersion() || !ok {
+	if r, ok := v.conf.GetNode("router"); ok && r.GetVersion() != routers.GetVersion() || !ok {
 		rts, err := routers.GetSections("routers")
 		if err != nil {
 			return err
@@ -108,7 +106,7 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.eGtVersion() != metric.GetVersion() || !ok {
+	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
