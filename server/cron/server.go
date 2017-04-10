@@ -9,33 +9,33 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-type taskOption struct {
+type cronOption struct {
 	ip       string
 	logger   context.Logger
 	registry context.IServiceRegistry
 	metric   *InfluxMetric
 }
 
-//TaskOption 任务设置选项
-type TaskOption func(*taskOption)
+//CronOption 任务设置选项
+type CronOption func(*cronOption)
 
 //WithIP 设置为循环执行任务
-func WithIP(ip string) TaskOption {
-	return func(o *taskOption) {
+func WithIP(ip string) CronOption {
+	return func(o *cronOption) {
 		o.ip = ip
 	}
 }
 
-//WithRegister 设置服务注册组件
-func WithRegister(i context.IServiceRegistry) TaskOption {
-	return func(o *taskOption) {
+//WithRegistry 设置服务注册组件
+func WithRegistry(i context.IServiceRegistry) CronOption {
+	return func(o *cronOption) {
 		o.registry = i
 	}
 }
 
 //WithLogger 设置日志记录组件
-func WithLogger(logger context.Logger) TaskOption {
-	return func(o *taskOption) {
+func WithLogger(logger context.Logger) CronOption {
+	return func(o *cronOption) {
 		o.logger = logger
 	}
 }
@@ -63,18 +63,18 @@ type CronServer struct {
 
 	handlers []Handler
 	mu       sync.Mutex
-	*taskOption
+	*cronOption
 }
 
 //NewCronServer 构建定时任务
-func NewCronServer(name string, length int, span time.Duration, opts ...TaskOption) (w *CronServer) {
+func NewCronServer(name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
 	w = &CronServer{serverName: name, length: length, span: span, index: -1, startTime: time.Now()}
-	w.taskOption = &taskOption{metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)}
+	w.cronOption = &cronOption{metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)}
 	w.close = make(chan struct{}, 1)
 	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([][]*Task, length, length)
 	for _, opt := range opts {
-		opt(w.taskOption)
+		opt(w.cronOption)
 	}
 	w.handlers = append(w.handlers, Logging(), Recovery(), w.metric)
 	return w

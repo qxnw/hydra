@@ -27,13 +27,14 @@ type hydraMQConsumer struct {
 func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		logger:   logger,
+		conf:     registry.NewJSONConfWithEmpty(),
 		registry: r,
 	}
 	h.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
 		conf.String("address"),
 		conf.String("version"),
 		WithLogger(logger),
-		WithRegister(r),
+		WithRegistry(r),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
 		return
@@ -45,15 +46,11 @@ func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistr
 //restartServer 重启服务器
 func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 	w.Shutdown()
-	for k := range w.versions {
-		delete(w.versions, k)
-	}
-
 	w.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
 		conf.String("address"),
 		conf.String("version"),
 		WithLogger(w.logger),
-		WithRegister(w.registry),
+		WithRegistry(w.registry),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
 		return
@@ -67,9 +64,6 @@ func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
-	if w.conf == nil {
-		w.conf = registry.NewJSONConfWithEmpty()
-	}
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -78,10 +72,10 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("queue"); ok && r.GetVersion() != routers.GetVersion() || !ok {
+	if r, err := w.conf.GetNode("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("queues")
 		if err != nil {
-			return err
+			return fmt.Errorf("queues未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 		}
 		queues := make([]task, 0, len(rts))
 		for _, c := range rts {
@@ -101,7 +95,10 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 	}
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
+	if err != nil {
+		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")

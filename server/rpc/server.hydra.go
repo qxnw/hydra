@@ -30,6 +30,7 @@ type hydraRPCServer struct {
 func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		logger:   logger,
+		conf:     registry.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewRPCServer(conf.String("name", "rpc.server"),
 			WithRegistry(r),
@@ -44,9 +45,6 @@ func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry
 func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	for k := range w.versions {
-		delete(w.versions, k)
-	}
 	w.server = NewRPCServer(conf.String("name", "rpc.server"),
 		WithRegistry(w.registry),
 		WithLogger(w.logger),
@@ -60,22 +58,18 @@ func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraRPCServer) setConf(conf registry.Conf) error {
-	if w.conf == nil {
-		w.conf = registry.NewJSONConfWithEmpty()
-	}
-	if  w.conf.GetVersion() == conf.GetVersion() {
+	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
 	//设置路由
 	routers, err := conf.GetNode("router")
 	if err != nil {
-		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		return fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("router"); ok && r.GetVersion() != routers.GetVersion()|| !ok  {
-		w.versions["routers"] = routers.GetVersion()
+	if r, err := w.conf.GetNode("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("routers")
 		if err != nil {
-			return err
+			return fmt.Errorf("routers未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
 		routers := make([]*rpcRouter, 0, len(rts))
 		for _, c := range rts {
@@ -110,7 +104,10 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
+	if err != nil {
+		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
@@ -122,20 +119,22 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
 	}
 	limiter, err := conf.GetNode("limiter")
-	if r, ok := v.conf.GetNode("limiter"); ok && r.eGtVersion() != limiter.GetVersion() || !ok {
-		w.versions["limiter"] = limiter.GetVersion()
+	if err != nil {
+		return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNode("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
 		lmts, err := limiter.GetSections("qos")
 		if err != nil {
-			return err
+			return fmt.Errorf("qos未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		limiters:=map[string]int
-		for _,v:=range lmts{
-			name:=v.String("name")
-			lm,err:=v.Int("value")
-			if err!=nil{
-				return fmt.Errorf("limiter配置错误:qos.value值必须为数字（%s）", v.String(max))
+		limiters := map[string]int{}
+		for _, v := range lmts {
+			name := v.String("name")
+			lm, err := v.Int("value")
+			if err != nil {
+				return fmt.Errorf("limiter配置错误:qos.value值必须为数字（%s）", v.String("value"))
 			}
-			limiters[name]=lm
+			limiters[name] = lm
 		}
 		w.server.UpdateLimiter(limiters)
 	}

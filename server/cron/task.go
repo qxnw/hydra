@@ -5,7 +5,7 @@ import "time"
 //Task 任务
 type Task struct {
 	taskName   string
-	params     map[string]string
+	params     interface{}
 	server     *CronServer
 	next       time.Duration
 	span       time.Duration
@@ -16,15 +16,12 @@ type Task struct {
 	err        error
 	Result     interface{}
 	statusCode int
-	*taskOption
 }
 
 //NewTask 构建执行任务
-func NewTask(taskName string, next time.Duration, span time.Duration, handle func(*Task) error, params interface{}, opts ...TaskOption) *Task {
-	t := &Task{taskName: taskName, span: span, next: next, params: params, handle: handle, taskOption: &taskOption{}}
-	for _, opt := range opts {
-		opt(t.taskOption)
-	}
+func NewTask(taskName string, next time.Duration, span time.Duration, handle func(*Task) error, params interface{}) *Task {
+	t := &Task{taskName: taskName, span: span, next: next, params: params, handle: handle}
+
 	return t
 }
 func (ctx *Task) Next() {

@@ -182,6 +182,7 @@ func New(name string, opts ...Option) *WebServer {
 	for _, opt := range opts {
 		opt(t.webServerOption)
 	}
+	handlers := make([]Handler, 0, 8)
 	handlers = append(handlers,
 		Logging(),
 		t.webServerOption.host,
@@ -190,9 +191,8 @@ func New(name string, opts ...Option) *WebServer {
 		Static(StaticOptions{Prefix: "public"}),
 		Return(),
 		Param(),
-		Contexts(),
-		t.webServerOption.handlers...)
-
+		Contexts())
+	handlers = append(handlers, t.webServerOption.handlers...)
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
 		return &Context{

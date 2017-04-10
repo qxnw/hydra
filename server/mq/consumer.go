@@ -25,9 +25,9 @@ func WithLogger(logger context.Logger) TaskOption {
 	}
 }
 
-//WithRegister 设置服务注册组件
-func WithRegister(i context.IServiceRegistry) Option {
-	return func(o *serverOption) {
+//WithRegistry 设置服务注册组件
+func WithRegistry(i context.IServiceRegistry) TaskOption {
+	return func(o *taskOption) {
 		o.registry = i
 	}
 }

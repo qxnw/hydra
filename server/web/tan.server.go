@@ -20,6 +20,7 @@ import (
 //hydraWebServer web server适配器
 type hydraWebServer struct {
 	server   *WebServer
+	logger   context.Logger
 	conf     registry.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
@@ -30,6 +31,7 @@ type hydraWebServer struct {
 func newHydraWebServer(handler context.EngineHandler, registry context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		registry: registry,
+		logger:   logger,
 		server: New(conf.String("name", "api.server"),
 			WithRegistry(registry),
 			WithLogger(logger),
@@ -41,9 +43,6 @@ func newHydraWebServer(handler context.EngineHandler, registry context.IServiceR
 func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	for k := range w.versions {
-		delete(w.versions, k)
-	}
 	w.server = New(conf.String("name", "api.server"),
 		WithRegistry(w.registry),
 		WithLogger(w.logger),
@@ -68,7 +67,7 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 	if err != nil {
 		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("router"); ok && r.GetVersion() != routers.GetVersion() || !ok {
+	if r, err := w.conf.GetNode("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("routers")
 		if err != nil {
 			return err
@@ -106,7 +105,10 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
+	if err != nil {
+		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")

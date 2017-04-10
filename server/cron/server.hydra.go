@@ -11,22 +11,26 @@ import (
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
 type hydraCronServer struct {
-	server  *CronServer
-	logger  context.Logger
-	conf    registry.Conf
-	handler context.EngineHandler
-	mu      sync.Mutex
+	server   *CronServer
+	logger   context.Logger
+	conf     registry.Conf
+	registry context.IServiceRegistry
+	handler  context.EngineHandler
+	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
 func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
-		logger: logger,
+		logger:   logger,
+		conf:     registry.NewJSONConfWithEmpty(),
+		registry: r,
 		server: NewCronServer(conf.String("name", "cron.server"),
 			60,
 			time.Second,
@@ -41,13 +45,10 @@ func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistr
 //restartServer 重启服务器
 func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 	w.Shutdown()
-	for k := range w.versions {
-		delete(w.versions, k)
-	}
 	w.server = NewCronServer(conf.String("name", "cron.server"),
 		60,
 		time.Second,
-		WithRegister(w.registry),
+		WithRegistry(w.registry),
 		WithLogger(w.logger),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
@@ -59,21 +60,18 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraCronServer) setConf(conf registry.Conf) error {
-	if w.conf == nil {
-		w.conf = registry.NewJSONConfWithEmpty()
-	}
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
-	//设置路由
+	//设置任务
 	routers, err := conf.GetNode("task")
 	if err != nil {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, ok := v.conf.GetNode("task"); ok && r.GetVersion() != routers.GetVersion() || !ok {
+	if r, err := w.conf.GetNode("task"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
-			return err
+			return fmt.Errorf("tasks未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
 		tasks := make([]*Task, 0, len(rts))
 		for _, c := range rts {
@@ -81,7 +79,7 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 			params := c.String("params")
 			service := c.String("service")
 			method := c.String("method")
-			interval, err := time.ParseDuration(c.String("interval", -1))
+			interval, err := time.ParseDuration(c.String("interval", "-1"))
 			if err != nil {
 				return fmt.Errorf("task配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
 			}
@@ -102,7 +100,10 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 	}
 	//设置metric上报
 	metric, err := conf.GetNode("metric")
-	if r, ok := v.conf.GetNode("metric"); ok && r.GetVersion() != metric.GetVersion() || !ok {
+	if err != nil {
+		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
@@ -125,8 +126,13 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 func (w *hydraCronServer) handle(service, method, params string) func(task *Task) error {
 	return func(task *Task) error {
 		//处理输入参数
+
+		maps, err := utility.GetMapWithQuery(params)
+		if err != nil {
+			return fmt.Errorf("输入参数params配置有误:%s(err:%v)", params, err)
+		}
 		hydraContext := make(map[string]interface{})
-		hydraContext["__func_param_getter_"] = transform.NewGetter(utility.GetMapWithQuery(params))
+		hydraContext["__func_param_getter_"] = transform.NewMap(maps)
 
 		//执行服务调用
 		response, err := w.handler.Handle(task.taskName, method, service, params, hydraContext)

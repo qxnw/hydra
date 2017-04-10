@@ -78,8 +78,8 @@ func WithLimiter(limit map[string]int) Option {
 	}
 }
 
-//WithRegister 设置服务注册组件
-func WithRegister(i context.IServiceRegistry) Option {
+//WithRegistry 设置服务注册组件
+func WithRegistry(i context.IServiceRegistry) Option {
 	return func(o *serverOption) {
 		o.registry = i
 	}
@@ -113,7 +113,7 @@ var (
 //NewRPCServer 初始化
 func NewRPCServer(name string, opts ...Option) *RPCServer {
 	s := &RPCServer{serverName: name, Router: NewRouter()}
-	s.serverOption = &serverOption{logger: NewLogger(name, os.Stdout), metric: NewInfluxMetric(),limiter:NewLimiter(map[string]int{}}
+	s.serverOption = &serverOption{logger: NewLogger(name, os.Stdout), metric: NewInfluxMetric(), limiter: NewLimiter(map[string]int{})}
 
 	s.process = &process{srv: s}
 	s.ErrHandler = Errors()
@@ -121,14 +121,15 @@ func NewRPCServer(name string, opts ...Option) *RPCServer {
 	for _, opt := range opts {
 		opt(s.serverOption)
 	}
+
 	s.Use(Logging(),
 		Recovery(false),
 		s.metric,
 		s.limiter,
-		s.handlers...,
 		Return(),
 		Param(),
 		Contexts())
+	s.Use(s.handlers...)
 	return s
 }
 
