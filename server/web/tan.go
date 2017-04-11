@@ -8,12 +8,13 @@ import (
 	ctx "context"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/utility"
 )
 
 //Version 系统版本号
@@ -51,7 +52,7 @@ var (
 
 type webServerOption struct {
 	ip        string
-	logger    Logger
+	logger    *logger.Logger
 	register  context.IServiceRegistry
 	metric    *InfluxMetric
 	hostNames []string
@@ -63,7 +64,7 @@ type webServerOption struct {
 type Option func(*webServerOption)
 
 //WithLogger 设置日志记录组件
-func WithLogger(logger Logger) Option {
+func WithLogger(logger *logger.Logger) Option {
 	return func(o *webServerOption) {
 		o.logger = logger
 	}
@@ -105,7 +106,7 @@ func WithHandlers(handlers ...Handler) Option {
 }
 
 //Logger 获取日志组件
-func (t *WebServer) Logger() Logger {
+func (t *WebServer) Logger() *logger.Logger {
 	return t.logger
 }
 
@@ -176,7 +177,7 @@ func New(name string, opts ...Option) *WebServer {
 		serverName:      name,
 		Router:          NewRouter(),
 		ErrHandler:      Errors(),
-		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)},
+		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: logger.GetSession(name, utility.GetGUID())},
 	}
 	//转换配置项
 	for _, opt := range opts {
@@ -196,8 +197,7 @@ func New(name string, opts ...Option) *WebServer {
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
 		return &Context{
-			tan:    t,
-			Logger: t.webServerOption.logger,
+			tan: t,
 		}
 	}
 

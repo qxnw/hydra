@@ -5,38 +5,20 @@
 package web
 
 import (
-	"io"
 	"time"
 
-	"github.com/lunny/log"
+	"github.com/qxnw/lib4go/logger"
 )
 
-type Logger interface {
-	Debugf(format string, v ...interface{})
-	Debug(v ...interface{})
-	Infof(format string, v ...interface{})
-	Info(v ...interface{})
-	Warnf(format string, v ...interface{})
-	Warn(v ...interface{})
-	Errorf(format string, v ...interface{})
-	Error(v ...interface{})
-}
-
-func NewLogger(name string, out io.Writer) Logger {
-	l := log.New(out, "["+name+"] ", log.Ldefault())
-	l.SetOutputLevel(log.Ldebug)
-	return l
-}
-
 type LogInterface interface {
-	SetLogger(Logger)
+	SetLogger(*logger.Logger)
 }
 
 type Log struct {
-	Logger
+	logger.Logger
 }
 
-func (l *Log) SetLogger(log Logger) {
+func (l *Log) SetLogger(log logger.Logger) {
 	l.Logger = log
 }
 

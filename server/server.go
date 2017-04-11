@@ -24,9 +24,6 @@ var serverResolvers = make(map[string]IServerAdapter)
 
 //Register 注册服务适配器
 func Register(name string, resolver IServerAdapter) {
-	if resolver == nil {
-		panic("server: Register adapter is nil")
-	}
 	if _, ok := serverResolvers[name]; ok {
 		panic("server: Register called twice for adapter " + name)
 	}

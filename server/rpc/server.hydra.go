@@ -73,10 +73,10 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 		}
 		routers := make([]*rpcRouter, 0, len(rts))
 		for _, c := range rts {
-			method := strings.Split(strings.ToUpper(c.String("method", "request")), ",")
-			service := c.String("service")
-			params := c.String("params")
 			name := c.String("name")
+			service := c.String("service")
+			method := strings.Split(strings.ToUpper(c.String("method", "request")), ",")
+			params := c.String("params")
 			if name == "" || service == "" {
 				return fmt.Errorf("路由配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
 			}

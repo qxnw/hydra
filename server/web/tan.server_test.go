@@ -148,7 +148,7 @@ var confstr1 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter1",
     "router": "#@path/router1"
 }`
@@ -161,7 +161,7 @@ var confstr2 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`
@@ -172,7 +172,7 @@ var confstr3 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`
@@ -183,7 +183,7 @@ var confstr4 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter1",
     "router": "#@path/router1"
 }`
@@ -195,7 +195,7 @@ var confstr5 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`

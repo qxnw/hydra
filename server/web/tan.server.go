@@ -34,7 +34,6 @@ func newHydraWebServer(handler context.EngineHandler, registry context.IServiceR
 		logger:   logger,
 		server: New(conf.String("name", "api.server"),
 			WithRegistry(registry),
-			WithLogger(logger),
 			WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
 	err = h.setConf(conf)
 	return
@@ -45,7 +44,6 @@ func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 	time.Sleep(time.Second)
 	w.server = New(conf.String("name", "api.server"),
 		WithRegistry(w.registry),
-		WithLogger(w.logger),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
@@ -74,10 +72,10 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 		}
 		routers := make([]*webRouter, 0, len(rts))
 		for _, c := range rts {
-			method := strings.Split(strings.ToUpper(c.String("method", "post")), ",")
-			service := c.String("service")
-			params := c.String("params")
 			name := c.String("name")
+			service := c.String("service")
+			method := strings.Split(strings.ToUpper(c.String("method", "post")), ",")
+			params := c.String("params")
 			if name == "" || service == "" {
 				return fmt.Errorf("路由配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
 			}

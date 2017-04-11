@@ -18,6 +18,8 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type Handler interface {
@@ -26,7 +28,7 @@ type Handler interface {
 
 type Context struct {
 	tan *WebServer
-	Logger
+	*logger.Logger
 
 	idx int
 	req *http.Request
@@ -52,6 +54,8 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 	ctx.matched = false
 	ctx.action = nil
 	ctx.Result = nil
+	session_id := ctx.Cookie("hydra.sid", utility.GetGUID())
+	ctx.Logger = logger.GetSession(removeStick(ctx.Req().URL.Path), session_id)
 }
 
 func (ctx *Context) HandleError() {
