@@ -14,6 +14,8 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/rpc/pb"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/utility"
 	"google.golang.org/grpc"
 )
 
@@ -39,7 +41,7 @@ func Version() string {
 
 type serverOption struct {
 	ip       string
-	logger   Logger
+	logger   logger.ILogger
 	handlers []Handler
 	metric   *InfluxMetric
 	limiter  *Limiter
@@ -51,7 +53,7 @@ type serverOption struct {
 type Option func(*serverOption)
 
 //WithLogger 设置日志记录组件
-func WithLogger(logger Logger) Option {
+func WithLogger(logger logger.ILogger) Option {
 	return func(o *serverOption) {
 		o.logger = logger
 	}
@@ -113,13 +115,16 @@ var (
 //NewRPCServer 初始化
 func NewRPCServer(name string, opts ...Option) *RPCServer {
 	s := &RPCServer{serverName: name, Router: NewRouter()}
-	s.serverOption = &serverOption{logger: NewLogger(name, os.Stdout), metric: NewInfluxMetric(), limiter: NewLimiter(map[string]int{})}
+	s.serverOption = &serverOption{metric: NewInfluxMetric(), limiter: NewLimiter(map[string]int{})}
 
-	s.process = &process{srv: s}
+	s.process = newProcess(s)
 	s.ErrHandler = Errors()
 
 	for _, opt := range opts {
 		opt(s.serverOption)
+	}
+	if s.logger == nil {
+		s.logger = logger.GetSession(name, utility.GetGUID())
 	}
 
 	s.Use(Logging(),
@@ -182,7 +187,7 @@ func (s *RPCServer) Close() {
 }
 
 //Logger 获取日志组件
-func (s *RPCServer) Logger() Logger {
+func (s *RPCServer) Logger() logger.ILogger {
 	return s.logger
 }
 

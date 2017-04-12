@@ -17,7 +17,7 @@ type IHydraServer interface {
 
 //IServerAdapter 服务解析器
 type IServerAdapter interface {
-	Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (IHydraServer, error)
+	Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (IHydraServer, error)
 }
 
 var serverResolvers = make(map[string]IServerAdapter)
@@ -31,9 +31,9 @@ func Register(name string, resolver IServerAdapter) {
 }
 
 //NewServer 根据适配器名称生成服务
-func NewServer(adapter string, c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (IHydraServer, error) {
+func NewServer(adapter string, c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (IHydraServer, error) {
 	if resolver, ok := serverResolvers[adapter]; ok {
-		return resolver.Resolve(c, r, conf, logger)
+		return resolver.Resolve(c, r, conf)
 	}
 	return nil, fmt.Errorf("server: unknown adapter name %q (forgotten import?)", adapter)
 

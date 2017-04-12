@@ -1,6 +1,9 @@
 package mq
 
-import "github.com/qxnw/lib4go/mq"
+import (
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/mq"
+)
 
 type Handler interface {
 	Handle(*Context)
@@ -13,17 +16,24 @@ func (h HandlerFunc) Handle(ctx *Context) {
 }
 
 type Context struct {
-	msg        mq.IMessage
+	msg mq.IMessage
+	*logger.Logger
 	taskName   string
 	idx        int
 	server     *MQConsumer
-	params     interface{}
+	params     string
 	handle     func(*Context) error
 	Result     interface{}
 	err        error
 	statusCode int
 }
 
+func (ctx *Context) reset(msg mq.IMessage, server *MQConsumer, params string, handle func(*Context) error) {
+	ctx.msg = msg
+	ctx.server = server
+	ctx.params = params
+	ctx.handle = handle
+}
 func (ctx *Context) Next() {
 	ctx.idx += 1
 	ctx.invoke()

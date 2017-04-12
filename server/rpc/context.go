@@ -13,6 +13,8 @@ import (
 
 	hydra "github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/rpc/pb"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/utility"
 	"golang.org/x/net/context"
 )
 
@@ -33,7 +35,7 @@ type Writer struct {
 
 type Context struct {
 	server *RPCServer
-	Logger
+	*logger.Logger
 
 	idx      int
 	Writer   *Writer
@@ -62,6 +64,11 @@ func (ctx *Context) reset(method string, context context.Context, request *pb.Re
 	ctx.matched = false
 	ctx.action = nil
 	ctx.Result = nil
+	session_id := utility.GetGUID()
+	if sid, ok := request.Args["hydra.sid"]; ok {
+		session_id = sid
+	}
+	ctx.Logger = logger.GetSession(request.Service, session_id)
 }
 
 func (ctx *Context) HandleError() {

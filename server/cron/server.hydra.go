@@ -11,14 +11,12 @@ import (
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
 type hydraCronServer struct {
 	server   *CronServer
-	logger   context.Logger
 	conf     registry.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
@@ -26,16 +24,14 @@ type hydraCronServer struct {
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
-		logger:   logger,
 		conf:     registry.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewCronServer(conf.String("name", "cron.server"),
 			60,
 			time.Second,
 			WithRegistry(r),
-			WithLogger(logger),
 			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
 	err = h.setConf(conf)
@@ -49,7 +45,6 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 		60,
 		time.Second,
 		WithRegistry(w.registry),
-		WithLogger(w.logger),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
@@ -123,19 +118,20 @@ func (w *hydraCronServer) setConf(conf registry.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraCronServer) handle(service, method, params string) func(task *Task) error {
-	return func(task *Task) error {
+func (w *hydraCronServer) handle(service, method, args string) func(task *Task) error {
+	return func(task *Task) (err error) {
 		//处理输入参数
-
-		maps, err := utility.GetMapWithQuery(params)
+		context := context.GetContext()
+		defer context.Close()
+		context.Ext["hydra_sid"] = task.GetSessionID()
+		context.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {
-			return fmt.Errorf("输入参数params配置有误:%s(err:%v)", params, err)
+			task.statusCode = 500
+			task.Result = err
+			return err
 		}
-		hydraContext := make(map[string]interface{})
-		hydraContext["__func_param_getter_"] = transform.NewMap(maps)
-
 		//执行服务调用
-		response, err := w.handler.Handle(task.taskName, method, service, params, hydraContext)
+		response, err := w.handler.Handle(task.taskName, method, service, context)
 		if err != nil {
 			return err
 		}
@@ -178,8 +174,8 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (server.IHydraServer, error) {
-	return newHydraCronServer(c, r, conf, logger)
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+	return newHydraCronServer(c, r, conf)
 }
 
 func init() {

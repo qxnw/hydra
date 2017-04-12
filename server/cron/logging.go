@@ -24,14 +24,14 @@ func NewLogger(name string, out io.Writer) context.Logger {
 func Logging() HandlerFunc {
 	return func(ctx *Task) {
 		start := time.Now()
-		ctx.server.logger.Info("Started", ctx.taskName, "for", ctx.params)
+		ctx.Info("Started", ctx.taskName, "for", ctx.params)
 
 		ctx.Next()
 
 		if ctx.err == nil || ctx.statusCode == 200 {
-			ctx.server.logger.Info(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
+			ctx.Info(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
 		} else {
-			ctx.server.logger.Error(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
+			ctx.Error(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
 		}
 	}
 }

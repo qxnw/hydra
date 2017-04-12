@@ -50,6 +50,7 @@ func (t *WebServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			if ctx.Result == nil {
 				ctx.WriteString("")
 				t.logger.Info(req.Method, ctx.Status(), p)
+				ctx.Close()
 				t.ctxPool.Put(ctx)
 				t.respPool.Put(resp)
 				return
@@ -65,7 +66,7 @@ func (t *WebServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 		t.logger.Error(req.Method, ctx.Status(), p)
 	}
-
+	ctx.Close()
 	t.ctxPool.Put(ctx)
 	t.respPool.Put(resp)
 }

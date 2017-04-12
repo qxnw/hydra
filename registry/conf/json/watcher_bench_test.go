@@ -5,17 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/registry/conf"
 )
 
 func BenchmarkItems(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		watcher := NewJSONConfWatcher("/hydra", "")
 		checker := &testfileChecker{modTime: time.Now(), apis: map[string]bool{
-			"/hydra/servers":                             true,
-			"/hydra/servers/merchant/api/conf/conf.json": true,
+			"/hydra/servers":                        true,
+			"/hydra/servers/merchant/api/conf/conf": true,
 		}, files: map[string]string{
-			"/hydra/servers/merchant/api/conf/conf.json": "/hydra/servers/merchant/api/conf/conf.json",
+			"/hydra/servers/merchant/api/conf/conf": "/hydra/servers/merchant/api/conf/conf",
 		}}
 		watcher.checker = checker
 		watcher.timeSpan = time.Millisecond * 100

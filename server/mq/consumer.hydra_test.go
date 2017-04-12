@@ -20,7 +20,7 @@ type contextHandler struct {
 	version int32
 }
 
-func (h contextHandler) Handle(name string, method string, s string, p string, c context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
 func (h contextHandler) GetPath(p string) (registry.Conf, error) {
@@ -37,25 +37,22 @@ func TestMQServer1(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	_, err = server.NewServer("mq.consumer", handler, nil, conf, nil)
+	_, err = server.NewServer("mq.consumer", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 }
 func TestMQServer2(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	_, err = newHydraMQConsumer(handler, nil, conf, nil)
+	_, err = newHydraMQConsumer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
-	t.Log("abc")
-	p, err := mq.NewStompProducer(mq.ProducerConfig{Address: "192.168.0.155:61613"})
+	p, err := mq.NewStompProducer(mq.ProducerConfig{Address: "192.168.0.165:61613"})
 	ut.ExpectSkip(t, err, nil)
-	t.Log("abc")
 	go func() {
 		err = p.Connect()
 		ut.ExpectSkip(t, err, nil)
 	}()
-	time.Sleep(time.Second)
-	t.Log("abc")
+	time.Sleep(time.Second * 2)
 	err = p.Send("hydra", "hello", 0)
 	ut.ExpectSkip(t, err, nil)
 }

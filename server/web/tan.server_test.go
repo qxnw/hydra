@@ -19,7 +19,7 @@ type contextHandler struct {
 	version int32
 }
 
-func (h contextHandler) Handle(name string, method string, s string, p string, c context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
 func (h contextHandler) GetPath(p string) (registry.Conf, error) {
@@ -40,7 +40,7 @@ func TestServer1(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := server.NewServer("api.server", handler, nil, conf, nil)
+	server, err := server.NewServer("api.server", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -61,7 +61,7 @@ func TestServer2(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, nil, conf, nil)
+	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -78,7 +78,7 @@ func TestServer3(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, nil, conf, nil)
+	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -105,7 +105,7 @@ func TestServer4(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, nil, conf, nil)
+	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -116,13 +116,27 @@ func TestServer4(t *testing.T) {
 	ut.Expect(t, err, nil)
 	ut.Expect(t, s, 200)
 
-	conf, err = registry.NewJSONConfWithJson(confstr5, 101, handler.GetPath)
+}
+
+func TestServer5(t *testing.T) {
+	handler := &contextHandler{version: 100}
+	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
+	ut.Expect(t, err, nil)
+	server, err := newHydraWebServer(handler, nil, conf)
+	ut.ExpectSkip(t, err, nil)
+	err = server.Start()
+	ut.ExpectSkip(t, err, nil)
+
+	h2 := &contextHandler{version: 102}
+	conf, err = registry.NewJSONConfWithJson(confstr5, 101, h2.GetPath)
+
 	ut.ExpectSkip(t, err, nil)
 	err = server.Notify(conf)
 	ut.Expect(t, err, nil)
-	url = fmt.Sprintf("%s/order/request/123", server.GetAddress())
-
-	_, s, err = client.Post(url, "")
+	url := fmt.Sprintf("%s/order/request/123", server.GetAddress())
+	fmt.Println(url)
+	client := http.NewHTTPClient()
+	_, s, err := client.Post(url, "")
 	ut.Expect(t, err, nil)
 	ut.Expect(t, s, 200)
 

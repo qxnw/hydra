@@ -14,6 +14,7 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
@@ -21,20 +22,17 @@ type hydraRPCServer struct {
 	server   *RPCServer
 	registry context.IServiceRegistry
 	conf     registry.Conf
-	logger   context.Logger
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
-		logger:   logger,
 		conf:     registry.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewRPCServer(conf.String("name", "rpc.server"),
 			WithRegistry(r),
-			WithLogger(logger),
 			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
 	}
 	err = h.setConf(conf)
@@ -47,13 +45,17 @@ func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 	time.Sleep(time.Second)
 	w.server = NewRPCServer(conf.String("name", "rpc.server"),
 		WithRegistry(w.registry),
-		WithLogger(w.logger),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
 		return
 	}
-	return w.Start()
+	err = w.Start()
+	if err != nil {
+		return
+	}
+	time.Sleep(time.Second)
+	return
 }
 
 //SetConf 设置配置参数
@@ -92,7 +94,6 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 					return fmt.Errorf("路由配置错误:method:%v不支持,只支持:%v", method, SupportMethods)
 				}
 			}
-
 			routers = append(routers, &rpcRouter{
 				Method:      method,
 				Path:        name,
@@ -123,16 +124,16 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 		return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	if r, err := w.conf.GetNode("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
-		lmts, err := limiter.GetSections("qos")
+		lmts, err := limiter.GetSections("QPS")
 		if err != nil {
-			return fmt.Errorf("qos未配置或配置有误:%s(%+v)", conf.String("name"), err)
+			return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
 		limiters := map[string]int{}
 		for _, v := range lmts {
 			name := v.String("name")
 			lm, err := v.Int("value")
 			if err != nil {
-				return fmt.Errorf("limiter配置错误:qos.value值必须为数字（%s）", v.String("value"))
+				return fmt.Errorf("limiter配置错误:[%s]qos.value:[%s]值必须为数字（err:%v）", name, v.String("value"), err)
 			}
 			limiters[name] = lm
 		}
@@ -146,20 +147,29 @@ func (w *hydraRPCServer) setConf(conf registry.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraRPCServer) handle(name string, method []string, service string, params string) func(c *Context) {
+func (w *hydraRPCServer) handle(name string, method []string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 
 		//处理输入参数
-		hydraContext := make(map[string]interface{})
+		context := context.GetContext()
+		defer context.Close()
 		tfParams := transform.NewGetter(c.Params())
 		tfForm := transform.NewMap(c.Req().GetArgs())
 
-		rparams := tfForm.Translate(tfParams.Translate(params))
-		hydraContext["__func_param_getter_"] = tfParams
-		hydraContext["__func_args_getter_"] = tfForm
-
+		rArgs := tfForm.Translate(tfParams.Translate(args))
+		context.Ext["__func_param_getter_"] = tfParams
+		context.Ext["__func_args_getter_"] = tfForm
+		context.Ext["hydra_sid"] = c.GetSessionID()
+		var err error
+		context.Input.Input = tfForm.Data
+		context.Input.Params = tfParams.Data
+		context.Input.Args, err = utility.GetMapWithQuery(rArgs)
+		if err != nil {
+			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
+			return
+		}
 		//执行服务调用
-		response, err := w.handler.Handle(name, c.Method(), c.Req().Service, rparams, hydraContext)
+		response, err := w.handler.Handle(name, c.Method(), c.Req().Service, context)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
 			return
@@ -192,10 +202,11 @@ func (w *hydraRPCServer) Start() (err error) {
 func (w *hydraRPCServer) Notify(conf registry.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
+	if w.conf.GetVersion() == conf.GetVersion() {
 		return errors.New("版本无变化")
 	}
-	if w.conf != nil && w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
+	if w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
+
 		return w.restartServer(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
@@ -210,8 +221,8 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (server.IHydraServer, error) {
-	return newHydraRPCServer(c, r, conf, logger)
+func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+	return newHydraRPCServer(c, r, conf)
 }
 
 func init() {

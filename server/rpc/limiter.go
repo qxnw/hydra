@@ -34,7 +34,7 @@ func (m *Limiter) Handle(ctx *Context) {
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
 		if meter.Rate1() >= count.(float64) {
 			ctx.ServiceUnavailable()
-			ctx.server.logger.Errorf("service:%s 超过总限流规则QPS %.0f/s", service, count)
+			ctx.Errorf("service:%s 超过总限流规则QPS %.0f/s", service, count)
 			return
 		}
 		meter.Mark(1)
@@ -44,7 +44,7 @@ func (m *Limiter) Handle(ctx *Context) {
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
 		if meter.Rate1() >= count.(float64) {
 			ctx.ServiceUnavailable()
-			ctx.server.logger.Errorf("service:%s 超过服务限流规则QPS %.0f/s", service, count)
+			ctx.Errorf("service:%s 超过服务限流规则QPS %.0f/s", service, count)
 			return
 		}
 		meter.Mark(1)

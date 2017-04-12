@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -16,7 +17,6 @@ import (
 //hydraWebServer web server适配器
 type hydraMQConsumer struct {
 	server   *MQConsumer
-	logger   context.Logger
 	registry context.IServiceRegistry
 	conf     registry.Conf
 	handler  context.EngineHandler
@@ -24,16 +24,14 @@ type hydraMQConsumer struct {
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraMQConsumer, err error) {
+func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
-		logger:   logger,
 		conf:     registry.NewJSONConfWithEmpty(),
 		registry: r,
 	}
 	h.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
 		conf.String("address"),
 		conf.String("version"),
-		WithLogger(logger),
 		WithRegistry(r),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
@@ -49,7 +47,6 @@ func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 	w.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
 		conf.String("address"),
 		conf.String("version"),
-		WithLogger(w.logger),
 		WithRegistry(w.registry),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	if err != nil {
@@ -119,10 +116,12 @@ func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
 func (w *hydraMQConsumer) handle(service, method, params string) func(task *Context) error {
 	return func(task *Context) error {
 		//处理输入参数
-		hydraContext := make(map[string]interface{})
-
+		context := context.GetContext()
+		defer context.Close()
+		context.Input.Body = json.RawMessage(task.params)
+		context.Ext["hydra_sid"] = task.GetSessionID()
 		//执行服务调用
-		response, err := w.handler.Handle(task.taskName, method, service, params, hydraContext)
+		response, err := w.handler.Handle(task.taskName, method, service, context)
 		if err != nil {
 			return err
 		}
@@ -163,8 +162,8 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (server.IHydraServer, error) {
-	return newHydraMQConsumer(c, r, conf, logger)
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+	return newHydraMQConsumer(c, r, conf)
 }
 
 func init() {

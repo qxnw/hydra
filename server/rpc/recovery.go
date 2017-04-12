@@ -29,7 +29,7 @@ func Recovery(debug bool) HandlerFunc {
 				}
 
 				var content = buf.String()
-				ctx.server.logger.Error(content)
+				ctx.Error(content)
 
 				if !ctx.Written() {
 					if !debug {

@@ -116,7 +116,7 @@ func (w *watchPath) checkChildrenChange(children []string, version int32) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, v := range children { //检查当前配置地址未缓存
-		for _, sv := range conf.WatchServices {
+		for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/rpc/conf/conf
 			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.tag)
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {

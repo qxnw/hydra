@@ -8,15 +8,15 @@ import (
 
 //IPlugin 插件
 type IPlugin interface {
-	Start() ([]string, error)
-	Close()
+	Start(domain string, serverName string, serverType string) ([]string, error)
+	Close() error
 	context.EngineHandler
 }
 
 //IEngine 执行引擎
 type IEngine interface {
-	Start() error
-	Handle(name string, method string, service string, params string, c context.Context) (*context.Response, error)
+	Start(domain string, serverName string, serverType string) error
+	Handle(name string, method string, service string, c *context.Context) (*context.Response, error)
 	Register(name string, p IPlugin)
 }
 
@@ -34,9 +34,9 @@ func NewStandardEngine() IEngine {
 }
 
 //启动引擎
-func (e *standardEngine) Start() error {
+func (e *standardEngine) Start(domain string, serverName string, serverType string) error {
 	for t, p := range e.plugins {
-		services, err := p.Start()
+		services, err := p.Start(domain, serverName, serverType)
 		if err != nil {
 			return err
 		}
@@ -55,13 +55,13 @@ func (e *standardEngine) Close() error {
 }
 
 //处理引擎
-func (e *standardEngine) Handle(name string, method string, service string, params string, c context.Context) (*context.Response, error) {
+func (e *standardEngine) Handle(name string, method string, service string, c *context.Context) (*context.Response, error) {
 	cmd := fmt.Sprintf("%s_%s", service, method)
 	svs, ok := e.service[cmd]
 	if !ok {
 		return nil, fmt.Errorf("engine:未找到执行引擎:%s", cmd)
 	}
-	return svs.Handle(cmd, method, service, params, c)
+	return svs.Handle(cmd, method, service, c)
 }
 
 //Register 注册插件
@@ -79,13 +79,13 @@ func init() {
 }
 
 //Start 启动引擎
-func Start() error {
-	return engine.Start()
+func Start(domain string, serverName string, serverType string) error {
+	return engine.Start(domain, serverName, serverType)
 }
 
 //Handle 处理引擎
-func Handle(name string, method string, service string, params string, c context.Context) (*context.Response, error) {
-	return engine.Handle(name, method, service, params, c)
+func Handle(name string, method string, service string, c *context.Context) (*context.Response, error) {
+	return engine.Handle(name, method, service, c)
 }
 
 //Register 注册插件

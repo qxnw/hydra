@@ -65,7 +65,7 @@ func TestGetOffset6(t *testing.T) {
 			id:   1,
 			name: "colin"}
 		return nil
-	}, "order.report", WithCycle())
+	}, "order.report")
 	offset, round := timer.Add(task)
 	ut.Expect(t, offset, 6)
 	ut.Expect(t, round, 0)

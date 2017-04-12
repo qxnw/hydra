@@ -128,6 +128,9 @@ func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
 		if v, ok := val.(int); ok {
 			r = int(v)
 			return
+		} else if v, ok := val.(float64); ok {
+			r = int(v)
+			return
 		}
 		err = errors.New("not int value")
 		return

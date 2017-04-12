@@ -18,7 +18,7 @@ type contextHandler struct {
 	version int32
 }
 
-func (h contextHandler) Handle(name string, method string, s string, p string, c context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
 func (h contextHandler) GetPath(p string) (registry.Conf, error) {
@@ -35,14 +35,14 @@ func TestCronServer1(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	_, err = server.NewServer("cron.server", handler, nil, conf, nil)
+	_, err = server.NewServer("cron.server", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 }
 func TestCronServer2(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraCronServer(handler, nil, conf, nil)
+	server, err := newHydraCronServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	server.server.execute()
 	time.Sleep(time.Millisecond)

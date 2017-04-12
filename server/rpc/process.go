@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"sync"
+
 	"golang.org/x/net/context"
 
 	"github.com/qxnw/hydra/server/rpc/pb"
@@ -8,13 +10,25 @@ import (
 
 type process struct {
 	srv *RPCServer
+	p   *sync.Pool
+}
+
+func newProcess(r *RPCServer) *process {
+	return &process{
+		srv: r,
+		p: &sync.Pool{
+			New: func() interface{} {
+				return &Context{}
+			},
+		},
+	}
 }
 
 //Request 客户端处理客户端请求
 func (r *process) Request(context context.Context, request *pb.RequestContext) (p *pb.ResponseContext, err error) {
 	r.srv.mu.RLock()
 	defer r.srv.mu.RUnlock()
-	ctx := &Context{}
+	ctx := r.p.Get().(*Context)
 	ctx.server = r.srv
 	ctx.reset("REQUEST", context, request)
 	ctx.invoke()
@@ -22,6 +36,8 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 	p.Status = int32(ctx.Writer.Code)
 	p.Result = ctx.Writer.String()
 	ctx.Writer.Reset()
+	ctx.Close()
+	r.p.Put(ctx)
 	return
 }
 

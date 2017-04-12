@@ -11,5 +11,5 @@ func (j *JSONConfResolver) Resolve(adapter string, domain string, tag string, ar
 	return NewJSONConfWatcher(domain, tag), nil
 }
 func init() {
-	conf.Register("json", &JSONConfResolver{})
+	conf.Register("local", &JSONConfResolver{})
 }

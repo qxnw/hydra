@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lunny/log"
+	"github.com/qxnw/lib4go/logger"
 )
 
 type Logger interface {
@@ -33,21 +34,21 @@ func NewLogger(name string, out io.Writer) Logger {
 }
 
 type LogInterface interface {
-	SetLogger(Logger)
+	SetLogger(*logger.Logger)
 }
 
 type Log struct {
-	Logger
+	*logger.Logger
 }
 
-func (l *Log) SetLogger(log Logger) {
+func (l *Log) SetLogger(log *logger.Logger) {
 	l.Logger = log
 }
 
 func Logging() HandlerFunc {
 	return func(ctx *Context) {
 		start := time.Now()
-		ctx.server.logger.Info("Started", ctx.Req().Service, "for", ctx.Req().GetArgs()["session"])
+		ctx.Info("Started", ctx.Req().Service, "for", ctx.Req().GetArgs()["session"])
 
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {
@@ -66,9 +67,9 @@ func Logging() HandlerFunc {
 
 		statusCode := ctx.Writer.Code
 		if statusCode >= 200 && statusCode < 400 {
-			ctx.server.logger.Info(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
+			ctx.Info(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
 		} else {
-			ctx.server.logger.Error(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
+			ctx.Error(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
 		}
 	}
 }

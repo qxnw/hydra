@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,7 +18,7 @@ type contextHandler struct {
 	version int32
 }
 
-func (h contextHandler) Handle(name string, method string, s string, p string, c context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
 func (h contextHandler) GetPath(p string) (registry.Conf, error) {
@@ -31,15 +31,20 @@ func (h contextHandler) GetPath(p string) (registry.Conf, error) {
 		return registry.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router2") {
 		return registry.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
+	} else if strings.HasSuffix(p, "limiter1") {
+		return registry.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
+	} else if strings.HasSuffix(p, "limiter2") {
+		return registry.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
 	}
-	return nil, errors.New("not find")
+
+	return nil, fmt.Errorf("not find....test.go:%s", p)
 }
 
 func TestRPCServer1(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := server.NewServer("rpc.server", handler, nil, conf, nil)
+	server, err := server.NewServer("rpc.server", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -55,7 +60,7 @@ func TestRPCServer2(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraRPCServer(handler, nil, conf, nil)
+	server, err := newHydraRPCServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -69,7 +74,7 @@ func TestRPCServer3(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraRPCServer(handler, nil, conf, nil)
+	server, err := newHydraRPCServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -95,7 +100,7 @@ func TestRPCServer4(t *testing.T) {
 	handler := &contextHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraRPCServer(handler, nil, conf, nil)
+	server, err := newHydraRPCServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -107,10 +112,11 @@ func TestRPCServer4(t *testing.T) {
 	ut.Expect(t, s, 200)
 	client.Close()
 
-	conf, err = registry.NewJSONConfWithJson(confstr5, 101, handler.GetPath)
+	h := &contextHandler{version: 102}
+	conf, err = registry.NewJSONConfWithJson(confstr5, 101, h.GetPath)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Notify(conf)
-	ut.Expect(t, err, nil)
+	ut.ExpectSkip(t, err, nil)
 
 	client = rpc.NewRPCClient(server.GetAddress())
 	s, r, err = client.Request("/order/request/1234", map[string]string{}, false)
@@ -140,7 +146,7 @@ var confstr1 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter1",
     "router": "#@path/router1"
 }`
@@ -153,7 +159,7 @@ var confstr2 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`
@@ -164,7 +170,7 @@ var confstr3 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`
@@ -175,7 +181,7 @@ var confstr4 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter1",
     "router": "#@path/router1"
 }`
@@ -187,7 +193,7 @@ var confstr5 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#@domain/var/db/influxdb1",
     "limiter": "#@path/limiter2",
     "router": "#@path/router2"
 }`
@@ -223,6 +229,14 @@ var routerStr2 = `{
             "method": "request,query",
             "service": "../@type/@name/script/@module_@action:@method",
             "params": "db=@domain/var/db/influxdb"
+        }
+    ]
+}`
+var limiterStr = `{
+    "QPS": [
+        {
+        "name": "/order/request2",
+           "value":     1000
         }
     ]
 }`

@@ -19,5 +19,5 @@ func (j *RegistryConfResolver) Resolve(adapter string, domain string, tag string
 }
 
 func init() {
-	conf.Register("zookeeper", &RegistryConfResolver{})
+	conf.Register("zk", &RegistryConfResolver{})
 }

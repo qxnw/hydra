@@ -1,10 +1,15 @@
 package cron
 
-import "time"
+import (
+	"time"
+
+	"github.com/qxnw/lib4go/logger"
+)
 
 //Task 任务
 type Task struct {
-	taskName   string
+	taskName string
+	*logger.Logger
 	params     interface{}
 	server     *CronServer
 	next       time.Duration

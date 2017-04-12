@@ -4,14 +4,14 @@ import (
 	"sync"
 	"time"
 
-	"os"
-
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type cronOption struct {
-	ip       string
-	logger   context.Logger
+	ip string
+	//logger   context.Logger
 	registry context.IServiceRegistry
 	metric   *InfluxMetric
 }
@@ -30,13 +30,6 @@ func WithIP(ip string) CronOption {
 func WithRegistry(i context.IServiceRegistry) CronOption {
 	return func(o *cronOption) {
 		o.registry = i
-	}
-}
-
-//WithLogger 设置日志记录组件
-func WithLogger(logger context.Logger) CronOption {
-	return func(o *cronOption) {
-		o.logger = logger
 	}
 }
 
@@ -69,7 +62,7 @@ type CronServer struct {
 //NewCronServer 构建定时任务
 func NewCronServer(name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
 	w = &CronServer{serverName: name, length: length, span: span, index: -1, startTime: time.Now()}
-	w.cronOption = &cronOption{metric: NewInfluxMetric(), logger: NewLogger(name, os.Stdout)}
+	w.cronOption = &cronOption{metric: NewInfluxMetric()}
 	w.close = make(chan struct{}, 1)
 	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([][]*Task, length, length)
@@ -116,6 +109,7 @@ func (w *CronServer) Add(task *Task) (offset int, round int) {
 	task.server = w
 	offset, round = w.getOffset(task.next)
 	task.round = round
+	task.Logger = logger.GetSession(task.taskName, utility.GetGUID())
 	w.slots[offset] = append(w.slots[offset], task)
 	return
 }

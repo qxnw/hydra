@@ -25,7 +25,7 @@ func Recovery() HandlerFunc {
 				}
 
 				var content = buf.String()
-				ctx.server.logger.Error(content)
+				ctx.Error(content)
 				ctx.statusCode = http.StatusInternalServerError
 				ctx.err = fmt.Errorf("%v", e)
 				ctx.Result = ctx.err

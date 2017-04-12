@@ -133,8 +133,8 @@ START:
 			}
 			w.cacheDir.Set(path, true)
 			for _, v := range children { //检查当前配置地址未缓存
-				for _, sv := range conf.WatchServices {
-					name := fmt.Sprintf("%s/%s/%s/conf/%s.json", path, v, sv, w.tag)
+				for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/api/conf.json
+					name := fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv)
 					if _, ok := w.cacheAddress.Get(name); !ok {
 						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
 							root:  fmt.Sprintf("%s/%s/%s/conf", path, v, sv),
@@ -147,7 +147,7 @@ START:
 				exists := false
 				for _, v := range children {
 					for _, sv := range conf.WatchServices {
-						if key == fmt.Sprintf("%s/%s/%s/conf/%s.json", path, v, sv, w.tag) {
+						if key == fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv) {
 							exists = true
 							break
 						}

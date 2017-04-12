@@ -15,12 +15,12 @@ import (
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
 type hydraWebServer struct {
 	server   *WebServer
-	logger   context.Logger
 	conf     registry.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
@@ -28,12 +28,12 @@ type hydraWebServer struct {
 }
 
 //newHydraWebServer 构建基本配置参数的web server
-func newHydraWebServer(handler context.EngineHandler, registry context.IServiceRegistry, conf registry.Conf, logger context.Logger) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
-		registry: registry,
-		logger:   logger,
+		registry: r,
+		conf:     registry.NewJSONConfWithEmpty(),
 		server: New(conf.String("name", "api.server"),
-			WithRegistry(registry),
+			WithRegistry(r),
 			WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
 	err = h.setConf(conf)
 	return
@@ -54,9 +54,6 @@ func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraWebServer) setConf(conf registry.Conf) error {
-	if w.conf == nil {
-		w.conf = registry.NewJSONConfWithEmpty()
-	}
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -67,8 +64,8 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 	}
 	if r, err := w.conf.GetNode("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("routers")
-		if err != nil {
-			return err
+		if err != nil || len(rts) == 0 {
+			return fmt.Errorf("routers路由未配置或配置有误:%s(len:%d,err:%+v)", conf.String("name"), len(rts), err)
 		}
 		routers := make([]*webRouter, 0, len(rts))
 		for _, c := range rts {
@@ -125,11 +122,12 @@ func (w *hydraWebServer) setConf(conf registry.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraWebServer) handle(name string, method []string, service string, params string) func(c *Context) {
+func (w *hydraWebServer) handle(name string, method []string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 
 		//处理输入参数
-		hydraContext := make(map[string]interface{})
+		context := context.GetContext()
+		defer context.Close()
 		buf, err := c.Body()
 		if err != nil {
 			c.BadRequest(fmt.Sprintf("%+v", err))
@@ -137,19 +135,29 @@ func (w *hydraWebServer) handle(name string, method []string, service string, pa
 		}
 		tfParams := transform.NewGetter(c.Params())
 		tfForm := transform.NewGetter(c.Forms().Form)
-		hydraContext["__txt_body_"] = string(buf)
-		hydraContext["__func_param_getter_"] = tfParams
-		hydraContext["__func_args_getter_"] = tfForm
-		hydraContext["__func_http_request_"] = c.Req()
-		hydraContext["__func_http_response_"] = c.ResponseWriter
-		hydraContext["__func_body_get_"] = func(c string) (string, error) {
+		context.Ext["hydra_sid"] = c.GetSessionID()
+		context.Ext["__txt_body_"] = string(buf)
+		context.Ext["__func_param_getter_"] = tfParams
+		context.Ext["__func_args_getter_"] = tfForm
+		context.Ext["__func_http_request_"] = c.Req()
+		context.Ext["__func_http_response_"] = c.ResponseWriter
+		context.Ext["__func_body_get_"] = func(c string) (string, error) {
 			return encoding.Convert(buf, c)
 		}
 		rservice := tfForm.Translate(tfParams.Translate(service))
-		rparams := tfForm.Translate(tfParams.Translate(params))
+		rArgs := tfForm.Translate(tfParams.Translate(args))
 
+		context.Input.Input = tfForm.Data
+		context.Input.Body = string(buf)
+		context.Input.Params = tfParams.Data
+
+		context.Input.Args, err = utility.GetMapWithQuery(rArgs)
+		if err != nil {
+			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
+			return
+		}
 		//执行服务调用
-		response, err := w.handler.Handle(name, c.Req().Method, rservice, rparams, hydraContext)
+		response, err := w.handler.Handle(name, c.Req().Method, rservice, context)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
 			return
@@ -199,11 +207,11 @@ func (w *hydraWebServer) Start() (err error) {
 func (w *hydraWebServer) Notify(conf registry.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
+	if w.conf.GetVersion() == conf.GetVersion() {
 		return errors.New("版本无变化")
 	}
 
-	if w.conf != nil && w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
+	if w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
 		return w.restartServer(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
@@ -219,8 +227,8 @@ func (w *hydraWebServer) Shutdown() {
 type hydraWebServerAdapter struct {
 }
 
-func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf, logger context.Logger) (server.IHydraServer, error) {
-	return newHydraWebServer(c, r, conf, logger)
+func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+	return newHydraWebServer(c, r, conf)
 }
 
 func init() {
