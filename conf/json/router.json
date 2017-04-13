@@ -1,0 +1,10 @@
+{
+    "routers": [
+        {
+            "name": "/:module/:action",
+            "method": "get,post",
+            "service": "order_request",
+            "params": "db=@domain/var/db/influxdb"
+        }
+    ]
+}

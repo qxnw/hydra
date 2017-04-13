@@ -1,0 +1,10 @@
+{
+    "type": "api",
+    "name": "merchant.api",
+    "status": "starting",
+    "package": "1.0.0.1",
+    "QPS": 1000,
+    "metric": "#@root/metric.json",
+    "limiter": "#@root/limiter.json",
+    "router": "#@root/router.json"
+}
