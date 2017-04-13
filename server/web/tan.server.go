@@ -9,8 +9,8 @@ import (
 
 	"strings"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/net"
@@ -21,25 +21,25 @@ import (
 //hydraWebServer web server适配器
 type hydraWebServer struct {
 	server   *WebServer
-	conf     registry.Conf
+	conf     conf.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraWebServer 构建基本配置参数的web server
-func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		registry: r,
-		conf:     registry.NewJSONConfWithEmpty(),
-		server: New(conf.String("name", "api.server"),
+		conf:     conf.NewJSONConfWithEmpty(),
+		server: New(cnf.String("name", "api.server"),
 			WithRegistry(r),
-			WithIP(net.GetLocalIPAddress(conf.String("mask"))))}
-	err = h.setConf(conf)
+			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
+	err = h.setConf(cnf)
 	return
 }
 
-func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
+func (w *hydraWebServer) restartServer(conf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = New(conf.String("name", "api.server"),
@@ -53,7 +53,7 @@ func (w *hydraWebServer) restartServer(conf registry.Conf) (err error) {
 }
 
 //SetConf 设置配置参数
-func (w *hydraWebServer) setConf(conf registry.Conf) error {
+func (w *hydraWebServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -195,7 +195,7 @@ func (w *hydraWebServer) Start() (err error) {
 			err = w.server.Run(w.conf.String("address", ":9898"))
 		}()
 	} else {
-		go func(tls registry.Conf) {
+		go func(tls conf.Conf) {
 			err = w.server.RunTLS(tls.String("cert"), tls.String("key"), tls.String("address", ":9898"))
 		}(tls)
 	}
@@ -204,7 +204,7 @@ func (w *hydraWebServer) Start() (err error) {
 }
 
 //接口服务变更通知
-func (w *hydraWebServer) Notify(conf registry.Conf) error {
+func (w *hydraWebServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
@@ -227,10 +227,10 @@ func (w *hydraWebServer) Shutdown() {
 type hydraWebServerAdapter struct {
 }
 
-func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraWebServer(c, r, conf)
 }
 
 func init() {
-	server.Register("api.server", &hydraWebServerAdapter{})
+	server.Register("api", &hydraWebServerAdapter{})
 }

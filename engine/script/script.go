@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	METHOD_NAME = []string{"request", "query", "delete", "update", "insert"}
+	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "get", "post"}
 )
 
 type scriptPlugin struct {
@@ -32,7 +32,7 @@ type scriptPlugin struct {
 func newScriptPlugin() *scriptPlugin {
 	return &scriptPlugin{
 		services: make(map[string]string),
-		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 10, time.Second),
+		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second),
 	}
 }
 
@@ -41,7 +41,7 @@ func (s *scriptPlugin) Start(domain string, serverName string, serverType string
 	s.serverName = serverName
 	s.serverType = serverType
 	services = make([]string, 0, 0)
-	path := fmt.Sprintf("%s/%s/%s/script", s.domain, s.serverName, s.serverType)
+	path := fmt.Sprintf("%s/servers/%s/%s/script", s.domain, s.serverName, s.serverType)
 	p, err := file.GetAbs(path)
 	if err != nil {
 		return nil, err
@@ -56,6 +56,7 @@ func (s *scriptPlugin) Start(domain string, serverName string, serverType string
 		}
 		svsDirName := v.Name()
 		svsPath := fmt.Sprintf("%s/%s", path, svsDirName)
+
 		svsNames, err := ioutil.ReadDir(svsPath) //获取服务目录
 		if err != nil {
 			return nil, err
@@ -68,7 +69,7 @@ func (s *scriptPlugin) Start(domain string, serverName string, serverType string
 					if err = s.vm.PreLoad(filePath); err != nil {
 						return nil, err
 					}
-					name := fmt.Sprintf("%s.%s", svsDirName, method)
+					name := strings.ToUpper(fmt.Sprintf("%s.%s", svsDirName, method))
 					s.services[name] = filePath
 					services = append(services, name)
 				}
@@ -83,8 +84,7 @@ func (s *scriptPlugin) Close() error {
 	s.vm.Close()
 	return nil
 }
-func (s *scriptPlugin) Handle(name string, method string, service string, ctx *context.Context) (r *context.Response, err error) {
-	svName := fmt.Sprintf("%s.%s", service, method)
+func (s *scriptPlugin) Handle(svName string, method string, service string, ctx *context.Context) (r *context.Response, err error) {
 	f, ok := s.services[svName]
 	if !ok {
 		return nil, fmt.Errorf("script plugin 未找到服务：%s", svName)

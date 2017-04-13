@@ -8,8 +8,8 @@ import (
 
 	"sync"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 )
@@ -18,31 +18,31 @@ import (
 type hydraMQConsumer struct {
 	server   *MQConsumer
 	registry context.IServiceRegistry
-	conf     registry.Conf
+	conf     conf.Conf
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraMQConsumer, err error) {
+func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
-		conf:     registry.NewJSONConfWithEmpty(),
+		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 	}
-	h.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
-		conf.String("address"),
-		conf.String("version"),
+	h.server, err = NewMQConsumer(cnf.String("name", "mq.consumer"),
+		cnf.String("address"),
+		cnf.String("version"),
 		WithRegistry(r),
-		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	if err != nil {
 		return
 	}
-	err = h.setConf(conf)
+	err = h.setConf(cnf)
 	return
 }
 
 //restartServer 重启服务器
-func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
+func (w *hydraMQConsumer) restartServer(conf conf.Conf) (err error) {
 	w.Shutdown()
 	w.server, err = NewMQConsumer(conf.String("name", "mq.consumer"),
 		conf.String("address"),
@@ -60,7 +60,7 @@ func (w *hydraMQConsumer) restartServer(conf registry.Conf) (err error) {
 }
 
 //SetConf 设置配置参数
-func (w *hydraMQConsumer) setConf(conf registry.Conf) error {
+func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -145,7 +145,7 @@ func (w *hydraMQConsumer) Start() (err error) {
 }
 
 //接口服务变更通知
-func (w *hydraMQConsumer) Notify(conf registry.Conf) error {
+func (w *hydraMQConsumer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
@@ -162,10 +162,10 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraMQConsumer(c, r, conf)
 }
 
 func init() {
-	server.Register("mq.consumer", &hydraCronServerAdapter{})
+	server.Register("mq", &hydraCronServerAdapter{})
 }

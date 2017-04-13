@@ -7,8 +7,8 @@ import (
 
 	"sync"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/utility"
@@ -17,29 +17,29 @@ import (
 //hydraWebServer web server适配器
 type hydraCronServer struct {
 	server   *CronServer
-	conf     registry.Conf
+	conf     conf.Conf
 	registry context.IServiceRegistry
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
-		conf:     registry.NewJSONConfWithEmpty(),
+		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
-		server: NewCronServer(conf.String("name", "cron.server"),
+		server: NewCronServer(cnf.String("name", "cron.server"),
 			60,
 			time.Second,
 			WithRegistry(r),
-			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
+			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
-	err = h.setConf(conf)
+	err = h.setConf(cnf)
 	return
 }
 
 //restartServer 重启服务器
-func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
+func (w *hydraCronServer) restartServer(conf conf.Conf) (err error) {
 	w.Shutdown()
 	w.server = NewCronServer(conf.String("name", "cron.server"),
 		60,
@@ -54,7 +54,7 @@ func (w *hydraCronServer) restartServer(conf registry.Conf) (err error) {
 }
 
 //SetConf 设置配置参数
-func (w *hydraCronServer) setConf(conf registry.Conf) error {
+func (w *hydraCronServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -156,7 +156,7 @@ func (w *hydraCronServer) Start() (err error) {
 }
 
 //接口服务变更通知
-func (w *hydraCronServer) Notify(conf registry.Conf) error {
+func (w *hydraCronServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
@@ -174,10 +174,10 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraCronServer(c, r, conf)
 }
 
 func init() {
-	server.Register("cron.server", &hydraCronServerAdapter{})
+	server.Register("cron", &hydraCronServerAdapter{})
 }

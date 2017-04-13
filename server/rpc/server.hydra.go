@@ -9,8 +9,8 @@ import (
 
 	"strings"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
@@ -21,26 +21,26 @@ import (
 type hydraRPCServer struct {
 	server   *RPCServer
 	registry context.IServiceRegistry
-	conf     registry.Conf
+	conf     conf.Conf
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
-		conf:     registry.NewJSONConfWithEmpty(),
+		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
-		server: NewRPCServer(conf.String("name", "rpc.server"),
+		server: NewRPCServer(cnf.String("name", "rpc.server"),
 			WithRegistry(r),
-			WithIP(net.GetLocalIPAddress(conf.String("mask")))),
+			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
-	err = h.setConf(conf)
+	err = h.setConf(cnf)
 	return
 }
 
 //restartServer 重启服务器
-func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
+func (w *hydraRPCServer) restartServer(conf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = NewRPCServer(conf.String("name", "rpc.server"),
@@ -59,7 +59,7 @@ func (w *hydraRPCServer) restartServer(conf registry.Conf) (err error) {
 }
 
 //SetConf 设置配置参数
-func (w *hydraRPCServer) setConf(conf registry.Conf) error {
+func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
@@ -199,7 +199,7 @@ func (w *hydraRPCServer) Start() (err error) {
 }
 
 //接口服务变更通知
-func (w *hydraRPCServer) Notify(conf registry.Conf) error {
+func (w *hydraRPCServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
@@ -221,10 +221,10 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf registry.Conf) (server.IHydraServer, error) {
+func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraRPCServer(c, r, conf)
 }
 
 func init() {
-	server.Register("rpc.server", &hydraRPCServerAdapter{})
+	server.Register("rpc", &hydraRPCServerAdapter{})
 }
