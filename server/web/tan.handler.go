@@ -99,11 +99,9 @@ func (t *WebServer) getAddress(args ...interface{}) string {
 	}
 
 	if len(host) == 0 {
-		host = t.ip
 		if host == "" {
 			host = "0.0.0.0"
 		}
-
 	}
 	if port == 0 {
 		port = 8000

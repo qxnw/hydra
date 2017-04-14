@@ -32,7 +32,7 @@ type scriptPlugin struct {
 func newScriptPlugin() *scriptPlugin {
 	return &scriptPlugin{
 		services: make(map[string]string),
-		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second),
+		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 10, time.Second*300), //引擎池5分钟不用则自动回收
 	}
 }
 

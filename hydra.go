@@ -8,6 +8,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/profile"
+	"github.com/qxnw/hydra/trace"
+
+	"strings"
+
 	"github.com/qxnw/hydra/conf"
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
@@ -26,16 +31,19 @@ import (
 
 //Hydra Hydra server
 type Hydra struct {
-	domain   string
-	runMode  string
-	tag      string
-	mask     string
-	system   string
-	registry string
+	domain          string
+	runMode         string
+	tag             string
+	mask            string
+	system          string
+	registry        string
+	trace           bool
+	registryAddress []string
 	*logger.Logger
 	watcher conf.ConfWatcher
 	servers map[string]*HydraServer
 	notify  chan *conf.Updater
+	closeCh chan struct{}
 	done    bool
 }
 
@@ -44,40 +52,46 @@ func NewHydra() *Hydra {
 	return &Hydra{
 		servers: make(map[string]*HydraServer),
 		Logger:  logger.GetSession("hydra", utility.GetGUID()),
+		closeCh: make(chan struct{}, 1),
 	}
 }
 
 //Install 安装参数
 func (h *Hydra) Install() {
-	pflag.StringVarP(&h.domain, "domain", "d", "", "域名称")
-	pflag.StringVarP(&h.runMode, "run mode", "m", "standalone", "运行模式(standalone,cluster)")
-	pflag.StringVarP(&h.registry, "registry", "r", "", "服务注册中心地址(运行模式为cluster时必须填写)")
-	pflag.StringVarP(&h.mask, "ip mask", "k", "", "ip掩码(默认为本机第一个有效IP)")
-	pflag.StringVarP(&h.tag, "server tag", "t", "", "服务器标识(默认为本机IP地址)")
+	pflag.StringVarP(&h.domain, "domain name", "d", "", "域名称(必须)")
+	pflag.StringVarP(&h.registry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
+	pflag.StringVarP(&h.mask, "ip mask", "k", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
+	pflag.StringVarP(&h.tag, "server tag", "s", "", "服务器名称(默认为本机IP地址)")
+	pflag.BoolVarP(&h.trace, "enable trace", "t", false, "启用项目性能跟踪")
 }
-func (h *Hydra) checkFlag() bool {
+func (h *Hydra) checkFlag() (err error) {
 	pflag.Parse()
-	if h.domain == "" || h.runMode == "" {
+	if h.domain == "" {
 		pflag.Usage()
-		return false
+		return errors.New("domain name 不能为空")
 	}
-	if h.runMode == mode_cluster && h.registry == "" {
-		pflag.Usage()
-		return false
+	if h.registry == "" {
+		h.runMode = mode_Standalone
+	} else {
+		h.runMode = mode_cluster
+		h.runMode, h.registryAddress, err = getRegistryNames(h.registry)
+		if err != nil {
+			return fmt.Errorf("集群地址配置有误:%v", err)
+		}
 	}
 	if h.tag == "" {
 		h.tag = net.GetLocalIPAddress(h.mask)
 	}
-	return true
+	return nil
 
 }
 
 //Start 启动服务
 func (h *Hydra) Start() (err error) {
-	if !h.checkFlag() {
-		return errors.New("输入参数为空")
+	if err = h.checkFlag(); err != nil {
+		return
 	}
-	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag)
+	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag, h.registryAddress...)
 	if err != nil {
 		h.Error(fmt.Sprintf("watcher初始化失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err))
 		return
@@ -91,17 +105,24 @@ func (h *Hydra) Start() (err error) {
 	go h.loopCheckNotify()
 	h.Info("启动 hydra server...")
 
+	//启用项目性能跟踪
+	if h.trace {
+		p := profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook)
+		defer p.Stop()
+		go trace.Start(h.Logger)
+	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 LOOP:
 	for {
 		select {
 		case <-interrupt:
-			h.Errorf("%s was killed", h.domain)
+			h.Errorf("hydra server(%s) was killed", h.domain)
 			h.done = true
 			break LOOP
 		}
 	}
+
 	return nil
 }
 
@@ -120,11 +141,12 @@ LOOP:
 					break LOOP
 				}
 				name := u.Conf.String("name")
-				h.Logger.Infof("start server:%s", name)
+				h.Logger.Infof("启动服务器:%s", name)
 				srv := NewHydraServer(h.domain, h.runMode, h.registry)
 				err = srv.Start(u.Conf)
 				if err != nil {
 					h.Error(err)
+					break
 				}
 				h.servers[name] = srv
 			case registry.CHANGE:
@@ -132,12 +154,11 @@ LOOP:
 					break LOOP
 				}
 				name := u.Conf.String("name")
-				h.Logger.Info("conf changed:%s", name)
+				h.Logger.Infof("配置发生变化:%s", name)
 				if srv, ok := h.servers[name]; ok {
 					err = srv.Notify(u.Conf)
 					if err != nil {
 						h.Errorf("配置更新失败 server:%s(err:%v)", name, err)
-						return
 					}
 				}
 			case registry.DEL:
@@ -145,10 +166,9 @@ LOOP:
 					break LOOP
 				}
 				name := u.Conf.String("name")
-				h.Logger.Info("close server:%s", name)
+				h.Logger.Infof("服务器被删除:%s", name)
 				if srv, ok := h.servers[name]; ok {
 					srv.Shutdown()
-					h.Infof("关闭服务器：%s", name)
 					delete(h.servers, name)
 				}
 			}
@@ -156,8 +176,31 @@ LOOP:
 		}
 	}
 	for name, srv := range h.servers {
-		srv.Shutdown()
 		h.Infof("关闭服务器：%s", name)
+		srv.Shutdown()
 	}
+	h.closeCh <- struct{}{}
 	return nil
+}
+func (h *Hydra) Close() {
+	h.done = true
+	<-h.closeCh
+	time.Sleep(time.Millisecond * 100)
+	logger.Close()
+	close(h.closeCh)
+}
+func getRegistryNames(address string) (clusterName string, raddr []string, err error) {
+	addr := strings.SplitN(address, "://", 2)
+	if len(addr) != 2 {
+		return "", nil, fmt.Errorf("%s错误，必须包含://", addr)
+	}
+	if len(addr[0]) == 0 {
+		return "", nil, fmt.Errorf("%s错误，协议名不能为空", addr)
+	}
+	if len(addr[1]) == 0 {
+		return "", nil, fmt.Errorf("%s错误，地址不能为空", addr)
+	}
+	clusterName = addr[0]
+	raddr = strings.Split(addr[1], ",")
+	return
 }

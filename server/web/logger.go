@@ -30,7 +30,7 @@ func Logging() HandlerFunc {
 			p = p + "?" + ctx.Req().URL.RawQuery
 		}
 
-		ctx.Debug("Started", ctx.Req().Method, p, "for", ctx.IP())
+		ctx.Info("Started", ctx.Req().Method, p, "for", ctx.IP())
 
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {

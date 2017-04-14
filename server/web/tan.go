@@ -19,7 +19,7 @@ import (
 
 //Version 系统版本号
 func Version() string {
-	return "0.5.2.1214"
+	return "0.0.0.1"
 }
 
 //WebServer web服务器
@@ -125,7 +125,10 @@ func (t *WebServer) SetHost(host string) {
 
 //SetInfluxMetric 重置metric
 func (t *WebServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	t.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	if err != nil {
+		t.logger.Error("启动metric失败：", err)
+	}
 }
 
 //StopInfluxMetric stop metric

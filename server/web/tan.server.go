@@ -39,13 +39,14 @@ func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry
 	return
 }
 
-func (w *hydraWebServer) restartServer(conf conf.Conf) (err error) {
+func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	w.server = New(conf.String("name", "api.server"),
+	w.server = New(cnf.String("name", "api.server"),
 		WithRegistry(w.registry),
-		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
-	err = w.setConf(conf)
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+	w.conf = conf.NewJSONConfWithEmpty()
+	err = w.setConf(cnf)
 	if err != nil {
 		return
 	}
@@ -108,11 +109,14 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
 		password := metric.String("password")
-		timeSpan, _ := metric.Int("timeSpan", 10)
+		//timeSpan, _ := metric.Int("timeSpan", 5)
 		if host == "" || dataBase == "" {
 			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
 		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
+		if !strings.Contains(host, "://") {
+			host = "http://" + host
+		}
+		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second)
 	}
 	//设置基本参数
 	w.server.SetName(conf.String("name", "api.server"))

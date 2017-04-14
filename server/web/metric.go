@@ -61,7 +61,7 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	url := ctx.Req().URL.Path
 	client := ctx.IP()
-	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.COUNTER, "server", ctx.tan.ip, "client", client, "url", url)
+	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.WORKING, "server", ctx.tan.ip, "client", client, "url", url)
 	timerName := metrics.MakeName(ctx.tan.serverName+".request", metrics.TIMER, "server", ctx.tan.ip, "client", client, "url", url)
 	successName := metrics.MakeName(ctx.tan.serverName+".success", metrics.METER, "server", ctx.tan.ip, "client", client, "url", url)
 	failedName := metrics.MakeName(ctx.tan.serverName+".failed", metrics.METER, "server", ctx.tan.ip, "client", client, "url", url)
