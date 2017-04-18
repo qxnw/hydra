@@ -35,7 +35,7 @@ func Recovery(debug bool) HandlerFunc {
 					if !debug {
 						ctx.Result = InternalServerError(http.StatusText(http.StatusInternalServerError))
 					} else {
-						ctx.Result = InternalServerError(content)
+						ctx.Result = InternalServerError(e.(error).Error())
 					}
 				}
 			}

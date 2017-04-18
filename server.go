@@ -34,7 +34,7 @@ func NewHydraServer(domain string, runMode string, registry string) *HydraServer
 		domain:   domain,
 		runMode:  runMode,
 		registry: registry,
-		engine:   engine.DefaultEngine,
+		engine:   engine.NewStandardEngine(),
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-//IPlugin 插件
-type IPlugin interface {
+//IWorker 插件
+type IWorker interface {
 	Start(domain string, serverName string, serverType string) ([]string, error)
 	Close() error
 	context.EngineHandler
@@ -18,20 +18,28 @@ type IPlugin interface {
 type IEngine interface {
 	Start(domain string, serverName string, serverType string) ([]string, error)
 	Handle(name string, method string, service string, c *context.Context) (*context.Response, error)
-	Register(name string, p IPlugin)
+	Register(name string, p IWorker)
+}
+
+type IWorkerResolver interface {
+	Resolve() IWorker
 }
 
 type standardEngine struct {
-	plugins map[string]IPlugin
-	service map[string]IPlugin
+	plugins map[string]IWorker
+	service map[string]IWorker
 }
 
 //NewStandardEngine 创建标准执行引擎
 func NewStandardEngine() IEngine {
-	return &standardEngine{
-		plugins: make(map[string]IPlugin),
-		service: make(map[string]IPlugin),
+	e := &standardEngine{
+		plugins: make(map[string]IWorker),
+		service: make(map[string]IWorker),
 	}
+	for k, v := range resolvers {
+		e.plugins[k] = v.Resolve()
+	}
+	return e
 }
 
 //启动引擎
@@ -65,26 +73,23 @@ func (e *standardEngine) Handle(name string, method string, service string, c *c
 }
 
 //Register 注册插件
-func (e *standardEngine) Register(name string, p IPlugin) {
+func (e *standardEngine) Register(name string, p IWorker) {
 	if _, ok := e.plugins[name]; ok {
 		panic("engine: Register called twice for adapter " + name)
 	}
 	e.plugins[name] = p
 }
 
-var DefaultEngine = NewStandardEngine()
+var resolvers map[string]IWorkerResolver
 
-//Start 启动引擎
-func Start(domain string, serverName string, serverType string) ([]string, error) {
-	return DefaultEngine.Start(domain, serverName, serverType)
-}
-
-//Handle 处理引擎
-func Handle(name string, method string, service string, c *context.Context) (*context.Response, error) {
-	return DefaultEngine.Handle(name, method, service, c)
+func init() {
+	resolvers = make(map[string]IWorkerResolver)
 }
 
 //Register 注册插件
-func Register(name string, p IPlugin) {
-	DefaultEngine.Register(name, p)
+func Register(name string, p IWorkerResolver) {
+	if _, ok := resolvers[name]; ok {
+		panic("engine: Register called twice for adapter " + name)
+	}
+	resolvers[name] = p
 }

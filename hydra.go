@@ -24,7 +24,11 @@ import (
 	_ "github.com/qxnw/hydra/service/discovery"
 	_ "github.com/qxnw/hydra/service/register"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/metrics"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/sysinfo/cpu"
+	"github.com/qxnw/lib4go/sysinfo/disk"
+	"github.com/qxnw/lib4go/sysinfo/memory"
 	"github.com/qxnw/lib4go/utility"
 	"github.com/spf13/pflag"
 )
@@ -37,7 +41,9 @@ type Hydra struct {
 	mask            string
 	system          string
 	registry        string
+	ip              string
 	trace           bool
+	collectIndex    int
 	registryAddress []string
 	*logger.Logger
 	watcher conf.ConfWatcher
@@ -79,8 +85,9 @@ func (h *Hydra) checkFlag() (err error) {
 			return fmt.Errorf("集群地址配置有误:%v", err)
 		}
 	}
+	h.ip = net.GetLocalIPAddress(h.mask)
 	if h.tag == "" {
-		h.tag = net.GetLocalIPAddress(h.mask)
+		h.tag = h.ip
 	}
 	return nil
 
@@ -103,6 +110,7 @@ func (h *Hydra) Start() (err error) {
 		return
 	}
 	go h.loopCheckNotify()
+	go h.collectSys()
 	h.Info("启动 hydra server...")
 
 	//启用项目性能跟踪
@@ -111,6 +119,7 @@ func (h *Hydra) Start() (err error) {
 		defer p.Stop()
 		go trace.Start(h.Logger)
 	}
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 LOOP:
@@ -203,4 +212,28 @@ func getRegistryNames(address string) (clusterName string, raddr []string, err e
 	clusterName = addr[0]
 	raddr = strings.Split(addr[1], ",")
 	return
+}
+func (h *Hydra) collectSys() {
+	for {
+		select {
+		case <-time.After(time.Second * 5):
+			if h.done {
+				return
+			}
+			h.collectIndex = (h.collectIndex + 1) % 5
+			if h.collectIndex != 0 {
+				continue
+			}
+			cpuUsed := metrics.GetOrRegisterGaugeFloat64(metrics.MakeName("hydra.server.cpu", metrics.GAUGE, "server", h.ip), metrics.DefaultRegistry)   //响应时长
+			memUsed := metrics.GetOrRegisterGaugeFloat64(metrics.MakeName("hydra.server.mem", metrics.GAUGE, "server", h.ip), metrics.DefaultRegistry)   //响应时长
+			diskUsed := metrics.GetOrRegisterGaugeFloat64(metrics.MakeName("hydra.server.disk", metrics.GAUGE, "server", h.ip), metrics.DefaultRegistry) //响应时长
+
+			u := cpu.GetInfo()
+			cpuUsed.Update(u.UsedPercent)
+			mm := memory.GetInfo()
+			memUsed.Update(mm.UsedPercent)
+			dsk := disk.GetInfo()
+			diskUsed.Update(dsk.UsedPercent)
+		}
+	}
 }

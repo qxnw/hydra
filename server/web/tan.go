@@ -189,6 +189,7 @@ func New(name string, opts ...Option) *WebServer {
 	handlers := make([]Handler, 0, 8)
 	handlers = append(handlers,
 		Logging(),
+		Recovery(false),
 		t.webServerOption.host,
 		t.webServerOption.metric,
 		Compresses([]string{}),

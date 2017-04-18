@@ -20,7 +20,7 @@ var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "get", "post"}
 )
 
-type scriptPlugin struct {
+type scriptWorker struct {
 	domain     string
 	serverName string
 	serverType string
@@ -29,14 +29,14 @@ type scriptPlugin struct {
 	services   map[string]string
 }
 
-func newScriptPlugin() *scriptPlugin {
-	return &scriptPlugin{
+func newScriptWorker() *scriptWorker {
+	return &scriptWorker{
 		services: make(map[string]string),
-		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 10, time.Second*300), //引擎池5分钟不用则自动回收
+		vm:       lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300), //引擎池5分钟不用则自动回收
 	}
 }
 
-func (s *scriptPlugin) Start(domain string, serverName string, serverType string) (services []string, err error) {
+func (s *scriptWorker) Start(domain string, serverName string, serverType string) (services []string, err error) {
 	s.domain = domain
 	s.serverName = serverName
 	s.serverType = serverType
@@ -80,11 +80,11 @@ func (s *scriptPlugin) Start(domain string, serverName string, serverType string
 	return
 }
 
-func (s *scriptPlugin) Close() error {
+func (s *scriptWorker) Close() error {
 	s.vm.Close()
 	return nil
 }
-func (s *scriptPlugin) Handle(svName string, method string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *scriptWorker) Handle(svName string, method string, service string, ctx *context.Context) (r *context.Response, err error) {
 	f, ok := s.services[svName]
 	if !ok {
 		return nil, fmt.Errorf("script plugin 未找到服务：%s", svName)
@@ -103,6 +103,14 @@ func (s *scriptPlugin) Handle(svName string, method string, service string, ctx 
 	r = &context.Response{Status: 200, Params: data, Content: result[0]}
 	return
 }
+
+type scriptResolver struct {
+}
+
+func (s *scriptResolver) Resolve() engine.IWorker {
+	return newScriptWorker()
+}
+
 func init() {
-	engine.Register("script", newScriptPlugin())
+	engine.Register("script", &scriptResolver{})
 }

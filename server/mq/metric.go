@@ -21,6 +21,7 @@ type InfluxMetric struct {
 	reporter *reporter
 	registry cmap.ConcurrentMap
 	mu       sync.Mutex
+	done     bool
 }
 
 func NewInfluxMetric() *InfluxMetric {
@@ -45,7 +46,6 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 		return
 	}
 	go m.reporter.influxdb.Run()
-	go metrics.DefaultRegistry.RunHealthchecks()
 	return nil
 }
 

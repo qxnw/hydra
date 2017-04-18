@@ -45,7 +45,6 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 		return
 	}
 	go m.reporter.influxdb.Run()
-	go metrics.DefaultRegistry.RunHealthchecks()
 	return nil
 }
 

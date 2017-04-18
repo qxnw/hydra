@@ -10,7 +10,7 @@ import (
 )
 
 func TestScript1(t *testing.T) {
-	p := newScriptPlugin()
+	p := newScriptWorker()
 	err := os.MkdirAll("./hydra/merchant.api/rpc/script/", 0777)
 	ut.Expect(t, err, nil)
 	svs, err := p.Start("./hydra", "merchant.api", "rpc")
@@ -20,7 +20,7 @@ func TestScript1(t *testing.T) {
 }
 
 func TestScript2(t *testing.T) {
-	p := newScriptPlugin()
+	p := newScriptWorker()
 	err := os.MkdirAll("./hydra/merchant.api/rpc/script/order_request/", 0777)
 	ut.Expect(t, err, nil)
 	f, err := os.OpenFile("./hydra/merchant.api/rpc/script/order_request/request.lua", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)

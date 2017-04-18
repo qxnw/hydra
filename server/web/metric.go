@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -15,7 +16,6 @@ type reporter struct {
 	username string
 	password string
 	timeSpan time.Duration
-	done     bool
 }
 type InfluxMetric struct {
 	reporter *reporter
@@ -33,6 +33,7 @@ func (m *InfluxMetric) Stop() {
 		m.reporter.influxdb.Close()
 	}
 }
+
 func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, timeSpan time.Duration) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -45,7 +46,6 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 		return
 	}
 	go m.reporter.influxdb.Run()
-	go metrics.DefaultRegistry.RunHealthchecks()
 	return nil
 }
 
@@ -61,10 +61,8 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	url := ctx.Req().URL.Path
 	client := ctx.IP()
-	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.WORKING, "server", ctx.tan.ip, "client", client, "url", url)
-	timerName := metrics.MakeName(ctx.tan.serverName+".request", metrics.TIMER, "server", ctx.tan.ip, "client", client, "url", url)
-	successName := metrics.MakeName(ctx.tan.serverName+".success", metrics.METER, "server", ctx.tan.ip, "client", client, "url", url)
-	failedName := metrics.MakeName(ctx.tan.serverName+".failed", metrics.METER, "server", ctx.tan.ip, "client", client, "url", url)
+	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.WORKING, "server", ctx.tan.ip, "client", client, "url", url) //堵塞计数
+	timerName := metrics.MakeName(ctx.tan.serverName+".response", metrics.TIMER, "server", ctx.tan.ip, "client", client, "url", url)   //响应时长
 
 	counter := metrics.GetOrRegisterCounter(conterName, metrics.DefaultRegistry)
 	counter.Inc(1)
@@ -76,14 +74,11 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 		if ctx.Result == nil {
 			ctx.Result = NotFound()
 		}
-
 		ctx.HandleError()
 	}
 
 	statusCode := ctx.Status()
-	if statusCode >= 200 && statusCode < 400 {
-		metrics.GetOrRegisterMeter(successName, metrics.DefaultRegistry).Mark(1)
-	} else {
-		metrics.GetOrRegisterMeter(failedName, metrics.DefaultRegistry).Mark(1)
-	}
+	responseName := metrics.MakeName(ctx.tan.serverName+".response", metrics.METER, "server", ctx.tan.ip,
+		"client", client, "url", url, "status", fmt.Sprintf("%d", statusCode)) //响应状态码
+	metrics.GetOrRegisterMeter(responseName, metrics.DefaultRegistry).Mark(1)
 }
