@@ -179,21 +179,15 @@ func (j *JSONConf) GetNodeWithSection(section string, enableCache ...bool) (r Co
 	if j.handle == nil {
 		return nil, errors.New("未指定NODE获取方式")
 	}
-
 	ec := true
 	if len(enableCache) > 0 {
 		ec = enableCache[0]
 	}
-
 	if value, ok := j.cache[section]; ok && ec {
 		r = value.(Conf)
 		return
 	}
-	value := j.String(section)
-	if !strings.HasPrefix(value, "#") {
-		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s", section)
-	}
-	r, err = j.handle(j.Translate(value[1:]))
+	r, err = j.GetNodeWithValue(j.String(section), enableCache...)
 	if err != nil {
 		return
 	}

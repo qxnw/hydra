@@ -80,12 +80,11 @@ func (e *standardEngine) Handle(name string, mode string, service string, c *con
 	for _, worker := range e.service {
 		svs, ok := worker[svName]
 		if !ok {
-			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s未找到服务:%s", mode, svName)
+			continue
 		}
 		return svs.Handle(name, mode, svName, c)
 	}
-
-	return nil, nil
+	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", svName)
 
 }
 
