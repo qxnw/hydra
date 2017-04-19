@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/profile"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/hydra/trace"
 
 	"strings"
@@ -64,11 +65,12 @@ func NewHydra() *Hydra {
 
 //Install 安装参数
 func (h *Hydra) Install() {
-	pflag.StringVarP(&h.domain, "domain name", "d", "", "域名称(必须)")
+	pflag.StringVarP(&h.domain, "domain name", "n", "", "域名称(必须)")
 	pflag.StringVarP(&h.registry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
 	pflag.StringVarP(&h.mask, "ip mask", "k", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
 	pflag.StringVarP(&h.tag, "server tag", "s", "", "服务器名称(默认为本机IP地址)")
 	pflag.BoolVarP(&h.trace, "enable trace", "t", false, "启用项目性能跟踪")
+	pflag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 }
 func (h *Hydra) checkFlag() (err error) {
 	pflag.Parse()

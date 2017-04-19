@@ -64,11 +64,11 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
 	//设置路由
-	routers, err := conf.GetNode("router")
+	routers, err := conf.GetNodeWithSection("router")
 	if err != nil {
 		return fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("routers")
 		if err != nil {
 			return fmt.Errorf("routers未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -77,12 +77,13 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
-			method := strings.Split(strings.ToUpper(c.String("method", "request")), ",")
-			params := c.String("params")
+			action := strings.Split(strings.ToUpper(c.String("action", "request")), ",")
+			args := c.String("args")
+			mode := c.String("mode", "*")
 			if name == "" || service == "" {
 				return fmt.Errorf("路由配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
 			}
-			for _, v := range method {
+			for _, v := range action {
 				exist := false
 				for _, e := range SupportMethods {
 					if v == e {
@@ -91,24 +92,24 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 					}
 				}
 				if !exist {
-					return fmt.Errorf("路由配置错误:method:%v不支持,只支持:%v", method, SupportMethods)
+					return fmt.Errorf("路由配置错误:method:%v不支持,只支持:%v", action, SupportMethods)
 				}
 			}
 			routers = append(routers, &rpcRouter{
-				Method:      method,
+				Method:      action,
 				Path:        name,
-				Handler:     w.handle(name, method, service, params),
+				Handler:     w.handle(name, mode, service, args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
 		w.server.SetRouters(routers...)
 	}
 
 	//设置metric上报
-	metric, err := conf.GetNode("metric")
+	metric, err := conf.GetNodeWithSection("metric")
 	if err != nil {
 		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
@@ -119,11 +120,11 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		}
 		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
 	}
-	limiter, err := conf.GetNode("limiter")
+	limiter, err := conf.GetNodeWithSection("limiter")
 	if err != nil {
 		return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
 		lmts, err := limiter.GetSections("QPS")
 		if err != nil {
 			return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -147,18 +148,18 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraRPCServer) handle(name string, method []string, service string, args string) func(c *Context) {
+func (w *hydraRPCServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 
 		//处理输入参数
 		context := context.GetContext()
 		defer context.Close()
 		tfParams := transform.NewGetter(c.Params())
+		tfParams.Set("method", c.Method())
+
 		tfForm := transform.NewMap(c.Req().GetArgs())
 
 		rArgs := tfForm.Translate(tfParams.Translate(args))
-		context.Ext["__func_param_getter_"] = tfParams
-		context.Ext["__func_args_getter_"] = tfForm
 		context.Ext["hydra_sid"] = c.GetSessionID()
 		var err error
 		context.Input.Input = tfForm.Data
@@ -169,12 +170,15 @@ func (w *hydraRPCServer) handle(name string, method []string, service string, ar
 			return
 		}
 		//执行服务调用
-		response, err := w.handler.Handle(name, c.Method(), c.Req().Service, context)
+		response, err := w.handler.Handle(name, mode, c.Req().Service, context)
 		if err != nil {
-			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
+			if server.IsDebug {
+				c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf(":%+v", err.Error()), Type: 0}
+				return
+			}
+			c.Result = &StatusResult{Code: 500, Result: "500 Internal Server Error(工作引擎发生异常)", Type: 0}
 			return
 		}
-
 		//处理返回参数
 		if response.Status == 0 {
 			response.Status = 200

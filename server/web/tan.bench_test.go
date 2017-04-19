@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 )
 
 type benchtHandler struct {
@@ -15,16 +15,16 @@ type benchtHandler struct {
 func (h benchtHandler) Handle(name string, method []string, s string, p string, c context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
-func (h benchtHandler) GetPath(p string) (registry.Conf, error) {
+func (h benchtHandler) GetPath(p string) (conf.Conf, error) {
 	h.version++
 	if strings.HasSuffix(p, "influxdb1") {
-		return registry.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router1") {
-		return registry.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "influxdb2") {
-		return registry.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router2") {
-		return registry.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
 	}
 	return nil, errors.New("not find")
 }

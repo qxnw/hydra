@@ -52,8 +52,10 @@ type Conf interface {
 	Int(key string, def ...int) (int, error)
 	Bool(key string, def ...bool) (bool, error)
 	GetSection(section string) (Conf, error)
-	GetNode(section string) (Conf, error)
+	GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error)
+	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
+	GetContent() string
 	Len() int
 }
 

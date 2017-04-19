@@ -249,7 +249,9 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 		v := cc.(*watcherPath)
 		c["root"] = v.root
 	}
-	return conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf), nil
+	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
+	jcf.Content = string(buf)
+	return jcf, nil
 }
 
 //Close 关闭所有监控项

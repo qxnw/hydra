@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/client/rpc"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/ut"
 )
@@ -21,20 +21,20 @@ type contextHandler struct {
 func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
 	return &context.Response{Content: "success"}, nil
 }
-func (h contextHandler) GetPath(p string) (registry.Conf, error) {
+func (h contextHandler) GetPath(p string) (conf.Conf, error) {
 
 	if strings.HasSuffix(p, "influxdb1") {
-		return registry.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router1") {
-		return registry.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "influxdb2") {
-		return registry.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router2") {
-		return registry.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "limiter1") {
-		return registry.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "limiter2") {
-		return registry.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(limiterStr, h.version, h.GetPath)
 	}
 
 	return nil, fmt.Errorf("not find....test.go:%s", p)
@@ -42,9 +42,9 @@ func (h contextHandler) GetPath(p string) (registry.Conf, error) {
 
 func TestRPCServer1(t *testing.T) {
 	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := server.NewServer("rpc.server", handler, nil, conf)
+	server, err := server.NewServer("rpc", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -58,7 +58,7 @@ func TestRPCServer1(t *testing.T) {
 }
 func TestRPCServer2(t *testing.T) {
 	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
+	conf, err := conf.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
 	server, err := newHydraRPCServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
@@ -72,25 +72,25 @@ func TestRPCServer2(t *testing.T) {
 
 func TestRPCServer3(t *testing.T) {
 	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
+	cnf, err := conf.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraRPCServer(handler, nil, conf)
+	server, err := newHydraRPCServer(handler, nil, cnf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
 
-	conf, err = registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	cnf, err = conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.ExpectSkip(t, err, nil)
 
-	err = server.Notify(conf)
+	err = server.Notify(cnf)
 	ut.Refute(t, err, nil)
 	ut.Expect(t, server.server.port, 2033)
 	ut.Expect(t, server.server.serverName, "merchant.web")
 
 	//wait
-	conf, err = registry.NewJSONConfWithJson(confstr3, 101, handler.GetPath)
+	cnf, err = conf.NewJSONConfWithJson(confstr3, 101, handler.GetPath)
 	ut.ExpectSkip(t, err, nil)
-	server.Notify(conf)
+	server.Notify(cnf)
 	ut.Expect(t, server.server.port, 2033)
 	ut.Expect(t, server.server.serverName, "merchant.web")
 
@@ -98,9 +98,9 @@ func TestRPCServer3(t *testing.T) {
 
 func TestRPCServer4(t *testing.T) {
 	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
+	cnf, err := conf.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraRPCServer(handler, nil, conf)
+	server, err := newHydraRPCServer(handler, nil, cnf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -113,9 +113,9 @@ func TestRPCServer4(t *testing.T) {
 	client.Close()
 
 	h := &contextHandler{version: 102}
-	conf, err = registry.NewJSONConfWithJson(confstr5, 101, h.GetPath)
+	cnf, err = conf.NewJSONConfWithJson(confstr5, 101, h.GetPath)
 	ut.ExpectSkip(t, err, nil)
-	err = server.Notify(conf)
+	err = server.Notify(cnf)
 	ut.ExpectSkip(t, err, nil)
 
 	client = rpc.NewRPCClient(server.GetAddress())
@@ -208,9 +208,9 @@ var routerStr1 = `{
     "routers": [
         {
             "name": "/:module/:action",
-            "method": "request,query",
+            "action": "request,query",
             "service": "../@type/@name/script/@module_@action:@method",
-            "params": "db=@domain/var/db/influxdb"
+            "args": "db=@domain/var/db/influxdb"
         }
     ]
 }`
@@ -226,9 +226,9 @@ var routerStr2 = `{
     "routers": [
         {
             "name": "/:module/:action/:id",
-            "method": "request,query",
+            "action": "request,query",
             "service": "../@type/@name/script/@module_@action:@method",
-            "params": "db=@domain/var/db/influxdb"
+            "args": "db=@domain/var/db/influxdb"
         }
     ]
 }`

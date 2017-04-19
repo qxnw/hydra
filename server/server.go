@@ -7,6 +7,9 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
+//IsDebug 当前服务器是处于调试模式
+var IsDebug = false
+
 //IHydraServer 服务器接口，可通过单个变量和配置文件方式设置服务器启用参数
 type IHydraServer interface {
 	Notify(conf.Conf) error

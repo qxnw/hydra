@@ -2,7 +2,8 @@ package mq
 
 type task struct {
 	name    string
-	method  string
+	action  string
+	mode    string
 	service string
-	params  string
+	args    string
 }

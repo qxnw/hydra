@@ -116,7 +116,9 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	for k, v := range w.args {
 		c[k] = v
 	}
-	return conf.NewJSONConfWithHandle(c, version, w.getValue), nil
+	jconf := conf.NewJSONConfWithHandle(c, version, w.getValue)
+	jconf.Content = string(content)
+	return jconf, nil
 }
 func (w *watchConf) getValue(path string) (r conf.Conf, err error) {
 	buf, version, err := w.registry.GetValue(path)

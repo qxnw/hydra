@@ -7,6 +7,7 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -116,7 +117,16 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]string{
+				encoder.Encode(map[string]interface{}{
+					"data": res,
+				})
+			case json.RawMessage:
+				fmt.Println("raw.message.2")
+				if statusCode == 0 {
+					statusCode = http.StatusOK
+				}
+				ctx.WriteHeader(statusCode)
+				encoder.Encode(map[string]json.RawMessage{
 					"data": res,
 				})
 			case []byte:

@@ -69,7 +69,7 @@ func (s *scriptWorker) Start(domain string, serverName string, serverType string
 					if err = s.vm.PreLoad(filePath); err != nil {
 						return nil, err
 					}
-					name := strings.ToUpper(fmt.Sprintf("%s.%s", svsDirName, method))
+					name := strings.ToUpper(fmt.Sprintf("%s/%s", svsDirName, method))
 					s.services[name] = filePath
 					services = append(services, name)
 				}
@@ -84,12 +84,12 @@ func (s *scriptWorker) Close() error {
 	s.vm.Close()
 	return nil
 }
-func (s *scriptWorker) Handle(svName string, method string, service string, ctx *context.Context) (r *context.Response, err error) {
-	f, ok := s.services[svName]
+func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+	f, ok := s.services[service]
 	if !ok {
-		return nil, fmt.Errorf("script plugin 未找到服务：%s", svName)
+		return &context.Response{Status: 404}, fmt.Errorf("script plugin 未找到服务：%s", service)
 	}
-	log := logger.GetSession(svName, ctx.Ext["hydra_sid"].(string))
+	log := logger.GetSession(service, ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	result, m, err := s.vm.Call(f, input)

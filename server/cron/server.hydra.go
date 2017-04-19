@@ -59,11 +59,11 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
 	//设置任务
-	routers, err := conf.GetNode("task")
+	routers, err := conf.GetNodeWithSection("task")
 	if err != nil {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("task"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
 			return fmt.Errorf("tasks未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -72,8 +72,9 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
-			method := c.String("method")
-			params := c.String("params")
+			action := c.String("action")
+			args := c.String("args")
+			mode := c.String("mode", "*")
 			interval, err := time.ParseDuration(c.String("interval", "-1"))
 			if err != nil {
 				return fmt.Errorf("task配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
@@ -82,23 +83,24 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if err != nil {
 				return fmt.Errorf("task配置错误:next值必须为时间格式yyyy/mm/dd HH:mm:ss（%s,%s）(%v)", name, c.String("next"), err)
 			}
-			if name == "" {
-				return fmt.Errorf("task配置错误:name不能为空（name:%s）", name)
+			if name == "" || service == "" || action == "" {
+				return fmt.Errorf("task配置错误:name,service,action不能为空（name:%s，service:%s，action:%s）", name, service, action)
 			}
+
 			tasks = append(tasks, NewTask(name,
 				time.Duration(next.Sub(time.Now()).Seconds()),
-				time.Duration(interval), w.handle(service, method, params), fmt.Sprintf("%s-%s", service, method)))
+				time.Duration(interval), w.handle(service, mode, args), fmt.Sprintf("%s-%s", service, action)))
 		}
 		for _, task := range tasks {
 			w.server.Add(task)
 		}
 	}
 	//设置metric上报
-	metric, err := conf.GetNode("metric")
+	metric, err := conf.GetNodeWithSection("metric")
 	if err != nil {
 		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
@@ -118,7 +120,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraCronServer) handle(service, method, args string) func(task *Task) error {
+func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) error {
 	return func(task *Task) (err error) {
 		//处理输入参数
 		context := context.GetContext()
@@ -131,8 +133,9 @@ func (w *hydraCronServer) handle(service, method, args string) func(task *Task) 
 			return err
 		}
 		//执行服务调用
-		response, err := w.handler.Handle(task.taskName, method, service, context)
+		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
+			response.Status = 500
 			return err
 		}
 		if response.Status == 0 {

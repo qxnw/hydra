@@ -8,44 +8,57 @@ import (
 
 	"time"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/ut"
 )
 
 type contextHandler struct {
-	version int32
+	version  int32
+	services chan string
 }
 
 func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
+	select {
+	case h.services <- s:
+	default:
+	}
 	return &context.Response{Content: "success"}, nil
 }
-func (h contextHandler) GetPath(p string) (registry.Conf, error) {
+func (h contextHandler) GetPath(p string) (conf.Conf, error) {
 
 	if strings.HasSuffix(p, "influxdb") {
-		return registry.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "task") {
-		return registry.NewJSONConfWithJson(taskStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(taskStr1, h.version, h.GetPath)
 	}
 	return nil, errors.New("not find")
 }
 
 func TestCronServer1(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	_, err = server.NewServer("cron.server", handler, nil, conf)
+	_, err = server.NewServer("cron", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 }
 func TestCronServer2(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
 	server, err := newHydraCronServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	server.server.execute()
 	time.Sleep(time.Millisecond)
+
+	sv := ""
+	select {
+	case sv = <-handler.services:
+	default:
+	}
+	ut.Expect(t, sv, "/order/request:request")
+
 }
 
 /*
@@ -83,8 +96,8 @@ var taskStr1 = `{
             "name": "cron",           
 			"interval":"24h",
 			"next":"@now",
-            "service": "/order/request",
-			"method": "request",
+            "service": "/order/request:@action",
+			"action": "request",
             "params": "db=@domain/var/db/influxdb"
         }
     ]

@@ -8,39 +8,44 @@ import (
 
 	"strings"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net/http"
 	"github.com/qxnw/lib4go/ut"
 )
 
 type contextHandler struct {
-	version int32
+	version  int32
+	services chan string
 }
 
-func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, mode string, service string, c *context.Context) (r *context.Response, err error) {
+	select {
+	case h.services <- service:
+	default:
+	}
 	return &context.Response{Content: "success"}, nil
 }
-func (h contextHandler) GetPath(p string) (registry.Conf, error) {
+func (h contextHandler) GetPath(p string) (conf.Conf, error) {
 
 	if strings.HasSuffix(p, "influxdb1") {
-		return registry.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router1") {
-		return registry.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "influxdb2") {
-		return registry.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "router2") {
-		return registry.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
 	}
 	return nil, errors.New("not find")
 }
 
 func TestServer1(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := server.NewServer("api.server", handler, nil, conf)
+	server, err := server.NewServer("api", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
@@ -58,8 +63,8 @@ func TestServer1(t *testing.T) {
 	ut.Expect(t, c, "Not Found")
 }
 func TestServer2(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	conf, err := conf.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
 	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
@@ -75,35 +80,35 @@ func TestServer2(t *testing.T) {
 }
 
 func TestServer3(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	cnf, err := conf.NewJSONConfWithJson(confstr3, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, nil, conf)
+	server, err := newHydraWebServer(handler, nil, cnf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
 
-	conf, err = registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	cnf, err = conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.ExpectSkip(t, err, nil)
 
-	err = server.Notify(conf)
+	err = server.Notify(cnf)
 	ut.Refute(t, err, nil)
 	ut.Expect(t, server.server.port, 1033)
 	ut.Expect(t, server.server.serverName, "merchant.web")
 	ut.ExpectSkip(t, len(server.server.hostNames), 0)
 
 	//wait
-	conf, err = registry.NewJSONConfWithJson(confstr3, 101, handler.GetPath)
+	cnf, err = conf.NewJSONConfWithJson(confstr3, 101, handler.GetPath)
 	ut.ExpectSkip(t, err, nil)
-	server.Notify(conf)
+	server.Notify(cnf)
 	ut.Expect(t, server.server.port, 1033)
 	ut.Expect(t, server.server.serverName, "merchant.web")
 	ut.ExpectSkip(t, len(server.server.hostNames), 0)
 }
 
 func TestServer4(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
+	handler := &contextHandler{version: 101, services: make(chan string, 1)}
+	conf, err := conf.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
 	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
@@ -119,19 +124,19 @@ func TestServer4(t *testing.T) {
 }
 
 func TestServer5(t *testing.T) {
-	handler := &contextHandler{version: 100}
-	conf, err := registry.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
+	handler := &contextHandler{version: 100, services: make(chan string, 1)}
+	cnf, err := conf.NewJSONConfWithJson(confstr4, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, nil, conf)
+	server, err := newHydraWebServer(handler, nil, cnf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
 
-	h2 := &contextHandler{version: 102}
-	conf, err = registry.NewJSONConfWithJson(confstr5, 101, h2.GetPath)
+	h2 := &contextHandler{version: 102, services: make(chan string, 1)}
+	cnf, err = conf.NewJSONConfWithJson(confstr5, 101, h2.GetPath)
 
 	ut.ExpectSkip(t, err, nil)
-	err = server.Notify(conf)
+	err = server.Notify(cnf)
 	ut.Expect(t, err, nil)
 	url := fmt.Sprintf("%s/order/request/123", server.GetAddress())
 	fmt.Println(url)
@@ -140,6 +145,13 @@ func TestServer5(t *testing.T) {
 	ut.Expect(t, err, nil)
 	ut.Expect(t, s, 200)
 
+	sv := ""
+	select {
+	case sv = <-handler.services:
+	default:
+
+	}
+	ut.Expect(t, sv, "order_request:POST")
 }
 
 /*
@@ -214,7 +226,7 @@ var confstr5 = `{
     "router": "#@path/router2"
 }`
 var metricStr1 = `{
-    "host":"192.168.0.92",
+    "host":"192.168.0.185:8086",
     "dataBase":"hydra",
     "userName":"hydra",
     "password":"123456",
@@ -224,15 +236,15 @@ var routerStr1 = `{
     "routers": [
         {
             "name": "/:module/:action",
-            "method": "post,get",
-            "service": "../@type/@name/script/@module_@action:@method",
-            "params": "db=@domain/var/db/influxdb"
+            "action": "post,get",
+            "service": "{@module}_{@action}:{@method}",
+            "args": "db=@domain/var/db/influxdb"
         }
     ]
 }`
 
 var metricStr2 = `{
-    "host":"192.168.0.92",
+    "host":"192.168.0.185:8086",
     "dataBase":"hydra",
     "userName":"hydra",
     "password":"123456",
@@ -241,10 +253,10 @@ var metricStr2 = `{
 var routerStr2 = `{
     "routers": [
         {
-            "name": "/:module/:action/:id",
-            "method": "post,get",
-            "service": "../@type/@name/script/@module_@action:@method",
-            "params": "db=@domain/var/db/influxdb"
+            "name": "/:module/:ac/:id",
+            "action": "post,get",
+            "service": "{@module}_{@ac}:{@method}",
+            "args": "db=@domain/var/db/influxdb"
         }
     ]
 }`

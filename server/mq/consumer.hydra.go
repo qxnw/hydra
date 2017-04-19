@@ -12,6 +12,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
@@ -65,11 +66,11 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
 	}
 	//设置路由
-	routers, err := conf.GetNode("queue")
+	routers, err := conf.GetNodeWithSection("queue")
 	if err != nil {
 		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
 		rts, err := routers.GetSections("queues")
 		if err != nil {
 			return fmt.Errorf("queues未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
@@ -78,24 +79,25 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			queue := c.String("name")
 			service := c.String("service")
-			method := c.String("method")
-			params := c.String("params")
-			if queue == "" || service == "" || method == "" {
-				return fmt.Errorf("queue配置错误:service 和 name不能为空（name:%s，service:%s）", queue, service)
+			action := c.String("action")
+			mode := c.String("mode", "*")
+			args := c.String("args")
+			if queue == "" || service == "" || action == "" {
+				return fmt.Errorf("queue配置错误:name,service,action不能为空（name:%s，service:%s，action:%s）", queue, service, action)
 			}
-			queues = append(queues, task{name: queue, service: service, method: method, params: params})
+			queues = append(queues, task{name: queue, service: service, action: action, args: args, mode: mode})
 		}
 		for _, task := range queues {
-			go w.server.Use(task.name, w.handle(task.service, task.method, task.params))
+			go w.server.Use(task.name, w.handle(task.service, task.mode, task.action, task.args))
 		}
 
 	}
 	//设置metric上报
-	metric, err := conf.GetNode("metric")
+	metric, err := conf.GetNodeWithSection("metric")
 	if err != nil {
 		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNode("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
@@ -113,16 +115,25 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraMQConsumer) handle(service, method, params string) func(task *Context) error {
+func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *Context) error {
 	return func(task *Context) error {
 		//处理输入参数
+		var err error
 		context := context.GetContext()
 		defer context.Close()
-		context.Input.Body = json.RawMessage(task.params)
+		context.Input.Input = json.RawMessage(task.params)
+		context.Input.Args, err = utility.GetMapWithQuery(args)
+		if err != nil {
+			task.statusCode = 500
+			task.Result = err
+			return err
+		}
+
 		context.Ext["hydra_sid"] = task.GetSessionID()
 		//执行服务调用
-		response, err := w.handler.Handle(task.taskName, method, service, context)
+		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
+			response.Status = 500
 			return err
 		}
 		if response.Status == 0 {

@@ -17,7 +17,7 @@ type IWorker interface {
 //IEngine 执行引擎
 type IEngine interface {
 	Start(domain string, serverName string, serverType string) ([]string, error)
-	Handle(name string, method string, service string, c *context.Context) (*context.Response, error)
+	Handle(name string, mode string, service string, c *context.Context) (*context.Response, error)
 	Register(name string, p IWorker)
 }
 
@@ -27,14 +27,14 @@ type IWorkerResolver interface {
 
 type standardEngine struct {
 	plugins map[string]IWorker
-	service map[string]IWorker
+	service map[string]map[string]IWorker
 }
 
 //NewStandardEngine 创建标准执行引擎
 func NewStandardEngine() IEngine {
 	e := &standardEngine{
 		plugins: make(map[string]IWorker),
-		service: make(map[string]IWorker),
+		service: make(map[string]map[string]IWorker),
 	}
 	for k, v := range resolvers {
 		e.plugins[k] = v.Resolve()
@@ -44,13 +44,14 @@ func NewStandardEngine() IEngine {
 
 //启动引擎
 func (e *standardEngine) Start(domain string, serverName string, serverType string) (services []string, err error) {
-	for _, p := range e.plugins {
+	for mode, p := range e.plugins {
+		e.service[mode] = make(map[string]IWorker)
 		services, err = p.Start(domain, serverName, serverType)
 		if err != nil {
 			return nil, err
 		}
 		for _, s := range services {
-			e.service[s] = p
+			e.service[mode][s] = p
 		}
 	}
 	return nil, nil
@@ -63,13 +64,29 @@ func (e *standardEngine) Close() error {
 }
 
 //处理引擎
-func (e *standardEngine) Handle(name string, method string, service string, c *context.Context) (*context.Response, error) {
-	cmd := strings.ToUpper(fmt.Sprintf("%s.%s", service, method))
-	svs, ok := e.service[cmd]
-	if !ok {
-		return nil, fmt.Errorf("engine:未找到执行引擎:%s", cmd)
+func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
+	svName := strings.ToUpper(service)
+	if mode != "*" {
+		worker, ok := e.service[mode]
+		if !ok {
+			return &context.Response{Status: 404}, fmt.Errorf("engine:未找到执行引擎:%s", mode)
+		}
+		svs, ok := worker[svName]
+		if !ok {
+			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s未找到服务:%s", mode, svName)
+		}
+		return svs.Handle(name, mode, svName, c)
 	}
-	return svs.Handle(cmd, method, service, c)
+	for _, worker := range e.service {
+		svs, ok := worker[svName]
+		if !ok {
+			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s未找到服务:%s", mode, svName)
+		}
+		return svs.Handle(name, mode, svName, c)
+	}
+
+	return nil, nil
+
 }
 
 //Register 注册插件

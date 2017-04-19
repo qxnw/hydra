@@ -16,9 +16,9 @@ type (
 
 var Set = &Params{}
 
-func (p *Params) Get(key string) string {
+func (p *Params) Get(key string) (string, error) {
 	if len(key) == 0 {
-		return ""
+		return "", nil
 	}
 	if key[0] != ':' && key[0] != '*' {
 		key = ":" + key
@@ -26,10 +26,10 @@ func (p *Params) Get(key string) string {
 
 	for _, v := range *p {
 		if v.Name == key {
-			return v.Value
+			return v.Value, nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 func (p *Params) String(key string) (string, error) {
@@ -85,43 +85,52 @@ func (p *Params) Escape(key string) (string, error) {
 }
 
 func (p *Params) Int(key string) (int, error) {
-	return strconv.Atoi(p.Get(key))
+	v, _ := p.Get(key)
+	return strconv.Atoi(v)
 }
 
 func (p *Params) Int32(key string) (int32, error) {
-	v, err := strconv.ParseInt(p.Get(key), 10, 32)
+	value, _ := p.Get(key)
+	v, err := strconv.ParseInt(value, 10, 32)
 	return int32(v), err
 }
 
 func (p *Params) Int64(key string) (int64, error) {
-	return strconv.ParseInt(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	return strconv.ParseInt(value, 10, 64)
 }
 
 func (p *Params) Uint(key string) (uint, error) {
-	v, err := strconv.ParseUint(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	v, err := strconv.ParseUint(value, 10, 64)
 	return uint(v), err
 }
 
 func (p *Params) Uint32(key string) (uint32, error) {
-	v, err := strconv.ParseUint(p.Get(key), 10, 32)
+	value, _ := p.Get(key)
+	v, err := strconv.ParseUint(value, 10, 32)
 	return uint32(v), err
 }
 
 func (p *Params) Uint64(key string) (uint64, error) {
-	return strconv.ParseUint(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	return strconv.ParseUint(value, 10, 64)
 }
 
 func (p *Params) Bool(key string) (bool, error) {
-	return strconv.ParseBool(p.Get(key))
+	value, _ := p.Get(key)
+	return strconv.ParseBool(value)
 }
 
 func (p *Params) Float32(key string) (float32, error) {
-	v, err := strconv.ParseFloat(p.Get(key), 32)
+	value, _ := p.Get(key)
+	v, err := strconv.ParseFloat(value, 32)
 	return float32(v), err
 }
 
 func (p *Params) Float64(key string) (float64, error) {
-	return strconv.ParseFloat(p.Get(key), 64)
+	value, _ := p.Get(key)
+	return strconv.ParseFloat(value, 64)
 }
 
 func (p *Params) MustString(key string, defaults ...string) string {
@@ -186,7 +195,8 @@ func (p *Params) MustEscape(key string, defaults ...string) string {
 }
 
 func (p *Params) MustInt(key string, defaults ...int) int {
-	v, err := strconv.Atoi(p.Get(key))
+	value, _ := p.Get(key)
+	v, err := strconv.Atoi(value)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -194,7 +204,8 @@ func (p *Params) MustInt(key string, defaults ...int) int {
 }
 
 func (p *Params) MustInt32(key string, defaults ...int32) int32 {
-	r, err := strconv.ParseInt(p.Get(key), 10, 32)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseInt(value, 10, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -203,7 +214,8 @@ func (p *Params) MustInt32(key string, defaults ...int32) int32 {
 }
 
 func (p *Params) MustInt64(key string, defaults ...int64) int64 {
-	r, err := strconv.ParseInt(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseInt(value, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -211,7 +223,8 @@ func (p *Params) MustInt64(key string, defaults ...int64) int64 {
 }
 
 func (p *Params) MustUint(key string, defaults ...uint) uint {
-	v, err := strconv.ParseUint(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	v, err := strconv.ParseUint(value, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -219,7 +232,8 @@ func (p *Params) MustUint(key string, defaults ...uint) uint {
 }
 
 func (p *Params) MustUint32(key string, defaults ...uint32) uint32 {
-	r, err := strconv.ParseUint(p.Get(key), 10, 32)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseUint(value, 10, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -228,7 +242,8 @@ func (p *Params) MustUint32(key string, defaults ...uint32) uint32 {
 }
 
 func (p *Params) MustUint64(key string, defaults ...uint64) uint64 {
-	r, err := strconv.ParseUint(p.Get(key), 10, 64)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseUint(value, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -236,7 +251,8 @@ func (p *Params) MustUint64(key string, defaults ...uint64) uint64 {
 }
 
 func (p *Params) MustFloat32(key string, defaults ...float32) float32 {
-	r, err := strconv.ParseFloat(p.Get(key), 32)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseFloat(value, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -244,7 +260,8 @@ func (p *Params) MustFloat32(key string, defaults ...float32) float32 {
 }
 
 func (p *Params) MustFloat64(key string, defaults ...float64) float64 {
-	r, err := strconv.ParseFloat(p.Get(key), 64)
+	value, _ := p.Get(key)
+	r, err := strconv.ParseFloat(value, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}
@@ -252,7 +269,8 @@ func (p *Params) MustFloat64(key string, defaults ...float64) float64 {
 }
 
 func (p *Params) MustBool(key string, defaults ...bool) bool {
-	r, err := strconv.ParseBool(p.Get(key))
+	value, _ := p.Get(key)
+	r, err := strconv.ParseBool(value)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
 	}

@@ -15,6 +15,7 @@ import (
 type JSONConf struct {
 	data    map[string]interface{}
 	cache   map[string]interface{}
+	Content string
 	handle  func(path string) (Conf, error)
 	version int32
 	*transform.Transform
@@ -28,6 +29,7 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 	}
 	m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
+		Content:   c,
 		data:      m,
 		cache:     make(map[string]interface{}),
 		Transform: transform.NewMaps(m),
@@ -52,6 +54,9 @@ func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(
 		version:   version,
 		handle:    handle,
 	}
+}
+func (j *JSONConf) GetContent() string {
+	return j.Content
 }
 
 //Len 参数个数
@@ -143,12 +148,44 @@ func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
 	return
 }
 
-//GetNode 获取节点值
-func (j *JSONConf) GetNode(section string) (r Conf, err error) {
+//GetNodeWithValue 获取节点值
+func (j *JSONConf) GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error) {
 	if j.handle == nil {
 		return nil, errors.New("未指定NODE获取方式")
 	}
-	if value, ok := j.cache[section]; ok {
+
+	ec := true
+	if len(enableCache) > 0 {
+		ec = enableCache[0]
+	}
+
+	if value, ok := j.cache[value]; ok && ec {
+		r = value.(Conf)
+		return
+	}
+	if !strings.HasPrefix(value, "#") {
+		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s", value)
+	}
+	r, err = j.handle(j.Translate(value[1:]))
+	if err != nil {
+		return
+	}
+	j.cache[value] = r
+	return
+}
+
+//GetNodeWithSection 获取节点值
+func (j *JSONConf) GetNodeWithSection(section string, enableCache ...bool) (r Conf, err error) {
+	if j.handle == nil {
+		return nil, errors.New("未指定NODE获取方式")
+	}
+
+	ec := true
+	if len(enableCache) > 0 {
+		ec = enableCache[0]
+	}
+
+	if value, ok := j.cache[section]; ok && ec {
 		r = value.(Conf)
 		return
 	}

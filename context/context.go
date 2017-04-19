@@ -7,7 +7,7 @@ import (
 
 //EngineHandler context handle
 type EngineHandler interface {
-	Handle(name string, method string, service string, c *Context) (*Response, error)
+	Handle(name string, mode string, service string, c *Context) (*Response, error)
 }
 
 //Context 服务输出及Task执行的上下文

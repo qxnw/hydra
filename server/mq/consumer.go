@@ -52,7 +52,7 @@ type MQConsumer struct {
 
 //NewMQConsumer 构建服务器
 func NewMQConsumer(name string, address string, version string, opts ...TaskOption) (s *MQConsumer, err error) {
-	s = &MQConsumer{serverName: name, handlers: make([]Handler, 3),
+	s = &MQConsumer{serverName: name, handlers: make([]Handler, 0, 3),
 		p: &sync.Pool{
 			New: func() interface{} {
 				return &Context{}
