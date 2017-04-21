@@ -69,6 +69,12 @@ func (j *JSONConf) GetVersion() int32 {
 	return j.version
 }
 
+//Set 设置参数值
+func (j *JSONConf) Set(key string, value string) {
+	j.data[key] = value
+	j.Transform.Set(key, value)
+}
+
 //String 获取字符串
 func (j *JSONConf) String(key string, def ...string) (r string) {
 	if value, ok := j.cache[key]; ok {

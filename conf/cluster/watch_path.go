@@ -13,29 +13,27 @@ import (
 )
 
 type watchPath struct {
-	updater       chan *conf.Updater
-	cacheAddress  cmap.ConcurrentMap
-	exists        bool
-	watchRootChan chan string
-	path          string
-	registry      registry.Registry
-	timeSpan      time.Duration
-	tag           string
-	domain        string
-	done          bool
-	mu            sync.Mutex
+	updater      chan *conf.Updater
+	cacheAddress cmap.ConcurrentMap
+	exists       bool
+	path         string
+	registry     registry.Registry
+	timeSpan     time.Duration
+	serverName   string
+	domain       string
+	done         bool
+	mu           sync.Mutex
 }
 
-func NewWatchPath(domain string, tag string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchPath {
+func NewWatchPath(domain string, serverName string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchPath {
 	return &watchPath{
-		cacheAddress:  cmap.New(),
-		watchRootChan: make(chan string, 1),
-		domain:        domain,
-		tag:           tag,
-		registry:      registry,
-		timeSpan:      timeSpan,
-		path:          path,
-		updater:       updater,
+		domain:       domain,
+		serverName:   serverName,
+		registry:     registry,
+		updater:      updater,
+		timeSpan:     timeSpan,
+		path:         path,
+		cacheAddress: cmap.New(),
 	}
 
 }
@@ -115,13 +113,14 @@ func (w *watchPath) Close() {
 func (w *watchPath) checkChildrenChange(children []string, version int32) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
 	for _, v := range children { //检查当前配置地址未缓存
 		for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/rpc/conf/conf
-			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.tag)
+			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.serverName)
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
-					f := NewWatchConf(path, w.registry, w.updater, w.timeSpan)
+					f := NewWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan)
 					f.args = map[string]string{
 						"domain": w.domain,
 						"root":   fmt.Sprintf("%s/%s/%s/conf", w.path, v, sv),
@@ -136,11 +135,12 @@ func (w *watchPath) checkChildrenChange(children []string, version int32) {
 	}
 	w.cacheAddress.RemoveIterCb(func(key string, value interface{}) bool {
 		exists := false
+	START:
 		for _, v := range children {
 			for _, sv := range conf.WatchServices {
-				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.tag)
+				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.serverName)
 				if exists {
-					break
+					break START
 				}
 			}
 		}

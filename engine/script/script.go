@@ -3,6 +3,7 @@ package script
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "get", "post"}
+	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "get", "post", "put", "delete"}
 )
 
 type scriptWorker struct {
@@ -40,46 +41,67 @@ func (s *scriptWorker) Start(domain string, serverName string, serverType string
 	s.domain = domain
 	s.serverName = serverName
 	s.serverType = serverType
-	services = make([]string, 0, 0)
+
 	path := fmt.Sprintf("%s/servers/%s/%s/script", s.domain, s.serverName, s.serverType)
 	p, err := file.GetAbs(path)
 	if err != nil {
-		return nil, err
+		return
 	}
-	svsDirNames, err := ioutil.ReadDir(p) //获取服务目录
+	services, err = s.findService(p, "")
 	if err != nil {
 		return
 	}
-	for _, v := range svsDirNames {
+	return services, nil
+}
+func (s *scriptWorker) findService(path string, parent string) (services []string, err error) {
+	services = make([]string, 0, 0)
+	serviceNames, err := ioutil.ReadDir(path) //获取服务根目录
+	if err != nil && !os.IsNotExist(err) {
+		return
+	}
+	for _, v := range serviceNames {
+		//当前目录中搜索服务
+		rootServiceName := v.Name()
+		rootServicePath := fmt.Sprintf("%s/%s", path, rootServiceName)
 		if !v.IsDir() {
+			svName, err := s.loadService(rootServiceName, parent+"/", path)
+			if err != nil {
+				return nil, err
+			}
+			if svName != "" {
+				services = append(services, svName)
+			}
 			continue
 		}
-		svsDirName := v.Name()
-		svsPath := fmt.Sprintf("%s/%s", path, svsDirName)
-
-		svsNames, err := ioutil.ReadDir(svsPath) //获取服务目录
+		srvs, err := s.findService(rootServicePath, parent+"/"+rootServiceName)
 		if err != nil {
 			return nil, err
 		}
-		for _, sv := range svsNames {
-			svName := sv.Name()
-			for _, method := range METHOD_NAME {
-				if strings.HasPrefix(svName, method+".") {
-					filePath := fmt.Sprintf("%s/%s", svsPath, svName)
-					if err = s.vm.PreLoad(filePath); err != nil {
-						return nil, err
-					}
-					name := strings.ToUpper(fmt.Sprintf("%s/%s", svsDirName, method))
-					s.services[name] = filePath
-					services = append(services, name)
-				}
-			}
-		}
-
+		services = append(services, srvs...)
 	}
+	return services, nil
+}
+func (s *scriptWorker) loadService(name string, parent string, root string) (fname string, err error) {
+	fname = strings.ToUpper(s.getServiceName(name, parent))
+	if fname == "" {
+		return "", nil
+	}
+	filePath := fmt.Sprintf("%s/%s", root, name)
+	if err = s.vm.PreLoad(filePath); err != nil {
+		return
+	}
+	s.services[fname] = filePath
 	return
 }
-
+func (s *scriptWorker) getServiceName(svName string, parent string) string {
+	for _, method := range METHOD_NAME {
+		if strings.HasSuffix(svName, method+".lua") || strings.HasSuffix(svName, "."+method+".lua") {
+			i := strings.LastIndex(svName, ".")
+			return parent + svName[0:i]
+		}
+	}
+	return ""
+}
 func (s *scriptWorker) Close() error {
 	s.vm.Close()
 	return nil

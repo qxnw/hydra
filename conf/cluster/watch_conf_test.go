@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/hydra/registry/conf"
 	rx "github.com/qxnw/lib4go/registry"
 )
 
@@ -39,7 +39,7 @@ func (r *confRegistry) WatchValue(path string) (data chan rx.ValueWatcher, err e
 	return
 }
 
-func (r *confRegistry) GetValue(path string) (data []byte, err error) {
+func (r *confRegistry) GetValue(path string) (data []byte, i int32, err error) {
 	data = r.value
 	return
 }
@@ -47,8 +47,8 @@ func (r *confRegistry) GetValue(path string) (data []byte, err error) {
 func (r *confRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
 	return nil, nil
 }
-func (r *confRegistry) GetChildren(path string) (data []string, err error) {
-	return nil, nil
+func (r *confRegistry) GetChildren(path string) (data []string, i int32, err error) {
+	return nil, 0, nil
 }
 func (r *confRegistry) CreatePersistentNode(path string, data string) (err error) {
 	return nil
@@ -59,13 +59,19 @@ func (r *confRegistry) CreateTempNode(path string, data string) (err error) {
 func (r *confRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
 	return "", nil
 }
+func (r *confRegistry) Close() {
+
+}
+func (r *confRegistry) Delete(path string) error {
+	return nil
+}
 func TestConfWacher2(t *testing.T) {
 	r := &confRegistry{
 		watchChan: make(chan rx.ValueWatcher, 1),
 		value:     []byte(str),
 	}
 	updater := make(chan *conf.Updater, 1)
-	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
+	watcher := NewWatchConf("merchant", "/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
 	//正常已存在的节点
@@ -79,7 +85,7 @@ func TestConfWacher2(t *testing.T) {
 	case v := <-updater:
 		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
-		expect(t, v.Conf.String("name"), "merchant.api")
+		expect(t, v.Conf.String("name"), "merchant")
 	}
 	watcher.Close()
 	select {
@@ -95,7 +101,7 @@ func TestConfWacher1(t *testing.T) {
 		value:     []byte(str),
 	}
 	updater := make(chan *conf.Updater, 1)
-	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
+	watcher := NewWatchConf("merchant", "/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
 	//正常已存在的节点
@@ -109,7 +115,7 @@ func TestConfWacher1(t *testing.T) {
 	case v := <-updater:
 		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
-		expect(t, v.Conf.String("name"), "merchant.api")
+		expect(t, v.Conf.String("name"), "merchant")
 	}
 
 	//节点发生变化
@@ -120,7 +126,7 @@ func TestConfWacher1(t *testing.T) {
 	case v := <-updater:
 		expect(t, v.Op, registry.CHANGE)
 		expect(t, len(updater), 0)
-		expect(t, v.Conf.String("name"), "merchant.api")
+		expect(t, v.Conf.String("name"), "merchant")
 	}
 	//节点再次发生变化
 	r.watchChan <- &valueEntity{Value: []byte(str)}
@@ -130,7 +136,7 @@ func TestConfWacher1(t *testing.T) {
 	case v := <-updater:
 		expect(t, v.Op, registry.CHANGE)
 		expect(t, len(updater), 0)
-		expect(t, v.Conf.String("name"), "merchant.api")
+		expect(t, v.Conf.String("name"), "merchant")
 	}
 	//与注册中心交互发生异常1:获取的值为空
 	r.value = []byte("")
@@ -161,7 +167,7 @@ func TestConfWacher3(t *testing.T) {
 		value:     []byte(str),
 	}
 	updater := make(chan *conf.Updater, 1)
-	watcher := NewWatchConf("/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
+	watcher := NewWatchConf("merchant", "/hydra/servers/merchant/api/conf/192.168.0.100:01", r, updater, time.Millisecond*100)
 	go watcher.watch()
 
 	//正常已存在的节点
@@ -173,7 +179,7 @@ func TestConfWacher3(t *testing.T) {
 	case v := <-updater:
 		expect(t, v.Op, registry.ADD)
 		expect(t, len(updater), 0)
-		expect(t, v.Conf.String("name"), "merchant.api")
+		expect(t, v.Conf.String("name"), "merchant")
 	}
 	watcher.NotifyConfDel()
 	select {
@@ -227,15 +233,15 @@ type valuesEntity struct {
 	Err    error
 }
 
-func (v *valueEntity) GetValue() []byte {
-	return v.Value
+func (v *valueEntity) GetValue() ([]byte, int32) {
+	return v.Value, 0
 }
 func (v *valueEntity) GetError() error {
 	return v.Err
 }
 
-func (v *valuesEntity) GetValue() []string {
-	return v.values
+func (v *valuesEntity) GetValue() ([]string, int32) {
+	return v.values, 0
 }
 func (v *valuesEntity) GetError() error {
 	return v.Err

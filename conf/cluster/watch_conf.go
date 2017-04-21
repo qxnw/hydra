@@ -3,9 +3,12 @@ package cluster
 import (
 	"encoding/json"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"sync"
+
+	"fmt"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
@@ -17,15 +20,21 @@ type watchConf struct {
 	timeSpan       time.Duration
 	notifyConfChan chan *conf.Updater
 	conf           conf.Conf
+	serverName     string
 	done           bool
-	notifyCount    int
+	notifyCount    int32
 	mu             sync.Mutex
+	category       string
+	domain         string
 	args           map[string]string
 }
 
-func NewWatchConf(path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
+func NewWatchConf(domain string, serverName string, category string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
 	return &watchConf{path: path,
+		domain:         domain,
 		registry:       registry,
+		serverName:     serverName,
+		category:       category,
 		notifyConfChan: updater,
 		timeSpan:       timeSpan,
 		args:           make(map[string]string),
@@ -56,9 +65,9 @@ LOOP:
 		goto LOOP
 	}
 	if err = w.notifyConfChange(data, version); err != nil {
+		time.Sleep(w.timeSpan)
 		goto LOOP
 	}
-
 	dataChan, err := w.registry.WatchValue(w.path)
 	if err != nil {
 		goto LOOP
@@ -92,7 +101,7 @@ func (w *watchConf) notifyConfChange(content []byte, version int32) (err error) 
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	op := registry.ADD
-	if w.notifyCount > 0 {
+	if atomic.LoadInt32(&w.notifyCount) > 0 {
 		op = registry.CHANGE
 	}
 	updater := &conf.Updater{Op: op}
@@ -102,7 +111,7 @@ func (w *watchConf) notifyConfChange(content []byte, version int32) (err error) 
 	}
 	w.conf = updater.Conf
 	w.notifyConfChan <- updater
-	w.notifyCount++
+	atomic.AddInt32(&w.notifyCount, 1)
 	return
 }
 
@@ -117,6 +126,12 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 		c[k] = v
 	}
 	jconf := conf.NewJSONConfWithHandle(c, version, w.getValue)
+	jconf.Set("name", w.serverName)
+	jconf.Set("domain", w.domain)
+	jconf.Set("path", w.path)
+	jconf.Set("root_path", fmt.Sprintf("%s/servers/%s/%s/conf", w.domain, w.serverName, w.category))
+	jconf.Set("category_path", fmt.Sprintf("%s/servers/%s/%s", w.domain, w.serverName, w.category))
+	jconf.Set("server_path", fmt.Sprintf("%s/servers/%s", w.domain, w.serverName))
 	jconf.Content = string(content)
 	return jconf, nil
 }
@@ -133,6 +148,8 @@ func (w *watchConf) NotifyConfDel() {
 	if w.conf != nil { //配置已删除
 		updater := &conf.Updater{Conf: w.conf, Op: registry.DEL}
 		w.notifyConfChan <- updater
+		w.conf = nil
+		atomic.AddInt32(&w.notifyCount, -1)
 	}
 }
 func (w *watchConf) Close() {

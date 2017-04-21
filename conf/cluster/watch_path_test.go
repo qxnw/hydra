@@ -6,7 +6,7 @@ import (
 
 	"errors"
 
-	"github.com/qxnw/hydra/registry/conf"
+	"github.com/qxnw/hydra/conf"
 	rx "github.com/qxnw/lib4go/registry"
 )
 
@@ -27,8 +27,8 @@ func (r *pathRegistry) WatchValue(path string) (data chan rx.ValueWatcher, err e
 	return nil, nil
 }
 
-func (r *pathRegistry) GetValue(path string) (data []byte, err error) {
-	return nil, nil
+func (r *pathRegistry) GetValue(path string) (data []byte, i int32, err error) {
+	return nil, 0, nil
 }
 
 func (r *pathRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
@@ -36,7 +36,7 @@ func (r *pathRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher,
 	err = r.watchErr
 	return
 }
-func (r *pathRegistry) GetChildren(path string) (data []string, err error) {
+func (r *pathRegistry) GetChildren(path string) (data []string, i int32, err error) {
 	data = r.children
 	return
 }
@@ -48,6 +48,12 @@ func (r *pathRegistry) CreateTempNode(path string, data string) (err error) {
 }
 func (r *pathRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
 	return "", nil
+}
+func (r *pathRegistry) Close() {
+
+}
+func (r *pathRegistry) Delete(path string) error {
+	return nil
 }
 func TestPathWatcher1(t *testing.T) {
 	r := &pathRegistry{

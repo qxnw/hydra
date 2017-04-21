@@ -3,15 +3,16 @@ package service
 import "fmt"
 
 //IRegister 服务注册组件
-type IRegister interface {
+type IServiceRegistry interface {
 	Register(serviceName string, endPointName string, data string) (string, error)
+	RegisterWithPath(path string, data string) (string, error)
 	Unregister(path string) error
 	Close() error
 }
 
 //IRegisterResolver 定义配置文件转换方法
 type IRegisterResolver interface {
-	Resolve(adapter string, domain string, tag string, args ...string) (IRegister, error)
+	Resolve(adapter string, domain string, serverName string, args ...string) (IServiceRegistry, error)
 }
 
 var registers = make(map[string]IRegisterResolver)
@@ -28,10 +29,10 @@ func Register(name string, resolver IRegisterResolver) {
 }
 
 //NewRegister 根据适配器名称及参数返回配置处理器
-func NewRegister(adapter string, domain string, system string, args ...string) (IRegister, error) {
+func NewRegister(adapter string, domain string, serverName string, args ...string) (IServiceRegistry, error) {
 	resolver, ok := registers[adapter]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
 	}
-	return resolver.Resolve(adapter, domain, system, args...)
+	return resolver.Resolve(adapter, domain, serverName, args...)
 }

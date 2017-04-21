@@ -2,7 +2,6 @@ package web
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -25,18 +24,18 @@ import (
 type hydraWebServer struct {
 	server   *WebServer
 	conf     conf.Conf
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraWebServer 构建基本配置参数的web server
-func newHydraWebServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
 		server: New(cnf.String("name", "api.server"),
-			WithRegistry(r),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
 	err = h.setConf(cnf)
 	return
@@ -46,7 +45,7 @@ func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = New(cnf.String("name", "api.server"),
-		WithRegistry(w.registry),
+		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
@@ -59,7 +58,10 @@ func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 //SetConf 设置配置参数
 func (w *hydraWebServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
-		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
+		return nil
+	}
+	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
+		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置路由
 	routers, err := conf.GetNodeWithSection("router")
@@ -90,7 +92,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 					}
 				}
 				if !exist {
-					return fmt.Errorf("路由配置错误:method:%v不支持,只支持:%v", actions, SupportMethods)
+					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
 				}
 			}
 
@@ -254,14 +256,30 @@ func (w *hydraWebServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
-		return errors.New("版本无变化")
+		return nil
 	}
-
-	if w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
+	restart, err := w.needRestart(conf)
+	if err != nil {
+		return err
+	}
+	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
 		return w.restartServer(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
 	return w.setConf(conf)
+}
+func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
+	if w.conf.String("address") != conf.String("address") {
+		return true, nil
+	}
+	routers, err := conf.GetNodeWithSection("router")
+	if err != nil {
+		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+		return true, nil
+	}
+	return false, nil
 }
 
 //Shutdown 关闭服务
@@ -273,10 +291,10 @@ func (w *hydraWebServer) Shutdown() {
 type hydraWebServerAdapter struct {
 }
 
-func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraWebServer(c, r, conf)
 }
 
 func init() {
-	server.Register("api", &hydraWebServerAdapter{})
+	server.Register(server.SRV_TP_API, &hydraWebServerAdapter{})
 }

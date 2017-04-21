@@ -13,6 +13,7 @@ type Registry interface {
 	CreateTempNode(path string, data string) (err error)
 	CreateSeqNode(path string, data string) (rpath string, err error)
 	Delete(path string) error
+	Close()
 }
 
 type ServiceUpdater struct {

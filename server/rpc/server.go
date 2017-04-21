@@ -12,7 +12,7 @@ import (
 
 	"os"
 
-	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/hydra/server/rpc/pb"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/utility"
@@ -28,8 +28,8 @@ type RPCServer struct {
 	ctxPool    sync.Pool
 	ErrHandler Handler
 	*serverOption
-	port int
-
+	port        int
+	clusterPath string
 	Router
 	mu sync.RWMutex
 }
@@ -40,13 +40,14 @@ func Version() string {
 }
 
 type serverOption struct {
-	ip       string
-	logger   logger.ILogger
-	handlers []Handler
-	metric   *InfluxMetric
-	limiter  *Limiter
-	services []string
-	registry context.IServiceRegistry
+	ip           string
+	logger       logger.ILogger
+	handlers     []Handler
+	metric       *InfluxMetric
+	limiter      *Limiter
+	services     []string
+	registry     server.IServiceRegistry
+	registryRoot string
 }
 
 //Option 配置选项
@@ -80,10 +81,11 @@ func WithLimiter(limit map[string]int) Option {
 	}
 }
 
-//WithRegistry 设置服务注册组件
-func WithRegistry(i context.IServiceRegistry) Option {
+//WithRegistry 添加服务注册组件
+func WithRegistry(r server.IServiceRegistry, root string) Option {
 	return func(o *serverOption) {
-		o.registry = i
+		o.registry = r
+		o.registryRoot = root
 	}
 }
 

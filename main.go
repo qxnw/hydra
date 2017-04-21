@@ -9,7 +9,7 @@ func main() {
 	hydra.Install()
 	err := hydra.Start()
 	if err != nil {
-		hydra.Fatal(err)
+		hydra.Error(err)
 	}
 	hydra.Close()
 }

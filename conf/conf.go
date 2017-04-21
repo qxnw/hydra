@@ -1,6 +1,10 @@
 package conf
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/qxnw/lib4go/logger"
+)
 
 //WatchServices /api，web，rpc，job
 var WatchServices = []string{"api", "web", "rpc", "job"}
@@ -19,7 +23,7 @@ type ConfWatcher interface {
 
 //ConfResolver 定义配置文件转换方法
 type ConfResolver interface {
-	Resolve(adapter string, domain string, tag string, args ...string) (ConfWatcher, error)
+	Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (ConfWatcher, error)
 }
 
 var confResolvers = make(map[string]ConfResolver)
@@ -36,12 +40,12 @@ func Register(name string, resolver ConfResolver) {
 }
 
 //NewWatcher 根据适配器名称及参数返回配置处理器
-func NewWatcher(adapter string, domain string, tag string, args ...string) (ConfWatcher, error) {
+func NewWatcher(adapter string, domain string, tag string, log *logger.Logger, servers []string) (ConfWatcher, error) {
 	resolver, ok := confResolvers[adapter]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
 	}
-	return resolver.Resolve(adapter, domain, tag, args...)
+	return resolver.Resolve(adapter, domain, tag, log, servers)
 }
 
 //Conf 配置提供从配置文件中读取参数的方法
@@ -56,6 +60,8 @@ type Conf interface {
 	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
 	GetContent() string
+	Translate(format string) string
+	Set(string, string)
 	Len() int
 }
 

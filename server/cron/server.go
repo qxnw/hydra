@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/utility"
 )
@@ -12,7 +12,7 @@ import (
 type cronOption struct {
 	ip string
 	//logger   context.Logger
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 	metric   *InfluxMetric
 }
 
@@ -27,7 +27,7 @@ func WithIP(ip string) CronOption {
 }
 
 //WithRegistry 设置服务注册组件
-func WithRegistry(i context.IServiceRegistry) CronOption {
+func WithRegistry(i server.IServiceRegistry) CronOption {
 	return func(o *cronOption) {
 		o.registry = i
 	}

@@ -20,19 +20,19 @@ import (
 //hydraWebServer web server适配器
 type hydraRPCServer struct {
 	server   *RPCServer
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 	conf     conf.Conf
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraRPCServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewRPCServer(cnf.String("name", "rpc.server"),
-			WithRegistry(r),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
 	err = h.setConf(cnf)
@@ -44,7 +44,7 @@ func (w *hydraRPCServer) restartServer(conf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = NewRPCServer(conf.String("name", "rpc.server"),
-		WithRegistry(w.registry),
+		WithRegistry(w.registry, conf.Translate("{@category_path}/servers")),
 		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
 	err = w.setConf(conf)
 	if err != nil {
@@ -225,10 +225,10 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraRPCServer(c, r, conf)
 }
 
 func init() {
-	server.Register("rpc", &hydraRPCServerAdapter{})
+	server.Register(server.SRV_TP_RPC, &hydraRPCServerAdapter{})
 }

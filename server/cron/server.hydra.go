@@ -18,13 +18,13 @@ import (
 type hydraCronServer struct {
 	server   *CronServer
 	conf     conf.Conf
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -177,10 +177,10 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraCronServer(c, r, conf)
 }
 
 func init() {
-	server.Register("cron", &hydraCronServerAdapter{})
+	server.Register(server.SRV_TP_CRON, &hydraCronServerAdapter{})
 }

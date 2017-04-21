@@ -21,19 +21,19 @@ type registryConfWatcher struct {
 	timeSpan       time.Duration
 	mu             sync.Mutex
 	domain         string
-	tag            string
+	serverName     string
 }
 
 //NewRegistryConfWatcher 创建zookeeper配置文件监控器
-func NewRegistryConfWatcher(domain string, tag string, registry registry.Registry) (w *registryConfWatcher) {
+func NewRegistryConfWatcher(domain string, serverName string, registry registry.Registry) (w *registryConfWatcher) {
 	w = &registryConfWatcher{
-		watchRootChan:  make(chan string, 10),
-		notifyConfChan: make(chan *conf.Updater, 1),
+		watchRootChan:  make(chan string, 1),
+		notifyConfChan: make(chan *conf.Updater, 10),
 		watchPaths:     cmap.New(),
 		registry:       registry,
 		timeSpan:       time.Second,
 		domain:         domain,
-		tag:            tag,
+		serverName:     serverName,
 	}
 	return
 }
@@ -66,9 +66,12 @@ START:
 			if w.done || !ok {
 				break START
 			}
-			watcher := NewWatchPath(w.domain, w.tag, p, w.registry, w.notifyConfChan, w.timeSpan)
-			w.watchPaths.Set(p, watcher)
-			go watcher.watch()
+			w.watchPaths.SetIfAbsentCb(p, func(input ...interface{}) (interface{}, error) {
+				watcher := NewWatchPath(w.domain, w.serverName, p, w.registry, w.notifyConfChan, w.timeSpan)
+				go watcher.watch()
+				return watcher, nil
+			})
+
 		}
 	}
 }
@@ -81,6 +84,7 @@ func (w *registryConfWatcher) Close() error {
 		value.(*watchPath).Close()
 		return true
 	})
+	w.registry.Close()
 	return nil
 }
 

@@ -18,14 +18,14 @@ import (
 //hydraWebServer web server适配器
 type hydraMQConsumer struct {
 	server   *MQConsumer
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 	conf     conf.Conf
 	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraMQConsumer(handler context.EngineHandler, r context.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
+func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -173,10 +173,10 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r context.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraMQConsumer(c, r, conf)
 }
 
 func init() {
-	server.Register("mq", &hydraCronServerAdapter{})
+	server.Register(server.SRV_TP_MQ, &hydraCronServerAdapter{})
 }

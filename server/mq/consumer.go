@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/mq"
 	"github.com/qxnw/lib4go/utility"
@@ -13,7 +13,7 @@ import (
 type taskOption struct {
 	metric   *InfluxMetric
 	ip       string
-	registry context.IServiceRegistry
+	registry server.IServiceRegistry
 }
 
 //TaskOption 任务设置选项
@@ -28,7 +28,7 @@ func WithLogger(logger logger.ILogger) TaskOption {
 }
 */
 //WithRegistry 设置服务注册组件
-func WithRegistry(i context.IServiceRegistry) TaskOption {
+func WithRegistry(i server.IServiceRegistry) TaskOption {
 	return func(o *taskOption) {
 		o.registry = i
 	}

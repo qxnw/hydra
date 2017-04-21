@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/utility"
 )
@@ -29,11 +29,12 @@ type WebServer struct {
 	proto      string
 	port       int
 	Router
-	handlers   []Handler
-	ErrHandler Handler
-	ctxPool    sync.Pool
-	respPool   sync.Pool
-	mu         sync.RWMutex
+	handlers    []Handler
+	ErrHandler  Handler
+	ctxPool     sync.Pool
+	respPool    sync.Pool
+	clusterPath string
+	mu          sync.RWMutex
 	*webServerOption
 }
 
@@ -51,13 +52,14 @@ var (
 )
 
 type webServerOption struct {
-	ip        string
-	logger    *logger.Logger
-	register  context.IServiceRegistry
-	metric    *InfluxMetric
-	hostNames []string
-	host      Handler
-	handlers  []Handler
+	ip           string
+	logger       *logger.Logger
+	registry     server.IServiceRegistry
+	metric       *InfluxMetric
+	hostNames    []string
+	host         Handler
+	handlers     []Handler
+	registryRoot string
 }
 
 //Option 配置选项
@@ -92,9 +94,10 @@ func WithHost(host string) Option {
 }
 
 //WithRegistry 添加服务注册组件
-func WithRegistry(r context.IServiceRegistry) Option {
+func WithRegistry(r server.IServiceRegistry, root string) Option {
 	return func(o *webServerOption) {
-		o.register = r
+		o.registry = r
+		o.registryRoot = root
 	}
 }
 
@@ -152,12 +155,16 @@ func (t *WebServer) Run(address ...interface{}) error {
 	t.logger.Info("Listening on http://" + addr)
 	t.proto = "http"
 	t.server = &http.Server{Addr: addr, Handler: t}
-	err := t.server.ListenAndServe()
+	err := t.registryServer()
+	if err != nil {
+		return err
+	}
+	err = t.server.ListenAndServe()
 	if err != nil {
 		t.logger.Error(err)
+		return err
 	}
-	t.registerService()
-	return err
+	return nil
 }
 
 //RunTLS RunTLS server
@@ -166,12 +173,16 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 	t.logger.Info("Listening on https://" + addr)
 	t.proto = "https"
 	t.server = &http.Server{Addr: addr, Handler: t}
-	err := t.server.ListenAndServeTLS(certFile, keyFile)
+	err := t.registryServer()
+	if err != nil {
+		return err
+	}
+	err = t.server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
 		t.logger.Error(err)
+		return err
 	}
-	t.registerService()
-	return err
+	return nil
 }
 
 //New create new server
@@ -215,7 +226,7 @@ func New(name string, opts ...Option) *WebServer {
 
 //Shutdown shutdown server
 func (t *WebServer) Shutdown(timeout time.Duration) {
-	t.unRegisterService()
+	t.unregistryServer()
 	if t.server != nil {
 		xt, _ := ctx.WithTimeout(ctx.Background(), timeout)
 		t.server.Shutdown(xt)

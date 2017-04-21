@@ -14,6 +14,8 @@ import (
 
 	"strings"
 
+	"sync"
+
 	"github.com/qxnw/hydra/conf"
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
@@ -52,7 +54,13 @@ type Hydra struct {
 	notify  chan *conf.Updater
 	closeCh chan struct{}
 	done    bool
+	mu      sync.Mutex
 }
+
+var (
+	SERVER_IS_EXIST     = errors.New("服务已存在")
+	SERVER_IS_NOT_EXIST = errors.New("服务不存在")
+)
 
 //NewHydra 初始化Hydra服务
 func NewHydra() *Hydra {
@@ -100,7 +108,7 @@ func (h *Hydra) Start() (err error) {
 	if err = h.checkFlag(); err != nil {
 		return
 	}
-	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag, h.registryAddress...)
+	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag, h.Logger, h.registryAddress)
 	if err != nil {
 		h.Error(fmt.Sprintf("watcher初始化失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err))
 		return
@@ -151,37 +159,29 @@ LOOP:
 				if h.done {
 					break LOOP
 				}
-				name := u.Conf.String("name")
-				h.Logger.Infof("启动服务器:%s", name)
-				srv := NewHydraServer(h.domain, h.runMode, h.registry)
-				err = srv.Start(u.Conf)
-				if err != nil {
-					h.Error(err)
-					break
+				h.mu.Lock()
+				err := h.addServer(u.Conf)
+				if err == SERVER_IS_EXIST {
+					err = h.changeServer(u.Conf)
 				}
-				h.servers[name] = srv
+				h.mu.Unlock()
 			case registry.CHANGE:
 				if h.done {
 					break LOOP
 				}
-				name := u.Conf.String("name")
-				h.Logger.Infof("配置发生变化:%s", name)
-				if srv, ok := h.servers[name]; ok {
-					err = srv.Notify(u.Conf)
-					if err != nil {
-						h.Errorf("配置更新失败 server:%s(err:%v)", name, err)
-					}
+				h.mu.Lock()
+				err := h.changeServer(u.Conf)
+				if err == SERVER_IS_NOT_EXIST {
+					err = h.addServer(u.Conf)
 				}
+				h.mu.Unlock()
 			case registry.DEL:
 				if h.done {
 					break LOOP
 				}
-				name := u.Conf.String("name")
-				h.Logger.Infof("服务器被删除:%s", name)
-				if srv, ok := h.servers[name]; ok {
-					srv.Shutdown()
-					delete(h.servers, name)
-				}
+				h.mu.Lock()
+				h.deleteServer(u.Conf)
+				h.mu.Unlock()
 			}
 			break
 		}
@@ -193,10 +193,52 @@ LOOP:
 	h.closeCh <- struct{}{}
 	return nil
 }
+func (h *Hydra) addServer(cnf conf.Conf) error {
+	name := cnf.String("name")
+	if _, ok := h.servers[name]; ok {
+		return SERVER_IS_EXIST
+	}
+	h.Logger.Infof("启动服务器:%s", name)
+	srv := NewHydraServer(h.domain, h.runMode, h.registry, h.registryAddress)
+	err := srv.Start(cnf)
+	if err != nil {
+		h.Error(err)
+		return err
+	}
+	h.servers[name] = srv
+	return nil
+}
+func (h *Hydra) changeServer(cnf conf.Conf) error {
+	name := cnf.String("name")
+	h.Logger.Infof("配置发生变化:%s", name)
+	srv, ok := h.servers[name]
+	if !ok {
+		return SERVER_IS_NOT_EXIST
+	}
+
+	err := srv.Notify(cnf)
+	if err != nil {
+		h.Errorf("server:%s(err:%v)", name, err)
+		h.deleteServer(cnf)
+	}
+	return err
+}
+func (h *Hydra) deleteServer(cnf conf.Conf) {
+	name := cnf.String("name")
+	h.Logger.Infof("服务器被删除:%s", name)
+	if srv, ok := h.servers[name]; ok {
+		srv.Shutdown()
+		delete(h.servers, name)
+	}
+}
+
 func (h *Hydra) Close() {
 	h.done = true
 	<-h.closeCh
 	time.Sleep(time.Millisecond * 100)
+	if h.watcher != nil {
+		h.watcher.Close()
+	}
 	logger.Close()
 	close(h.closeCh)
 }

@@ -11,7 +11,15 @@ import (
 func GetRegistry(name string, args ...string) (registry.Registry, error) {
 	switch name {
 	case "zk":
-		return zk.New(args, time.Second)
+		zkclient, err := zk.New(args, time.Second)
+		if err != nil {
+			return nil, err
+		}
+		err = zkclient.Connect()
+		if err != nil {
+			return nil, err
+		}
+		return zkclient, nil
 	}
 	return nil, fmt.Errorf("不支持的注册中心:%s", name)
 }

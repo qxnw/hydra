@@ -7,12 +7,12 @@ type registerResolver struct {
 }
 
 //Resolve 从服务器获取数据
-func (j *registerResolver) Resolve(adapter string, domain string, system string, args ...string) (c service.IRegister, err error) {
+func (j *registerResolver) Resolve(adapter string, domain string, serverName string, args ...string) (c service.IServiceRegistry, err error) {
 	r, err := service.GetRegistry(adapter, args...)
 	if err != nil {
 		return
 	}
-	c = newServiceRegister(domain, system, r)
+	c = newServiceRegister(domain, serverName, r)
 	return
 }
 

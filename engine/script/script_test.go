@@ -1,7 +1,6 @@
 package script
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,19 +18,19 @@ import (
 
 func TestScript1(t *testing.T) {
 	p := newScriptWorker()
-	err := os.MkdirAll("./hydra/merchant.api/rpc/script/", 0777)
+	err := os.MkdirAll("./hydra/servers/merchant.api/rpc/script", 0777)
 	ut.Expect(t, err, nil)
 	svs, err := p.Start("./hydra", "merchant.api", "rpc")
 	ut.Expect(t, err, nil)
 	ut.Expect(t, len(svs), 0)
-	os.RemoveAll("./hydra/merchant.api/rpc/script/")
+	os.RemoveAll("./hydra/")
 }
 
 func TestScript2(t *testing.T) {
 	p := newScriptWorker()
-	err := os.MkdirAll("./hydra/merchant.api/rpc/script/order_request/", 0777)
+	err := os.MkdirAll("./hydra/servers/merchant.api/rpc/script/order_request/", 0777)
 	ut.Expect(t, err, nil)
-	f, err := os.OpenFile("./hydra/merchant.api/rpc/script/order_request/request.lua", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	f, err := os.OpenFile("./hydra/servers/merchant.api/rpc/script/order_request/request.lua", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	ut.Expect(t, err, nil)
 	f.WriteString(`
 		function main()
@@ -43,12 +42,38 @@ func TestScript2(t *testing.T) {
 	ut.Expect(t, err, nil)
 	ut.Expect(t, len(svs), 1)
 	ut.Expect(t, len(p.services), 1)
-	ut.Expect(t, p.services["order_request.request"], "./hydra/merchant.api/rpc/script/order_request/request.lua")
+	ut.Expect(t, len(p.services["/ORDER_REQUEST/REQUEST"]) > 0, true)
 	os.RemoveAll("./hydra/")
 
 	ctx := context.GetContext()
 	ctx.Ext["hydra_sid"] = utility.GetGUID()
-	r, err := p.Handle("order_request", "request", "order_request", ctx)
+	r, err := p.Handle("order_request", "*", "/ORDER_REQUEST/REQUEST", ctx)
+	ut.Expect(t, err, nil)
+	ut.Expect(t, r.Status, 200)
+	ut.Expect(t, r.Content, "hello")
+}
+func TestScript21(t *testing.T) {
+	p := newScriptWorker()
+	err := os.MkdirAll("./hydra/servers/merchant.api/rpc/script/", 0777)
+	ut.Expect(t, err, nil)
+	f, err := os.OpenFile("./hydra/servers/merchant.api/rpc/script/order.request.lua", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	ut.Expect(t, err, nil)
+	f.WriteString(`
+		function main()
+		 return "hello"
+		end
+		`)
+	f.Close()
+	svs, err := p.Start("./hydra", "merchant.api", "rpc")
+	ut.Expect(t, err, nil)
+	ut.Expect(t, len(svs), 1)
+	ut.Expect(t, len(p.services), 1)
+	ut.Expect(t, len(p.services["/ORDER.REQUEST"]) > 0, true)
+	os.RemoveAll("./hydra/")
+
+	ctx := context.GetContext()
+	ctx.Ext["hydra_sid"] = utility.GetGUID()
+	r, err := p.Handle("order_request", "*", "/ORDER.REQUEST", ctx)
 	ut.Expect(t, err, nil)
 	ut.Expect(t, r.Status, 200)
 	ut.Expect(t, r.Content, "hello")
@@ -86,7 +111,6 @@ func TestScript3(t *testing.T) {
 
 	log := logger.GetSession("test", ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
-	fmt.Println(ctx.Input.ToJson())
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	vm := lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300)
 	result, m, err := vm.Call(rservice, input)
@@ -141,7 +165,6 @@ func TestScript4(t *testing.T) {
 
 	log := logger.GetSession("test", ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
-	fmt.Println(ctx.Input.ToJson())
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	vm := lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300)
 	result, m, err := vm.Call(rservice, input)
@@ -186,7 +209,6 @@ func TestScript5(t *testing.T) {
 
 	log := logger.GetSession("test", ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
-	fmt.Println(ctx.Input.ToJson())
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	vm := lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300)
 	result, m, err := vm.Call(rservice, input)
@@ -231,11 +253,36 @@ func TestScript6(t *testing.T) {
 
 	log := logger.GetSession("test", ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
-	fmt.Println(ctx.Input.ToJson())
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	vm := lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300)
 	result, _, err := vm.Call(rservice, input)
 	ut.Expect(t, err, nil)
 	ut.Expect(t, len(result), 1)
 	ut.Expect(t, result[0], body)
+}
+
+func TestScript7(t *testing.T) {
+	p := newScriptWorker()
+	err := os.MkdirAll("./hydra/servers/merchant.api/rpc/script/order/request/", 0777)
+	ut.Expect(t, err, nil)
+	f, err := os.OpenFile("./hydra/servers/merchant.api/rpc/script/order/request/get.lua", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	ut.Expect(t, err, nil)
+	f.WriteString(`
+		function main()
+		 return "hello"
+		end
+		`)
+	f.Close()
+	svs, err := p.Start("./hydra", "merchant.api", "rpc")
+	ut.Expect(t, err, nil)
+	ut.Expect(t, len(svs), 1)
+	ut.Expect(t, len(p.services), 1)
+
+	ctx := context.GetContext()
+	ctx.Ext["hydra_sid"] = utility.GetGUID()
+	r, err := p.Handle("order_request", "*", "/ORDER/REQUEST/GET", ctx)
+	ut.Expect(t, err, nil)
+	ut.Expect(t, r.Status, 200)
+	ut.Expect(t, r.Content, "hello")
+	os.RemoveAll("./hydra/")
 }

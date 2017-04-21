@@ -35,11 +35,14 @@ type jsonConfWatcher struct {
 }
 
 type watcherPath struct {
-	close   chan struct{}
-	modTime time.Time
-	conf    conf.Conf
-	root    string
-	send    bool
+	close        chan struct{}
+	serverName   string
+	modTime      time.Time
+	conf         conf.Conf
+	categoryPath string
+	serverPath   string
+	confRoot     string
+	send         bool
 }
 
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
@@ -137,8 +140,11 @@ START:
 					name := fmt.Sprintf("%s/%s/%s/conf/conf.json", path, v, sv)
 					if _, ok := w.cacheAddress.Get(name); !ok {
 						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
-							root:  fmt.Sprintf("%s/%s/%s/conf", path, v, sv),
-							close: make(chan struct{}, 1)})
+							serverName:   v,
+							confRoot:     fmt.Sprintf("%s/%s/%s/conf", path, v, sv),
+							categoryPath: fmt.Sprintf("%s/%s/%s", path, v, sv),
+							serverPath:   fmt.Sprintf("%s/%s", path, v),
+							close:        make(chan struct{}, 1)})
 						w.watchConfChan <- name
 					}
 				}
@@ -245,11 +251,16 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	}
 	c["domain"] = w.domain
 	c["path"] = path
+
+	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
+
 	if cc, ok := w.cacheAddress.Get(path); ok {
 		v := cc.(*watcherPath)
-		c["root"] = v.root
+		jcf.Set("root_path", v.confRoot)
+		jcf.Set("category_path", v.categoryPath)
+		jcf.Set("server_path", v.serverPath)
+		jcf.Set("name", v.serverName)
 	}
-	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
 	jcf.Content = string(buf)
 	return jcf, nil
 }

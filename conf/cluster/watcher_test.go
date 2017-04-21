@@ -29,8 +29,8 @@ func (r *watcherRegistry) WatchValue(path string) (data chan rx.ValueWatcher, er
 	return
 }
 
-func (r *watcherRegistry) GetValue(path string) (data []byte, err error) {
-	return r.value, nil
+func (r *watcherRegistry) GetValue(path string) (data []byte, i int32, err error) {
+	return r.value, 0, nil
 }
 
 func (r *watcherRegistry) WatchChildren(path string) (data chan rx.ChildrenWatcher, err error) {
@@ -38,7 +38,7 @@ func (r *watcherRegistry) WatchChildren(path string) (data chan rx.ChildrenWatch
 	err = r.watchErr
 	return
 }
-func (r *watcherRegistry) GetChildren(path string) (data []string, err error) {
+func (r *watcherRegistry) GetChildren(path string) (data []string, i int32, err error) {
 	data = r.children
 	return
 }
@@ -51,6 +51,13 @@ func (r *watcherRegistry) CreateTempNode(path string, data string) (err error) {
 func (r *watcherRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
 	return "", nil
 }
+func (r *watcherRegistry) Close() {
+
+}
+func (r *watcherRegistry) Delete(path string) error {
+	return nil
+}
+
 func TestWatcher1(t *testing.T) {
 	r := &watcherRegistry{
 		watchValueChan:   make(chan rx.ValueWatcher, 1),

@@ -44,6 +44,7 @@ func NewStandardEngine() IEngine {
 
 //启动引擎
 func (e *standardEngine) Start(domain string, serverName string, serverType string) (services []string, err error) {
+
 	for mode, p := range e.plugins {
 		e.service[mode] = make(map[string]IWorker)
 		services, err = p.Start(domain, serverName, serverType)
@@ -54,7 +55,7 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 			e.service[mode][s] = p
 		}
 	}
-	return nil, nil
+	return services, nil
 }
 func (e *standardEngine) Close() error {
 	for _, p := range e.plugins {
@@ -65,7 +66,7 @@ func (e *standardEngine) Close() error {
 
 //处理引擎
 func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
-	svName := strings.ToUpper(service)
+	svName := "/" + strings.Trim(strings.ToUpper(service), "/")
 	if mode != "*" {
 		worker, ok := e.service[mode]
 		if !ok {

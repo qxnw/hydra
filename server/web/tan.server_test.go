@@ -154,19 +154,61 @@ func TestServer5(t *testing.T) {
 	ut.Expect(t, sv, "order_request:POST")
 }
 
-/*
-func TestServer41(t *testing.T) {
-	handler := &contextHandler{version: 101}
-	conf, err := registry.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+type contextNotifyHandler struct {
+	version int32
+	notify  chan int
+	name    string
+	mode    string
+	service string
+}
+
+func (h *contextNotifyHandler) Handle(name string, mode string, service string, c *context.Context) (r *context.Response, err error) {
+	h.name = name
+	h.mode = mode
+	h.service = service
+	h.notify <- 1
+	return &context.Response{Content: "success"}, nil
+}
+func (h *contextNotifyHandler) GetPath(p string) (conf.Conf, error) {
+	if strings.HasSuffix(p, "influxdb1") {
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+	} else if strings.HasSuffix(p, "router1") {
+		return conf.NewJSONConfWithJson(routerStr1, h.version, h.GetPath)
+	} else if strings.HasSuffix(p, "influxdb2") {
+		return conf.NewJSONConfWithJson(metricStr2, h.version, h.GetPath)
+	} else if strings.HasSuffix(p, "router2") {
+		return conf.NewJSONConfWithJson(routerStr2, h.version, h.GetPath)
+	}
+	return nil, errors.New("not find")
+}
+func TestServer6(t *testing.T) {
+	handler := &contextNotifyHandler{version: 100, notify: make(chan int, 1)}
+	cnf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
 	ut.Expect(t, err, nil)
-	server, err := newHydraWebServer(handler, conf)
+	server, err := newHydraWebServer(handler, nil, cnf)
 	ut.ExpectSkip(t, err, nil)
 	err = server.Start()
 	ut.ExpectSkip(t, err, nil)
-	time.Sleep(time.Hour)
+
+	url := fmt.Sprintf("%s/order/request", server.GetAddress())
+
+	client := http.NewHTTPClient()
+	_, s, err := client.Post(url, "")
+	ut.Expect(t, err, nil)
+	ut.Expect(t, s, 200)
+
+	select {
+	case <-time.After(time.Second * 4):
+		t.Error("获取参数超时")
+		t.FailNow()
+	case <-handler.notify:
+		ut.Expect(t, handler.name, "/:m/:a")
+		ut.Expect(t, handler.mode, "*")
+		ut.Expect(t, handler.service, "order_request:POST")
+	}
 
 }
-*/
+
 var confstr1 = `{
     "type": "api.server01",
     "name": "merchant.api",
@@ -235,9 +277,9 @@ var metricStr1 = `{
 var routerStr1 = `{
     "routers": [
         {
-            "name": "/:module/:action",
+            "name": "/:m/:a",
             "action": "post,get",
-            "service": "{@module}_{@action}:{@method}",
+            "service": "{@m}_{@a}:{@method}",
             "args": "db=@domain/var/db/influxdb"
         }
     ]
