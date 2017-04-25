@@ -5,58 +5,89 @@ import (
 	"time"
 
 	"github.com/qxnw/lib4go/ut"
+	"github.com/zkfy/cron"
 )
 
 func TestGetOffset1(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
-	tsk := NewTask("-", time.Second*8, time.Second*8, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.getOffset(tsk.next)
-	ut.Expect(t, offset, 7)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	cronStr := "@every 8s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+	next := s.Next(start)
+	offset, round := timer.getOffset(next)
+	ut.Expect(t, offset, 9)
 	ut.Expect(t, round, 0)
 
 }
 func TestGetOffset2(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
-	tsk := NewTask("-", time.Second*91, time.Second*91, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.getOffset(tsk.next)
-	ut.Expect(t, offset, 1)
-	ut.Expect(t, round, 9)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	cronStr := "@every 11s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+	next := s.Next(start)
+	offset, round := timer.getOffset(next)
+	ut.Expect(t, offset, 2)
+	ut.Expect(t, round, 1)
+
 }
 func TestGetOffset3(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
-	tsk := NewTask("-", time.Second*10, time.Second*10, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.getOffset(tsk.next)
+	cronStr := "@every 10s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+	next := s.Next(start)
+	offset, round := timer.getOffset(next)
 	ut.Expect(t, offset, 5)
 	ut.Expect(t, round, 1)
 }
-func TestGetOffset4(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
-	timer.index = 4
-	task := NewTask("-", time.Second*10, time.Second*10, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.Add(task)
-	ut.Expect(t, offset, 5)
-	ut.Expect(t, round, 1)
-	ut.Expect(t, len(timer.slots[offset]), 1)
+
+type offsetTask struct {
+	*Task
+}
+
+func (ctx *offsetTask) NextTime() time.Time {
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	return ctx.schedule.Next(start)
 }
 func TestGetOffset5(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
-	task := NewTask("cron.server", time.Second*2, time.Second*2, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.Add(task)
-	ut.Expect(t, offset, 6)
-	ut.Expect(t, round, 0)
-	ut.Expect(t, len(timer.slots[offset]), 1)
+
+	cronStr := "@every 2s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.Expect(t, err, nil)
+
+	offTask := &offsetTask{}
+	offTask.Task = NewTask("cron", s, func(t *Task) error { return nil }, "order.report")
+	offset, round, err := timer.Add(offTask)
+	ut.ExpectSkip(t, err, nil)
+	ut.ExpectSkip(t, offset, 7)
+	ut.ExpectSkip(t, round, 0)
+	ut.Expect(t, timer.slots[offset].Count(), 1)
 	timer.execute()
-	ut.Expect(t, len(timer.slots[offset]), 1)
+	ut.Expect(t, timer.slots[offset].Count(), 1)
 	timer.execute()
-	ut.Expect(t, len(timer.slots[offset]), 0)
+	ut.Expect(t, timer.slots[offset].Count(), 1)
+	timer.execute()
+	ut.Expect(t, timer.slots[offset].Count(), 0)
+
 }
 func TestGetOffset6(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
 	value := 0
-	task := NewTask("order.report", time.Second*2, time.Second*2, func(t *Task) error {
+
+	cronStr := "@every 2s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.Expect(t, err, nil)
+
+	task := NewTask("order.report", s, func(t *Task) error {
 		value++
 		t.Result = struct {
 			id   int
@@ -66,24 +97,35 @@ func TestGetOffset6(t *testing.T) {
 			name: "colin"}
 		return nil
 	}, "order.report")
-	offset, round := timer.Add(task)
-	ut.Expect(t, offset, 6)
-	ut.Expect(t, round, 0)
+	offTask := &offsetTask{Task: task}
+	offset, round, err := timer.Add(offTask)
+	ut.ExpectSkip(t, err, nil)
+	ut.ExpectSkip(t, offset, 7)
+	ut.ExpectSkip(t, round, 0)
 	timer.execute()
 	timer.execute()
-	ut.Expect(t, len(timer.slots[offset]), 0)
+	timer.execute()
+	ut.ExpectSkip(t, timer.slots[offset].Count(), 0)
 	time.Sleep(time.Millisecond * 10)
-	ut.Expect(t, offset+2, 8)
-	ut.Expect(t, value, 1)
+	ut.ExpectSkip(t, offset+2, 9)
+	ut.ExpectSkip(t, value, 1)
 }
 func TestGetOffset7(t *testing.T) {
-	timer := NewCronServer("cron.server", 10, time.Second)
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("cron.server", 10, time.Second, WithStartTime(start))
 	timer.index = 4
-	task := NewTask("-", time.Second*2, time.Second*2, func(t *Task) error { return nil }, "order.report")
-	offset, round := timer.Add(task)
-	ut.Expect(t, offset, 6)
-	ut.Expect(t, round, 0)
-	ut.Expect(t, len(timer.slots[offset]), 1)
+
+	cronStr := "@every 2s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+
+	task := NewTask("-", s, func(t *Task) error { return nil }, "order.report")
+	offTask := &offsetTask{Task: task}
+	offset, round, err := timer.Add(offTask)
+	ut.ExpectSkip(t, err, nil)
+	ut.ExpectSkip(t, offset, 7)
+	ut.ExpectSkip(t, round, 0)
+	ut.ExpectSkip(t, timer.slots[offset].Count(), 1)
 	timer.Reset()
-	ut.Expect(t, len(timer.slots[offset]), 0)
+	ut.ExpectSkip(t, timer.slots[offset].Count(), 0)
 }

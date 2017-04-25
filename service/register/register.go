@@ -30,7 +30,7 @@ func (w *serviceRegister) Register(serviceName string, endPointName string, data
 	return path, w.registry.CreateTempNode(path, data)
 }
 func (w *serviceRegister) RegisterWithPath(path string, data string) (string, error) {
-	return path, w.registry.CreateTempNode(path, data)
+	return w.registry.CreateSeqNode(path+"_", data)
 }
 
 //UnRegister 取消服务注册

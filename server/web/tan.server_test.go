@@ -271,8 +271,7 @@ var metricStr1 = `{
     "host":"192.168.0.185:8086",
     "dataBase":"hydra",
     "userName":"hydra",
-    "password":"123456",
-    "timeSpan":10
+    "password":"123456"
 }`
 var routerStr1 = `{
     "routers": [

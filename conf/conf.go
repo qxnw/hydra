@@ -6,8 +6,8 @@ import (
 	"github.com/qxnw/lib4go/logger"
 )
 
-//WatchServices /api，web，rpc，job
-var WatchServices = []string{"api", "web", "rpc", "job"}
+//WatchServices /api，mq，rpc，cron
+var WatchServices = []string{"api", "rpc", "cron", "mq"}
 
 type Updater struct {
 	Conf Conf

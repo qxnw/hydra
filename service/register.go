@@ -1,6 +1,10 @@
 package service
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/qxnw/lib4go/logger"
+)
 
 //IRegister 服务注册组件
 type IServiceRegistry interface {
@@ -12,7 +16,7 @@ type IServiceRegistry interface {
 
 //IRegisterResolver 定义配置文件转换方法
 type IRegisterResolver interface {
-	Resolve(adapter string, domain string, serverName string, args ...string) (IServiceRegistry, error)
+	Resolve(adapter string, domain string, serverName string, log *logger.Logger, servers []string) (IServiceRegistry, error)
 }
 
 var registers = make(map[string]IRegisterResolver)
@@ -29,10 +33,10 @@ func Register(name string, resolver IRegisterResolver) {
 }
 
 //NewRegister 根据适配器名称及参数返回配置处理器
-func NewRegister(adapter string, domain string, serverName string, args ...string) (IServiceRegistry, error) {
+func NewRegister(adapter string, domain string, serverName string, log *logger.Logger, servers []string) (IServiceRegistry, error) {
 	resolver, ok := registers[adapter]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
 	}
-	return resolver.Resolve(adapter, domain, serverName, args...)
+	return resolver.Resolve(adapter, domain, serverName, log, servers)
 }

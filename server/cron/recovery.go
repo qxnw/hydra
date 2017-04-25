@@ -29,10 +29,8 @@ func Recovery() HandlerFunc {
 				ctx.statusCode = http.StatusInternalServerError
 				ctx.err = fmt.Errorf("%v", e)
 				ctx.Result = ctx.err
-
 			}
 		}()
-
-		ctx.Next()
+		ctx.DoNext()
 	}
 }

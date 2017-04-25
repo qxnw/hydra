@@ -20,7 +20,6 @@ func StartCPUProfile(file string) error {
 		if err != nil {
 			return err
 		}
-
 		return pprof.StartCPUProfile(cpuProfile)
 	}
 	return nil

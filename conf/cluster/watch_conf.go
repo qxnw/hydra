@@ -27,6 +27,7 @@ type watchConf struct {
 	category       string
 	domain         string
 	args           map[string]string
+	closeChan      chan struct{}
 }
 
 func NewWatchConf(domain string, serverName string, category string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
@@ -38,6 +39,7 @@ func NewWatchConf(domain string, serverName string, category string, path string
 		notifyConfChan: updater,
 		timeSpan:       timeSpan,
 		args:           make(map[string]string),
+		closeChan:      make(chan struct{}),
 	}
 }
 
@@ -75,10 +77,8 @@ LOOP:
 
 	for {
 		select {
-		case <-time.After(w.timeSpan):
-			if w.done {
-				return errors.New("watcher is closing")
-			}
+		case <-w.closeChan:
+			return errors.New("watcher is closing")
 		case content, ok := <-dataChan:
 			if w.done || !ok {
 				return errors.New("watcher is closing")
@@ -129,6 +129,7 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	jconf.Set("name", w.serverName)
 	jconf.Set("domain", w.domain)
 	jconf.Set("path", w.path)
+	jconf.Set("type", w.category)
 	jconf.Set("root_path", fmt.Sprintf("%s/servers/%s/%s/conf", w.domain, w.serverName, w.category))
 	jconf.Set("category_path", fmt.Sprintf("%s/servers/%s/%s", w.domain, w.serverName, w.category))
 	jconf.Set("server_path", fmt.Sprintf("%s/servers/%s", w.domain, w.serverName))
@@ -156,4 +157,5 @@ func (w *watchConf) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.done = true
+	close(w.closeChan)
 }

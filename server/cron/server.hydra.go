@@ -3,6 +3,7 @@ package cron
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"sync"
@@ -12,6 +13,7 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/utility"
+	"github.com/zkfy/cron"
 )
 
 //hydraWebServer web server适配器
@@ -31,7 +33,7 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 		server: NewCronServer(cnf.String("name", "cron.server"),
 			60,
 			time.Second,
-			WithRegistry(r),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
 	err = h.setConf(cnf)
@@ -39,14 +41,15 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 }
 
 //restartServer 重启服务器
-func (w *hydraCronServer) restartServer(conf conf.Conf) (err error) {
+func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
-	w.server = NewCronServer(conf.String("name", "cron.server"),
+	w.server = NewCronServer(cnf.String("name", "cron.server"),
 		60,
 		time.Second,
-		WithRegistry(w.registry),
-		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
-	err = w.setConf(conf)
+		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+	w.conf = conf.NewJSONConfWithEmpty()
+	err = w.setConf(cnf)
 	if err != nil {
 		return
 	}
@@ -56,7 +59,10 @@ func (w *hydraCronServer) restartServer(conf conf.Conf) (err error) {
 //SetConf 设置配置参数
 func (w *hydraCronServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
-		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
+		return nil
+	}
+	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
+		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置任务
 	routers, err := conf.GetNodeWithSection("task")
@@ -75,21 +81,15 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			action := c.String("action")
 			args := c.String("args")
 			mode := c.String("mode", "*")
-			interval, err := time.ParseDuration(c.String("interval", "-1"))
+			cronStr := c.String("cron")
+			if name == "" || service == "" || action == "" || cronStr == "" {
+				return fmt.Errorf("task配置错误:name,service,action,cron不能为空（name:%s，service:%s，action:%s,cron:%s）", name, service, action, cronStr)
+			}
+			s, err := cron.ParseStandard(cronStr)
 			if err != nil {
-				return fmt.Errorf("task配置错误:interval值必须为整数（%s,%s）(%v)", name, c.String("interval"), err)
+				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), cronStr, err)
 			}
-			next, err := time.Parse("2006/01/02 15:04:05", c.String("next"))
-			if err != nil {
-				return fmt.Errorf("task配置错误:next值必须为时间格式yyyy/mm/dd HH:mm:ss（%s,%s）(%v)", name, c.String("next"), err)
-			}
-			if name == "" || service == "" || action == "" {
-				return fmt.Errorf("task配置错误:name,service,action不能为空（name:%s，service:%s，action:%s）", name, service, action)
-			}
-
-			tasks = append(tasks, NewTask(name,
-				time.Duration(next.Sub(time.Now()).Seconds()),
-				time.Duration(interval), w.handle(service, mode, args), fmt.Sprintf("%s-%s", service, action)))
+			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, args), fmt.Sprintf("%s-%s", service, action)))
 		}
 		for _, task := range tasks {
 			w.server.Add(task)
@@ -104,13 +104,14 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		host := metric.String("host")
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
-
 		password := metric.String("password")
-		timeSpan, _ := metric.Int("timeSpan", 10)
 		if host == "" || dataBase == "" {
 			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
 		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
+		if !strings.Contains(host, "://") {
+			host = "http://" + host
+		}
+		w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
 	}
 	//设置基本参数
 	w.server.SetName(conf.String("name", "cron.server"))
@@ -132,11 +133,27 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 			task.Result = err
 			return err
 		}
+
+		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			if err != nil {
+				return "", err
+			}
+			return cnf.GetContent(), nil
+		}
 		//执行服务调用
+		start := time.Now()
 		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
-			response.Status = 500
-			return err
+			task.statusCode = 500
+			task.err = err
+			if server.IsDebug {
+				task.Errorf("cron:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
+				return err
+			}
+			task.err = errors.New("Internal Server Error(工作引擎发生异常)")
+			task.Errorf("cron:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
+			return task.err
 		}
 		if response.Status == 0 {
 			response.Status = 200
@@ -154,19 +171,37 @@ func (w *hydraCronServer) GetAddress() string {
 
 //Start 启用服务
 func (w *hydraCronServer) Start() (err error) {
-	w.server.Start()
-	return nil
+	return w.server.Start()
 }
 
 //接口服务变更通知
 func (w *hydraCronServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.conf != nil && w.conf.GetVersion() == conf.GetVersion() {
-		return errors.New("版本无变化")
+	if w.conf.GetVersion() == conf.GetVersion() {
+		return nil
 	}
-	return w.restartServer(conf)
-
+	//检查任务列表等是否变化，判断是否需要重启
+	restart, err := w.needRestart(conf)
+	if err != nil {
+		return err
+	}
+	if restart {
+		return w.restartServer(conf)
+	}
+	//任务列表无变化
+	return w.setConf(conf)
+}
+func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
+	routers, err := conf.GetNodeWithSection("task")
+	if err != nil {
+		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	//检查路由是否变化，已变化则需要重启服务
+	if r, err := w.conf.GetNodeWithSection("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+		return true, nil
+	}
+	return false, nil
 }
 
 //Shutdown 关闭服务

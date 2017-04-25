@@ -27,7 +27,6 @@ func (h contextHandler) Handle(name string, method string, s string, c *context.
 	return &context.Response{Content: "success"}, nil
 }
 func (h contextHandler) GetPath(p string) (conf.Conf, error) {
-
 	if strings.HasSuffix(p, "influxdb") {
 		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
 	} else if strings.HasSuffix(p, "task") {
@@ -49,6 +48,7 @@ func TestCronServer2(t *testing.T) {
 	ut.Expect(t, err, nil)
 	server, err := newHydraCronServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
+	server.server.execute()
 	server.server.execute()
 	time.Sleep(time.Millisecond)
 
@@ -74,9 +74,7 @@ func TestServer41(t *testing.T) {
 
 }
 */
-var confstr1 = `{
-    "type": "cron.server",
-    "name": "order.cron",
+var confstr1 = `{   
     "status": "starting",
     "package": "1.0.0.1",  
 	"metric": "#@domain/var/db/influxdb",
@@ -94,8 +92,7 @@ var taskStr1 = `{
     "tasks": [
         {
             "name": "cron",           
-			"interval":"24h",
-			"next":"@now",
+			"cron":"@every 2s",
             "service": "/order/request:@action",
 			"action": "request",
             "params": "db=@domain/var/db/influxdb"

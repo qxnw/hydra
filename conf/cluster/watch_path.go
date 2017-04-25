@@ -19,6 +19,7 @@ type watchPath struct {
 	path         string
 	registry     registry.Registry
 	timeSpan     time.Duration
+	closeChan    chan struct{}
 	serverName   string
 	domain       string
 	done         bool
@@ -34,6 +35,7 @@ func NewWatchPath(domain string, serverName string, path string, registry regist
 		timeSpan:     timeSpan,
 		path:         path,
 		cacheAddress: cmap.New(),
+		closeChan:    make(chan struct{}),
 	}
 
 }
@@ -70,6 +72,8 @@ LOOP:
 
 	for {
 		select {
+		case <-w.closeChan:
+			return errors.New("watch is closing")
 		case children, ok := <-ch:
 			if !ok || w.done {
 				return errors.New("watch is closing")
@@ -105,6 +109,7 @@ func (w *watchPath) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.done = true
+	close(w.closeChan)
 	w.cacheAddress.RemoveIterCb(func(key string, value interface{}) bool {
 		value.(*watchConf).Close()
 		return true

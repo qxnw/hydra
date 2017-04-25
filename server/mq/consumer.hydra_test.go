@@ -59,21 +59,18 @@ func TestMQServer2(t *testing.T) {
 		err = p.Connect()
 		ut.ExpectSkip(t, err, nil)
 	}()
-	time.Sleep(time.Second * 2)
 	err = p.Send("hydra", "hello", 0)
 	ut.ExpectSkip(t, err, nil)
 	sv := ""
 	select {
-	case <-time.After(time.Second * 5):
+	case <-time.After(time.Second * 3):
 		break
 	case sv = <-handler.service:
 	}
-	ut.Expect(t, sv, "/order/request/request")
+	ut.Expect(t, sv, "/order_query/get")
 }
 
-var confstr1 = `{
-    "type": "mq.consumer",
-    "name": "mq.consumer.order",
+var confstr1 = `{  
     "status": "starting",
     "package": "1.0.0.1",  
 	"address":"192.168.0.165:61613",
@@ -83,18 +80,17 @@ var confstr1 = `{
 }`
 
 var metricStr1 = `{
-    "host":"192.168.0.92",
+    "host":"192.168.0.185:8086",
     "dataBase":"hydra",
     "userName":"hydra",
-    "password":"123456",
-    "timeSpan":10
+    "password":"123456"
 }`
 var queue1 = `{
     "queues": [
         {
-            "name": "hydra",     
-            "service": "/order/request/{@action}",
-			"action": "request",
+            "name": "hydra",   
+			"action": "get",  
+            "service": "/order_query/@action",			
             "args": "db=@domain/var/db/influxdb"
         }
     ]

@@ -35,7 +35,7 @@ func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
 		server: New(cnf.String("name", "api.server"),
-			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
 	err = h.setConf(cnf)
 	return
@@ -45,7 +45,7 @@ func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = New(cnf.String("name", "api.server"),
-		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
+		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
@@ -63,6 +63,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
+
 	//设置路由
 	routers, err := conf.GetNodeWithSection("router")
 	if err != nil {
@@ -115,14 +116,13 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
 		password := metric.String("password")
-		//timeSpan, _ := metric.Int("timeSpan", 5)
 		if host == "" || dataBase == "" {
 			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
 		}
 		if !strings.Contains(host, "://") {
 			host = "http://" + host
 		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second)
+		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*5)
 	}
 	//设置基本参数
 	w.server.SetName(conf.String("name", "api.server"))
@@ -276,6 +276,7 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
+	//检查路由是否变化，已变化则需要重启服务
 	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}

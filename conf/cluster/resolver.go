@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -11,7 +12,7 @@ type RegistryConfResolver struct {
 
 //Resolve 从服务器获取数据
 func (j *RegistryConfResolver) Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (c conf.ConfWatcher, err error) {
-	r, err := getRegistry(adapter, log, servers)
+	r, err := registry.GetRegistry(adapter, log, servers)
 	if err != nil {
 		return
 	}

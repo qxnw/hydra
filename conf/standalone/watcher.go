@@ -32,6 +32,7 @@ type jsonConfWatcher struct {
 	domain         string
 	tag            string
 	mu             sync.Mutex
+	closeChan      chan struct{}
 }
 
 type watcherPath struct {
@@ -42,6 +43,7 @@ type watcherPath struct {
 	categoryPath string
 	serverPath   string
 	confRoot     string
+	typeName     string
 	send         bool
 }
 
@@ -52,6 +54,7 @@ func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher) {
 		watchConfChan:  make(chan string, 2),
 		deleteConfChan: make(chan string, 2),
 		watchRootChan:  make(chan string, 10),
+		closeChan:      make(chan struct{}),
 		cacheAddress:   cmap.New(),
 		cacheDir:       cmap.New(),
 		checker:        fileChecker{},
@@ -87,10 +90,8 @@ func (w *jsonConfWatcher) watch() {
 START:
 	for {
 		select {
-		case <-time.After(w.timeSpan):
-			if w.done {
-				break START
-			}
+		case <-w.closeChan:
+			break START
 		case p, ok := <-w.watchRootChan:
 			if w.done || !ok {
 				break START
@@ -111,6 +112,8 @@ func (w *jsonConfWatcher) watchPath(path string) (err error) {
 START:
 	for {
 		select {
+		case <-w.closeChan:
+			break START
 		case del := <-w.deleteConfChan:
 			w.cacheAddress.IterCb(func(key string, value interface{}) bool {
 				if strings.HasPrefix(key, del) {
@@ -141,6 +144,7 @@ START:
 					if _, ok := w.cacheAddress.Get(name); !ok {
 						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
 							serverName:   v,
+							typeName:     sv,
 							confRoot:     fmt.Sprintf("%s/%s/%s/conf", path, v, sv),
 							categoryPath: fmt.Sprintf("%s/%s/%s", path, v, sv),
 							serverPath:   fmt.Sprintf("%s/%s", path, v),
@@ -176,6 +180,8 @@ func (w *jsonConfWatcher) watchConf(path string) (err error) {
 START:
 	for {
 		select {
+		case <-w.closeChan:
+			break START
 		case <-ch:
 			if w.done {
 				break START
@@ -260,6 +266,7 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 		jcf.Set("category_path", v.categoryPath)
 		jcf.Set("server_path", v.serverPath)
 		jcf.Set("name", v.serverName)
+		jcf.Set("type", v.typeName)
 	}
 	jcf.Content = string(buf)
 	return jcf, nil
@@ -270,6 +277,7 @@ func (w *jsonConfWatcher) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.done = true
+	close(w.closeChan)
 	return nil
 }
 

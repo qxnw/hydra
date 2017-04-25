@@ -32,6 +32,7 @@ import (
 	"github.com/qxnw/lib4go/sysinfo/cpu"
 	"github.com/qxnw/lib4go/sysinfo/disk"
 	"github.com/qxnw/lib4go/sysinfo/memory"
+	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
 	"github.com/spf13/pflag"
 )
@@ -45,6 +46,7 @@ type Hydra struct {
 	system          string
 	registry        string
 	ip              string
+	baseData        *transform.Transform
 	trace           bool
 	collectIndex    int
 	registryAddress []string
@@ -75,9 +77,9 @@ func NewHydra() *Hydra {
 func (h *Hydra) Install() {
 	pflag.StringVarP(&h.domain, "domain name", "n", "", "域名称(必须)")
 	pflag.StringVarP(&h.registry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
-	pflag.StringVarP(&h.mask, "ip mask", "k", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
-	pflag.StringVarP(&h.tag, "server tag", "s", "", "服务器名称(默认为本机IP地址)")
-	pflag.BoolVarP(&h.trace, "enable trace", "t", false, "启用项目性能跟踪")
+	pflag.StringVarP(&h.mask, "ip mask", "i", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
+	pflag.StringVarP(&h.tag, "server tag", "t", "", "服务器名称(默认为本机IP地址)")
+	pflag.BoolVarP(&h.trace, "enable trace", "p", false, "启用项目性能跟踪")
 	pflag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 }
 func (h *Hydra) checkFlag() (err error) {
@@ -99,6 +101,10 @@ func (h *Hydra) checkFlag() (err error) {
 	if h.tag == "" {
 		h.tag = h.ip
 	}
+	h.baseData = transform.NewMap(map[string]string{
+		"ip": h.ip,
+	})
+	h.tag = h.baseData.Translate(h.tag)
 	return nil
 
 }
@@ -121,7 +127,7 @@ func (h *Hydra) Start() (err error) {
 	}
 	go h.loopCheckNotify()
 	go h.collectSys()
-	h.Info("启动 hydra server...")
+	h.Infof("启动 hydra server(%s)...", h.tag)
 
 	//启用项目性能跟踪
 	if h.trace {
@@ -154,6 +160,7 @@ LOOP:
 				break LOOP
 			}
 		case u := <-h.notify:
+			u.Conf.Set("tag", h.tag)
 			switch u.Op {
 			case registry.ADD:
 				if h.done {
@@ -164,6 +171,9 @@ LOOP:
 				if err == SERVER_IS_EXIST {
 					err = h.changeServer(u.Conf)
 				}
+				if err != nil {
+					h.Error(err)
+				}
 				h.mu.Unlock()
 			case registry.CHANGE:
 				if h.done {
@@ -173,6 +183,9 @@ LOOP:
 				err := h.changeServer(u.Conf)
 				if err == SERVER_IS_NOT_EXIST {
 					err = h.addServer(u.Conf)
+				}
+				if err != nil {
+					h.Error(err)
 				}
 				h.mu.Unlock()
 			case registry.DEL:
@@ -187,7 +200,7 @@ LOOP:
 		}
 	}
 	for name, srv := range h.servers {
-		h.Infof("关闭服务器：%s", name)
+		h.Warnf("关闭服务器：%s", name)
 		srv.Shutdown()
 	}
 	h.closeCh <- struct{}{}
@@ -198,19 +211,18 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 	if _, ok := h.servers[name]; ok {
 		return SERVER_IS_EXIST
 	}
-	h.Logger.Infof("启动服务器:%s", name)
-	srv := NewHydraServer(h.domain, h.runMode, h.registry, h.registryAddress)
+	srv := NewHydraServer(h.domain, h.runMode, h.registry, h.Logger, h.registryAddress)
 	err := srv.Start(cnf)
 	if err != nil {
-		h.Error(err)
 		return err
 	}
 	h.servers[name] = srv
+	h.Logger.Infof("启动服务器:%s", name)
 	return nil
 }
 func (h *Hydra) changeServer(cnf conf.Conf) error {
 	name := cnf.String("name")
-	h.Logger.Infof("配置发生变化:%s", name)
+	h.Logger.Warnf("配置发生变化:%s", name)
 	srv, ok := h.servers[name]
 	if !ok {
 		return SERVER_IS_NOT_EXIST
@@ -218,22 +230,23 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 
 	err := srv.Notify(cnf)
 	if err != nil {
-		h.Errorf("server:%s(err:%v)", name, err)
 		h.deleteServer(cnf)
 	}
 	return err
 }
 func (h *Hydra) deleteServer(cnf conf.Conf) {
 	name := cnf.String("name")
-	h.Logger.Infof("服务器被删除:%s", name)
+	h.Logger.Warnf("服务器被删除:%s", name)
 	if srv, ok := h.servers[name]; ok {
 		srv.Shutdown()
 		delete(h.servers, name)
 	}
 }
 
+//Close 关闭服务器
 func (h *Hydra) Close() {
 	h.done = true
+	registry.Close()
 	<-h.closeCh
 	time.Sleep(time.Millisecond * 100)
 	if h.watcher != nil {
@@ -241,6 +254,7 @@ func (h *Hydra) Close() {
 	}
 	logger.Close()
 	close(h.closeCh)
+
 }
 func getRegistryNames(address string) (clusterName string, raddr []string, err error) {
 	addr := strings.SplitN(address, "://", 2)

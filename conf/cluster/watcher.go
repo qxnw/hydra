@@ -16,6 +16,7 @@ type registryConfWatcher struct {
 	watchPaths     cmap.ConcurrentMap
 	notifyConfChan chan *conf.Updater
 	isInitialized  bool
+	closeChan      chan struct{}
 	done           bool
 	registry       registry.Registry
 	timeSpan       time.Duration
@@ -29,6 +30,7 @@ func NewRegistryConfWatcher(domain string, serverName string, registry registry.
 	w = &registryConfWatcher{
 		watchRootChan:  make(chan string, 1),
 		notifyConfChan: make(chan *conf.Updater, 10),
+		closeChan:      make(chan struct{}),
 		watchPaths:     cmap.New(),
 		registry:       registry,
 		timeSpan:       time.Second,
@@ -58,10 +60,8 @@ func (w *registryConfWatcher) watch() {
 START:
 	for {
 		select {
-		case <-time.After(w.timeSpan):
-			if w.done {
-				break START
-			}
+		case <-w.closeChan:
+			break START
 		case p, ok := <-w.watchRootChan:
 			if w.done || !ok {
 				break START
@@ -85,6 +85,7 @@ func (w *registryConfWatcher) Close() error {
 		return true
 	})
 	w.registry.Close()
+	close(w.closeChan)
 	return nil
 }
 

@@ -24,14 +24,9 @@ func NewLogger(name string, out io.Writer) context.Logger {
 func Logging() HandlerFunc {
 	return func(ctx *Context) {
 		start := time.Now()
-		ctx.Info("Started", ctx.taskName, "for", ctx.params)
-
+		ctx.Info("req.mq", ctx.server.serverName, "for", ctx.queue)
 		ctx.Next()
+		ctx.Info("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
 
-		if ctx.err == nil || ctx.statusCode == 200 {
-			ctx.Info(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
-		} else {
-			ctx.Error(ctx.taskName, ctx.statusCode, time.Since(start), ctx.Result)
-		}
 	}
 }

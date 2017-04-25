@@ -18,8 +18,8 @@ func (h HandlerFunc) Handle(ctx *Context) {
 type Context struct {
 	msg mq.IMessage
 	*logger.Logger
-	taskName   string
 	idx        int
+	queue      string
 	server     *MQConsumer
 	params     string
 	handle     func(*Context) error
@@ -28,7 +28,9 @@ type Context struct {
 	statusCode int
 }
 
-func (ctx *Context) reset(msg mq.IMessage, server *MQConsumer, params string, handle func(*Context) error) {
+func (ctx *Context) reset(q string, msg mq.IMessage, server *MQConsumer, params string, handle func(*Context) error) {
+	ctx.idx = 0
+	ctx.queue = q
 	ctx.msg = msg
 	ctx.server = server
 	ctx.params = params

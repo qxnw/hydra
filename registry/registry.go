@@ -1,6 +1,16 @@
 package registry
 
-import "github.com/qxnw/lib4go/registry"
+import (
+	"fmt"
+	"time"
+
+	"strings"
+
+	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/registry"
+	"github.com/qxnw/lib4go/zk"
+)
 
 //Registry 注册中心接口
 type Registry interface {
@@ -26,3 +36,39 @@ const (
 	CHANGE
 	DEL
 )
+
+//GetRegistry 获取注册中心
+var registryMap cmap.ConcurrentMap
+
+func init() {
+	registryMap = cmap.New()
+}
+
+func GetRegistry(name string, log *logger.Logger, servers []string) (r Registry, err error) {
+	switch name {
+	case "zk":
+		key := fmt.Sprintf("%s_%s", name, strings.Join(servers, "_"))
+		_, value, err := registryMap.SetIfAbsentCb(key, func(input ...interface{}) (interface{}, error) {
+			zclient, err := zk.NewWithLogger(servers, time.Second, log)
+			if err != nil {
+				return nil, err
+			}
+			err = zclient.Connect()
+			return zclient, err
+		})
+		r = value.(Registry)
+		return r, err
+
+	}
+	return nil, fmt.Errorf("不支持的注册中心:%s", name)
+}
+
+//Close 关闭注册中心的服务
+func Close() {
+	registryMap.RemoveIterCb(func(key string, value interface{}) bool {
+		if v, ok := value.(Registry); ok {
+			v.Close()
+		}
+		return true
+	})
+}
