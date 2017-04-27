@@ -96,25 +96,29 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		}
 	}
 	//设置metric上报
-	metric, err := conf.GetNodeWithSection("metric")
-	if err != nil {
-		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-	}
-	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-		host := metric.String("host")
-		dataBase := metric.String("dataBase")
-		userName := metric.String("userName")
-		password := metric.String("password")
-		if host == "" || dataBase == "" {
-			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
+	if conf.Has("metric") {
+		metric, err := conf.GetNodeWithSection("metric")
+		if err != nil {
+			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if !strings.Contains(host, "://") {
-			host = "http://" + host
+		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+			host := metric.String("host")
+			dataBase := metric.String("dataBase")
+			userName := metric.String("userName")
+			password := metric.String("password")
+			if host == "" || dataBase == "" {
+				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
+			}
+			if !strings.Contains(host, "://") {
+				host = "http://" + host
+			}
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
 		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
+	} else {
+		w.server.StopInfluxMetric()
 	}
+
 	//设置基本参数
-	w.server.SetName(conf.String("name", "cron.server"))
 	w.conf = conf
 	return nil
 
@@ -193,6 +197,9 @@ func (w *hydraCronServer) Notify(conf conf.Conf) error {
 	return w.setConf(conf)
 }
 func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
+	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
+		return true, nil
+	}
 	routers, err := conf.GetNodeWithSection("task")
 	if err != nil {
 		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)

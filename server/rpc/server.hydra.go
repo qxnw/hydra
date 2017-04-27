@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -40,13 +39,14 @@ func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry,
 }
 
 //restartServer 重启服务器
-func (w *hydraRPCServer) restartServer(conf conf.Conf) (err error) {
+func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	w.server = NewRPCServer(conf.String("name", "rpc.server"),
-		WithRegistry(w.registry, conf.Translate("{@category_path}/servers")),
-		WithIP(net.GetLocalIPAddress(conf.String("mask"))))
-	err = w.setConf(conf)
+	w.server = NewRPCServer(cnf.String("name", "rpc.server"),
+		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+	w.conf = conf.NewJSONConfWithEmpty()
+	err = w.setConf(cnf)
 	if err != nil {
 		return
 	}
@@ -61,7 +61,10 @@ func (w *hydraRPCServer) restartServer(conf conf.Conf) (err error) {
 //SetConf 设置配置参数
 func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
-		return fmt.Errorf("配置版本无变化(%s,%d)", w.server.serverName, w.conf.GetVersion())
+		return nil
+	}
+	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
+		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置路由
 	routers, err := conf.GetNodeWithSection("router")
@@ -81,7 +84,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			args := c.String("args")
 			mode := c.String("mode", "*")
 			if name == "" || service == "" {
-				return fmt.Errorf("路由配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
+				return fmt.Errorf("router配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
 			}
 			for _, v := range action {
 				exist := false
@@ -92,7 +95,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 					}
 				}
 				if !exist {
-					return fmt.Errorf("路由配置错误:method:%v不支持,只支持:%v", action, SupportMethods)
+					return fmt.Errorf("router配置错误:method:%v不支持,只支持:%v", action, SupportMethods)
 				}
 			}
 			routers = append(routers, &rpcRouter{
@@ -105,44 +108,50 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 	}
 
 	//设置metric上报
-	metric, err := conf.GetNodeWithSection("metric")
-	if err != nil {
-		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-	}
-	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-		host := metric.String("host")
-		dataBase := metric.String("dataBase")
-		userName := metric.String("userName")
-		password := metric.String("password")
-		timeSpan, _ := metric.Int("timeSpan", 10)
-		if host == "" || dataBase == "" {
-			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, time.Duration(timeSpan)*time.Second)
-	}
-	limiter, err := conf.GetNodeWithSection("limiter")
-	if err != nil {
-		return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
-	}
-	if r, err := w.conf.GetNodeWithSection("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
-		lmts, err := limiter.GetSections("QPS")
+	if conf.Has("metric") {
+		metric, err := conf.GetNodeWithSection("metric")
 		if err != nil {
-			return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
+			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		limiters := map[string]int{}
-		for _, v := range lmts {
-			name := v.String("name")
-			lm, err := v.Int("value")
-			if err != nil {
-				return fmt.Errorf("limiter配置错误:[%s]qos.value:[%s]值必须为数字（err:%v）", name, v.String("value"), err)
+		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+			host := metric.String("host")
+			dataBase := metric.String("dataBase")
+			userName := metric.String("userName")
+			password := metric.String("password")
+			if host == "" || dataBase == "" {
+				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
 			}
-			limiters[name] = lm
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
 		}
-		w.server.UpdateLimiter(limiters)
+	} else {
+		w.server.StopInfluxMetric()
 	}
 
+	if conf.Has("limiter") {
+		limiter, err := conf.GetNodeWithSection("limiter")
+		if err != nil {
+			return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		}
+		if r, err := w.conf.GetNodeWithSection("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
+			lmts, err := limiter.GetSections("QPS")
+			if err != nil {
+				return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
+			}
+			limiters := map[string]int{}
+			for _, v := range lmts {
+				name := v.String("name")
+				lm, err := v.Int("value")
+				if err != nil {
+					return fmt.Errorf("limiter配置错误:[%s]qos.value:[%s]值必须为数字（err:%v）", name, v.String("value"), err)
+				}
+				limiters[name] = lm
+			}
+			w.server.UpdateLimiter(limiters)
+		}
+	} else {
+		w.server.UpdateLimiter(make(map[string]int))
+	}
 	//设置基本参数
-	w.server.SetName(conf.String("name", "rpc.server"))
 	w.conf = conf
 	return nil
 }
@@ -150,7 +159,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 //setRouter 设置路由
 func (w *hydraRPCServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
-
+		fmt.Println("hydraRPCServer.handler:", service)
 		//处理输入参数
 		context := context.GetContext()
 		defer context.Close()
@@ -158,25 +167,32 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		tfParams.Set("method", c.Method())
 
 		tfForm := transform.NewMap(c.Req().GetArgs())
-
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		context.Ext["hydra_sid"] = c.GetSessionID()
 		var err error
 		context.Input.Input = tfForm.Data
 		context.Input.Params = tfParams.Data
+
+		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			if err != nil {
+				return "", err
+			}
+			return cnf.GetContent(), nil
+		}
 		context.Input.Args, err = utility.GetMapWithQuery(rArgs)
 		if err != nil {
-			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
+			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
 			return
 		}
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, context)
 		if err != nil {
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf(":%+v", err.Error()), Type: 0}
+				c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf(":%+v", err.Error()), Type: AutoResponse}
 				return
 			}
-			c.Result = &StatusResult{Code: 500, Result: "500 Internal Server Error(工作引擎发生异常)", Type: 0}
+			c.Result = &StatusResult{Code: 500, Result: "500 Internal Server Error(工作引擎发生异常)", Type: AutoResponse}
 			return
 		}
 		//处理返回参数
@@ -207,14 +223,35 @@ func (w *hydraRPCServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
-		return errors.New("版本无变化")
+		return nil
 	}
-	if w.conf.String("address") != conf.String("address") { //服务器地址已变化，则重新启动新的server,并停止当前server
-
+	//检查任务列表等是否变化，判断是否需要重启
+	restart, err := w.needRestart(conf)
+	if err != nil {
+		return err
+	}
+	if restart {
 		return w.restartServer(conf)
 	}
-	//服务器地址未变化，更新服务器当前配置，并立即生效
+	//任务列表无变化
 	return w.setConf(conf)
+}
+func (w *hydraRPCServer) needRestart(conf conf.Conf) (bool, error) {
+	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
+		return true, nil
+	}
+	if w.conf.String("address") != conf.String("address") {
+		return true, nil
+	}
+	routers, err := conf.GetNodeWithSection("router")
+	if err != nil {
+		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	}
+	//检查路由是否变化，已变化则需要重启服务
+	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+		return true, nil
+	}
+	return false, nil
 }
 
 //Shutdown 关闭服务

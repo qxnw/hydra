@@ -83,7 +83,7 @@ func TestRPCServer3(t *testing.T) {
 	ut.ExpectSkip(t, err, nil)
 
 	err = server.Notify(cnf)
-	ut.Refute(t, err, nil)
+	ut.Expect(t, err, nil)
 	ut.Expect(t, server.server.port, 2033)
 	ut.Expect(t, server.server.serverName, "merchant.web")
 
@@ -139,9 +139,7 @@ func TestServer41(t *testing.T) {
 
 }
 */
-var confstr1 = `{
-    "type": "rpc.server",
-    "name": "merchant.rpc",
+var confstr1 = `{  
 	"address":":2031",
     "status": "starting",
     "package": "1.0.0.1",

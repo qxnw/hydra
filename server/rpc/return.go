@@ -11,6 +11,10 @@ import (
 	"reflect"
 )
 
+type IResult interface {
+	Code() int
+}
+
 type StatusResult struct {
 	Code   int
 	Result interface{}

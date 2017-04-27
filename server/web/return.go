@@ -7,7 +7,6 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -121,7 +120,6 @@ func Return() HandlerFunc {
 					"data": res,
 				})
 			case json.RawMessage:
-				fmt.Println("raw.message.2")
 				if statusCode == 0 {
 					statusCode = http.StatusOK
 				}

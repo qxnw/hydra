@@ -32,7 +32,7 @@ func (m *Limiter) Handle(ctx *Context) {
 	if count, ok := m.data.Get("*"); ok {
 		limiterName := metrics.MakeName(ctx.server.serverName+".limiter", metrics.METER, "service", "*")
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
-		if meter.Rate1() >= count.(float64) {
+		if meter.Rate1() > count.(float64) {
 			ctx.ServiceTooManyRequests()
 			ctx.Errorf("service:%s 超过总限流规则QPS %.0f/s", service, count)
 			return
@@ -42,7 +42,7 @@ func (m *Limiter) Handle(ctx *Context) {
 	if count, ok := m.data.Get(service); ok {
 		limiterName := metrics.MakeName(ctx.server.serverName+".limiter", metrics.METER, "service", service)
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
-		if meter.Rate1() >= count.(float64) {
+		if meter.Rate1() > count.(float64) {
 			ctx.ServiceTooManyRequests()
 			ctx.Errorf("service:%s 超过服务限流规则QPS %.0f/s", service, count)
 			return

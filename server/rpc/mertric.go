@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,13 +19,17 @@ type reporter struct {
 	done     bool
 }
 type InfluxMetric struct {
-	reporter *reporter
-	registry cmap.ConcurrentMap
-	mu       sync.Mutex
+	reporter        *reporter
+	registry        cmap.ConcurrentMap
+	mu              sync.Mutex
+	currentRegistry metrics.Registry
 }
 
 func NewInfluxMetric() *InfluxMetric {
-	return &InfluxMetric{}
+	return &InfluxMetric{
+		currentRegistry: metrics.NewRegistry(),
+	}
+
 }
 func (m *InfluxMetric) Stop() {
 	m.mu.Lock()
@@ -61,33 +66,15 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	service := ctx.Req().Service
 	client := ctx.IP()
-	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.COUNTER, "server", ctx.server.address, "client", client, "service", service)
-	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.address, "client", client, "service", service)
+	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.WORKING, "server", ctx.server.ip, "name", service, "client", client)
+	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "name", service, "client", client)
 
-	totalName := metrics.MakeName(ctx.server.serverName+".request", metrics.METER, "server", ctx.server.address, "client", client, "service", service)
-	successName := metrics.MakeName(ctx.server.serverName+".success", metrics.METER, "server", ctx.server.address, "client", client, "service", service)
-	failedName := metrics.MakeName(ctx.server.serverName+".failed", metrics.METER, "server", ctx.server.address, "client", client, "service", service)
-
-	process := metrics.GetOrRegisterCounter(processName, metrics.DefaultRegistry)
+	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
-	metrics.GetOrRegisterMeter(totalName, metrics.DefaultRegistry).Mark(1)
-	metrics.GetOrRegisterTimer(timerName, metrics.DefaultRegistry).Time(func() { m.execute(ctx) })
+	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
 
-	if !ctx.Written() {
-		if ctx.Result == nil {
-			ctx.Result = NotFound()
-		}
-		ctx.HandleError()
-	}
-	statusCode := ctx.Writer.Code
-
-	statusName := metrics.MakeName(ctx.server.serverName+".status", metrics.METER, "server", ctx.server.address, "client", client, "service", service, "status", string(statusCode))
-	metrics.GetOrRegisterMeter(statusName, metrics.DefaultRegistry).Mark(1)
-
-	if statusCode >= 200 && statusCode < 400 {
-		metrics.GetOrRegisterMeter(successName, metrics.DefaultRegistry).Mark(1)
-	} else {
-		metrics.GetOrRegisterMeter(failedName, metrics.DefaultRegistry).Mark(1)
-	}
+	responseName := metrics.MakeName(ctx.server.serverName+".response", metrics.METER, "server",
+		ctx.server.ip, "name", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()), "client", client)
+	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

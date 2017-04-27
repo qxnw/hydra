@@ -27,7 +27,7 @@ type jsonConfWatcher struct {
 	defTime        time.Time
 	isInitialized  bool
 	done           bool
-	checker        checker
+	checker        registry.Checker
 	timeSpan       time.Duration
 	domain         string
 	tag            string
@@ -48,7 +48,7 @@ type watcherPath struct {
 }
 
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
-func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher) {
+func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher, err error) {
 	w = &jsonConfWatcher{
 		notifyConfChan: make(chan *conf.Updater),
 		watchConfChan:  make(chan string, 2),
@@ -57,10 +57,13 @@ func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher) {
 		closeChan:      make(chan struct{}),
 		cacheAddress:   cmap.New(),
 		cacheDir:       cmap.New(),
-		checker:        fileChecker{},
 		domain:         domain,
 		tag:            tag,
 		timeSpan:       time.Second,
+	}
+	w.checker, err = registry.NewChecker()
+	if err != nil {
+		return
 	}
 	if tag == "" {
 		w.tag = "conf"

@@ -5,6 +5,8 @@ import (
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/engine"
+	_ "github.com/qxnw/hydra/engine/goplugin"
+	_ "github.com/qxnw/hydra/engine/rpc_proxy"
 	_ "github.com/qxnw/hydra/engine/script"
 	"github.com/qxnw/lib4go/logger"
 
@@ -49,15 +51,13 @@ func NewHydraServer(domain string, runMode string, registry string, logger *logg
 func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	tp := cnf.String("type")
 	serverName := cnf.String("name")
-	if h.runMode != mode_Standalone {
-		h.serviceRegistry, err = service.NewRegister(h.runMode, h.domain, serverName, h.logger, h.registryAddress)
-		if err != nil {
-			return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", tp, h.domain, err)
-		}
+	h.serviceRegistry, err = service.NewRegister(h.runMode, h.domain, serverName, h.logger, h.registryAddress)
+	if err != nil {
+		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", tp, h.domain, err)
 	}
 
 	// 启动服务引擎
-	svs, err := h.engine.Start(h.domain, serverName, tp)
+	svs, err := h.engine.Start(h.domain, serverName, tp, h.registry)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:%v)", h.domain, serverName, err)
 	}
@@ -101,4 +101,5 @@ func (h *HydraServer) Shutdown() {
 		}
 	}
 	h.server.Shutdown()
+	h.engine.Close()
 }

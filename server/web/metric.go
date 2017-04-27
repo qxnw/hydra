@@ -18,13 +18,16 @@ type reporter struct {
 	timeSpan time.Duration
 }
 type InfluxMetric struct {
-	reporter *reporter
-	registry cmap.ConcurrentMap
-	mu       sync.Mutex
+	reporter        *reporter
+	registry        cmap.ConcurrentMap
+	mu              sync.Mutex
+	currentRegistry metrics.Registry
 }
 
 func NewInfluxMetric() *InfluxMetric {
-	return &InfluxMetric{}
+	return &InfluxMetric{
+		currentRegistry: metrics.NewRegistry(),
+	}
 }
 func (m *InfluxMetric) Stop() {
 	m.mu.Lock()
@@ -41,7 +44,7 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 		m.reporter.influxdb.Close()
 	}
 	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, timeSpan: timeSpan}
-	m.reporter.influxdb, err = metrics.InfluxDB(metrics.DefaultRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password)
+	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password)
 	if err != nil {
 		return
 	}
@@ -64,10 +67,10 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.WORKING, "server", ctx.tan.ip, "client", client, "url", url) //堵塞计数
 	timerName := metrics.MakeName(ctx.tan.serverName+".response", metrics.TIMER, "server", ctx.tan.ip, "client", client, "url", url)   //响应时长
 
-	counter := metrics.GetOrRegisterCounter(conterName, metrics.DefaultRegistry)
+	counter := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	counter.Inc(1)
 
-	metrics.GetOrRegisterTimer(timerName, metrics.DefaultRegistry).Time(func() { m.execute(ctx) })
+	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	counter.Dec(1)
 
 	if !ctx.Written() {
@@ -80,5 +83,5 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	statusCode := ctx.Status()
 	responseName := metrics.MakeName(ctx.tan.serverName+".response", metrics.METER, "server", ctx.tan.ip,
 		"client", client, "url", url, "status", fmt.Sprintf("%d", statusCode)) //响应状态码
-	metrics.GetOrRegisterMeter(responseName, metrics.DefaultRegistry).Mark(1)
+	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

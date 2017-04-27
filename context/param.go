@@ -16,6 +16,11 @@ type (
 
 var Set = &Params{}
 
+func (p *Params) Each(f func(string, string)) {
+	for _, v := range *p {
+		f(v.Name, v.Value)
+	}
+}
 func (p *Params) Get(key string) (string, error) {
 	if len(key) == 0 {
 		return "", nil

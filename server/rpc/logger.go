@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -46,30 +47,11 @@ func (l *Log) SetLogger(log *logger.Logger) {
 }
 
 func Logging() HandlerFunc {
+	fmt.Println("loggin....")
 	return func(ctx *Context) {
 		start := time.Now()
-		ctx.Info("Started", ctx.Req().Service, "for", ctx.Req().GetArgs()["session"])
-
-		if action := ctx.Action(); action != nil {
-			if l, ok := action.(LogInterface); ok {
-				l.SetLogger(ctx.Logger)
-			}
-		}
-
+		ctx.Info("req.rpc", ctx.server.serverName, "for", ctx.Req().Service)
 		ctx.Next()
-
-		if !ctx.Written() {
-			if ctx.Result == nil {
-				ctx.Result = NotFound()
-			}
-			ctx.HandleError()
-		}
-
-		statusCode := ctx.Writer.Code
-		if statusCode >= 200 && statusCode < 400 {
-			ctx.Info(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
-		} else {
-			ctx.Error(ctx.Req().Service, statusCode, time.Since(start), ctx.Result)
-		}
+		ctx.Info("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", ctx.GetStatusCode())
 	}
 }

@@ -74,7 +74,15 @@ func (ctx *Context) reset(method string, context context.Context, request *pb.Re
 func (ctx *Context) HandleError() {
 	ctx.server.ErrHandler.Handle(ctx)
 }
-
+func (ctx *Context) GetStatusCode() int {
+	switch ctx.Result.(type) {
+	case *StatusResult:
+		return ctx.Result.(*StatusResult).Code
+	case AbortError:
+		return ctx.Result.(AbortError).Code()
+	}
+	return 204
+}
 func (ctx *Context) Req() *pb.RequestContext {
 	return ctx.request
 }

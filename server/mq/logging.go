@@ -26,7 +26,10 @@ func Logging() HandlerFunc {
 		start := time.Now()
 		ctx.Info("req.mq", ctx.server.serverName, "for", ctx.queue)
 		ctx.Next()
-		ctx.Info("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
-
+		if ctx.statusCode == 200 {
+			ctx.Info("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
+		} else {
+			ctx.Error("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
+		}
 	}
 }

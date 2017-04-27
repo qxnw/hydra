@@ -15,6 +15,8 @@ type taskOption struct {
 	ip           string
 	registryRoot string
 	registry     server.IServiceRegistry
+	version      string
+	*logger.Logger
 }
 
 //TaskOption 任务设置选项
@@ -35,21 +37,27 @@ func WithIP(ip string) TaskOption {
 	}
 }
 
+//WithVersion 设置MQ版本号
+func WithVersion(version string) TaskOption {
+	return func(o *taskOption) {
+		o.version = version
+	}
+}
+
 //MQConsumer 消息消费队列服务器
 type MQConsumer struct {
-	consumer    *mq.StompConsumer
+	consumer    mq.MQConsumer
 	handlers    []Handler
 	serverName  string
 	p           *sync.Pool
 	clusterPath string
-	*logger.Logger
+
 	*taskOption
 }
 
 //NewMQConsumer 构建服务器
-func NewMQConsumer(name string, address string, version string, opts ...TaskOption) (s *MQConsumer, err error) {
+func NewMQConsumer(name string, address string, opts ...TaskOption) (s *MQConsumer, err error) {
 	s = &MQConsumer{serverName: name, handlers: make([]Handler, 0, 3),
-		Logger: logger.GetSession("hydra.mq", utility.GetGUID()),
 		p: &sync.Pool{
 			New: func() interface{} {
 				return &Context{}
@@ -60,27 +68,26 @@ func NewMQConsumer(name string, address string, version string, opts ...TaskOpti
 	for _, opt := range opts {
 		opt(s.taskOption)
 	}
-
+	if s.taskOption.Logger == nil {
+		s.taskOption.Logger = logger.GetSession("hydra.mq", utility.GetGUID())
+	}
 	s.handlers = append(s.handlers,
 		Logging(),
 		Recovery(),
 		s.metric)
-	s.consumer, err = mq.NewStompConsumer(mq.ConsumerConfig{Address: address, Version: version, Persistent: "persistent"})
+	s.consumer, err = mq.NewMQConsumer(address, mq.WithVersion(s.version))
 	return
 }
 
 //Run 运行
 func (s *MQConsumer) Run() error {
-	err := s.registryServer()
-	if err != nil {
-		return err
-	}
 	s.Infof("start mq server(%s)", s.serverName)
-	err = s.consumer.ConnectLoop()
+	err := s.consumer.Connect()
 	if err != nil {
 		s.unregistryServer()
+		return err
 	}
-	return err
+	return s.registryServer()
 }
 
 //SetInfluxMetric 重置metric
@@ -107,7 +114,7 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 		r.reset(queue, m, s, message, handle)
 		r.Logger = logger.GetSession(queue, utility.GetGUID())
 		r.invoke()
-		if r.err == nil && r.statusCode == 200 {
+		if r.statusCode == 200 {
 			m.Ack()
 		}
 		r.Close()

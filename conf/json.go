@@ -78,7 +78,6 @@ func (j *JSONConf) Set(key string, value string) {
 
 //String 获取字符串
 func (j *JSONConf) String(key string, def ...string) (r string) {
-
 	if value, ok := j.cache.Get(key); ok {
 		r = value.(string)
 		return
@@ -86,7 +85,7 @@ func (j *JSONConf) String(key string, def ...string) (r string) {
 	val := j.data[key]
 	if val != nil {
 		if v, ok := val.(string); ok {
-			r = j.Translate(v)
+			r = j.TranslateAll(v, false)
 			j.cache.Set(key, r)
 			return r
 		}
@@ -128,6 +127,12 @@ func (j *JSONConf) Bool(key string, def ...bool) (r bool, err error) {
 	}
 	err = fmt.Errorf("not exist key: %q", key)
 	return
+}
+func (j *JSONConf) Has(key string) bool {
+	if _, ok := j.data[key]; ok {
+		return true
+	}
+	return false
 }
 
 //Int 获取整数值
@@ -174,7 +179,7 @@ func (j *JSONConf) GetNodeWithValue(value string, enableCache ...bool) (r Conf, 
 	if !strings.HasPrefix(value, "#") {
 		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s", value)
 	}
-	r, err = j.handle(j.Translate(value[1:]))
+	r, err = j.handle(j.TranslateAll(value[1:], true))
 	if err != nil {
 		return
 	}

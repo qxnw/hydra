@@ -33,7 +33,7 @@ func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry
 	}
 	h.server, err = NewMQConsumer(cnf.String("name", "mq.consumer"),
 		cnf.String("address"),
-		cnf.String("version"),
+		WithVersion(cnf.String("version")),
 		WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	if err != nil {
@@ -48,7 +48,7 @@ func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	w.server, err = NewMQConsumer(cnf.String("name", "mq.consumer"),
 		cnf.String("address"),
-		cnf.String("version"),
+		WithVersion(cnf.String("version")),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	if err != nil {
@@ -70,7 +70,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
-	//设置路由
+	//设置消息队列
 	routers, err := conf.GetNodeWithSection("queue")
 	if err != nil {
 		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
@@ -93,28 +93,33 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 			queues = append(queues, task{name: queue, service: service, action: action, args: args, mode: mode})
 		}
 		for _, task := range queues {
-			go w.server.Use(task.name, w.handle(task.service, task.mode, task.action, task.args))
+			w.server.Use(task.name, w.handle(task.service, task.mode, task.action, task.args))
 		}
 
 	}
 	//设置metric上报
-	metric, err := conf.GetNodeWithSection("metric")
-	if err != nil {
-		return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-	}
-	if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-		host := metric.String("host")
-		dataBase := metric.String("dataBase")
-		userName := metric.String("userName")
-		password := metric.String("password")
-		if host == "" || dataBase == "" {
-			return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
+	if conf.Has("metric") {
+		metric, err := conf.GetNodeWithSection("metric")
+		if err != nil {
+			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if !strings.Contains(host, "://") {
-			host = "http://" + host
+		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+			host := metric.String("host")
+			dataBase := metric.String("dataBase")
+			userName := metric.String("userName")
+			password := metric.String("password")
+			if host == "" || dataBase == "" {
+				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
+			}
+			if !strings.Contains(host, "://") {
+				host = "http://" + host
+			}
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
 		}
-		w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
+	} else {
+		w.server.StopInfluxMetric()
 	}
+
 	w.conf = conf
 	return nil
 
@@ -196,6 +201,9 @@ func (w *hydraMQConsumer) Notify(conf conf.Conf) error {
 	return w.setConf(conf)
 }
 func (w *hydraMQConsumer) needRestart(conf conf.Conf) (bool, error) {
+	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
+		return true, nil
+	}
 	routers, err := conf.GetNodeWithSection("queue")
 	if err != nil {
 		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)

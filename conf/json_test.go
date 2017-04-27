@@ -35,7 +35,7 @@ func TestConfig4(t *testing.T) {
 		t.Error(err)
 	}
 	expect(t, len(routes), 1)
-	expect(t, routes[0].String("to"), "../api/merchant.api/script/:request")
+	expect(t, routes[0].String("to"), "../api/merchant.api/script/:request/starting")
 
 }
 func TestConfig5(t *testing.T) {
@@ -88,7 +88,7 @@ func getMap2() map[string]interface{} {
         {
             "from": "/:module/:action/:id",
             "method": "request",
-            "to": "../@type/@name/script/@module_@action:@method",
+            "to": "../@type/@name/script/@module_@action:@method/@status",
             "params": "db=@var_weixin"
         }
     ]
@@ -121,7 +121,7 @@ func getMap() map[string]interface{} {
 			map[string]interface{}{
 				"from":   "/:module/:action/:id",
 				"method": "request",
-				"to":     "../@type/@name/script/@module_@action:@method",
+				"to":     "../@type/@name/script/@module_@action:@method/@status",
 				"params": "db=@var_weixin",
 			},
 		},

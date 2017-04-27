@@ -51,6 +51,7 @@ func NewWatcher(adapter string, domain string, tag string, log *logger.Logger, s
 //Conf 配置提供从配置文件中读取参数的方法
 type Conf interface {
 	GetVersion() int32
+	Has(key string) bool
 	String(key string, def ...string) string      //support section::key type in key string when using ini and json type; Int,Int64,Bool,Float,DIY are same.
 	Strings(key string, def ...[]string) []string //get string slice
 	Int(key string, def ...int) (int, error)

@@ -12,7 +12,7 @@ type discoveryResolver struct {
 
 //Resolve 从服务器获取数据
 func (j *discoveryResolver) Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (c service.IDiscovery, err error) {
-	r, err := registry.GetRegistry(adapter, log, servers)
+	r, err := registry.NewRegistry(adapter, servers, log)
 	if err != nil {
 		return
 	}

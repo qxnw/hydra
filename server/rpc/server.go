@@ -103,17 +103,6 @@ func WithPlugins(handlers ...Handler) Option {
 	}
 }
 
-var (
-	//ClassicHandlers 标准插件
-	ClassicHandlers = []Handler{
-		Logging(),
-		Recovery(false),
-		Return(),
-		Param(),
-		Contexts(),
-	}
-)
-
 //NewRPCServer 初始化
 func NewRPCServer(name string, opts ...Option) *RPCServer {
 	s := &RPCServer{serverName: name, Router: NewRouter()}
@@ -277,11 +266,9 @@ func (s *RPCServer) getAddress(args ...interface{}) string {
 	}
 
 	if len(host) == 0 {
-		host = s.ip
 		if host == "" {
 			host = "0.0.0.0"
 		}
-
 	}
 	if port == 0 {
 		port = 8000

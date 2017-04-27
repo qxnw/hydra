@@ -16,6 +16,25 @@ type Context struct {
 	Ext   map[string]interface{}
 }
 
+func (c *Context) GetInput() interface{} {
+	return c.Input.Input
+}
+func (c *Context) GetArgs() interface{} {
+	return c.Input.Args
+}
+func (c *Context) GetBody() interface{} {
+	return c.Input.Body
+}
+func (c *Context) GetParams() interface{} {
+	return c.Input.Params
+}
+func (c *Context) GetJson() string {
+	return c.Input.ToJson()
+}
+func (c *Context) GetExt() map[string]interface{} {
+	return c.Ext
+}
+
 //Response 响应
 type Response struct {
 	Content string

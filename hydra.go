@@ -12,9 +12,9 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/hydra/trace"
 
-	"strings"
-
 	"sync"
+
+	"strings"
 
 	"github.com/qxnw/hydra/conf"
 	_ "github.com/qxnw/hydra/conf/cluster"
@@ -90,9 +90,11 @@ func (h *Hydra) checkFlag() (err error) {
 	}
 	if h.registry == "" {
 		h.runMode = mode_Standalone
+		h.registryAddress = []string{"localhost"}
+		h.registry = fmt.Sprintf("%s://%s", h.runMode, strings.Join(h.registryAddress, ","))
 	} else {
 		h.runMode = mode_cluster
-		h.runMode, h.registryAddress, err = getRegistryNames(h.registry)
+		h.runMode, h.registryAddress, err = registry.ResolveAddress(h.registry)
 		if err != nil {
 			return fmt.Errorf("集群地址配置有误:%v", err)
 		}
@@ -247,7 +249,10 @@ func (h *Hydra) deleteServer(cnf conf.Conf) {
 func (h *Hydra) Close() {
 	h.done = true
 	registry.Close()
-	<-h.closeCh
+	select {
+	case <-h.closeCh:
+	case <-time.After(time.Second):
+	}
 	time.Sleep(time.Millisecond * 100)
 	if h.watcher != nil {
 		h.watcher.Close()
@@ -256,21 +261,7 @@ func (h *Hydra) Close() {
 	close(h.closeCh)
 
 }
-func getRegistryNames(address string) (clusterName string, raddr []string, err error) {
-	addr := strings.SplitN(address, "://", 2)
-	if len(addr) != 2 {
-		return "", nil, fmt.Errorf("%s错误，必须包含://", addr)
-	}
-	if len(addr[0]) == 0 {
-		return "", nil, fmt.Errorf("%s错误，协议名不能为空", addr)
-	}
-	if len(addr[1]) == 0 {
-		return "", nil, fmt.Errorf("%s错误，地址不能为空", addr)
-	}
-	clusterName = addr[0]
-	raddr = strings.Split(addr[1], ",")
-	return
-}
+
 func (h *Hydra) collectSys() {
 	for {
 		select {

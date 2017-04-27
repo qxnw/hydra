@@ -92,7 +92,7 @@ func WithBalancer(service string, lb balancer.CustomerBalancer) ClientOption {
 }
 
 //NewClient 创建客户端
-func NewRPCClient(address string, opts ...ClientOption) *RPCClient {
+func NewRPCClient(address string, opts ...ClientOption) (*RPCClient, error) {
 	client := &RPCClient{address: address, clientOption: &clientOption{connectionTimeout: time.Second * 3}}
 	for _, opt := range opts {
 		opt(client.clientOption)
@@ -101,16 +101,15 @@ func NewRPCClient(address string, opts ...ClientOption) *RPCClient {
 		client.log = NewLogger(os.Stdout)
 	}
 	grpclog.SetLogger(client.log)
-	client.connect()
-	return client
+	err := client.connect()
+	return client, err
 }
 
 //Connect 连接服务器，如果当前无法连接系统会定时自动重连
-func (c *RPCClient) connect() (b bool) {
+func (c *RPCClient) connect() (err error) {
 	if c.IsConnect {
-		return
+		return nil
 	}
-	var err error
 	if c.balancer == nil {
 		c.conn, err = grpc.Dial(c.address, grpc.WithInsecure(), grpc.WithTimeout(c.connectionTimeout))
 	} else {
@@ -119,21 +118,18 @@ func (c *RPCClient) connect() (b bool) {
 	}
 	if err != nil {
 		c.IsConnect = false
-		return c.IsConnect
+		return
 	}
 	c.client = pb.NewRPCClient(c.conn)
 	//检查是否已连接到服务器
-	response, er := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
-	c.IsConnect = er == nil && response.Pong == 0
-	return c.IsConnect
+	response, err := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
+	c.IsConnect = err == nil && response.Pong == 0
+	return err
 }
 
 //Request 发送请求
 func (c *RPCClient) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-	if !strings.HasPrefix(service, c.service) {
-		return 500, "", fmt.Errorf("服务:%s调用失败", service)
-	}
-	//metadata.NewContext(context.Background(), metadata.Pairs(kvs...))
+
 	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
