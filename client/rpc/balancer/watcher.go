@@ -1,16 +1,12 @@
 package balancer
 
 import (
-	"errors"
-
 	"strings"
 
 	"github.com/qxnw/hydra/registry"
 	r "github.com/qxnw/lib4go/registry"
 
 	"sort"
-
-	"time"
 
 	"google.golang.org/grpc/naming"
 )
@@ -23,6 +19,7 @@ type Watcher struct {
 	service       string
 	sortPrefix    string
 	closeCh       chan struct{}
+	lastErr       error
 }
 
 // Close do nothing
@@ -32,44 +29,40 @@ func (w *Watcher) Close() {
 
 // Next to return the updates
 func (w *Watcher) Next() ([]*naming.Update, error) {
-	updates := make([]*naming.Update, 0, 4)
+	w.lastErr = nil
 	if !w.isInitialized {
 		resp, _, err := w.client.GetChildren(w.service)
 		w.isInitialized = true
 		if err == nil {
 			addrs := w.extractAddrs(resp)
-			if l := len(addrs); l != 0 {
-				for i := range addrs {
-					updates = append(updates, &naming.Update{Op: naming.Add, Addr: addrs[i]})
-				}
-				return updates, nil
-			}
+			return w.getUpdates(addrs), nil
 		}
 	}
 
 	// generate etcd Watcher
 	watcherCh, err := w.client.WatchChildren(w.service)
 	if err != nil {
-		time.Sleep(time.Second)
-		return nil, nil
+		return w.getUpdates([]string{}), err
 	}
 	var watcher r.ChildrenWatcher
 	select {
 	case watcher = <-watcherCh:
 	case <-w.closeCh:
-		return nil, errors.New("watcher closed")
+		return w.getUpdates([]string{}), w.lastErr
 	}
 	if err = watcher.GetError(); err != nil {
-		time.Sleep(time.Second)
-		return nil, nil
+		return w.getUpdates([]string{}), err
 	}
 	chilren, _ := watcher.GetValue()
 	addrs := w.extractAddrs(chilren)
+	return w.getUpdates(addrs), nil
+}
+func (w *Watcher) getUpdates(addrs []string) (updates []*naming.Update) {
 	newCache := make(map[string]bool)
 	for i := 0; i < len(addrs); i++ {
+		newCache[addrs[i]] = true
 		if _, ok := w.caches[addrs[i]]; !ok {
 			updates = append(updates, &naming.Update{Op: naming.Add, Addr: addrs[i]})
-			newCache[addrs[i]] = true
 		} else {
 			w.caches[addrs[i]] = false
 		}
@@ -80,9 +73,8 @@ func (w *Watcher) Next() ([]*naming.Update, error) {
 		}
 	}
 	w.caches = newCache
-	return updates, nil
+	return
 }
-
 func (w *Watcher) extractAddrs(resp []string) []string {
 	addrs := make([]string, 0, len(resp))
 	for _, v := range resp {

@@ -6,6 +6,7 @@ import (
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/lib4go/transform"
 )
 
 type rpcProxy struct {
@@ -35,13 +36,12 @@ func (s *rpcProxy) Close() error {
 	return nil
 }
 func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	fmt.Println("Handle:", service, s.domain, s.serverName, s.serverType)
 
 	input := map[string]string{}
 	if ctx.Input.Input == nil {
 		return &context.Response{Status: 500}, fmt.Errorf("输入参数为空:%s", service)
 	}
-	if d, ok := ctx.Input.Input.(*context.Params); ok {
+	if d, ok := ctx.Input.Input.(transform.ITransformGetter); ok {
 		d.Each(func(k string, v string) {
 			input[k] = v
 		})
@@ -51,9 +51,9 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	return &context.Response{Status: status, Content: result}, err
 }
 func (s *rpcProxy) Has(service string) (err error) {
-	//_, err = s.invoker.Get(service)
-	//return err
-	return nil
+	_, err = s.invoker.Get(service)
+	return err
+	//return nil
 }
 
 type rpcProxyResolver struct {

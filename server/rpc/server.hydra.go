@@ -109,6 +109,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 
 	//设置metric上报
 	if conf.Has("metric") {
+
 		metric, err := conf.GetNodeWithSection("metric")
 		if err != nil {
 			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -121,7 +122,10 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			if host == "" || dataBase == "" {
 				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
+			if !strings.Contains(host, "://") {
+				host = "http://" + host
+			}
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -159,7 +163,6 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 //setRouter 设置路由
 func (w *hydraRPCServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
-		fmt.Println("hydraRPCServer.handler:", service)
 		//处理输入参数
 		context := context.GetContext()
 		defer context.Close()
@@ -252,6 +255,12 @@ func (w *hydraRPCServer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+func (w *hydraRPCServer) GetStatus() string {
+	if w.server.running {
+		return server.ST_RUNNING
+	}
+	return server.ST_STOP
 }
 
 //Shutdown 关闭服务

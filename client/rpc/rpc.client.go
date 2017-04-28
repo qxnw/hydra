@@ -129,10 +129,10 @@ func (c *RPCClient) connect() (err error) {
 
 //Request 发送请求
 func (c *RPCClient) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-
 	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
+		status = 500
 		return
 	}
 	status = int(response.Status)
@@ -148,6 +148,7 @@ func (c *RPCClient) Query(service string, input map[string]string, failFast bool
 	response, err := c.client.Query(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
+		status = 500
 		return
 	}
 	status = int(response.Status)
@@ -163,6 +164,7 @@ func (c *RPCClient) Update(service string, input map[string]string, failFast boo
 	response, err := c.client.Update(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
+		status = 500
 		return
 	}
 	status = int(response.Status)
@@ -177,6 +179,7 @@ func (c *RPCClient) Insert(service string, input map[string]string, failFast boo
 	response, err := c.client.Insert(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
+		status = 500
 		return
 	}
 	status = int(response.Status)
@@ -191,6 +194,7 @@ func (c *RPCClient) Delete(service string, input map[string]string, failFast boo
 	response, err := c.client.Delete(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
+		status = 500
 		return
 	}
 	status = int(response.Status)

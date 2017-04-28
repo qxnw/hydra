@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "get", "post", "put", "delete", "main"}
+	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
 )
 
 //IWorker 插件
@@ -36,6 +36,7 @@ type standardEngine struct {
 	plugins    map[string]IWorker
 	domain     string
 	serverName string
+	invoker    *rpc.RPCInvoker
 }
 
 //NewStandardEngine 创建标准执行引擎
@@ -54,9 +55,9 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 	services = make([]string, 0, 8)
 	e.domain = domain
 	e.serverName = serverName
-	invoker := rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
+	e.invoker = rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
 	for _, p := range e.plugins {
-		srvs, err := p.Start(domain, serverName, serverType, invoker)
+		srvs, err := p.Start(domain, serverName, serverType, e.invoker)
 		if err != nil {
 			return nil, err
 		}
@@ -68,12 +69,14 @@ func (e *standardEngine) Close() error {
 	for _, p := range e.plugins {
 		p.Close()
 	}
+	if e.invoker != nil {
+		e.invoker.Close()
+	}
 	return nil
 }
 
 //处理引擎
 func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
-	fmt.Println("---------engine.handle:", mode, service, e.domain, e.serverName)
 	svName := "/" + strings.Trim(strings.ToUpper(service), "/")
 	if mode != "*" {
 		worker, ok := e.plugins[mode]

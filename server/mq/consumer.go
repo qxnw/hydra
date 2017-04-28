@@ -51,7 +51,7 @@ type MQConsumer struct {
 	serverName  string
 	p           *sync.Pool
 	clusterPath string
-
+	running     bool
 	*taskOption
 }
 
@@ -84,9 +84,11 @@ func (s *MQConsumer) Run() error {
 	s.Infof("start mq server(%s)", s.serverName)
 	err := s.consumer.Connect()
 	if err != nil {
+		s.running = false
 		s.unregistryServer()
 		return err
 	}
+	s.running = true
 	return s.registryServer()
 }
 
@@ -133,6 +135,7 @@ func (s *MQConsumer) UnUse(queue string) {
 
 //Close 关闭服务器
 func (s *MQConsumer) Close() {
+	s.running = false
 	s.Errorf("mq server(%s) closed", s.serverName)
 	s.unregistryServer()
 	s.consumer.Close()

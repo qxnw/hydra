@@ -85,6 +85,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
 	client, err := r.Get(service)
 	if err != nil {
+		status = 500
 		return
 	}
 	return client.Request(service, input, failFast)
@@ -94,6 +95,7 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
 	client, err := r.Get(service)
 	if err != nil {
+		status = 500
 		return
 	}
 	return client.Delete(service, input, failFast)
@@ -103,6 +105,7 @@ func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bo
 func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
 	client, err := r.Get(service)
 	if err != nil {
+		status = 500
 		return
 	}
 	return client.Insert(service, input, failFast)
@@ -112,6 +115,7 @@ func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bo
 func (r *RPCInvoker) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
 	client, err := r.Get(service)
 	if err != nil {
+		status = 500
 		return
 	}
 	return client.Query(service, input, failFast)
@@ -121,6 +125,7 @@ func (r *RPCInvoker) Query(service string, input map[string]string, failFast boo
 func (r *RPCInvoker) Update(service string, input map[string]string, failFast bool) (status int, err error) {
 	client, err := r.Get(service)
 	if err != nil {
+		status = 500
 		return
 	}
 	return client.Update(service, input, failFast)

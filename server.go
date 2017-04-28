@@ -49,13 +49,16 @@ func NewHydraServer(domain string, runMode string, registry string, logger *logg
 
 //Start 启用服务器
 func (h *HydraServer) Start(cnf conf.Conf) (err error) {
-	tp := cnf.String("type")
+	if strings.EqualFold(cnf.String("status"), server.ST_STOP) {
+		return fmt.Errorf("服务器:%s 配置为:%s", cnf.String("name"), cnf.String("status"))
+	}
 	serverName := cnf.String("name")
+	tp := cnf.String("type")
+
 	h.serviceRegistry, err = service.NewRegister(h.runMode, h.domain, serverName, h.logger, h.registryAddress)
 	if err != nil {
 		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", tp, h.domain, err)
 	}
-
 	// 启动服务引擎
 	svs, err := h.engine.Start(h.domain, serverName, tp, h.registry)
 	if err != nil {
@@ -64,7 +67,6 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	if len(svs) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:未找到服务)", h.domain, serverName)
 	}
-
 	//构建服务器
 	h.server, err = server.NewServer(tp, h.engine, h.serviceRegistry, cnf)
 	if err != nil {
@@ -74,7 +76,6 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return err
 	}
-
 	//注册服务列表
 	if strings.EqualFold(tp, server.SRV_TP_RPC) {
 		for _, v := range svs {
@@ -93,6 +94,11 @@ func (h *HydraServer) Notify(cnf conf.Conf) error {
 	return h.server.Notify(cnf)
 }
 
+//GetStatus 获取当前服务状态
+func (h *HydraServer) GetStatus() string {
+	return h.server.GetStatus()
+}
+
 //Shutdown 关闭服务器
 func (h *HydraServer) Shutdown() {
 	if h.serviceRegistry != nil {
@@ -100,6 +106,6 @@ func (h *HydraServer) Shutdown() {
 			h.serviceRegistry.Unregister(v)
 		}
 	}
-	h.server.Shutdown()
 	h.engine.Close()
+	h.server.Shutdown()
 }

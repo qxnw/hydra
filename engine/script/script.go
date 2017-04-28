@@ -33,7 +33,6 @@ func newScriptWorker() *scriptWorker {
 	return &scriptWorker{
 		srvsPathMap: make(map[string]string),
 		services:    make([]string, 0, 16),
-		vm:          lua4go.NewLuaVM(bind.NewDefault(), 1, 100, time.Second*300), //引擎池5分钟不用则自动回收
 	}
 }
 
@@ -47,6 +46,8 @@ func (s *scriptWorker) Start(domain string, serverName string, serverType string
 	if err != nil {
 		return
 	}
+
+	s.vm = lua4go.NewLuaVM(bind.NewDefault([]string{p, p + "/xlib"}...), 1, 100, time.Second*300) //引擎池5分钟不用则自动回收
 	s.services, err = s.findService(p, "")
 	if err != nil {
 		return
@@ -108,7 +109,6 @@ func (s *scriptWorker) Close() error {
 	return nil
 }
 func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	fmt.Println("Handle.script:", service, s.domain, s.serverName, s.serverType)
 
 	f, ok := s.srvsPathMap[service]
 	if !ok {

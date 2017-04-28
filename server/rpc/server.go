@@ -27,6 +27,7 @@ type RPCServer struct {
 	process    *process
 	ctxPool    sync.Pool
 	ErrHandler Handler
+	handlers   []Handler
 	*serverOption
 	port        int
 	clusterPath string
@@ -42,12 +43,13 @@ func Version() string {
 type serverOption struct {
 	ip           string
 	logger       logger.ILogger
-	handlers     []Handler
+	extHandlers  []Handler
 	metric       *InfluxMetric
 	limiter      *Limiter
 	services     []string
 	registry     server.IServiceRegistry
 	registryRoot string
+	running      bool
 }
 
 //Option 配置选项
@@ -77,7 +79,7 @@ func WithIP(ip string) Option {
 //WithLimiter 设置流量限制组件
 func WithLimiter(limit map[string]int) Option {
 	return func(o *serverOption) {
-		o.handlers = append(o.handlers, o.limiter)
+		o.extHandlers = append(o.extHandlers, o.limiter)
 	}
 }
 
@@ -99,7 +101,7 @@ func WithServices(services ...string) Option {
 //WithPlugins 添加插件
 func WithPlugins(handlers ...Handler) Option {
 	return func(o *serverOption) {
-		o.handlers = append(o.handlers, handlers...)
+		o.extHandlers = append(o.extHandlers, handlers...)
 	}
 }
 
@@ -125,7 +127,7 @@ func NewRPCServer(name string, opts ...Option) *RPCServer {
 		Return(),
 		Param(),
 		Contexts())
-	s.Use(s.handlers...)
+	s.Use(s.extHandlers...)
 	return s
 }
 
@@ -138,8 +140,10 @@ func (s *RPCServer) Use(handlers ...Handler) {
 func (s *RPCServer) Run(address string) (err error) {
 	err = s.Start(address)
 	if err != nil {
+
 		return
 	}
+
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
 	<-ch
@@ -157,11 +161,13 @@ func (s *RPCServer) Start(address string) (err error) {
 	}
 	s.server = grpc.NewServer()
 	pb.RegisterRPCServer(s.server, s.process)
+	s.running = true
 	go func() {
 		err = s.server.Serve(lis)
-
+		s.running = false
 	}()
 	if err != nil {
+		s.running = false
 		return
 	}
 	s.registerService()
@@ -170,6 +176,7 @@ func (s *RPCServer) Start(address string) (err error) {
 
 //Close 关闭连接
 func (s *RPCServer) Close() {
+	s.running = false
 	s.unRegisterService()
 	if s.server != nil {
 		s.logger.Error("rpc: Server closed")
@@ -190,8 +197,12 @@ func (s *RPCServer) UpdateLimiter(limit map[string]int) {
 }
 
 //SetInfluxMetric 重置metric
-func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	s.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) error {
+	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	if err != nil {
+		s.logger.Error(err)
+	}
+	return err
 }
 
 //StopInfluxMetric stop metric

@@ -114,7 +114,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -130,17 +130,17 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 	return func(task *Context) error {
 		//处理输入参数
 		var err error
-		context := context.GetContext()
-		defer context.Close()
-		context.Input.Input = json.RawMessage(task.params)
-		context.Input.Args, err = utility.GetMapWithQuery(args)
+		ctx := context.GetContext()
+		defer ctx.Close()
+		ctx.Input.Input = json.RawMessage(task.params)
+		ctx.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {
 			task.statusCode = 500
 			task.Result = err
 			return err
 		}
-		context.Ext["hydra_sid"] = task.GetSessionID()
-		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+		ctx.Ext["hydra_sid"] = task.GetSessionID()
+		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
@@ -150,9 +150,8 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 
 		//执行服务调用
 		start := time.Now()
-		response, err := w.handler.Handle(task.queue, mode, service, context)
+		response, err := w.handler.Handle(task.queue, mode, service, ctx)
 		if err != nil {
-			response.Status = 500
 			task.statusCode = 500
 			task.err = err
 			if server.IsDebug {
@@ -213,6 +212,12 @@ func (w *hydraMQConsumer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+func (w *hydraMQConsumer) GetStatus() string {
+	if w.server.running {
+		return server.ST_RUNNING
+	}
+	return server.ST_STOP
 }
 
 //Shutdown 关闭服务

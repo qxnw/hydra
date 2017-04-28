@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -47,7 +46,6 @@ func (l *Log) SetLogger(log *logger.Logger) {
 }
 
 func Logging() HandlerFunc {
-	fmt.Println("loggin....")
 	return func(ctx *Context) {
 		start := time.Now()
 		ctx.Info("req.rpc", ctx.server.serverName, "for", ctx.Req().Service)

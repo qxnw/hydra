@@ -10,6 +10,7 @@ import (
 //IsDebug 当前服务器是处于调试模式
 var IsDebug = false
 var (
+	ST_RUNNING  = "running"
 	ST_STOP     = "stop"
 	SRV_TP_API  = "api"
 	SRV_TP_RPC  = "rpc"
@@ -28,6 +29,7 @@ type IServiceRegistry interface {
 type IHydraServer interface {
 	Notify(conf.Conf) error
 	GetAddress() string
+	GetStatus() string
 	Start() error
 	Shutdown()
 }

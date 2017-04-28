@@ -38,6 +38,7 @@ func (m *InfluxMetric) Stop() {
 		m.reporter.influxdb.Close()
 	}
 }
+
 func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, timeSpan time.Duration) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -45,7 +46,7 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 		m.reporter.influxdb.Close()
 	}
 	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, timeSpan: timeSpan}
-	m.reporter.influxdb, err = metrics.InfluxDB(metrics.DefaultRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password)
+	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password)
 	if err != nil {
 		return
 	}
@@ -54,27 +55,20 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 }
 
 func (m *InfluxMetric) execute(context *Context) {
-	if action := context.Action(); action != nil {
-		if l, ok := action.(LogInterface); ok {
-			l.SetLogger(context.Logger)
-		}
-	}
 	context.Next()
 }
 
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Context) {
 	service := ctx.Req().Service
-	client := ctx.IP()
-	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.WORKING, "server", ctx.server.ip, "name", service, "client", client)
-	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "name", service, "client", client)
+	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.WORKING, "server", ctx.server.ip, "name", service)
+	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "name", service)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
 	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
-
 	responseName := metrics.MakeName(ctx.server.serverName+".response", metrics.METER, "server",
-		ctx.server.ip, "name", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()), "client", client)
+		ctx.server.ip, "name", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()))
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

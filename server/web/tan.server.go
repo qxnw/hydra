@@ -123,7 +123,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*5)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*10)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -236,6 +236,12 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 //GetAddress 获取服务器地址
 func (w *hydraWebServer) GetAddress() string {
 	return w.server.GetAddress()
+}
+func (w *hydraWebServer) GetStatus() string {
+	if w.server.running {
+		return server.ST_RUNNING
+	}
+	return server.ST_STOP
 }
 
 //Start 启用服务

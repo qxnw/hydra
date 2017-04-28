@@ -36,6 +36,7 @@ type WebServer struct {
 	clusterPath string
 	mu          sync.RWMutex
 	*webServerOption
+	running bool
 }
 
 var (
@@ -157,13 +158,17 @@ func (t *WebServer) Run(address ...interface{}) error {
 	t.server = &http.Server{Addr: addr, Handler: t}
 	err := t.registryServer()
 	if err != nil {
-		return err
-	}
-	err = t.server.ListenAndServe()
-	if err != nil {
 		t.logger.Error(err)
 		return err
 	}
+	t.running = true
+	err = t.server.ListenAndServe()
+	if err != nil {
+		t.running = false
+		t.logger.Error(err)
+		return err
+	}
+
 	return nil
 }
 
@@ -175,10 +180,13 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 	t.server = &http.Server{Addr: addr, Handler: t}
 	err := t.registryServer()
 	if err != nil {
+		t.logger.Error(err)
 		return err
 	}
+	t.running = true
 	err = t.server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
+		t.running = false
 		t.logger.Error(err)
 		return err
 	}
@@ -226,6 +234,7 @@ func New(name string, opts ...Option) *WebServer {
 
 //Shutdown shutdown server
 func (t *WebServer) Shutdown(timeout time.Duration) {
+	t.running = false
 	t.unregistryServer()
 	if t.server != nil {
 		xt, _ := ctx.WithTimeout(ctx.Background(), timeout)

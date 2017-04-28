@@ -112,7 +112,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 5*time.Second)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -209,6 +209,12 @@ func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+func (w *hydraCronServer) GetStatus() string {
+	if w.server.running {
+		return server.ST_RUNNING
+	}
+	return server.ST_STOP
 }
 
 //Shutdown 关闭服务

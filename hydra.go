@@ -231,7 +231,8 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 	}
 
 	err := srv.Notify(cnf)
-	if err != nil {
+	if err != nil || srv.GetStatus() == server.ST_STOP {
+		srv.Shutdown()
 		h.deleteServer(cnf)
 	}
 	return err

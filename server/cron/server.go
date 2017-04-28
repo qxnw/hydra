@@ -66,11 +66,13 @@ type CronServer struct {
 	done       bool
 	*logger.Logger
 	close       chan struct{}
+	once        sync.Once
 	slots       []cmap.ConcurrentMap
 	clusterPath string
 	handlers    []Handler
 	mu          sync.Mutex
 	taskCount   int32
+	running     bool
 	*cronOption
 }
 
@@ -104,8 +106,10 @@ func (w *CronServer) Start() error {
 	w.Infof("start cron server(%s)[%d]", w.serverName, atomic.LoadInt32(&w.taskCount))
 	err := w.registryServer()
 	if err != nil {
+		w.running = false
 		return err
 	}
+	w.running = true
 	go w.move()
 	return nil
 }
@@ -167,10 +171,13 @@ func (w *CronServer) Reset() {
 func (w *CronServer) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.running = false
 	w.Errorf("cron server(%s) closed", w.serverName)
 	w.unregistryServer()
 	w.done = true
-	close(w.close)
+	w.once.Do(func() {
+		close(w.close)
+	})
 	atomic.SwapInt32(&w.taskCount, 0)
 	for i := 0; i < len(w.slots); i++ {
 		w.slots[i].RemoveIterCb(func(k string, v interface{}) bool {
