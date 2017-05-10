@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"io"
+	"sync/atomic"
 	"time"
 
 	"github.com/lunny/log"
@@ -39,6 +40,7 @@ type RPCClient struct {
 	client        pb.RPCClient
 	longTicker    *time.Ticker
 	hasRunChecker bool
+	using         int32
 	IsConnect     bool
 	isClose       bool
 }
@@ -48,6 +50,7 @@ type clientOption struct {
 	log               Logger
 	balancer          balancer.CustomerBalancer
 	service           string
+	maxUsing          int32
 }
 
 //ClientOption 客户端配置选项
@@ -91,7 +94,14 @@ func WithBalancer(service string, lb balancer.CustomerBalancer) ClientOption {
 	}
 }
 
-//NewClient 创建客户端
+//WithMaxUsing 设置最大使用次数
+func WithMaxUsing(max int) ClientOption {
+	return func(o *clientOption) {
+		o.maxUsing = int32(max)
+	}
+}
+
+//NewRPCClient 创建客户端
 func NewRPCClient(address string, opts ...ClientOption) (*RPCClient, error) {
 	client := &RPCClient{address: address, clientOption: &clientOption{connectionTimeout: time.Second * 3}}
 	for _, opt := range opts {
@@ -120,6 +130,7 @@ func (c *RPCClient) connect() (err error) {
 		c.IsConnect = false
 		return
 	}
+
 	c.client = pb.NewRPCClient(c.conn)
 	//检查是否已连接到服务器
 	response, err := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
@@ -129,6 +140,8 @@ func (c *RPCClient) connect() (err error) {
 
 //Request 发送请求
 func (c *RPCClient) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
 	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
@@ -142,6 +155,8 @@ func (c *RPCClient) Request(service string, input map[string]string, failFast bo
 
 //Query 发送请求
 func (c *RPCClient) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
 	if !strings.HasPrefix(service, c.service) {
 		return 500, "", fmt.Errorf("服务:%s调用失败", service)
 	}
@@ -158,6 +173,8 @@ func (c *RPCClient) Query(service string, input map[string]string, failFast bool
 
 //Update 发送请求
 func (c *RPCClient) Update(service string, input map[string]string, failFast bool) (status int, err error) {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
 	if !strings.HasPrefix(service, c.service) {
 		return 500, fmt.Errorf("服务:%s调用失败", service)
 	}
@@ -173,6 +190,8 @@ func (c *RPCClient) Update(service string, input map[string]string, failFast boo
 
 //Insert 发送请求
 func (c *RPCClient) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
 	if !strings.HasPrefix(service, c.service) {
 		return 500, fmt.Errorf("服务:%s调用失败", service)
 	}
@@ -188,6 +207,8 @@ func (c *RPCClient) Insert(service string, input map[string]string, failFast boo
 
 //Delete 发送请求
 func (c *RPCClient) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
 	if !strings.HasPrefix(service, c.service) {
 		return 500, fmt.Errorf("服务:%s调用失败", service)
 	}
@@ -222,6 +243,13 @@ func (c *RPCClient) logInfof(format string, msg ...interface{}) {
 		return
 	}
 	c.log.Printf(format, msg...)
+}
+
+func (c *RPCClient) CanUse() bool {
+	atomic.AddInt32(&c.using, 1)
+	defer atomic.AddInt32(&c.using, -1)
+	return c.maxUsing == 0 || atomic.AddInt32(&c.using, 1) < c.maxUsing
+
 }
 
 //Close 关闭连接

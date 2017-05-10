@@ -2,7 +2,6 @@ package goplugin
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"plugin"
 
@@ -45,45 +44,40 @@ func (s *goPluginWorker) Start(domain string, serverName string, serverType stri
 	s.serverName = strings.Trim(serverName, "/")
 	s.serverType = strings.Trim(serverType, "/")
 	s.invoker = invoker
-	s.path = fmt.Sprintf("%s/servers/%s/%s/go", s.domain, s.serverName, s.serverType)
+	//s.path = fmt.Sprintf("%s/servers/%s/%s/go", s.domain, s.serverName, s.serverType)
+	s.path = fmt.Sprintf("./%s_%s.so", s.serverName, s.serverType)
+	//fmt.Println("s.path:", s.path)
 	p, err := file.GetAbs(s.path)
 	if err != nil {
+		fmt.Println("s.path:", s.path, err)
 		return
 	}
-	serviceNames, err := ioutil.ReadDir(s.path) //获取服务根目录
-	if err != nil && os.IsNotExist(err) {
+	if _, err = os.Lstat(p); err != nil && os.IsNotExist(err) {
 		return nil, nil
 	}
-	services = make([]string, 0, 16)
-	pname := strings.Replace(serverName, ".", "_", -1)
-	for _, v := range serviceNames {
 
-		if v.IsDir() || !strings.HasPrefix(v.Name(), pname) || !strings.HasSuffix(v.Name(), ".so") {
-			continue
-		}
-		pp := fmt.Sprintf("%s/%s", p, v.Name())
-		rwrk, err := s.loadPlugin(v.Name(), pp)
-		if err != nil {
-			return nil, err
-		}
-		srvs := rwrk.GetServices()
-		for _, v := range srvs {
-			svName := strings.ToLower(v)
-			s.srvPlugins[svName] = rwrk
-			s.services.SetIfAbsent(svName, svName)
-			services = append(services, svName)
-		}
+	rwrk, err := s.loadPlugin(p)
+	if err != nil {
+		return nil, err
+	}
+	if rwrk == nil {
+		return
+	}
+	srvs := rwrk.GetServices()
+	for _, v := range srvs {
+		svName := strings.ToLower(v)
+		s.srvPlugins[svName] = rwrk
+		s.services.SetIfAbsent(svName, svName)
+		services = append(services, svName)
 	}
 	return services, nil
+
 }
-func (s *goPluginWorker) loadPlugin(name string, path string) (r plugins.PluginWorker, err error) {
+func (s *goPluginWorker) loadPlugin(path string) (r plugins.PluginWorker, err error) {
 	mu.Lock()
 	defer mu.Unlock()
-	if p, ok := plugines[name]; ok {
+	if p, ok := plugines[path]; ok {
 		return p, nil
-	}
-	if _, err = os.Lstat(path); err != nil {
-		return
 	}
 	pg, err := plugin.Open(path)
 	if err != nil {
@@ -98,7 +92,7 @@ func (s *goPluginWorker) loadPlugin(name string, path string) (r plugins.PluginW
 		return nil, fmt.Errorf("go pulgin的GetWorker函数必须为 func() PluginWorker 类型:%s", path)
 	}
 	rwrk := wkr()
-	plugines[name] = rwrk
+	plugines[path] = rwrk
 	return rwrk, nil
 }
 func (s *goPluginWorker) Close() error {

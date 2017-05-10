@@ -73,7 +73,7 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(svs) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s type:%s(err:engine中未找到任何服务)", h.domain, h.serverName, h.serverType)
 	}
-	h.logger.Infof("engine(%s):已加载服务:%v", h.serverName, svs)
+	h.logger.Infof("engine(%s):已加载服务", h.serverName)
 	//构建服务器
 	h.server, err = server.NewServer(h.serverType, h.engine, h.serviceRegistry, cnf)
 	if err != nil {

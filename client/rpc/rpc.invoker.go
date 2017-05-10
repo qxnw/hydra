@@ -80,10 +80,22 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 	}
 	return
 }
+func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
+	p, err := r.Get(service)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := p.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
 
 //Request 使用RPC调用Request函数
 func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-	client, err := r.Get(service)
+	client, err := r.prepareClient(service)
 	if err != nil {
 		status = 500
 		return
@@ -102,48 +114,68 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 
 //Delete 使用RPC调用Delete函数
 func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
-	client, err := r.Get(service)
+	client, err := r.prepareClient(service)
 	if err != nil {
 		status = 500
 		return
 	}
-	return client.Delete(service, input, failFast)
+	rservice, _, _, err := r.resolvePath(service)
+	if err != nil {
+		status = 500
+		return
+	}
+	return client.Delete(rservice, input, failFast)
 }
 
 //Insert 使用RPC调用Insert函数
 func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
-	client, err := r.Get(service)
+	client, err := r.prepareClient(service)
 	if err != nil {
 		status = 500
 		return
 	}
-	return client.Insert(service, input, failFast)
+	rservice, _, _, err := r.resolvePath(service)
+	if err != nil {
+		status = 500
+		return
+	}
+	return client.Insert(rservice, input, failFast)
 }
 
 //Query 使用RPC调用Query函数
 func (r *RPCInvoker) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-	client, err := r.Get(service)
+	client, err := r.prepareClient(service)
 	if err != nil {
 		status = 500
 		return
 	}
-	return client.Query(service, input, failFast)
+	rservice, _, _, err := r.resolvePath(service)
+	if err != nil {
+		status = 500
+		return
+	}
+	return client.Query(rservice, input, failFast)
 }
 
 //Update 使用RPC调用Update函数
 func (r *RPCInvoker) Update(service string, input map[string]string, failFast bool) (status int, err error) {
-	client, err := r.Get(service)
+	client, err := r.prepareClient(service)
 	if err != nil {
 		status = 500
 		return
 	}
-	return client.Update(service, input, failFast)
+	rservice, _, _, err := r.resolvePath(service)
+	if err != nil {
+		status = 500
+		return
+	}
+	return client.Update(rservice, input, failFast)
 }
 
 //Get 获取rpc client
 //addr 支持格式:
 //order.request#merchant.hydra,order.request,order.request@api.hydra,order.request@api
-func (r *RPCInvoker) Get(addr string) (c *RPCClient, err error) {
+func (r *RPCInvoker) Get(addr string) (c *RPCClientPool, err error) {
 	service, domain, server, err := r.resolvePath(addr)
 	if err != nil {
 		return
@@ -154,6 +186,7 @@ func (r *RPCInvoker) Get(addr string) (c *RPCClient, err error) {
 		opts := make([]ClientOption, 0, 0)
 		opts = append(opts, WithLogger(r.logger))
 		rs := balancer.NewResolver(rsrvs, time.Second, r.localPrefix)
+		opts = append(opts, WithMaxUsing(100000))
 		switch r.balancerType {
 		case RoundRobin:
 			opts = append(opts, WithRoundRobinBalancer(rs, rsrvs, time.Second, map[string]int{}))
@@ -161,12 +194,12 @@ func (r *RPCInvoker) Get(addr string) (c *RPCClient, err error) {
 			opts = append(opts, WithLocalFirstBalancer(rs, rsrvs, r.localPrefix, map[string]int{}))
 		default:
 		}
-		return NewRPCClient(r.address, opts...)
+		return NewRPCClientPool(r.address, 100, time.Second*300, opts...)
 	}, fullService)
 	if err != nil {
 		return
 	}
-	c = client.(*RPCClient)
+	c = client.(*RPCClientPool)
 	return
 }
 
@@ -184,7 +217,7 @@ func (r *RPCInvoker) PreInit(services ...string) (err error) {
 //Close 关闭当前服务
 func (r *RPCInvoker) Close() {
 	r.cache.RemoveIterCb(func(k string, v interface{}) bool {
-		client := v.(*RPCClient)
+		client := v.(*RPCClientPool)
 		client.Close()
 		return true
 	})

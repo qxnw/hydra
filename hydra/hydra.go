@@ -126,6 +126,7 @@ func (h *Hydra) checkFlag() (err error) {
 //Start 启动服务
 func (h *Hydra) Start() (err error) {
 	if err = h.checkFlag(); err != nil {
+		h.Error(err)
 		return
 	}
 

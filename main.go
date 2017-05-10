@@ -12,7 +12,6 @@ import (
 func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	hydra := hydra.NewHydra()
 	hydra.Install()
 	defer hydra.Close()
