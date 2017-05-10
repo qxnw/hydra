@@ -64,8 +64,8 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	url := ctx.Req().URL.Path
 	client := ctx.IP()
-	conterName := metrics.MakeName(ctx.tan.serverName+".request", metrics.WORKING, "server", ctx.tan.ip, "client", client, "url", url) //堵塞计数
-	timerName := metrics.MakeName(ctx.tan.serverName+".response", metrics.TIMER, "server", ctx.tan.ip, "client", client, "url", url)   //响应时长
+	conterName := metrics.MakeName("api.server.request", metrics.WORKING, "name", ctx.tan.serverName, "server", ctx.tan.ip, "client", client, "url", url) //堵塞计数
+	timerName := metrics.MakeName("api.server.request", metrics.TIMER, "name", ctx.tan.serverName, "server", ctx.tan.ip, "client", client, "url", url)    //堵塞计数
 
 	counter := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	counter.Inc(1)
@@ -81,7 +81,7 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	}
 
 	statusCode := ctx.Status()
-	responseName := metrics.MakeName(ctx.tan.serverName+".response", metrics.METER, "server", ctx.tan.ip,
+	responseName := metrics.MakeName("api.server.response", metrics.METER, "name", ctx.tan.serverName, "server", ctx.tan.ip,
 		"client", client, "url", url, "status", fmt.Sprintf("%d", statusCode)) //响应状态码
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

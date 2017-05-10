@@ -79,7 +79,7 @@ type CronServer struct {
 //NewCronServer 构建定时任务
 func NewCronServer(name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
 	w = &CronServer{serverName: name, length: length, span: span, index: 0}
-	w.Logger = logger.GetSession("hydra.cron", utility.GetGUID())
+	w.Logger = logger.GetSession("hydra.cron", logger.CreateSession())
 	w.cronOption = &cronOption{metric: NewInfluxMetric(), startTime: time.Now()}
 	w.close = make(chan struct{})
 	w.handlers = make([]Handler, 0, 3)
@@ -146,7 +146,7 @@ func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 		return -1, -1, errors.New("next time less than now.2")
 	}
 	ctask := &cronTask{task: task, round: round}
-	ctask.task.Reset(w, logger.GetSession(task.GetName(), utility.GetGUID()))
+	ctask.task.Reset(w, logger.GetSession(task.GetName(), logger.CreateSession()))
 	if !w.done {
 		w.slots[offset].Set(utility.GetGUID(), ctask)
 		atomic.AddInt32(&w.taskCount, 1)

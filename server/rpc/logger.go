@@ -50,6 +50,12 @@ func Logging() HandlerFunc {
 		start := time.Now()
 		ctx.Info("req.rpc", ctx.server.serverName, "for", ctx.Req().Service)
 		ctx.Next()
-		ctx.Info("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", ctx.GetStatusCode())
+		status := ctx.GetStatusCode()
+		if status == 200 {
+			ctx.Info("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
+		} else {
+			ctx.Error("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
+		}
+
 	}
 }

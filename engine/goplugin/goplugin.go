@@ -14,6 +14,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra_plugin/plugins"
+	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/file"
 )
 
@@ -27,32 +28,33 @@ type goPluginWorker struct {
 	serverType string
 	scriptPath string
 	srvPlugins map[string]plugins.PluginWorker
-	services   []string
+	services   cmap.ConcurrentMap
 	invoker    *rpc.RPCInvoker
+	path       string
 }
 
 func newGoPluginWorker() *goPluginWorker {
 	return &goPluginWorker{
-		services:   make([]string, 0, 16),
+		services:   cmap.New(),
 		srvPlugins: make(map[string]plugins.PluginWorker),
 	}
 }
 
 func (s *goPluginWorker) Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) (services []string, err error) {
 	s.domain = domain
-	s.serverName = serverName
-	s.serverType = serverType
+	s.serverName = strings.Trim(serverName, "/")
+	s.serverType = strings.Trim(serverType, "/")
 	s.invoker = invoker
-	path := fmt.Sprintf("%s/servers/%s/%s/go", s.domain, s.serverName, s.serverType)
-	p, err := file.GetAbs(path)
+	s.path = fmt.Sprintf("%s/servers/%s/%s/go", s.domain, s.serverName, s.serverType)
+	p, err := file.GetAbs(s.path)
 	if err != nil {
 		return
 	}
-	serviceNames, err := ioutil.ReadDir(path) //获取服务根目录
+	serviceNames, err := ioutil.ReadDir(s.path) //获取服务根目录
 	if err != nil && os.IsNotExist(err) {
 		return nil, nil
 	}
-	s.services = make([]string, 0, 16)
+	services = make([]string, 0, 16)
 	pname := strings.Replace(serverName, ".", "_", -1)
 	for _, v := range serviceNames {
 
@@ -66,19 +68,22 @@ func (s *goPluginWorker) Start(domain string, serverName string, serverType stri
 		}
 		srvs := rwrk.GetServices()
 		for _, v := range srvs {
-			s.srvPlugins[v] = rwrk
-		}
-		for _, v := range srvs {
-			s.services = append(s.services, strings.ToUpper(v))
+			svName := strings.ToLower(v)
+			s.srvPlugins[svName] = rwrk
+			s.services.SetIfAbsent(svName, svName)
+			services = append(services, svName)
 		}
 	}
-	return s.services, nil
+	return services, nil
 }
 func (s *goPluginWorker) loadPlugin(name string, path string) (r plugins.PluginWorker, err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	if p, ok := plugines[name]; ok {
 		return p, nil
+	}
+	if _, err = os.Lstat(path); err != nil {
+		return
 	}
 	pg, err := plugin.Open(path)
 	if err != nil {
@@ -100,20 +105,22 @@ func (s *goPluginWorker) Close() error {
 	return nil
 }
 func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	f, ok := s.srvPlugins[service]
+	f, ok := s.srvPlugins[svName]
 	if !ok {
-		return &context.Response{Status: 404}, fmt.Errorf("go plugin 未找到服务：%s", service)
+		return &context.Response{Status: 404}, fmt.Errorf("go plugin 未找到服务：%s", svName)
 	}
 	st, rs, err := f.Handle(svName, mode, service, ctx, s.invoker)
 	return &context.Response{Status: st, Content: rs}, err
 }
-func (s *goPluginWorker) Has(service string) error {
-	for _, v := range s.services {
-		if v == service {
-			return nil
-		}
+func (s *goPluginWorker) Has(shortName, fullName string) error {
+	if s.services.Count() == 0 {
+		return fmt.Errorf("在目录:%s中未找到go插件", s.path)
 	}
-	return fmt.Errorf("不存在服务:%s", service)
+	if s.services.Has(shortName) {
+		return nil
+	}
+	return fmt.Errorf("不存在服务:%s:%d", shortName, s.services.Count())
+
 }
 
 type goResolver struct {

@@ -8,6 +8,8 @@ import (
 
 	"sort"
 
+	"fmt"
+
 	"google.golang.org/grpc/naming"
 )
 
@@ -42,7 +44,7 @@ func (w *Watcher) Next() ([]*naming.Update, error) {
 	// generate etcd Watcher
 	watcherCh, err := w.client.WatchChildren(w.service)
 	if err != nil {
-		return w.getUpdates([]string{}), err
+		return w.getUpdates([]string{}), fmt.Errorf("未找到服务:%s(err:%v)", w.service, err)
 	}
 	var watcher r.ChildrenWatcher
 	select {

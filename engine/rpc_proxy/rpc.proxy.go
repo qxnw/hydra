@@ -28,7 +28,7 @@ func (s *rpcProxy) Start(domain string, serverName string, serverType string, in
 	s.serverName = serverName
 	s.serverType = serverType
 	s.invoker = invoker
-	return []string{"*"}, nil
+	return []string{}, nil
 
 }
 func (s *rpcProxy) Close() error {
@@ -36,7 +36,6 @@ func (s *rpcProxy) Close() error {
 	return nil
 }
 func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-
 	input := map[string]string{}
 	if ctx.Input.Input == nil {
 		return &context.Response{Status: 500}, fmt.Errorf("输入参数为空:%s", service)
@@ -50,10 +49,9 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	status, result, err := s.invoker.Request(service, input, true)
 	return &context.Response{Status: status, Content: result}, err
 }
-func (s *rpcProxy) Has(service string) (err error) {
-	_, err = s.invoker.Get(service)
+func (s *rpcProxy) Has(shortName, fullName string) (err error) {
+	_, err = s.invoker.Get(fullName)
 	return err
-	//return nil
 }
 
 type rpcProxyResolver struct {

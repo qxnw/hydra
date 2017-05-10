@@ -46,11 +46,21 @@ func (s *scriptWorker) Start(domain string, serverName string, serverType string
 	if err != nil {
 		return
 	}
-
-	s.vm = lua4go.NewLuaVM(bind.NewDefault([]string{p, p + "/xlib"}...), 1, 100, time.Second*300) //引擎池5分钟不用则自动回收
+	opts := make([]lua4go.Option, 0, 4)
+	opts = append(opts, lua4go.WithMinSize(1))
+	opts = append(opts, lua4go.WithMaxSize(99))
+	opts = append(opts, lua4go.WithTimeout(time.Second*300)) //引擎池5分钟不用则自动回收
+	if engine.IsDebug {
+		opts = append(opts, lua4go.WithWatchScript(time.Second))
+	}
+	s.vm = lua4go.NewLuaVM(bind.NewDefault([]string{p, p + "/xlib", p + "/lib"}...), opts...)
 	s.services, err = s.findService(p, "")
 	if err != nil {
+		s.vm.Close()
 		return
+	}
+	if len(s.services) == 0 {
+		s.vm.Close()
 	}
 	return s.services, nil
 }
@@ -84,7 +94,7 @@ func (s *scriptWorker) findService(path string, parent string) (services []strin
 	return services, nil
 }
 func (s *scriptWorker) loadService(name string, parent string, root string) (fname string, err error) {
-	fname = strings.ToUpper(s.getServiceName(name, parent))
+	fname = strings.ToLower(s.getServiceName(name, parent))
 	if fname == "" {
 		return "", nil
 	}
@@ -110,11 +120,11 @@ func (s *scriptWorker) Close() error {
 }
 func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
 
-	f, ok := s.srvsPathMap[service]
+	f, ok := s.srvsPathMap[svName]
 	if !ok {
-		return &context.Response{Status: 404}, fmt.Errorf("script plugin 未找到服务：%s", service)
+		return &context.Response{Status: 404}, fmt.Errorf("script plugin 未找到服务：%s", svName)
 	}
-	log := logger.GetSession(service, ctx.Ext["hydra_sid"].(string))
+	log := logger.GetSession(svName, ctx.Ext["hydra_sid"].(string))
 	defer log.Close()
 	ctx.Ext["__func_rpc_invoker_"] = s.invoker
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
@@ -129,13 +139,13 @@ func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *c
 	r = &context.Response{Status: 200, Params: data, Content: result[0]}
 	return
 }
-func (s *scriptWorker) Has(service string) (err error) {
+func (s *scriptWorker) Has(shortName, fullName string) (err error) {
 	for _, v := range s.services {
-		if v == service {
+		if v == shortName {
 			return nil
 		}
 	}
-	return fmt.Errorf("不存在服务:%s", service)
+	return fmt.Errorf("不存在服务:%s", shortName)
 }
 
 type scriptResolver struct {

@@ -8,13 +8,16 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
+//IsDebug 当前服务器是处于调试模式
+var IsDebug = false
+
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
 )
 
 //IWorker 插件
 type IWorker interface {
-	Has(service string) error
+	Has(shortName, fullName string) error
 	Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) ([]string, error)
 	Close() error
 	context.EngineHandler
@@ -77,31 +80,39 @@ func (e *standardEngine) Close() error {
 
 //处理引擎
 func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
-	svName := "/" + strings.Trim(strings.ToUpper(service), "/")
+	sName, fName := e.getServiceName(service)
 	if mode != "*" {
 		worker, ok := e.plugins[mode]
 		if !ok {
 			return &context.Response{Status: 404}, fmt.Errorf("engine:未找到执行引擎:%s", mode)
 		}
-		err := worker.Has(svName)
+		err := worker.Has(sName, fName)
 		if err != nil {
-			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s中未找到服务:%s(err:%v)", mode, svName, err)
+			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s中未找到服务:%s(err:%v)", mode, fName, err)
 		}
-		return worker.Handle(name, mode, svName, c)
+		return worker.Handle(sName, mode, fName, c)
 	}
 	for d, worker := range e.plugins {
-		if d == "rpc" {
+		if d == "rpc" { //rpc为特殊服务，必须明确指定才能执行
 			continue
 		}
-		err := worker.Has(svName)
+		err := worker.Has(sName, fName)
 		if err != nil {
 			continue
 		}
 
-		return worker.Handle(name, mode, svName, c)
+		return worker.Handle(sName, mode, fName, c)
 	}
-	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", svName)
+	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", fName)
 
+}
+func (e *standardEngine) getServiceName(name string) (sortName, fullName string) {
+	text := "/" + strings.Trim(name, "/")
+	index := strings.LastIndex(text, "#")
+	if index < 0 {
+		return strings.ToLower(text), strings.ToLower(text)
+	}
+	return strings.ToLower(text[0:index]), strings.ToLower(text[0:index]) + text[index:]
 }
 
 //Register 注册插件

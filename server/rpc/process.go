@@ -58,6 +58,8 @@ func (r *process) Query(context context.Context, request *pb.RequestContext) (p 
 
 //Request 客户端处理客户端请求
 func (r *process) Update(context context.Context, request *pb.RequestContext) (p *pb.ResponseNoResultContext, err error) {
+	r.srv.mu.RLock()
+	defer r.srv.mu.RUnlock()
 	ctx := &Context{}
 	ctx.server = r.srv
 	ctx.reset("UPDATE", context, request)

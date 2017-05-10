@@ -61,14 +61,14 @@ func (m *InfluxMetric) execute(context *Context) {
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Context) {
 	service := ctx.Req().Service
-	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.WORKING, "server", ctx.server.ip, "name", service)
-	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "name", service)
+	processName := metrics.MakeName("rpc.server.process", metrics.WORKING, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
+	timerName := metrics.MakeName("rpc.server.process", metrics.TIMER, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
 	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
-	responseName := metrics.MakeName(ctx.server.serverName+".response", metrics.METER, "server",
-		ctx.server.ip, "name", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()))
+	responseName := metrics.MakeName("rpc.server.response", metrics.METER, "name", ctx.server.serverName, "server",
+		ctx.server.ip, "service", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()))
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

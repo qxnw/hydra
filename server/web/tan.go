@@ -14,7 +14,6 @@ import (
 
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/utility"
 )
 
 //Version 系统版本号
@@ -199,7 +198,7 @@ func New(name string, opts ...Option) *WebServer {
 		serverName:      name,
 		Router:          NewRouter(),
 		ErrHandler:      Errors(),
-		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: logger.GetSession(name, utility.GetGUID())},
+		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: logger.GetSession(name, logger.CreateSession())},
 	}
 	//转换配置项
 	for _, opt := range opts {

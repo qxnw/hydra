@@ -63,7 +63,6 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
-
 	//设置路由
 	routers, err := conf.GetNodeWithSection("router")
 	if err != nil {
@@ -96,7 +95,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
 				}
 			}
-
+			routers = append(routers, w.getCheckerRouter())
 			routers = append(routers, &webRouter{
 				Method:      actions,
 				Path:        name,
@@ -139,8 +138,8 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 func (w *hydraWebServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 		//处理输入参数
-		context := context.GetContext()
-		defer context.Close()
+		ctx := context.GetContext()
+		defer ctx.Close()
 		buf, err := c.Body()
 		if err != nil {
 			c.BadRequest(fmt.Sprintf("%+v", err))
@@ -151,13 +150,13 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		tfParams.Set("method", c.Req().Method)
 
 		tfForm := transform.NewValues(c.Forms().Form)
-		context.Ext["hydra_sid"] = c.GetSessionID()
-		context.Ext["__func_http_request_"] = c.Req()
-		context.Ext["__func_http_response_"] = c.ResponseWriter
-		context.Ext["__func_body_get_"] = func(c string) (string, error) {
+		ctx.Ext["hydra_sid"] = c.GetSessionID()
+		ctx.Ext["__func_http_request_"] = c.Req()
+		ctx.Ext["__func_http_response_"] = c.ResponseWriter
+		ctx.Ext["__func_body_get_"] = func(c string) (string, error) {
 			return encoding.Convert(buf, c)
 		}
-		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
@@ -167,18 +166,19 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		rservice := tfForm.Translate(tfParams.Translate(service))
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 
-		context.Input.Input = tfForm.Data
-		context.Input.Body = string(buf)
-		context.Input.Params = tfParams.Data
+		ctx.Input.Input = tfForm.Data
+		ctx.Input.Body = string(buf)
+		ctx.Input.Params = tfParams.Data
 
-		context.Input.Args, err = utility.GetMapWithQuery(rArgs)
+		ctx.Input.Args, err = utility.GetMapWithQuery(rArgs)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
 			return
 		}
-
 		//执行服务调用
-		response, err := w.handler.Handle(name, mode, rservice, context)
+		response, err := w.handler.Handle(name, mode, rservice, ctx)
+
+		//response := &context.Response{Params: make(map[string]interface{}), Status: 200}
 		if err != nil {
 			status := 500
 			if response != nil {
@@ -233,6 +233,16 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 	}
 }
 
+func (w *hydraWebServer) getCheckerRouter() *webRouter {
+	return &webRouter{
+		Method: []string{"GET"},
+		Path:   "/server/checker",
+		Handler: func(c *Context) {
+			c.Result = &StatusResult{Code: 200, Result: "success", Type: 0}
+		},
+		Middlewares: make([]Handler, 0, 0)}
+}
+
 //GetAddress 获取服务器地址
 func (w *hydraWebServer) GetAddress() string {
 	return w.server.GetAddress()
@@ -267,6 +277,7 @@ func (w *hydraWebServer) Notify(conf conf.Conf) error {
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
+
 	restart, err := w.needRestart(conf)
 	if err != nil {
 		return err

@@ -15,7 +15,6 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/hydra/server/rpc/pb"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/utility"
 	"google.golang.org/grpc"
 )
 
@@ -117,7 +116,7 @@ func NewRPCServer(name string, opts ...Option) *RPCServer {
 		opt(s.serverOption)
 	}
 	if s.logger == nil {
-		s.logger = logger.GetSession(name, utility.GetGUID())
+		s.logger = logger.GetSession(name, logger.CreateSession())
 	}
 
 	s.Use(Logging(),

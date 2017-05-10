@@ -59,15 +59,15 @@ func (m *InfluxMetric) execute(task *Context) {
 
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Context) {
-	processName := metrics.MakeName(ctx.server.serverName+".process", metrics.WORKING, "server", ctx.server.ip, "name", ctx.queue)
-	timerName := metrics.MakeName(ctx.server.serverName+".request", metrics.TIMER, "server", ctx.server.ip, "name", ctx.queue)
+	processName := metrics.MakeName("mq.consumer.process", metrics.WORKING, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
+	timerName := metrics.MakeName("mq.consumer.process", metrics.TIMER, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
 	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
 
-	responseName := metrics.MakeName(ctx.server.serverName+".response", metrics.METER, "server",
-		ctx.server.ip, "name", ctx.queue, "status", fmt.Sprintf("%d", ctx.statusCode))
+	responseName := metrics.MakeName("mq.consumer.response", metrics.METER, "name", ctx.server.serverName, "server",
+		ctx.server.ip, "queue", ctx.queue, "status", fmt.Sprintf("%d", ctx.statusCode))
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

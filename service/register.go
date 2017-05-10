@@ -16,7 +16,7 @@ type IServiceRegistry interface {
 
 //IRegisterResolver 定义配置文件转换方法
 type IRegisterResolver interface {
-	Resolve(adapter string, domain string, serverName string, log *logger.Logger, servers []string) (IServiceRegistry, error)
+	Resolve(adapter string, domain string, serverName string, log *logger.Logger, servers []string, cross []string) (IServiceRegistry, error)
 }
 
 var registers = make(map[string]IRegisterResolver)
@@ -24,19 +24,19 @@ var registers = make(map[string]IRegisterResolver)
 //Register 注册服务注册解析器
 func Register(name string, resolver IRegisterResolver) {
 	if resolver == nil {
-		panic("config: Register adapter is nil")
+		panic("registry: Register adapter is nil")
 	}
 	if _, ok := registers[name]; ok {
-		panic("config: Register called twice for adapter " + name)
+		panic("registry: Register called twice for adapter " + name)
 	}
 	registers[name] = resolver
 }
 
 //NewRegister 根据适配器名称及参数返回配置处理器
-func NewRegister(adapter string, domain string, serverName string, log *logger.Logger, servers []string) (IServiceRegistry, error) {
+func NewRegister(adapter string, domain string, serverName string, log *logger.Logger, servers []string, cross []string) (IServiceRegistry, error) {
 	resolver, ok := registers[adapter]
 	if !ok {
-		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
+		return nil, fmt.Errorf("registry: unknown adapter name %q (forgotten import?)", adapter)
 	}
-	return resolver.Resolve(adapter, domain, serverName, log, servers)
+	return resolver.Resolve(adapter, domain, serverName, log, servers, cross)
 }

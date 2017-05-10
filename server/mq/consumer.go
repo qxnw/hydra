@@ -7,7 +7,6 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/mq"
-	"github.com/qxnw/lib4go/utility"
 )
 
 type taskOption struct {
@@ -69,7 +68,7 @@ func NewMQConsumer(name string, address string, opts ...TaskOption) (s *MQConsum
 		opt(s.taskOption)
 	}
 	if s.taskOption.Logger == nil {
-		s.taskOption.Logger = logger.GetSession("hydra.mq", utility.GetGUID())
+		s.taskOption.Logger = logger.GetSession("hydra.mq", logger.CreateSession())
 	}
 	s.handlers = append(s.handlers,
 		Logging(),
@@ -114,7 +113,7 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 		r := s.p.Get().(*Context)
 		message := m.GetMessage()
 		r.reset(queue, m, s, message, handle)
-		r.Logger = logger.GetSession(queue, utility.GetGUID())
+		r.Logger = logger.GetSession(queue, logger.CreateSession())
 		r.invoke()
 		if r.statusCode == 200 {
 			m.Ack()

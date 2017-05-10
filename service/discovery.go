@@ -25,10 +25,10 @@ var discoveryResolvers = make(map[string]IDiscoveryResolver)
 //Discovery 注册服务发现解析器
 func Discovery(name string, resolver IDiscoveryResolver) {
 	if resolver == nil {
-		panic("config: Register adapter is nil")
+		panic("discovery: Register adapter is nil")
 	}
 	if _, ok := discoveryResolvers[name]; ok {
-		panic("config: Register called twice for adapter " + name)
+		panic("discovery: Register called twice for adapter " + name)
 	}
 	discoveryResolvers[name] = resolver
 }
@@ -37,7 +37,7 @@ func Discovery(name string, resolver IDiscoveryResolver) {
 func NewDiscovery(adapter string, domain string, tag string, log *logger.Logger, servers []string) (IDiscovery, error) {
 	resolver, ok := discoveryResolvers[adapter]
 	if !ok {
-		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
+		return nil, fmt.Errorf("discovery: unknown adapter name %q (forgotten import?)", adapter)
 	}
 	return resolver.Resolve(adapter, domain, tag, log, servers)
 }

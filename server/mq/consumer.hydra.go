@@ -31,7 +31,7 @@ func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 	}
-	h.server, err = NewMQConsumer(cnf.String("name", "mq.consumer"),
+	h.server, err = NewMQConsumer(cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
 		WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
@@ -46,7 +46,7 @@ func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry
 //restartServer 重启服务器
 func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
-	w.server, err = NewMQConsumer(cnf.String("name", "mq.consumer"),
+	w.server, err = NewMQConsumer(cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),

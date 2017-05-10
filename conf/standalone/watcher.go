@@ -143,7 +143,7 @@ START:
 			w.cacheDir.Set(path, true)
 			for _, v := range children { //检查当前配置地址未缓存
 				for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/api/conf.json
-					name := fmt.Sprintf("%s/%s/%s/conf/conf.json", path, v, sv)
+					name := fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv)
 					if _, ok := w.cacheAddress.Get(name); !ok {
 						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
 							serverName:   v,
@@ -160,7 +160,7 @@ START:
 				exists := false
 				for _, v := range children {
 					for _, sv := range conf.WatchServices {
-						if key == fmt.Sprintf("%s/%s/%s/conf/conf.json", path, v, sv) {
+						if key == fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv) {
 							exists = true
 							break
 						}
@@ -258,14 +258,15 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	if err != nil {
 		return
 	}
+
 	c["domain"] = w.domain
-	c["path"] = path
 
 	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
 
 	if cc, ok := w.cacheAddress.Get(path); ok {
 		v := cc.(*watcherPath)
 		jcf.Set("root_path", v.confRoot)
+		jcf.Set("path", v.confRoot)
 		jcf.Set("category_path", v.categoryPath)
 		jcf.Set("server_path", v.serverPath)
 		jcf.Set("name", v.serverName)

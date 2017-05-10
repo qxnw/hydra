@@ -19,7 +19,6 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/utility"
 )
 
 type Handler interface {
@@ -54,7 +53,7 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 	ctx.matched = false
 	ctx.action = nil
 	ctx.Result = nil
-	session_id := ctx.Cookie("hydra.sid", utility.GetGUID())
+	session_id := ctx.Cookie("hydra_sid", logger.CreateSession())
 	ctx.Logger = logger.GetSession(removeStick(ctx.Req().URL.Path), session_id)
 }
 
