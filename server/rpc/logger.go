@@ -48,13 +48,13 @@ func (l *Log) SetLogger(log *logger.Logger) {
 func Logging() HandlerFunc {
 	return func(ctx *Context) {
 		start := time.Now()
-		ctx.Info("req.rpc", ctx.server.serverName, "for", ctx.Req().Service)
+		ctx.Info("rpc.request:", ctx.server.serverName, "for", ctx.Req().Service)
 		ctx.Next()
 		status := ctx.GetStatusCode()
 		if status == 200 {
-			ctx.Info("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
+			ctx.Info("rpc.response:", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
 		} else {
-			ctx.Error("res.rpc", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
+			ctx.Error("rpc.response:", ctx.server.serverName, "for", ctx.Req().Service, time.Since(start), "status", status)
 		}
 
 	}

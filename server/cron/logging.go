@@ -24,9 +24,9 @@ func NewLogger(name string, out io.Writer) context.Logger {
 func Logging() HandlerFunc {
 	return func(ctx *Task) {
 		start := time.Now()
-		ctx.Info("req.cron", ctx.server.serverName, "for", ctx.taskName)
+		ctx.Info("cron.request:", ctx.server.serverName, "for", ctx.taskName)
 		ctx.DoNext()
-		ctx.Info("res.cron", ctx.server.serverName, "for", ctx.taskName, time.Since(start), "status", ctx.statusCode)
+		ctx.Info("cron.response:", ctx.server.serverName, "for", ctx.taskName, time.Since(start), "status", ctx.statusCode)
 
 	}
 }

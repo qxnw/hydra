@@ -7,6 +7,8 @@ import (
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"
 	_ "github.com/qxnw/hydra/engine/script"
 	"github.com/qxnw/hydra/hydra"
+	_ "github.com/qxnw/lib4go/mq/kafka"
+	_ "github.com/qxnw/lib4go/mq/stomp"
 )
 
 func main() {

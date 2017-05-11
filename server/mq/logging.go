@@ -24,12 +24,12 @@ func NewLogger(name string, out io.Writer) context.Logger {
 func Logging() HandlerFunc {
 	return func(ctx *Context) {
 		start := time.Now()
-		ctx.Info("req.mq", ctx.server.serverName, "for", ctx.queue)
+		ctx.Info("mq.request:", ctx.server.serverName, "for", ctx.queue)
 		ctx.Next()
 		if ctx.statusCode == 200 {
-			ctx.Info("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
+			ctx.Info("mq.response:", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
 		} else {
-			ctx.Error("res.mq", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
+			ctx.Error("mq.response:", ctx.server.serverName, "for", ctx.queue, time.Since(start), "status", ctx.statusCode)
 		}
 	}
 }
