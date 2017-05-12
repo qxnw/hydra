@@ -208,6 +208,31 @@ func (j *JSONConf) GetNodeWithSection(section string, enableCache ...bool) (r Co
 	return
 }
 
+//GetIMap 获取map数据
+func (j *JSONConf) GetIMap(section string) (map[string]interface{}, error) {
+	val := j.data[section]
+	if val != nil {
+		if v, ok := val.(map[string]interface{}); ok {
+			return v, nil
+		}
+	}
+	return nil, nil
+}
+
+//GetSMap 获取map数据
+func (j *JSONConf) GetSMap(section string) (map[string]string, error) {
+	data := make(map[string]string)
+	val := j.data[section]
+	if val != nil {
+		if v, ok := val.(map[string]interface{}); ok {
+			for k, a := range v {
+				data[k] = j.TranslateAll(fmt.Sprintf("%s", a), false)
+			}
+		}
+	}
+	return data, nil
+}
+
 //GetSection 获取块节点
 func (j *JSONConf) GetSection(section string) (r Conf, err error) {
 	if value, ok := j.cache.Get(section); ok {

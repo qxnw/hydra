@@ -57,6 +57,8 @@ type Conf interface {
 	Int(key string, def ...int) (int, error)
 	Bool(key string, def ...bool) (bool, error)
 	GetSection(section string) (Conf, error)
+	GetIMap(section string) (map[string]interface{}, error)
+	GetSMap(section string) (map[string]string, error)
 	GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error)
 	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
