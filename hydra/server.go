@@ -26,6 +26,7 @@ type HydraServer struct {
 	runMode                 string
 	engine                  engine.IEngine
 	server                  server.IHydraServer
+	engineNames             []string
 	serviceRegistry         service.IServiceRegistry
 	crurrentRegistryAddress []string
 	crossRegistryAddress    []string
@@ -59,14 +60,14 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	}
 	h.serverName = cnf.String("name")
 	h.serverType = cnf.String("type")
-
+	h.engineNames = cnf.Strings("engine", []string{"go", "rpc", "script"})
 	h.serviceRegistry, err = service.NewRegister(h.runMode, h.domain, h.serverName, h.logger, h.crurrentRegistryAddress, h.crossRegistryAddress)
 	if err != nil {
 		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", h.serverType, h.domain, err)
 	}
 
 	// 启动服务引擎
-	svs, err := h.engine.Start(h.domain, h.serverName, h.serverType, h.registry)
+	svs, err := h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:%v)", h.domain, h.serverName, err)
 	}

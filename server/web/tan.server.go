@@ -177,8 +177,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
-
-		//response := &context.Response{Params: make(map[string]interface{}), Status: 200}
 		if err != nil {
 			status := 500
 			if response != nil {

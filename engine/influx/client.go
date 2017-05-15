@@ -1,4 +1,4 @@
-package influxdb
+package influx
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/qxnw/lib4go/influxdb"
+	//"github.com/qxnw/lib4go/influxdb"
+	//"github.com/qxnw/lib4go/influxdb"
 )
 
 type influxClient struct {
@@ -18,12 +20,6 @@ type influxClient struct {
 	client   *influxdb.Client
 	closeCh  chan struct{}
 	done     bool
-}
-type influxClientConf struct {
-	client      *influxClient
-	measurement string
-	tags        map[string]string
-	fields      map[string]string
 }
 
 // newInfluxClient starts a InfluxDB reporter which will post the metrics from the given registry at each d interval with the specified tags
@@ -50,9 +46,11 @@ func newInfluxClient(url, database, username, password string) (*influxClient, e
 
 func (r *influxClient) makeClient() (err error) {
 	r.client, err = influxdb.NewClient(influxdb.Config{
-		URL:      r.url,
-		Username: r.username,
-		Password: r.password,
+		URL:       r.url,
+		Timeout:   time.Second * 3,
+		UserAgent: "hydra",
+		Username:  r.username,
+		Password:  r.password,
 	})
 	return
 }
@@ -74,7 +72,24 @@ func (r *influxClient) run() {
 		}
 	}
 }
-
+func (r *influxClient) Query(sql string) (result string, err error) {
+	response, err := r.client.Query(influxdb.Query{Command: sql, Database: r.database})
+	if err != nil {
+		err = fmt.Errorf("query.error:%v", err)
+		return
+	}
+	if err = response.Error(); err != nil {
+		return "", fmt.Errorf("response.error:%v", err)
+	}
+	fmt.Println(response.Results)
+	buf, err := response.MarshalJSON()
+	if err != nil {
+		err = fmt.Errorf("query.result.marshal.error:%v", err)
+		return
+	}
+	result = string(buf)
+	return
+}
 func (r *influxClient) Send(measurement string, tags map[string]string, fileds map[string]interface{}) error {
 	var pts []influxdb.Point
 	pts = append(pts, influxdb.Point{

@@ -25,7 +25,7 @@ type IWorker interface {
 
 //IEngine 执行引擎
 type IEngine interface {
-	Start(domain string, serverName string, serverType string, rpcRegistryAddress string) ([]string, error)
+	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, extEngines ...string) ([]string, error)
 	Handle(name string, mode string, service string, c *context.Context) (*context.Response, error)
 	Register(name string, p IWorker)
 	Close() error
@@ -54,12 +54,23 @@ func NewStandardEngine() IEngine {
 }
 
 //启动引擎
-func (e *standardEngine) Start(domain string, serverName string, serverType string, rpcRegistryAddrss string) (services []string, err error) {
+func (e *standardEngine) Start(domain string, serverName string, serverType string, rpcRegistryAddrss string, extEngines ...string) (services []string, err error) {
+
 	services = make([]string, 0, 8)
 	e.domain = domain
 	e.serverName = serverName
 	e.invoker = rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
-	for _, p := range e.plugins {
+	for m, p := range e.plugins {
+		hasExist := false
+		for _, v := range extEngines {
+			if strings.EqualFold(m, v) {
+				hasExist = true
+				break
+			}
+		}
+		if !hasExist {
+			continue
+		}
 		srvs, err := p.Start(domain, serverName, serverType, e.invoker)
 		if err != nil {
 			return nil, err

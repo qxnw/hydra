@@ -3,6 +3,7 @@ package main
 import (
 	"runtime"
 
+	_ "github.com/qxnw/hydra/engine/cache"
 	_ "github.com/qxnw/hydra/engine/goplugin"
 	_ "github.com/qxnw/hydra/engine/influx"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"
