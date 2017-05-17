@@ -1,10 +1,10 @@
 
 
-_header={}
-_header["Content-Type"]="text/plain"
+header={}
+header["Content-Type"]="text/plain"
 
 function main(p)
-    local r={_header={}}
-    r._header["Location"]="/order/request"  
+    local r={header={}}
+    r.header["Location"]="/order/request"  
     return r
 end

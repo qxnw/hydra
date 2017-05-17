@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"fmt"
+
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
@@ -54,7 +56,10 @@ func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *con
 }
 
 func (s *cacheProxy) Has(shortName, fullName string) (err error) {
-	return nil
+	if _, ok := s.serviceHandlers[shortName]; ok {
+		return nil
+	}
+	return fmt.Errorf("不存在服务:%s", shortName)
 }
 
 type memcacheProxyResolver struct {

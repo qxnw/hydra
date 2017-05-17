@@ -238,7 +238,7 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 		return err
 	}
 	h.servers[name] = srv
-	h.Logger.Infof("启动服务器:%s(%s)", name, srv.address)
+	h.Logger.Infof("启动服务器:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
 	return nil
 }
 func (h *Hydra) changeServer(cnf conf.Conf) error {

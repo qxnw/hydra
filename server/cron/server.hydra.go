@@ -3,6 +3,7 @@ package cron
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,6 +159,12 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 			task.err = errors.New("Internal Server Error(工作引擎发生异常)")
 			task.Errorf("cron:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
 			return task.err
+		}
+		if status, ok := response.Params["Status"]; ok {
+			s, err := strconv.Atoi(status.(string))
+			if err == nil {
+				response.Status = s
+			}
 		}
 		if response.Status == 0 {
 			response.Status = 200

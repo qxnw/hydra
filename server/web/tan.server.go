@@ -196,16 +196,22 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}
 		//处理跳转
 		if location, ok := response.Params["Location"]; ok {
-			httpStatus := 302
+			response.Status = 302
 			if status, ok := response.Params["Status"]; ok {
 				s, err := strconv.Atoi(status.(string))
 				if err == nil {
-					httpStatus = s
+					response.Status = s
 				}
 			}
 			if url, ok := location.(string); ok {
-				c.Redirect(url, httpStatus)
+				c.Redirect(url, response.Status)
 				return
+			}
+		}
+		if status, ok := response.Params["Status"]; ok {
+			s, err := strconv.Atoi(status.(string))
+			if err == nil {
+				response.Status = s
 			}
 		}
 		if response.Status == 0 {

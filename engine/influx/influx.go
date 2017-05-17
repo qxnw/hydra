@@ -61,10 +61,10 @@ func (s *influxProxy) Handle(svName string, mode string, service string, ctx *co
 }
 
 func (s *influxProxy) Has(shortName, fullName string) (err error) {
-	if _, ok := s.serviceHandlers[shortName]; !ok {
-		return fmt.Errorf("不存在服务:%s", shortName)
+	if _, ok := s.serviceHandlers[shortName]; ok {
+		return nil
 	}
-	return nil
+	return fmt.Errorf("不存在服务:%s", shortName)
 }
 
 type influxProxyResolver struct {

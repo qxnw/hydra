@@ -106,13 +106,15 @@ func (s *scriptWorker) loadService(name string, parent string, root string) (fna
 	return
 }
 func (s *scriptWorker) getServiceName(svName string, parent string) string {
-	for _, method := range engine.METHOD_NAME {
-		if strings.HasSuffix(svName, method+".lua") || strings.HasSuffix(svName, "."+method+".lua") {
-			i := strings.LastIndex(svName, ".")
-			return parent + svName[0:i]
+	for _, method := range engine.Exclude {
+		if strings.Contains(svName, method) || strings.Contains(parent, method) {
+			return ""
 		}
+
 	}
-	return ""
+	i := strings.LastIndex(svName, ".")
+	return parent + svName[0:i]
+
 }
 func (s *scriptWorker) Close() error {
 	s.vm.Close()

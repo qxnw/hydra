@@ -31,7 +31,8 @@ type HydraServer struct {
 	crurrentRegistryAddress []string
 	crossRegistryAddress    []string
 	registry                string
-	services                []string
+	localServices           []string
+	remoteServices          []string
 	serverName              string
 	serverType              string
 	runTime                 time.Time
@@ -45,7 +46,8 @@ func NewHydraServer(domain string, runMode string, registry string, logger *logg
 		domain:                  domain,
 		runMode:                 runMode,
 		registry:                registry,
-		services:                make([]string, 0, 16),
+		remoteServices:          make([]string, 0, 16),
+		localServices:           make([]string, 0, 16),
 		crurrentRegistryAddress: crurrentRegistryAddress,
 		crossRegistryAddress:    crossRegistryAddress,
 		engine:                  engine.NewStandardEngine(),
@@ -67,11 +69,11 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	}
 
 	// 启动服务引擎
-	svs, err := h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.engineNames...)
+	h.localServices, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:%v)", h.domain, h.serverName, err)
 	}
-	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(svs) == 0 {
+	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(h.localServices) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s type:%s(err:engine中未找到任何服务)", h.domain, h.serverName, h.serverType)
 	}
 	h.logger.Infof("engine(%s):已加载服务", h.serverName)
@@ -89,12 +91,12 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 
 	//注册服务列表
 	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) {
-		for _, v := range svs {
+		for _, v := range h.localServices {
 			path, err := h.serviceRegistry.Register(v, strings.Replace(h.server.GetAddress(), "//", "", -1), h.server.GetAddress())
 			if err != nil {
 				return err
 			}
-			h.services = append(h.services, path)
+			h.remoteServices = append(h.remoteServices, path)
 		}
 	}
 	return nil
@@ -113,7 +115,7 @@ func (h *HydraServer) GetStatus() string {
 //Shutdown 关闭服务器
 func (h *HydraServer) Shutdown() {
 	if h.serviceRegistry != nil {
-		for _, v := range h.services {
+		for _, v := range h.remoteServices {
 			h.serviceRegistry.Unregister(v)
 		}
 	}

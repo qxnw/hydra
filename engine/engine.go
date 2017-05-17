@@ -13,6 +13,7 @@ var IsDebug = false
 
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
+	Exclude     = []string{"lib", "sys", "conf", "config"}
 )
 
 //IWorker 插件
@@ -114,7 +115,7 @@ func (e *standardEngine) Handle(name string, mode string, service string, c *con
 
 		return worker.Handle(sName, mode, fName, c)
 	}
-	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", fName)
+	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", sName)
 
 }
 func (e *standardEngine) getServiceName(name string) (sortName, fullName string) {

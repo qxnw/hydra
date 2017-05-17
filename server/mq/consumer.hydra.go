@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -161,6 +162,12 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 			task.err = errors.New("Internal Server Error(工作引擎发生异常)")
 			task.Errorf("mq:%s(%v),err:%v", task.queue, time.Since(start), task.err)
 			return task.err
+		}
+		if status, ok := response.Params["Status"]; ok {
+			s, err := strconv.Atoi(status.(string))
+			if err == nil {
+				response.Status = s
+			}
 		}
 		if response.Status == 0 {
 			response.Status = 200

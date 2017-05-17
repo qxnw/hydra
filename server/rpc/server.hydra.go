@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"sync"
@@ -197,6 +198,12 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			}
 			c.Result = &StatusResult{Code: 500, Result: "500 Internal Server Error(工作引擎发生异常)", Type: AutoResponse}
 			return
+		}
+		if status, ok := response.Params["Status"]; ok {
+			s, err := strconv.Atoi(status.(string))
+			if err == nil {
+				response.Status = s
+			}
 		}
 		//处理返回参数
 		if response.Status == 0 {

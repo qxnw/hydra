@@ -7,6 +7,8 @@ package web
 import (
 	"time"
 
+	"reflect"
+
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -52,7 +54,10 @@ func Logging() HandlerFunc {
 		if statusCode >= 200 && statusCode < 400 {
 			ctx.Info("api.response:", ctx.Req().Method, statusCode, time.Since(start), p)
 		} else {
-			ctx.Error("api.response:", ctx.Req().Method, statusCode, time.Since(start), p, ctx.Result)
+			if reflect.TypeOf(ctx.Result).Kind() == reflect.String {
+				ctx.Error(ctx.Result.(string))
+			}
+			ctx.Error("api.response:", ctx.Req().Method, statusCode, time.Since(start), p)
 		}
 	}
 }

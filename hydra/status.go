@@ -12,9 +12,10 @@ import (
 )
 
 type ServerStatus struct {
-	Name    string `json:"name"`
-	Address string `json:"address"`
-	Start   int64  `json:"start"`
+	Name     string   `json:"name"`
+	Address  string   `json:"address"`
+	Start    int64    `json:"start"`
+	Services []string `json:"srvs,omitempty"`
 }
 
 func (h *Hydra) StartStatusServer() (err error) {
@@ -37,7 +38,12 @@ func (h *Hydra) StartStatusServer() (err error) {
 		status := make([]ServerStatus, 0, 1)
 		for _, v := range h.servers {
 			if strings.Contains(v.serverName, server) {
-				status = append(status, ServerStatus{Name: fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType), Start: v.runTime.Unix(), Address: v.address})
+				status = append(status, ServerStatus{
+					Name:     fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType),
+					Start:    v.runTime.Unix(),
+					Address:  v.address,
+					Services: v.localServices,
+				})
 			}
 		}
 		buf, err := jsons.Marshal(status)
