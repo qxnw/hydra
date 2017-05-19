@@ -47,6 +47,12 @@ func (s *influxProxy) Close() error {
 	return nil
 }
 
+//Handle
+//save:从input中获取参数:measurement,tags,fields
+//get:从input中获取参数:q
+//从args中获取db参数
+//influx配置：{"host":"http://192.168.0.185:8086","dataBase":"hydra","userName":"hydra","password":"123456"}
+
 func (s *influxProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return

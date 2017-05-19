@@ -24,10 +24,10 @@ func newCacheProxy() *cacheProxy {
 		services: make([]string, 0, 4),
 	}
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
-	r.serviceHandlers["/cache/save"] = r.save
-	r.serviceHandlers["/cache/get"] = r.get
-	r.serviceHandlers["/cache/del"] = r.del
-	r.serviceHandlers["/cache/delay"] = r.delay
+	r.serviceHandlers["/cache/memcached/save"] = r.save
+	r.serviceHandlers["/cache/memcached/get"] = r.get
+	r.serviceHandlers["/cache/memcached/del"] = r.del
+	r.serviceHandlers["/cache/memcached/delay"] = r.delay
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}
@@ -43,10 +43,12 @@ func (s *cacheProxy) Start(domain string, serverName string, serverType string, 
 func (s *cacheProxy) Close() error {
 	return nil
 }
+
+//操作缓存
+//从input参数中获取 key,value,expiresAt
+//从args参数中获取 cache
+//memcache.cache配置文件格式：{"server":"192.168.0.166:11212"}
 func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	if err = s.Has(service, service); err != nil {
-		return
-	}
 
 	content, err := s.serviceHandlers[service](ctx)
 	if err != nil {

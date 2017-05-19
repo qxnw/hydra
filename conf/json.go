@@ -78,7 +78,8 @@ func (j *JSONConf) Set(key string, value string) {
 
 //String 获取字符串
 func (j *JSONConf) String(key string, def ...string) (r string) {
-	if value, ok := j.cache.Get(key); ok {
+	nkey := "_s_" + key
+	if value, ok := j.cache.Get(nkey); ok {
 		r = value.(string)
 		return
 	}
@@ -86,7 +87,7 @@ func (j *JSONConf) String(key string, def ...string) (r string) {
 	if val != nil {
 		if v, ok := val.(string); ok {
 			r = j.TranslateAll(v, false)
-			j.cache.Set(key, r)
+			j.cache.Set(nkey, r)
 			return r
 		}
 	}
@@ -98,13 +99,16 @@ func (j *JSONConf) String(key string, def ...string) (r string) {
 
 //Strings 获取字符串数组，原字符串以“;”号分隔
 func (j *JSONConf) Strings(key string, def ...[]string) (r []string) {
-	if value, ok := j.cache.Get(key); ok {
+	nkey := "_strs_" + key
+	if value, ok := j.cache.Get(nkey); ok {
 		r = value.([]string)
 		return
 	}
 	stringVal := j.String(key)
 	if stringVal != "" {
-		return strings.Split(j.String(key), ";")
+		r = strings.Split(j.String(key), ";")
+		j.cache.Set(nkey, r)
+		return
 	}
 	if len(def) > 0 {
 		return def[0]
@@ -114,13 +118,19 @@ func (j *JSONConf) Strings(key string, def ...[]string) (r []string) {
 
 //Bool 获取BOOL参数
 func (j *JSONConf) Bool(key string, def ...bool) (r bool, err error) {
-	if value, ok := j.cache.Get(key); ok {
+	nkey := "_b_" + key
+	if value, ok := j.cache.Get(nkey); ok {
 		r = value.(bool)
 		return
 	}
 	val := j.data[key]
 	if val != nil {
-		return ParseBool(val)
+		r, err = ParseBool(val)
+		if err != nil {
+			return
+		}
+		j.cache.Set(nkey, r)
+		return
 	}
 	if len(def) > 0 {
 		return def[0], nil
@@ -137,7 +147,8 @@ func (j *JSONConf) Has(key string) bool {
 
 //Int 获取整数值
 func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
-	if value, ok := j.cache.Get(key); ok {
+	nkey := "_int_" + key
+	if value, ok := j.cache.Get(nkey); ok {
 		r = value.(int)
 		return
 	}
@@ -145,9 +156,11 @@ func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
 	if val != nil {
 		if v, ok := val.(int); ok {
 			r = int(v)
+			j.cache.Set(nkey, r)
 			return
 		} else if v, ok := val.(float64); ok {
 			r = int(v)
+			j.cache.Set(nkey, r)
 			return
 		}
 		err = errors.New("not int value")
@@ -171,8 +184,8 @@ func (j *JSONConf) GetNodeWithValue(value string, enableCache ...bool) (r Conf, 
 	if len(enableCache) > 0 {
 		ec = enableCache[0]
 	}
-
-	if value, ok := j.cache.Get(value); ok && ec {
+	nkey := "_node_" + value
+	if value, ok := j.cache.Get(nkey); ok && ec {
 		r = value.(Conf)
 		return
 	}
@@ -183,7 +196,7 @@ func (j *JSONConf) GetNodeWithValue(value string, enableCache ...bool) (r Conf, 
 	if err != nil {
 		return
 	}
-	j.cache.Set(value, r)
+	j.cache.Set(nkey, r)
 	return
 }
 
@@ -196,7 +209,8 @@ func (j *JSONConf) GetNodeWithSection(section string, enableCache ...bool) (r Co
 	if len(enableCache) > 0 {
 		ec = enableCache[0]
 	}
-	if value, ok := j.cache.Get(section); ok && ec {
+	nkey := "_node_section_" + section
+	if value, ok := j.cache.Get(nkey); ok && ec {
 		r = value.(Conf)
 		return
 	}
@@ -204,7 +218,7 @@ func (j *JSONConf) GetNodeWithSection(section string, enableCache ...bool) (r Co
 	if err != nil {
 		return
 	}
-	j.cache.Set(section, r)
+	j.cache.Set(nkey, r)
 	return
 }
 
@@ -235,14 +249,15 @@ func (j *JSONConf) GetSMap(section string) (map[string]string, error) {
 
 //GetSection 获取块节点
 func (j *JSONConf) GetSection(section string) (r Conf, err error) {
-	if value, ok := j.cache.Get(section); ok {
+	nkey := "_section_" + section
+	if value, ok := j.cache.Get(nkey); ok {
 		return value.(Conf), nil
 	}
 	val := j.data[section]
 	if val != nil {
 		if v, ok := val.(map[string]interface{}); ok {
 			r = NewJSONConfWithHandle(v, j.version, j.handle)
-			j.cache.Set(section, r)
+			j.cache.Set(nkey, r)
 			return
 		}
 	}
@@ -252,7 +267,8 @@ func (j *JSONConf) GetSection(section string) (r Conf, err error) {
 
 //GetSections 获取配置列表
 func (j *JSONConf) GetSections(section string) (cs []Conf, err error) {
-	if value, ok := j.cache.Get(section); ok {
+	nkey := "_section_" + section
+	if value, ok := j.cache.Get(nkey); ok {
 		return value.([]Conf), nil
 	}
 	cs = make([]Conf, 0, 0)
@@ -274,7 +290,7 @@ func (j *JSONConf) GetSections(section string) (cs []Conf, err error) {
 				cs = append(cs, NewJSONConfWithHandle(nmap, j.version, j.handle))
 			}
 		}
-		j.cache.Set(section, cs)
+		j.cache.Set(nkey, cs)
 		return
 	}
 	err = errors.New("not exist section:" + section)

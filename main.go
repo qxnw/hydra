@@ -2,12 +2,14 @@ package main
 
 import (
 	"runtime"
-
+	//_ "github.com/mattn/go-oci8"
 	_ "github.com/qxnw/hydra/engine/cache"
+	_ "github.com/qxnw/hydra/engine/email"
 	_ "github.com/qxnw/hydra/engine/goplugin"
 	_ "github.com/qxnw/hydra/engine/influx"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"
 	_ "github.com/qxnw/hydra/engine/script"
+	_ "github.com/qxnw/hydra/engine/sms"
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/lib4go/mq/kafka"
 	_ "github.com/qxnw/lib4go/mq/stomp"

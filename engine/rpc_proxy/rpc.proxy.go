@@ -19,7 +19,7 @@ type rpcProxy struct {
 
 func newRPCProxy() *rpcProxy {
 	return &rpcProxy{
-		services: make([]string, 0, 16),
+		services: make([]string, 0, 1),
 	}
 }
 
@@ -28,7 +28,7 @@ func (s *rpcProxy) Start(domain string, serverName string, serverType string, in
 	s.serverName = serverName
 	s.serverType = serverType
 	s.invoker = invoker
-	return []string{}, nil
+	return s.services, nil
 
 }
 func (s *rpcProxy) Close() error {

@@ -106,11 +106,10 @@ func (s *scriptWorker) loadService(name string, parent string, root string) (fna
 	return
 }
 func (s *scriptWorker) getServiceName(svName string, parent string) string {
-	for _, method := range engine.Exclude {
+	for _, method := range engine.EXCLUDE {
 		if strings.Contains(svName, method) || strings.Contains(parent, method) {
 			return ""
 		}
-
 	}
 	i := strings.LastIndex(svName, ".")
 	return parent + svName[0:i]

@@ -1,7 +1,6 @@
 package cron
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -151,13 +150,8 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
 			task.statusCode = 500
-			task.err = err
-			if server.IsDebug {
-				task.Errorf("cron:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
-				return err
-			}
-			task.err = errors.New("Internal Server Error(工作引擎发生异常)")
-			task.Errorf("cron:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
+			task.err = fmt.Errorf("cron.server.handler.error:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
+			task.Error(task.err)
 			return task.err
 		}
 		if status, ok := response.Params["Status"]; ok {

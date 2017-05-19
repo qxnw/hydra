@@ -55,12 +55,13 @@ type Hydra struct {
 	currentRegistryAddress []string
 	crossRegistryAddress   []string
 	*logger.Logger
-	watcher conf.ConfWatcher
-	servers map[string]*HydraServer
-	notify  chan *conf.Updater
-	closeCh chan struct{}
-	done    bool
-	mu      sync.Mutex
+	watcher      conf.ConfWatcher
+	servers      map[string]*HydraServer
+	notify       chan *conf.Updater
+	closedNotify chan struct{}
+	closeChan    chan struct{}
+	done         bool
+	mu           sync.Mutex
 }
 
 var (
@@ -71,9 +72,10 @@ var (
 //NewHydra 初始化Hydra服务
 func NewHydra() *Hydra {
 	return &Hydra{
-		servers: make(map[string]*HydraServer),
-		Logger:  logger.GetSession("hydra", logger.CreateSession()),
-		closeCh: make(chan struct{}, 1),
+		servers:      make(map[string]*HydraServer),
+		Logger:       logger.GetSession("hydra", logger.CreateSession()),
+		closedNotify: make(chan struct{}, 1),
+		closeChan:    make(chan struct{}),
 	}
 }
 
@@ -156,7 +158,7 @@ func (h *Hydra) Start() (err error) {
 	}
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGHUP, syscall.SIGINT)
 LOOP:
 	for {
 		select {
@@ -173,17 +175,15 @@ func (h *Hydra) loopCheckNotify() (err error) {
 LOOP:
 	for {
 		select {
-		case <-time.After(time.Second):
+		case <-h.closeChan:
+			break LOOP
+		case u := <-h.notify:
 			if h.done {
 				break LOOP
 			}
-		case u := <-h.notify:
 			u.Conf.Set("tag", h.tag)
 			switch u.Op {
 			case registry.ADD:
-				if h.done {
-					break LOOP
-				}
 				h.mu.Lock()
 				err := h.addServer(u.Conf)
 				if err == SERVER_IS_EXIST {
@@ -194,9 +194,6 @@ LOOP:
 				}
 				h.mu.Unlock()
 			case registry.CHANGE:
-				if h.done {
-					break LOOP
-				}
 				h.mu.Lock()
 				err := h.changeServer(u.Conf)
 				if err == SERVER_IS_NOT_EXIST {
@@ -207,9 +204,6 @@ LOOP:
 				}
 				h.mu.Unlock()
 			case registry.DEL:
-				if h.done {
-					break LOOP
-				}
 				h.mu.Lock()
 				h.deleteServer(u.Conf)
 				h.mu.Unlock()
@@ -221,7 +215,7 @@ LOOP:
 		h.Warnf("关闭服务器：%s", name)
 		srv.Shutdown()
 	}
-	h.closeCh <- struct{}{}
+	h.closedNotify <- struct{}{}
 	return nil
 }
 func (h *Hydra) getServerName(cnf conf.Conf) string {
@@ -248,6 +242,11 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 	if !ok {
 		return SERVER_IS_NOT_EXIST
 	}
+	if srv.EngineConfChanged(cnf.String("extModes")) {
+		h.deleteServer(cnf)
+		srv.Shutdown()
+		return SERVER_IS_NOT_EXIST
+	}
 
 	err := srv.Notify(cnf)
 	if err != nil || srv.GetStatus() == server.ST_STOP {
@@ -269,18 +268,19 @@ func (h *Hydra) deleteServerByID(id string) {
 
 //Close 关闭服务器
 func (h *Hydra) Close() {
+	close(h.closeChan)
 	h.done = true
 	registry.Close()
 	select {
-	case <-h.closeCh:
-	case <-time.After(time.Second):
+	case <-h.closedNotify:
+	case <-time.After(time.Second * 3):
 	}
 	time.Sleep(time.Millisecond * 100)
 	if h.watcher != nil {
 		h.watcher.Close()
 	}
 	logger.Close()
-	close(h.closeCh)
+	close(h.closedNotify)
 
 }
 

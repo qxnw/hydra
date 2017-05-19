@@ -182,6 +182,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			if response != nil {
 				status = response.Status
 			}
+			c.Errorf(fmt.Sprintf("api.server.handler.error:%+v", err.Error()))
 			if server.IsDebug {
 				c.Result = &StatusResult{Code: status, Result: fmt.Sprintf("%+v", err.Error()), Type: 0}
 				return

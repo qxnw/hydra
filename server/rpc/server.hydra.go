@@ -192,6 +192,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, context)
 		if err != nil {
+			c.Errorf(fmt.Sprintf("rpc.server.handler.error:%+v", err.Error()))
 			if server.IsDebug {
 				c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf(":%+v", err.Error()), Type: AutoResponse}
 				return

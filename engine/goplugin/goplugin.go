@@ -98,6 +98,8 @@ func (s *goPluginWorker) loadPlugin(path string) (r plugins.PluginWorker, err er
 func (s *goPluginWorker) Close() error {
 	return nil
 }
+
+//Handle 从bin目录下获取当前应用匹配的动态库，并返射加载服务
 func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
 	f, ok := s.srvPlugins[svName]
 	if !ok {

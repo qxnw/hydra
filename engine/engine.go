@@ -13,7 +13,7 @@ var IsDebug = false
 
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
-	Exclude     = []string{"lib", "sys", "conf", "config"}
+	EXCLUDE     = []string{"lib", "sys", "conf", "config"}
 )
 
 //IWorker 插件
@@ -48,9 +48,6 @@ func NewStandardEngine() IEngine {
 	e := &standardEngine{
 		plugins: make(map[string]IWorker),
 	}
-	for k, v := range resolvers {
-		e.plugins[k] = v.Resolve()
-	}
 	return e
 }
 
@@ -61,10 +58,11 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 	e.domain = domain
 	e.serverName = serverName
 	e.invoker = rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
-	for m, p := range e.plugins {
+	//根据解析器生成引擎
+	for k, v := range resolvers {
 		hasExist := false
 		for _, v := range extEngines {
-			if strings.EqualFold(m, v) {
+			if strings.EqualFold(k, v) {
 				hasExist = true
 				break
 			}
@@ -72,6 +70,10 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 		if !hasExist {
 			continue
 		}
+		e.plugins[k] = v.Resolve()
+	}
+	//启动每个引擎
+	for _, p := range e.plugins {
 		srvs, err := p.Start(domain, serverName, serverType, e.invoker)
 		if err != nil {
 			return nil, err

@@ -155,6 +155,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		if err != nil {
 			task.statusCode = 500
 			task.err = err
+			task.Errorf(fmt.Sprintf("mq.server.handler.error:%+v", err.Error()))
 			if server.IsDebug {
 				task.Errorf("mq:%s(%v),err:%v", task.queue, time.Since(start), task.err)
 				return err
