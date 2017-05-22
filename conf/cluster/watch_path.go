@@ -10,6 +10,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/logger"
 )
 
 type watchPath struct {
@@ -24,9 +25,10 @@ type watchPath struct {
 	domain       string
 	done         bool
 	mu           sync.Mutex
+	*logger.Logger
 }
 
-func NewWatchPath(domain string, serverName string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchPath {
+func NewWatchPath(domain string, serverName string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration, log *logger.Logger) *watchPath {
 	return &watchPath{
 		domain:       domain,
 		serverName:   serverName,
@@ -35,6 +37,7 @@ func NewWatchPath(domain string, serverName string, path string, registry regist
 		timeSpan:     timeSpan,
 		path:         path,
 		cacheAddress: cmap.New(),
+		Logger:       log,
 		closeChan:    make(chan struct{}),
 	}
 
@@ -60,6 +63,7 @@ LOOP:
 	}
 	children, version, err := w.registry.GetChildren(w.path)
 	if err != nil {
+		w.Warn("获取子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	w.exists = isExists
@@ -67,6 +71,7 @@ LOOP:
 	//监控子节点变化
 	ch, err := w.registry.WatchChildren(w.path)
 	if err != nil {
+		w.Warn("监控子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -79,12 +84,14 @@ LOOP:
 				return errors.New("watch is closing")
 			}
 			if err = children.GetError(); err != nil {
+				w.Warn("获取子节点失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 			w.checkChildrenChange(children.GetValue())
 			//继续监控子节点变化
 			ch, err = w.registry.WatchChildren(w.path)
 			if err != nil {
+				w.Warn("监控子节点失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}

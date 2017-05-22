@@ -16,7 +16,7 @@ func (j *RegistryConfResolver) Resolve(adapter string, domain string, tag string
 	if err != nil {
 		return
 	}
-	c = NewRegistryConfWatcher(domain, tag, r)
+	c = NewRegistryConfWatcher(domain, tag, r, log)
 	return
 }
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/lib4go/logger"
 )
 
 type watchConf struct {
@@ -28,9 +29,11 @@ type watchConf struct {
 	domain         string
 	args           map[string]string
 	closeChan      chan struct{}
+	*logger.Logger
 }
 
-func NewWatchConf(domain string, serverName string, category string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration) *watchConf {
+func NewWatchConf(domain string, serverName string, category string, path string, registry registry.Registry,
+	updater chan *conf.Updater, timeSpan time.Duration, log *logger.Logger) *watchConf {
 	return &watchConf{path: path,
 		domain:         domain,
 		registry:       registry,
@@ -38,6 +41,7 @@ func NewWatchConf(domain string, serverName string, category string, path string
 		category:       category,
 		notifyConfChan: updater,
 		timeSpan:       timeSpan,
+		Logger:         log,
 		args:           make(map[string]string),
 		closeChan:      make(chan struct{}),
 	}
@@ -64,6 +68,7 @@ LOOP:
 	//获取节点值
 	data, version, err := w.registry.GetValue(w.path)
 	if err != nil {
+		w.Warn("获取节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	if err = w.notifyConfChange(data, version); err != nil {
@@ -72,6 +77,7 @@ LOOP:
 	}
 	dataChan, err := w.registry.WatchValue(w.path)
 	if err != nil {
+		w.Warn("监控节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -84,6 +90,7 @@ LOOP:
 				return errors.New("watcher is closing")
 			}
 			if err = content.GetError(); err != nil {
+				w.Warn("收到接点变化通知，但发生错误：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 			w.notifyConfChange(content.GetValue())
@@ -91,6 +98,7 @@ LOOP:
 			//继续监控值变化
 			dataChan, err = w.registry.WatchValue(w.path)
 			if err != nil {
+				w.Warn("监控节点值失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}
@@ -120,6 +128,7 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	c := make(map[string]interface{})
 	err = json.Unmarshal(content, &c)
 	if err != nil {
+		w.Warn("节点配置错误，无法完成json序列化：%s(err:%v)", w.path, err)
 		return
 	}
 	for k, v := range w.args {

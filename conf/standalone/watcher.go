@@ -15,6 +15,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/logger"
 )
 
 type jsonConfWatcher struct {
@@ -33,6 +34,7 @@ type jsonConfWatcher struct {
 	tag            string
 	mu             sync.Mutex
 	closeChan      chan struct{}
+	*logger.Logger
 }
 
 type watcherPath struct {
@@ -48,7 +50,7 @@ type watcherPath struct {
 }
 
 //NewJSONConfWatcher 创建zookeeper配置文件监控器
-func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher, err error) {
+func NewJSONConfWatcher(domain string, tag string, log *logger.Logger) (w *jsonConfWatcher, err error) {
 	w = &jsonConfWatcher{
 		notifyConfChan: make(chan *conf.Updater),
 		watchConfChan:  make(chan string, 2),
@@ -60,6 +62,7 @@ func NewJSONConfWatcher(domain string, tag string) (w *jsonConfWatcher, err erro
 		domain:         domain,
 		tag:            tag,
 		timeSpan:       time.Second,
+		Logger:         log,
 	}
 	w.checker, err = registry.NewChecker()
 	if err != nil {
@@ -256,6 +259,7 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	c := make(map[string]interface{})
 	err = json.Unmarshal(buf, &c)
 	if err != nil {
+		w.Warn("节点配置错误，无法完成json序列化：%s(err:%v)", path, err)
 		return
 	}
 

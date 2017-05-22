@@ -9,6 +9,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/logger"
 )
 
 type registryConfWatcher struct {
@@ -23,10 +24,11 @@ type registryConfWatcher struct {
 	mu             sync.Mutex
 	domain         string
 	serverName     string
+	*logger.Logger
 }
 
 //NewRegistryConfWatcher 创建zookeeper配置文件监控器
-func NewRegistryConfWatcher(domain string, serverName string, registry registry.Registry) (w *registryConfWatcher) {
+func NewRegistryConfWatcher(domain string, serverName string, registry registry.Registry, log *logger.Logger) (w *registryConfWatcher) {
 	w = &registryConfWatcher{
 		watchRootChan:  make(chan string, 1),
 		notifyConfChan: make(chan *conf.Updater, 10),
@@ -36,6 +38,7 @@ func NewRegistryConfWatcher(domain string, serverName string, registry registry.
 		timeSpan:       time.Second,
 		domain:         domain,
 		serverName:     serverName,
+		Logger:         log,
 	}
 	return
 }
