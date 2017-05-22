@@ -70,7 +70,7 @@ START:
 				break START
 			}
 			w.watchPaths.SetIfAbsentCb(p, func(input ...interface{}) (interface{}, error) {
-				watcher := NewWatchPath(w.domain, w.serverName, p, w.registry, w.notifyConfChan, w.timeSpan)
+				watcher := NewWatchPath(w.domain, w.serverName, p, w.registry, w.notifyConfChan, w.timeSpan, w.Logger)
 				go watcher.watch()
 				return watcher, nil
 			})

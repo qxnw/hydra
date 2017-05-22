@@ -68,16 +68,17 @@ LOOP:
 	//获取节点值
 	data, version, err := w.registry.GetValue(w.path)
 	if err != nil {
-		w.Warn("获取节点值失败：%s(err:%v)", w.path, err)
+		w.Warnf("获取节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	if err = w.notifyConfChange(data, version); err != nil {
-		time.Sleep(w.timeSpan)
+		w.Warnf("节点值配置错误：%s(err:%v)", w.path, err)
+		time.Sleep(w.timeSpan * 5)
 		goto LOOP
 	}
 	dataChan, err := w.registry.WatchValue(w.path)
 	if err != nil {
-		w.Warn("监控节点值失败：%s(err:%v)", w.path, err)
+		w.Warnf("监控节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -90,15 +91,18 @@ LOOP:
 				return errors.New("watcher is closing")
 			}
 			if err = content.GetError(); err != nil {
-				w.Warn("收到接点变化通知，但发生错误：%s(err:%v)", w.path, err)
+				w.Warnf("收到接点变化通知，但发生错误：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
-			w.notifyConfChange(content.GetValue())
+			err := w.notifyConfChange(content.GetValue())
+			if err != nil {
+				w.Warnf("节点值配置错误：%s(err:%v)", w.path, err)
+			}
 
 			//继续监控值变化
 			dataChan, err = w.registry.WatchValue(w.path)
 			if err != nil {
-				w.Warn("监控节点值失败：%s(err:%v)", w.path, err)
+				w.Warnf("监控节点值失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}
@@ -128,7 +132,6 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	c := make(map[string]interface{})
 	err = json.Unmarshal(content, &c)
 	if err != nil {
-		w.Warn("节点配置错误，无法完成json序列化：%s(err:%v)", w.path, err)
 		return
 	}
 	for k, v := range w.args {

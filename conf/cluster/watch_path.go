@@ -63,7 +63,7 @@ LOOP:
 	}
 	children, version, err := w.registry.GetChildren(w.path)
 	if err != nil {
-		w.Warn("获取子节点失败：%s(err:%v)", w.path, err)
+		w.Warnf("获取子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	w.exists = isExists
@@ -71,7 +71,7 @@ LOOP:
 	//监控子节点变化
 	ch, err := w.registry.WatchChildren(w.path)
 	if err != nil {
-		w.Warn("监控子节点失败：%s(err:%v)", w.path, err)
+		w.Warnf("监控子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -84,14 +84,14 @@ LOOP:
 				return errors.New("watch is closing")
 			}
 			if err = children.GetError(); err != nil {
-				w.Warn("获取子节点失败：%s(err:%v)", w.path, err)
+				w.Warnf("收到子节点变化错误信息：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 			w.checkChildrenChange(children.GetValue())
 			//继续监控子节点变化
 			ch, err = w.registry.WatchChildren(w.path)
 			if err != nil {
-				w.Warn("监控子节点失败：%s(err:%v)", w.path, err)
+				w.Warnf("监控子节点失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}
@@ -132,7 +132,7 @@ func (w *watchPath) checkChildrenChange(children []string, version int32) {
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
-					f := NewWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan)
+					f := NewWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan, w.Logger)
 					f.args = map[string]string{
 						"domain": w.domain,
 						"root":   fmt.Sprintf("%s/%s/%s/conf", w.path, v, sv),

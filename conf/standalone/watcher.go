@@ -232,6 +232,8 @@ START:
 			}
 			updater.Conf, err = w.getConf(path)
 			if err != nil {
+				w.Warnf("节点配置错误：%s(err:%v)", path, err)
+				time.Sleep(time.Second * 5)
 				continue
 			}
 			v.modTime = modify
@@ -259,10 +261,8 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	c := make(map[string]interface{})
 	err = json.Unmarshal(buf, &c)
 	if err != nil {
-		w.Warn("节点配置错误，无法完成json序列化：%s(err:%v)", path, err)
 		return
 	}
-
 	c["domain"] = w.domain
 
 	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
