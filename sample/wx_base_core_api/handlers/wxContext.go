@@ -3,9 +3,14 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/qxnw/hydra_plugin/plugins"
+	"github.com/qxnw/lib4go/db"
+	"github.com/qxnw/lib4go/jsons"
+	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/memcache"
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -20,6 +25,7 @@ func init() {
 }
 
 type wxContext struct {
+	service      string
 	ctx          plugins.Context
 	Input        transform.ITransformGetter
 	Params       transform.ITransformGetter
@@ -27,64 +33,119 @@ type wxContext struct {
 	Args         map[string]string
 	func_var_get func(c string, n string) (string, error)
 	RPC          plugins.RPCInvoker
+	*logger.Logger
 }
 
 func (w *wxContext) CheckMustFields(names ...string) error {
 	for _, v := range names {
 		if _, err := w.Input.Get(v); err != nil {
-			err := fmt.Errorf("wx_base_core:输入参数:%s不能为空", v)
+			err := fmt.Errorf("输入参数:%s不能为空", v)
 			return err
 		}
 	}
 	return nil
 }
 
-func getWXContext(ctx plugins.Context, invoker plugins.RPCInvoker) (wx *wxContext, err error) {
-	wx = contextPool.Get().(*wxContext)
-	wx.ctx = ctx
+func GetWXContext(ctx plugins.Context, invoker plugins.RPCInvoker) (wx *wxContext, err error) {
 	if invoker == nil {
-		err = fmt.Errorf("wx_base_core:输入参数rpc.invoker为空")
-		wx.Close()
+		err = fmt.Errorf("输入参数rpc.invoker为空")
 		return
 	}
+	wx = contextPool.Get().(*wxContext)
+	wx.ctx = ctx
+	defer func() {
+		if err != nil {
+			wx.Close()
+		}
+	}()
 	wx.Input, err = wx.getGetParams(ctx.GetInput())
 	if err != nil {
-		wx.Close()
 		return
 	}
 	wx.Params, err = wx.getGetParams(ctx.GetParams())
 	if err != nil {
-		wx.Close()
 		return
 	}
 	wx.Body, err = wx.getGetBody(ctx.GetBody())
 	if err != nil {
-		wx.Close()
 		return
 	}
 	wx.Args, err = wx.GetArgs(ctx.GetArgs())
 	if err != nil {
-		wx.Close()
 		return
 	}
 	wx.func_var_get, err = wx.getVarParam(ctx.GetExt())
 	if err != nil {
-		wx.Close()
+		return
+	}
+	wx.Logger, err = wx.getLogger()
+	if err != nil {
 		return
 	}
 	wx.RPC = invoker
 	return
 }
 
+func (w *wxContext) GetCache() (c *memcache.MemcacheClient, err error) {
+	name, ok := w.Args["cache"]
+	if !ok {
+		return nil, fmt.Errorf("服务%s未配置cache参数(%v)", w.service, w.Args)
+	}
+	conf, err := w.func_var_get("cache", name)
+	if err != nil {
+		return nil, err
+	}
+	configMap, err := jsons.Unmarshal([]byte(conf))
+	if err != nil {
+		return nil, err
+	}
+	server, ok := configMap["server"]
+	if !ok {
+		err = fmt.Errorf("cache[%s]配置文件错误，未包含server节点:%s", name, conf)
+		return nil, err
+	}
+	return memcache.New(strings.Split(server.(string), ";"))
+
+}
+func (w *wxContext) GetDB() (d *db.DB, err error) {
+	name, ok := w.Args["db"]
+	if !ok {
+		return nil, fmt.Errorf("服务%s未配置db参数(%v)", w.service, w.Args)
+	}
+	conf, err := w.func_var_get("db", name)
+	if err != nil {
+		return nil, err
+	}
+	configMap, err := jsons.Unmarshal([]byte(conf))
+	if err != nil {
+		return nil, err
+	}
+	provider, ok := configMap["provider"]
+	if !ok {
+		return nil, fmt.Errorf("db配置文件错误，未包含provider节点:var/db/%s", name)
+	}
+	connString, ok := configMap["connString"]
+	if !ok {
+		return nil, fmt.Errorf("db配置文件错误，未包含connString节点:var/db/%s", name)
+	}
+	return db.NewDB(provider.(string), connString.(string), 2)
+}
+
+func (w *wxContext) getLogger() (*logger.Logger, error) {
+	if session, ok := w.ctx.GetExt()["hydra_sid"]; ok {
+		return logger.GetSession("wx_base_core", session.(string)), nil
+	}
+	return nil, fmt.Errorf("输入的context里没有包含hydra_sid(%v)", w.ctx.GetExt())
+}
 func (w *wxContext) getVarParam(ext map[string]interface{}) (func(c string, n string) (string, error), error) {
 	funcVar := ext["__func_var_get_"]
 	if funcVar == nil {
-		return nil, errors.New("wx_base_core:未找到__func_var_get_")
+		return nil, errors.New("未找到__func_var_get_")
 	}
 	if f, ok := funcVar.(func(c string, n string) (string, error)); ok {
 		return f, nil
 	}
-	return nil, errors.New("wx_base_core:未找到__func_var_get_传入类型错误")
+	return nil, errors.New("未找到__func_var_get_传入类型错误")
 }
 func (w *wxContext) GetArgs(args interface{}) (params map[string]string, err error) {
 	params, ok := args.(map[string]string)
@@ -96,11 +157,11 @@ func (w *wxContext) GetArgs(args interface{}) (params map[string]string, err err
 }
 func (w *wxContext) getGetBody(body interface{}) (t string, err error) {
 	if body == nil {
-		return "", errors.New("wx_base_core:body 数据为空")
+		return "", errors.New("body 数据为空")
 	}
 	t, ok := body.(string)
 	if !ok {
-		return "", errors.New("wx_base_core:body 不是字符串数据")
+		return "", errors.New("body 不是字符串数据")
 	}
 	return
 }
@@ -110,11 +171,10 @@ func (w *wxContext) getGetParams(input interface{}) (t transform.ITransformGette
 		return nil, err
 	}
 	t, ok := input.(transform.ITransformGetter)
-	if ok {
-		return t, err
+	if !ok {
+		return t, fmt.Errorf("输入参数为空:input（%v）不是transform.ITransformGetter类型", input)
 	}
-	return nil, fmt.Errorf("输入参数为空:%v", input)
-
+	return t, nil
 }
 func (w *wxContext) Close() {
 	contextPool.Put(w)

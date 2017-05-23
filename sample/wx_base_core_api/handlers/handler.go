@@ -16,6 +16,8 @@ var Services []string
 func init() {
 	ServiceHandlers = make(map[string]Handler)
 	Services = make([]string, 0, 16)
+	Register("/wx/notify", newWXNotify())
+
 }
 
 //Register 注册处理程序
@@ -25,8 +27,4 @@ func Register(name string, handler Handler) {
 	}
 	ServiceHandlers[name] = handler
 	Services = append(Services, name)
-}
-
-func init() {
-	Register("/wx/notify", newWXNotify())
 }

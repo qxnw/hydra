@@ -20,7 +20,11 @@ func (p *wxBaseCore) GetServices() []string {
 //Handle 业务处理
 func (p *wxBaseCore) Handle(name string, mode string, service string, c plugins.Context, invoker plugins.RPCInvoker) (status int, result string, err error) {
 	if h, ok := handlers.ServiceHandlers[service]; ok {
-		return h.Handle(service, c, invoker)
+		status, result, err = h.Handle(service, c, invoker)
+		if err != nil {
+			return status, result, fmt.Errorf("wx_base_core_api:%v", err)
+		}
+		return
 	}
 	return 404, "", fmt.Errorf("wx_base_core_api 未找到服务:%s", service)
 }

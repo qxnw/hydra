@@ -12,7 +12,7 @@ func newWXNotify() *wxNotify {
 	}
 }
 func (n *wxNotify) initParams(ctx plugins.Context, invoker plugins.RPCInvoker) (wxCtx *wxContext, err error) {
-	wxCtx, err = getWXContext(ctx, invoker)
+	wxCtx, err = GetWXContext(ctx, invoker)
 	if err != nil {
 		return
 	}
@@ -28,8 +28,23 @@ func (n *wxNotify) Handle(service string, ctx plugins.Context, invoker plugins.R
 		return
 	}
 	defer wxContext.Close()
+	wxContext.Info("----------------接收微信通知--------------")
+
 	//业务处理
 
+	db, err := wxContext.GetDB()
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	mc, err := wxContext.GetCache()
+	if err != nil {
+		return
+	}
+	result = mc.Get("t")
+
 	//返回结果
-	return 200, "SUCCESS", nil
+	status = 200
+	result = "SUCCESS"
+	return
 }
