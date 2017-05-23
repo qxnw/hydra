@@ -22,11 +22,14 @@ func (n *wxNotify) initParams(ctx plugins.Context, invoker plugins.RPCInvoker) (
 
 func (n *wxNotify) Handle(service string, ctx plugins.Context, invoker plugins.RPCInvoker) (status int, result string, err error) {
 	status = 500
+	//输入化context,并检查输入参数
 	wxContext, err := n.initParams(ctx, invoker)
 	if err != nil {
 		return
 	}
 	defer wxContext.Close()
 	//业务处理
+
+	//返回结果
 	return 200, "SUCCESS", nil
 }

@@ -1,5 +1,7 @@
 package main
 
+//编译指令
+//go build -buildmode=plugin
 import (
 	"fmt"
 
@@ -10,7 +12,7 @@ import (
 type wxBaseCore struct {
 }
 
-//GetServices 获取当前提供的服务列表
+//GetServices 获取当前插件提供的所有服务
 func (p *wxBaseCore) GetServices() []string {
 	return handlers.Services
 }
