@@ -78,7 +78,6 @@ LOOP:
 	}
 	dataChan, err := w.registry.WatchValue(w.path)
 	if err != nil {
-		w.Warnf("监控节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -91,7 +90,6 @@ LOOP:
 				return errors.New("watcher is closing")
 			}
 			if err = content.GetError(); err != nil {
-				w.Warnf("收到接点变化通知，但发生错误：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 			err := w.notifyConfChange(content.GetValue())
@@ -102,7 +100,6 @@ LOOP:
 			//继续监控值变化
 			dataChan, err = w.registry.WatchValue(w.path)
 			if err != nil {
-				w.Warnf("监控节点值失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}

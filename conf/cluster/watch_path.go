@@ -63,7 +63,6 @@ LOOP:
 	}
 	children, version, err := w.registry.GetChildren(w.path)
 	if err != nil {
-		w.Warnf("获取子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	w.exists = isExists
@@ -71,7 +70,6 @@ LOOP:
 	//监控子节点变化
 	ch, err := w.registry.WatchChildren(w.path)
 	if err != nil {
-		w.Warnf("监控子节点失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 
@@ -84,14 +82,12 @@ LOOP:
 				return errors.New("watch is closing")
 			}
 			if err = children.GetError(); err != nil {
-				w.Warnf("收到子节点变化错误信息：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 			w.checkChildrenChange(children.GetValue())
 			//继续监控子节点变化
 			ch, err = w.registry.WatchChildren(w.path)
 			if err != nil {
-				w.Warnf("监控子节点失败：%s(err:%v)", w.path, err)
 				goto LOOP
 			}
 		}
