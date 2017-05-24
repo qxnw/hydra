@@ -3,6 +3,7 @@ package alarm
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/net/http"
@@ -59,16 +60,30 @@ func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, err error) {
 	}
 	for _, data := range datas {
 		fm := transform.NewMap(data)
-		fm.Set("appId", wxSetting.String("appId"))
-		fm.Set("templateId", wxSetting.String("templateId"))
+		wxSetting.Each(func(key string) {
+			value := wxSetting.String(key)
+			if value != "" {
+				fm.Set(key, value)
+			}
+		})
 		for _, user := range wxUsers {
 			fm.Set("name", user.String("name"))
 			fm.Set("openId", user.String("openId"))
 		}
-		url := fm.Translate(wxSetting.String("host"))
-		data := fm.Translate(wxSetting.String("data"))
+		host := fm.Translate(wxSetting.String("host"))
+		u, err := url.Parse(host)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse wx url %s. err=%v", url, err)
+		}
+		values := u.Query()
+		data := wxSetting.GetSection("data")
+		data.Set("content", wxSetting.GetSectionString("content"))
+		data.Each(func(key string) {
+			values.Set(key, data.String(key))
+		})
+		u.RawQuery = values.Encode()
 		client := http.NewHTTPClient()
-		content, status, err := client.Post(url, data)
+		content, status, err := client.Get(u.String())
 		if err != nil {
 			err = fmt.Errorf("请求返回错误:status:%d,%s(url:%s,err:%v)", status, content, url, err)
 		}

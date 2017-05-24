@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -232,6 +233,11 @@ func (j *JSONConf) GetIMap(section string) (map[string]interface{}, error) {
 	}
 	return nil, nil
 }
+func (j *JSONConf) Each(f func(key string)) {
+	for k := range j.data {
+		f(k)
+	}
+}
 
 //GetSMap 获取map数据
 func (j *JSONConf) GetSMap(section string) (map[string]string, error) {
@@ -245,6 +251,26 @@ func (j *JSONConf) GetSMap(section string) (map[string]string, error) {
 		}
 	}
 	return data, nil
+}
+func (j *JSONConf) GetSectionString(section string) (r string, err error) {
+	nkey := "_section_string_" + section
+	if value, ok := j.cache.Get(nkey); ok {
+		return value.(string), nil
+	}
+	val := j.data[section]
+	if val != nil {
+		if v, ok := val.(map[string]interface{}); ok {
+			buffer, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			r = jsons.Escape(string(buffer))
+			j.cache.Set(nkey, r)
+			return r, nil
+		}
+	}
+	err = errors.New("not exist section:" + section)
+	return
 }
 
 //GetSection 获取块节点
