@@ -148,7 +148,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		tfParams := transform.NewGetter(c.Params())
 		tfParams.Set("method", c.Req().Method)
-
 		tfForm := transform.NewValues(c.Forms().Form)
 		ctx.Ext["hydra_sid"] = c.GetSessionID()
 		ctx.Ext["__func_http_request_"] = c.Req()

@@ -45,6 +45,9 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 			input[k] = v
 		})
 	}
+	if s, ok := ctx.Input.Body.(string); ok {
+		input["__body"] = s
+	}
 	input["hydra_sid"] = ctx.Ext["hydra_sid"].(string)
 	status, result, err := s.invoker.Request(service, input, true)
 	return &context.Response{Status: status, Content: result}, err

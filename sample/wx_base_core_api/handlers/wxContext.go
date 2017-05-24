@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -30,6 +31,7 @@ type wxContext struct {
 	Input        transform.ITransformGetter
 	Params       transform.ITransformGetter
 	Body         string
+	db           *db.DB
 	Args         map[string]string
 	func_var_get func(c string, n string) (string, error)
 	RPC          plugins.RPCInvoker
@@ -47,10 +49,10 @@ func (w *wxContext) CheckMustFields(names ...string) error {
 }
 
 func GetWXContext(ctx plugins.Context, invoker plugins.RPCInvoker) (wx *wxContext, err error) {
-	if invoker == nil {
-		err = fmt.Errorf("输入参数rpc.invoker为空")
-		return
-	}
+	//if invoker == nil {
+	//err = fmt.Errorf("输入参数rpc.invoker为空")
+	//return
+	//}
 	wx = contextPool.Get().(*wxContext)
 	wx.ctx = ctx
 	defer func() {
@@ -107,7 +109,106 @@ func (w *wxContext) GetCache() (c *memcache.MemcacheClient, err error) {
 	return memcache.New(strings.Split(server.(string), ";"))
 
 }
+
+func (w *wxContext) GetJsonFromCache(sql string, input map[string]interface{}) (cvalue string, err error) {
+	db, err := w.GetDB()
+	if err != nil {
+		return
+	}
+	query, params := db.GetTPL().GetSQLContext(sql, input)
+	key := fmt.Sprintf("%s:%+v", query, params)
+	client, err := w.GetCache()
+	if err != nil {
+		return
+	}
+	cvalue, err = client.Get(key)
+	if err != nil {
+		return
+	}
+	if cvalue != "" {
+		return
+	}
+	data, _, _, err := db.Query(sql, input)
+	if err != nil {
+		return
+	}
+	buffer, err := jsons.Marshal(&data)
+	if err != nil {
+		return
+	}
+	client.Set(key, string(buffer), 0)
+	return
+}
+func (w *wxContext) GetFirstMapFromCache(sql string, input map[string]interface{}) (data map[string]interface{}, err error) {
+	result, err := w.GetMapFromCache(sql, input)
+	if err != nil {
+		return
+	}
+	if len(result) > 0 {
+		return result[0], nil
+	}
+	return nil, fmt.Errorf("返回的数据条数为0:(%s)", sql)
+
+}
+func (w *wxContext) GetMapFromCache(sql string, input map[string]interface{}) (data []map[string]interface{}, err error) {
+	db, err := w.GetDB()
+	if err != nil {
+		return
+	}
+	query, params := db.GetTPL().GetSQLContext(sql, input)
+	key := fmt.Sprintf("%s:%+v", query, params)
+	client, err := w.GetCache()
+	if err != nil {
+		return
+	}
+	dstr, err := client.Get(key)
+	if err != nil {
+		return
+	}
+	if dstr != "" {
+		err = json.Unmarshal([]byte(dstr), &data)
+		return
+	}
+	data, _, _, err = db.Query(sql, input)
+	if err != nil {
+		return
+	}
+	cvalue, err := jsons.Marshal(data)
+	if err != nil {
+		return
+	}
+	client.Set(key, string(cvalue), 0)
+	return
+}
+func (w *wxContext) ScalarFromDb(sql string, input map[string]interface{}) (data interface{}, err error) {
+	db, err := w.GetDB()
+	if err != nil {
+		return
+	}
+	data, _, _, err = db.Scalar(sql, input)
+	return
+}
+func (w *wxContext) ExecuteToDb(sql string, input map[string]interface{}) (row int64, err error) {
+	db, err := w.GetDB()
+	if err != nil {
+		return
+	}
+	row, _, _, err = db.Execute(sql, input)
+	return
+}
+func (w *wxContext) GetDataFromDb(sql string, input map[string]interface{}) (data []map[string]interface{}, err error) {
+	db, err := w.GetDB()
+	if err != nil {
+		return
+	}
+	data, _, _, err = db.Query(sql, input)
+	return
+}
+
 func (w *wxContext) GetDB() (d *db.DB, err error) {
+	if w.db != nil {
+		return w.db, nil
+	}
 	name, ok := w.Args["db"]
 	if !ok {
 		return nil, fmt.Errorf("服务%s未配置db参数(%v)", w.service, w.Args)
@@ -128,7 +229,13 @@ func (w *wxContext) GetDB() (d *db.DB, err error) {
 	if !ok {
 		return nil, fmt.Errorf("db配置文件错误，未包含connString节点:var/db/%s", name)
 	}
-	return db.NewDB(provider.(string), connString.(string), 2)
+	d, err = db.NewDB(provider.(string), connString.(string), 2)
+	if err != nil {
+		err = fmt.Errorf("创建DB失败:err:%v", err)
+		return
+	}
+	w.db = d
+	return
 }
 
 func (w *wxContext) getLogger() (*logger.Logger, error) {

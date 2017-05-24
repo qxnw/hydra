@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/influxdb"
 
 	"github.com/qxnw/hydra/conf"
 )
 
-func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxClient, error) {
+func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClient, error) {
 	argsMap, ok := ctx.Input.Args.(map[string]string)
 	if !ok {
 		return nil, fmt.Errorf("Args输入参数类型错误不是map[string]string类型:%v", ctx.Input.Args)
@@ -37,7 +38,7 @@ func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxClient, erro
 		if !strings.Contains(host, "://") {
 			host = "http://" + host
 		}
-		client, err := newInfluxClient(host, dataBase, cnf.String("userName"), cnf.String("password"))
+		client, err := influxdb.NewInfluxClient(host, dataBase, cnf.String("userName"), cnf.String("password"))
 		if err != nil {
 			return nil, fmt.Errorf("engine:influxdb初始化失败(err:%v)", err)
 		}
@@ -46,7 +47,7 @@ func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxClient, erro
 	if err != nil {
 		return nil, err
 	}
-	return client.(*influxClient), err
+	return client.(*influxdb.InfluxClient), err
 
 }
 func (s *influxProxy) getVarParam(ctx *context.Context, name string) (string, error) {

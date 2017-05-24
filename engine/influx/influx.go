@@ -7,6 +7,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/influxdb"
 )
 
 type influxProxy struct {
@@ -40,7 +41,7 @@ func (s *influxProxy) Start(domain string, serverName string, serverType string,
 }
 func (s *influxProxy) Close() error {
 	s.dbs.RemoveIterCb(func(key string, value interface{}) bool {
-		client := value.(*influxClient)
+		client := value.(*influxdb.InfluxClient)
 		client.Close()
 		return true
 	})

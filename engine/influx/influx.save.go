@@ -17,7 +17,9 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	}
 	tags = make(map[string]string)
 	fields = make(map[string]interface{})
-	if ctx.Input.Body != nil {
+	input := ctx.Input.Input.(transform.ITransformGetter)
+	measurement, err = input.Get("measurement")
+	if ctx.Input.Body != nil && err != nil {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {
@@ -63,8 +65,6 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 		}
 		return
 	}
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	measurement, err = input.Get("measurement")
 	if err != nil {
 		err = errors.New("engine:influx.form中未包含measurement标签")
 		return

@@ -176,6 +176,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		var err error
 		context.Input.Input = tfForm.Data
 		context.Input.Params = tfParams.Data
+		context.Input.Body, _ = tfForm.Get("__body")
 
 		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)

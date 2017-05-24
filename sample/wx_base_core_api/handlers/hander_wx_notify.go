@@ -37,11 +37,6 @@ func (n *wxNotify) Handle(service string, ctx plugins.Context, invoker plugins.R
 		return
 	}
 	defer db.Close()
-	mc, err := wxContext.GetCache()
-	if err != nil {
-		return
-	}
-	result = mc.Get("t")
 
 	//返回结果
 	status = 200
