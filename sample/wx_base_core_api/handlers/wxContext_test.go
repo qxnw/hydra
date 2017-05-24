@@ -55,7 +55,8 @@ func newContext() (r *context) {
 	r.Input.Params = r.Input.Input
 	r.Input.Body = ""
 	r.Input.Args = map[string]string{
-		"db": "oracle",
+		"db":    "oracle",
+		"cache": "mem",
 	}
 
 	r.Ext = map[string]interface{}{
@@ -67,6 +68,8 @@ func newContext() (r *context) {
     "provider":"oracle",
     "connString":"wx_base_system/123456@orcl136"
 }`, nil
+			} else if n == "mem" {
+				return `{"server":"192.168.0.166:11212"}`, nil
 			}
 			return "", errors.New("未找到--------")
 		},
@@ -85,10 +88,10 @@ func TestContextDb(t *testing.T) {
 }
 
 func TestContextCache(t *testing.T) {
-	context, err := GetWXContext(&context{}, nil)
+	context, err := GetWXContext(newContext(), nil)
 	ut.ExpectSkip(t, err, nil)
 	db, err := context.GetCache()
 	ut.ExpectSkip(t, err, nil)
 	_, err = db.Get("abc")
-	ut.ExpectSkip(t, err, nil)
+	ut.RefuteSkip(t, err, nil)
 }

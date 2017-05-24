@@ -49,10 +49,6 @@ func (w *wxContext) CheckMustFields(names ...string) error {
 }
 
 func GetWXContext(ctx plugins.Context, invoker plugins.RPCInvoker) (wx *wxContext, err error) {
-	//if invoker == nil {
-	//err = fmt.Errorf("输入参数rpc.invoker为空")
-	//return
-	//}
 	wx = contextPool.Get().(*wxContext)
 	wx.ctx = ctx
 	defer func() {
