@@ -22,12 +22,15 @@ type registryProxy struct {
 
 func newRegistryProxy() *registryProxy {
 	r := &registryProxy{
-		services: make([]string, 0, 4),
+		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, error), 8)
 	r.serviceHandlers["/registry/save/all"] = r.saveAll
 	r.serviceHandlers["/registry/get/value"] = r.getValue
+	r.serviceHandlers["/registry/get/children"] = r.getChildren
 	r.serviceHandlers["/registry/create/path"] = r.createPath
+	r.serviceHandlers["/registry/create/ephemeral/path"] = r.createTempPath
+	r.serviceHandlers["/registry/create/sequence/path"] = r.createSEQPath
 	r.serviceHandlers["/registry/update/value"] = r.updateValue
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)

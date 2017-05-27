@@ -19,17 +19,17 @@ func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err erro
 	if ctx.Input.Body != nil && err != nil {
 		sql = ctx.Input.Body.(string)
 		if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "show") {
-			err = fmt.Errorf("engine:influx.输入的SQL语句必须是select或show开头，(%s)", sql)
+			err = fmt.Errorf("输入的SQL语句必须是select或show开头，(%s)", sql)
 			return
 		}
 		return sql, nil
 	}
 	if err != nil {
-		err = errors.New("engine:influx.form中未包含select标签")
+		err = errors.New("form中未包含select标签")
 		return
 	}
 	if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "select") {
-		err = fmt.Errorf("engine:influx.输入的SQL语句必须是select或show开头，(%s)", sql)
+		err = fmt.Errorf("输入的SQL语句必须是select或show开头，(%s)", sql)
 		return
 	}
 	return sql, nil
@@ -47,7 +47,7 @@ func (s *influxProxy) query(ctx *context.Context) (r string, err error) {
 
 	r, err = client.Query(sql)
 	if err != nil {
-		err = fmt.Errorf("engine:influx.sql执行出错:%s，(err:%v)", sql, err)
+		err = fmt.Errorf("sql执行出错:%s，(err:%v)", sql, err)
 		return
 	}
 	return

@@ -60,6 +60,7 @@ func (s *influxProxy) Handle(svName string, mode string, service string, ctx *co
 
 	content, err := s.serviceHandlers[service](ctx)
 	if err != nil {
+		err = fmt.Errorf("engine:influxdb.%v", err)
 		return &context.Response{Status: 500}, err
 	}
 	return &context.Response{Status: 200, Content: content}, nil
@@ -70,7 +71,7 @@ func (s *influxProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {
 		return nil
 	}
-	return fmt.Errorf("不存在服务:%s", shortName)
+	return fmt.Errorf("engine:influxdb.不存在服务:%s", shortName)
 }
 
 type influxProxyResolver struct {

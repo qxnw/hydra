@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/qxnw/hydra/context"
-
-	"strings"
 )
 
 func (s *registryProxy) createPath(ctx *context.Context) (r string, err error) {
@@ -16,10 +14,6 @@ func (s *registryProxy) createPath(ctx *context.Context) (r string, err error) {
 	path, err := input.Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
-		return
-	}
-	if !strings.Contains(path, s.domain) {
-		err = fmt.Errorf("path路径必须是:%s开头", s.domain)
 		return
 	}
 	b, err := s.registry.Exists(path)

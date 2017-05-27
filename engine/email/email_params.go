@@ -25,7 +25,7 @@ type email struct {
 
 func (s *emailProxy) getGetParams(ctx *context.Context) (mail *email, err error) {
 	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("engine:email.input,params,args不能为空:%v", ctx.Input)
+		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
 		return
 	}
 	mail = &email{mailtype: "Content-Type: text/plain; charset=UTF-8"}

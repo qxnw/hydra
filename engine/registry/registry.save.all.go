@@ -10,11 +10,7 @@ import (
 	"github.com/qxnw/lib4go/file"
 )
 
-type kv struct {
-	path  string
-	value []byte
-}
-
+//saveAll 无需任何输入参数，直接备份当前域所在目录下的所有配置
 func (s *registryProxy) saveAll(ctx *context.Context) (r string, err error) {
 	serverData, err := s.getChildrenNodes(fmt.Sprintf("%s/servers", s.domain))
 	if err != nil {

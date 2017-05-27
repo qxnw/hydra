@@ -48,9 +48,12 @@ func (s *cacheProxy) Close() error {
 //从args参数中获取 cache
 //memcache.cache配置文件格式：{"server":"192.168.0.166:11212"}
 func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-
+	if err = s.Has(service, service); err != nil {
+		return
+	}
 	content, err := s.serviceHandlers[service](ctx)
 	if err != nil {
+		err = fmt.Errorf("engine:cache.%v", err)
 		return &context.Response{Status: 500}, err
 	}
 	return &context.Response{Status: 200, Content: content}, nil
@@ -60,7 +63,7 @@ func (s *cacheProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {
 		return nil
 	}
-	return fmt.Errorf("不存在服务:%s", shortName)
+	return fmt.Errorf("engine:cache.不存在服务:%s", shortName)
 }
 
 type memcacheProxyResolver struct {

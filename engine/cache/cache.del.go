@@ -16,9 +16,9 @@ func (s *cacheProxy) del(ctx *context.Context) (r string, err error) {
 		return "", err
 	}
 	err = client.Delete(key)
-	err = fmt.Errorf("engine:cache.delete错误(err:%v)", err)
+	err = fmt.Errorf("delete错误(err:%v)", err)
 	if err != nil {
-		err = fmt.Errorf("engine:cache.delay错误(err:%v)", err)
+		err = fmt.Errorf("delay错误(err:%v)", err)
 	}
 	r = "SUCCESS"
 	return

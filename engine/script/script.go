@@ -131,6 +131,7 @@ func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *c
 	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
 	result, m, err := s.vm.Call(f, input)
 	if err != nil {
+		err = fmt.Errorf("engine:script:%v", err)
 		return
 	}
 	data := make(map[string]interface{})
@@ -146,7 +147,7 @@ func (s *scriptWorker) Has(shortName, fullName string) (err error) {
 			return nil
 		}
 	}
-	return fmt.Errorf("不存在服务:%s", shortName)
+	return fmt.Errorf("engine:script不存在服务:%s", shortName)
 }
 
 type scriptResolver struct {

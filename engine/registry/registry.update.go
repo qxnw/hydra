@@ -3,11 +3,11 @@ package registry
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/qxnw/hydra/context"
 )
 
+//根据path,value,version更新指定节点的值
 func (s *registryProxy) updateValue(ctx *context.Context) (r string, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
@@ -16,10 +16,6 @@ func (s *registryProxy) updateValue(ctx *context.Context) (r string, err error) 
 	path, err := input.Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
-		return
-	}
-	if !strings.Contains(path, s.domain) {
-		err = fmt.Errorf("path路径必须是:%s开头", s.domain)
 		return
 	}
 	b, err := s.registry.Exists(path)

@@ -140,13 +140,12 @@ func (s *smsProxy) getVarParam(ctx *context.Context, name string) (string, error
 func (s *smsProxy) ytxSend(ctx *context.Context) (r string, st int, err error) {
 	m, err := s.getGetParams(ctx)
 	if err != nil {
-		err = fmt.Errorf("engine:ytx.sms.%v", err)
 		return
 	}
 	client := http.NewHTTPClient()
 	r, st, err = client.Request("post", m.url, m.body, m.charset, m.header)
 	if err != nil {
-		err = fmt.Errorf("engine:ytx.sms.%v(url:%s,body:%s,header:%s)", err, m.url, m.body, m.header)
+		err = fmt.Errorf("%v(url:%s,body:%s,header:%s)", err, m.url, m.body, m.header)
 		return
 	}
 	return

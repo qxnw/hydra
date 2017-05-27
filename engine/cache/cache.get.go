@@ -12,7 +12,7 @@ import (
 
 func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) {
 	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("engine:cache.input,params,args不能为空:%v", ctx.Input)
+		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
 		return
 	}
 	input := ctx.Input.Input.(transform.ITransformGetter)
@@ -24,22 +24,22 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {
-			err = fmt.Errorf("engine:cache.body不是有效的json数据，(err:%v)", err)
+			err = fmt.Errorf("body不是有效的json数据，(err:%v)", err)
 			return
 		}
 		msm, ok := inputMap["key"]
 		if !ok {
-			err = errors.New("engine:cache.body的内容中未包含key标签")
+			err = errors.New("body的内容中未包含key标签")
 			return
 		}
 
 		if key, ok = msm.(string); !ok {
-			err = fmt.Errorf("engine:cache.body的内容中key标签必须为字符串:(err:%v)", msm)
+			err = fmt.Errorf("body的内容中key标签必须为字符串:(err:%v)", msm)
 			return
 		}
 		return
 	}
-	err = errors.New("engine:cache.form中未包含key标签")
+	err = errors.New("form中未包含key标签")
 	return
 
 }
