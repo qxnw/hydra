@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -39,11 +38,11 @@ func NewRPCClientPool(address string, maxSize int, timeout time.Duration, opts .
 }
 func (p *RPCClientPool) printCounter(v int32) {
 	atomic.AddInt32(&counter, v)
-	if v > 0 {
+	/*if v > 0 {
 		fmt.Println("+", atomic.LoadInt32(&counter), p.address)
 	} else {
 		fmt.Println("-", atomic.LoadInt32(&counter), p.address)
-	}
+	}*/
 }
 
 //GetClient 获取一个可用的rpc client

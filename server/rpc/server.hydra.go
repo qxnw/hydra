@@ -73,6 +73,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("routers")
 		if err != nil {
 			return fmt.Errorf("routers未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -102,7 +103,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			routers = append(routers, &rpcRouter{
 				Method:      action,
 				Path:        name,
-				Handler:     w.handle(name, mode, service, args),
+				Handler:     w.handle(name, mode, service, baseArgs+"&"+args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
 		w.server.SetRouters(routers...)

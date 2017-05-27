@@ -77,6 +77,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 	}
 	if r, err := w.conf.GetNodeWithSection("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("queues")
 		if err != nil {
 			return fmt.Errorf("queues未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
@@ -91,7 +92,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 			if queue == "" || service == "" || action == "" {
 				return fmt.Errorf("queue配置错误:name,service,action不能为空（name:%s，service:%s，action:%s）", queue, service, action)
 			}
-			queues = append(queues, task{name: queue, service: service, action: action, args: args, mode: mode})
+			queues = append(queues, task{name: queue, service: service, action: action, args: baseArgs + "&" + args, mode: mode})
 		}
 		for _, task := range queues {
 			w.server.Use(task.name, w.handle(task.service, task.mode, task.action, task.args))

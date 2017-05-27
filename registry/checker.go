@@ -10,6 +10,7 @@ import (
 type Checker interface {
 	Exists(filename string) bool
 	CreateFile(fileName string, data string) error
+	WriteFile(fileName string, data string) error
 	LastModeTime(path string) (t time.Time, err error)
 	ReadDir(path string) (r []string, err error)
 	ReadAll(path string) (buf []byte, err error)
@@ -62,6 +63,9 @@ func (f fileChecker) CreateFile(fileName string, data string) error {
 	if err != nil {
 		return err
 	}
+	return ioutil.WriteFile(fileName, []byte(data), 0666)
+}
+func (f fileChecker) WriteFile(fileName string, data string) error {
 	return ioutil.WriteFile(fileName, []byte(data), 0666)
 }
 func (f fileChecker) Delete(fileName string) error {

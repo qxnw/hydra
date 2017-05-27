@@ -3,7 +3,6 @@ package influx
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -33,10 +32,10 @@ func newInfluxProxy() *influxProxy {
 	return r
 }
 
-func (s *influxProxy) Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) (services []string, err error) {
-	s.domain = domain
-	s.serverName = serverName
-	s.serverType = serverType
+func (s *influxProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
+	s.domain = ctx.Domain
+	s.serverName = ctx.ServerName
+	s.serverType = ctx.ServerType
 	return s.services, nil
 }
 func (s *influxProxy) Close() error {

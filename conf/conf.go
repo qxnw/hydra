@@ -63,6 +63,7 @@ type Conf interface {
 	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
 	GetSectionString(section string) (r string, err error)
+	GetArray(key string) (r []interface{}, err error)
 	GetContent() string
 	Each(f func(key string))
 	Translate(format string) string

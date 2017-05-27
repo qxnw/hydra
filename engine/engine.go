@@ -6,6 +6,7 @@ import (
 
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/logger"
 )
 
 //IsDebug 当前服务器是处于调试模式
@@ -13,23 +14,31 @@ var IsDebug = false
 
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
-	EXCLUDE     = []string{"lib", "sys", "conf", "config"}
+	EXCLUDE     = []string{"lib", "conf", "config"}
 )
 
 //IWorker 插件
 type IWorker interface {
 	Has(shortName, fullName string) error
-	Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) ([]string, error)
+	Start(ctx *EngineContext) ([]string, error)
 	Close() error
 	context.EngineHandler
 }
 
 //IEngine 执行引擎
 type IEngine interface {
-	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, extEngines ...string) ([]string, error)
+	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, logger *logger.Logger, extEngines ...string) ([]string, error)
 	Handle(name string, mode string, service string, c *context.Context) (*context.Response, error)
 	Register(name string, p IWorker)
 	Close() error
+}
+type EngineContext struct {
+	Domain     string
+	ServerName string
+	ServerType string
+	Invoker    *rpc.RPCInvoker
+	Registry   string
+	Logger     *logger.Logger
 }
 
 type IWorkerResolver interface {
@@ -41,6 +50,7 @@ type standardEngine struct {
 	domain     string
 	serverName string
 	invoker    *rpc.RPCInvoker
+	logger     *logger.Logger
 }
 
 //NewStandardEngine 创建标准执行引擎
@@ -52,11 +62,12 @@ func NewStandardEngine() IEngine {
 }
 
 //启动引擎
-func (e *standardEngine) Start(domain string, serverName string, serverType string, rpcRegistryAddrss string, extEngines ...string) (services []string, err error) {
+func (e *standardEngine) Start(domain string, serverName string, serverType string, rpcRegistryAddrss string, logger *logger.Logger, extEngines ...string) (services []string, err error) {
 
 	services = make([]string, 0, 8)
 	e.domain = domain
 	e.serverName = serverName
+	e.logger = logger
 	e.invoker = rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
 	//根据解析器生成引擎
 	for k, v := range resolvers {
@@ -73,8 +84,15 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 		e.plugins[k] = v.Resolve()
 	}
 	//启动每个引擎
+	engineContext := &EngineContext{Domain: domain,
+		ServerName: serverName,
+		ServerType: serverType,
+		Invoker:    e.invoker,
+		Registry:   rpcRegistryAddrss,
+		Logger:     logger,
+	}
 	for _, p := range e.plugins {
-		srvs, err := p.Start(domain, serverName, serverType, e.invoker)
+		srvs, err := p.Start(engineContext)
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,6 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 )
@@ -23,10 +22,10 @@ func newEmailProxy() *emailProxy {
 	}
 }
 
-func (s *emailProxy) Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) (services []string, err error) {
-	s.domain = domain
-	s.serverName = serverName
-	s.serverType = serverType
+func (s *emailProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
+	s.domain = ctx.Domain
+	s.serverName = ctx.ServerName
+	s.serverType = ctx.ServerType
 	return s.services, nil
 }
 func (s *emailProxy) Close() error {

@@ -97,6 +97,23 @@ func (j *JSONConf) String(key string, def ...string) (r string) {
 	}
 	return ""
 }
+func (j *JSONConf) GetArray(key string) (r []interface{}, err error) {
+	nkey := "_array_" + key
+	if value, ok := j.cache.Get(nkey); ok {
+		r = value.([]interface{})
+		return
+	}
+	d, ok := j.data[key]
+	if !ok {
+		err = fmt.Errorf("不包含数据:%s", key)
+		return
+	}
+	if r, ok := d.([]interface{}); ok {
+		return r, nil
+	}
+	err = fmt.Errorf("不包含数据:%s", key)
+	return
+}
 
 //Strings 获取字符串数组，原字符串以“;”号分隔
 func (j *JSONConf) Strings(key string, def ...[]string) (r []string) {
@@ -259,15 +276,14 @@ func (j *JSONConf) GetSectionString(section string) (r string, err error) {
 	}
 	val := j.data[section]
 	if val != nil {
-		if v, ok := val.(map[string]interface{}); ok {
-			buffer, err := json.Marshal(v)
-			if err != nil {
-				return "", err
-			}
-			r = jsons.Escape(string(buffer))
-			j.cache.Set(nkey, r)
-			return r, nil
+		buffer, err := json.Marshal(val)
+		if err != nil {
+			return "", err
 		}
+		r = j.TranslateAll(jsons.Escape(string(buffer)), false)
+		j.cache.Set(nkey, r)
+		return r, nil
+
 	}
 	err = errors.New("not exist section:" + section)
 	return

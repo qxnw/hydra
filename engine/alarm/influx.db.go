@@ -20,7 +20,7 @@ func (s *alarmProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClie
 	if db == "" || !ok {
 		return nil, fmt.Errorf("engine:influxdb.args配置错误，缺少db参数:%v", ctx.Input.Args)
 	}
-	content, err := s.getVarParam(ctx, db)
+	content, err := s.getVarParam(ctx, "db", db)
 	if err != nil {
 		return nil, fmt.Errorf("engine:无法获取args参数db的值:%s(err:%v)", db, err)
 	}
@@ -50,13 +50,13 @@ func (s *alarmProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClie
 	return client.(*influxdb.InfluxClient), err
 
 }
-func (s *alarmProxy) getVarParam(ctx *context.Context, name string) (string, error) {
+func (s *alarmProxy) getVarParam(ctx *context.Context, tpName string, name string) (string, error) {
 	func_var := ctx.Ext["__func_var_get_"]
 	if func_var == nil {
 		return "", errors.New("engine:未找到__func_var_get_")
 	}
 	if f, ok := func_var.(func(c string, n string) (string, error)); ok {
-		return f("setting", name)
+		return f(tpName, name)
 	}
 	return "", errors.New("engine:未找到__func_var_get_传入类型错误")
 }

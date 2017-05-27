@@ -72,7 +72,7 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	}
 
 	// 启动服务引擎
-	h.localServices, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.engineNames...)
+	h.localServices, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:%v)", h.domain, h.serverName, err)
 	}

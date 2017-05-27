@@ -54,7 +54,9 @@ func (l *LocalRegistry) WatchChildren(path string) (data chan registry.ChildrenW
 
 	return data, nil
 }
-
+func (l *LocalRegistry) Update(path string, data string, version int32) (err error) {
+	return l.checker.WriteFile(path, data)
+}
 func (l *LocalRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
 	data = make(chan registry.ValueWatcher, 1)
 	go func() {
@@ -69,7 +71,6 @@ func (l *LocalRegistry) WatchValue(path string) (data chan registry.ValueWatcher
 				if !b {
 					continue
 				}
-
 				modify, err := l.checker.LastModeTime(path)
 				if err != nil {
 					continue

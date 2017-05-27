@@ -36,11 +36,11 @@ func newScriptWorker() *scriptWorker {
 	}
 }
 
-func (s *scriptWorker) Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) (services []string, err error) {
-	s.domain = domain
-	s.serverName = serverName
-	s.serverType = serverType
-	s.invoker = invoker
+func (s *scriptWorker) Start(ctx *engine.EngineContext) (services []string, err error) {
+	s.domain = ctx.Domain
+	s.serverName = ctx.ServerName
+	s.serverType = ctx.ServerType
+	s.invoker = ctx.Invoker
 	path := fmt.Sprintf("%s/servers/%s/%s/script", s.domain, s.serverName, s.serverType)
 	p, err := file.GetAbs(path)
 	if err != nil {

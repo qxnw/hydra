@@ -5,8 +5,6 @@ import (
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/lib4go/influxdb/v2"
-	"github.com/qxnw/lib4go/jsons"
 )
 
 func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, notifySetting conf.Conf, err error) {
@@ -24,7 +22,7 @@ func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, n
 		err = fmt.Errorf("Args参数未配置setting属性")
 		return
 	}
-	content, err := s.getVarParam(ctx, setting)
+	content, err := s.getVarParam(ctx, "setting", setting)
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return
@@ -34,12 +32,12 @@ func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, n
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return
 	}
-	dbSeting, err = form.GetNodeWithSection("db")
+	dbSeting, err = form.GetSection("db")
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，未配置db节点（err:%v)", content, err)
 		return
 	}
-	notifySetting, err = form.GetNodeWithSection("notify")
+	notifySetting, err = form.GetSection("notify")
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，未配置db节点（err:%v)", content, err)
 		return
@@ -48,38 +46,55 @@ func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, n
 }
 
 func (s *alarmProxy) influxQuery(ctx *context.Context, sql string) (rs []map[string]string, err error) {
+	client, err := s.getInfluxClient(ctx)
+	if err != nil {
+		return
+	}
 	r, err := client.Query(sql)
 	if err != nil {
 		err = fmt.Errorf("sql执行出错:%s，(err:%v)", sql, err)
 		return
 	}
-	data, err := jsons.Unmarshal([]byte(r))
+	queryResult, err := conf.NewJSONConfWithJson(r, 0, nil)
 	if err != nil {
-		err = fmt.Errorf("influxdb返回数据错误:%s，(err:%v)", r, err)
 		return
 	}
-	if data["columns"] == nil || data["values"] == nil {
-		err = fmt.Errorf("influxdb返回数据错误:未包含columns或values列%s，(err:%v)", r, err)
+	results, err := queryResult.GetSections("results")
+	if err != nil {
 		return
 	}
-	columns, ok := data["columns"].([]interface{})
-	if !ok {
-		err = fmt.Errorf("influxdb返回数据错误:columns不是数组%s，(err:%v)", r, err)
-		return
-	}
-	values, ok := data["values"].([]interface{})
-	if !ok {
-		err = fmt.Errorf("influxdb返回数据错误:values不是数组%s，(err:%v)", r, err)
-		return
-	}
-	rs = make([]map[string]string, 0, len(values))
-	for i, row := range values {
-		cols := row.([]interface{})
-		rowMap := make(map[string]string)
-		for x, c := range cols {
-			rowMap[fmt.Sprintf("%v", columns[x])] = fmt.Sprintf("%v", c)
+	for _, result := range results {
+		series, err := result.GetSections("series")
+		if err != nil {
+			return nil, err
 		}
-		rs = append(rs, rowMap)
+		for _, serie := range series {
+
+			if !serie.Has("columns") || !serie.Has("values") {
+				err = fmt.Errorf("influxdb返回数据错误:未包含columns或values列%s，(err:%v)", r, err)
+				return nil, err
+			}
+			columns, err := serie.GetArray("columns")
+			if err != nil {
+				err = fmt.Errorf("influxdb返回数据错误:columns不是数组%s，(err:%v)", r, err)
+				return nil, err
+			}
+			values, err := serie.GetArray("values")
+			if err != nil {
+				err = fmt.Errorf("influxdb返回数据错误:values不是数组%s，(err:%v)", r, err)
+				return nil, err
+			}
+			rs = make([]map[string]string, 0, len(values))
+			for _, row := range values {
+				cols := row.([]interface{})
+				rowMap := make(map[string]string)
+				for x, c := range cols {
+					rowMap[fmt.Sprintf("%v", columns[x])] = fmt.Sprintf("%v", c)
+				}
+				rs = append(rs, rowMap)
+			}
+		}
 	}
+
 	return
 }

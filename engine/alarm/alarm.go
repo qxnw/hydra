@@ -3,7 +3,6 @@ package alarm
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -21,21 +20,21 @@ type alarmProxy struct {
 
 func newAlarmProxy() *alarmProxy {
 	r := &alarmProxy{
-		services: make([]string, 0, 4),
+		services: make([]string, 0, 1),
 		dbs:      cmap.New(),
 	}
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
-	//r.serviceHandlers["/alarm/influx/wx"] = r.query
+	r.serviceHandlers["/alarm/influx/wx"] = r.influx2wx
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}
 	return r
 }
 
-func (s *alarmProxy) Start(domain string, serverName string, serverType string, invoker *rpc.RPCInvoker) (services []string, err error) {
-	s.domain = domain
-	s.serverName = serverName
-	s.serverType = serverType
+func (s *alarmProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
+	s.domain = ctx.Domain
+	s.serverName = ctx.ServerName
+	s.serverType = ctx.ServerType
 	return s.services, nil
 }
 func (s *alarmProxy) Close() error {
@@ -57,9 +56,9 @@ func (s *alarmProxy) Handle(svName string, mode string, service string, ctx *con
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-
 	content, err := s.serviceHandlers[service](ctx)
 	if err != nil {
+		err = fmt.Errorf("engine:alarm %v", err)
 		return &context.Response{Status: 500}, err
 	}
 	return &context.Response{Status: 200, Content: content}, nil
@@ -70,7 +69,7 @@ func (s *alarmProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {
 		return nil
 	}
-	return fmt.Errorf("不存在服务:%s", shortName)
+	return fmt.Errorf("engine:alarm不存在服务:%s", shortName)
 }
 
 type alarmProxyResolver struct {

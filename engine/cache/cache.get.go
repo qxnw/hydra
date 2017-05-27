@@ -53,6 +53,6 @@ func (s *cacheProxy) get(ctx *context.Context) (r string, err error) {
 	if err != nil {
 		return "", err
 	}
-	r = client.Get(key)
+	r, err = client.Get(key)
 	return
 }

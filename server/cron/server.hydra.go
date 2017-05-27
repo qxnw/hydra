@@ -70,6 +70,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	if r, err := w.conf.GetNodeWithSection("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
 			return fmt.Errorf("tasks未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -89,7 +90,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if err != nil {
 				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), cronStr, err)
 			}
-			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, args), fmt.Sprintf("%s-%s", service, action)))
+			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, baseArgs+"&"+args), fmt.Sprintf("%s-%s", service, action)))
 		}
 		for _, task := range tasks {
 			w.server.Add(task)
