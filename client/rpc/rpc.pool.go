@@ -53,7 +53,7 @@ func (p *RPCClientPool) GetClient() (*RPCClient, error) {
 	}
 	defer p.p.Put(c)
 	client := c.(*RPCClient)
-	if client.CanUse() {
+	if client.canUse() {
 		return client, nil
 	}
 	return p.GetClient()

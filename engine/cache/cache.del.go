@@ -6,14 +6,14 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *cacheProxy) del(ctx *context.Context) (r string, err error) {
+func (s *cacheProxy) del(ctx *context.Context) (r string, t int, err error) {
 	key, err := s.getGetParams(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	client, err := s.getMemcacheClient(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	err = client.Delete(key)
 	err = fmt.Errorf("delete错误(err:%v)", err)

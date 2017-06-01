@@ -8,7 +8,7 @@ import (
 )
 
 //根据path,value,version更新指定节点的值
-func (s *registryProxy) updateValue(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) updateValue(ctx *context.Context) (r string, st int, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
 		return
@@ -43,14 +43,16 @@ func (s *registryProxy) updateValue(ctx *context.Context) (r string, err error) 
 	}
 	err = s.registry.Update(path, value, int32(v))
 	if err == nil {
-		return "SUCCESS", nil
+		r = "SUCCESS"
+		return
 	}
 	_, ov, err1 := s.registry.GetValue(path)
 	if err1 != nil {
-		return "", err
+		return
 	}
 	if ov != int32(v) {
 		err = fmt.Errorf("更新数据的版本错误，已发现最新版本:%d", ov)
+		st = 409
 	}
-	return "", err
+	return
 }

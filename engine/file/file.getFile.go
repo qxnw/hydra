@@ -31,7 +31,7 @@ func (s *fileProxy) getParams(ctx *context.Context) (input transform.ITransformG
 	}
 	return
 }
-func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, err error) {
+func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, t int, err error) {
 	input, args, err := s.getParams(ctx)
 	if err != nil {
 		return
@@ -72,5 +72,5 @@ func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, err
 	}
 	defer nf.Close()
 	io.Copy(nf, uf)
-	return nfilePath, nil
+	return nfilePath, 200, nil
 }

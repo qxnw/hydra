@@ -45,7 +45,7 @@ func (s *alarmProxy) getInflux2WxParams(ctx *context.Context) (sql string, wxSet
 	return
 
 }
-func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, err error) {
+func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, t int, err error) {
 	sql, wxSetting, wxUsers, err := s.getInflux2WxParams(ctx)
 	if err != nil {
 		return
@@ -70,16 +70,17 @@ func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, err error) {
 			host := fm.Translate(wxSetting.String("host"))
 			u, err := url.Parse(host)
 			if err != nil {
-				return "", fmt.Errorf("unable to parse wx url %s. err=%v", host, err)
+				err = fmt.Errorf("unable to parse wx url %s. err=%v", host, err)
+				return "", 500, err
 			}
 			values := u.Query()
 			data, err := wxSetting.GetSection("data")
 			if err != nil {
-				return "", err
+				return "", 500, err
 			}
 			c, err := wxSetting.GetSectionString("content")
 			if err != nil {
-				return "", err
+				return "", 500, err
 			}
 			data.Set("content", fm.Translate(c))
 			data.Each(func(key string) {
@@ -92,11 +93,11 @@ func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, err error) {
 			}
 			if status != 200 {
 				err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, host)
-				return "", err
+				return "", 500, err
 			}
 		}
 
 	}
-	return "SUCCESS", nil
+	return "SUCCESS", 200, nil
 
 }

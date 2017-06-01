@@ -45,6 +45,7 @@ func WithVersion(version string) TaskOption {
 
 //MQConsumer 消息消费队列服务器
 type MQConsumer struct {
+	address     string
 	consumer    mq.MQConsumer
 	handlers    []Handler
 	serverName  string
@@ -56,7 +57,7 @@ type MQConsumer struct {
 
 //NewMQConsumer 构建服务器
 func NewMQConsumer(name string, address string, opts ...TaskOption) (s *MQConsumer, err error) {
-	s = &MQConsumer{serverName: name, handlers: make([]Handler, 0, 3),
+	s = &MQConsumer{serverName: name, address: address, handlers: make([]Handler, 0, 3),
 		p: &sync.Pool{
 			New: func() interface{} {
 				return &Context{}
@@ -80,13 +81,13 @@ func NewMQConsumer(name string, address string, opts ...TaskOption) (s *MQConsum
 
 //Run 运行
 func (s *MQConsumer) Run() error {
-	s.Infof("start mq server(%s)", s.serverName)
 	err := s.consumer.Connect()
 	if err != nil {
 		s.running = false
 		s.unregistryServer()
 		return err
 	}
+	s.Infof("Connected to %s", s.address)
 	s.running = true
 	return s.registryServer()
 }
@@ -108,7 +109,7 @@ func (s *MQConsumer) StopInfluxMetric() {
 
 //Use 启用消息处理
 func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
-	s.Infof("start consume(%s, queue:%s)", s.serverName, queue)
+	//s.Infof("start consume(%s/%s)", s.serverName, queue)
 	err := s.consumer.Consume(queue, func(m mq.IMessage) {
 		r := s.p.Get().(*Context)
 		message := m.GetMessage()
@@ -135,7 +136,8 @@ func (s *MQConsumer) UnUse(queue string) {
 //Close 关闭服务器
 func (s *MQConsumer) Close() {
 	s.running = false
-	s.Errorf("mq server(%s) closed", s.serverName)
 	s.unregistryServer()
 	s.consumer.Close()
+	s.Infof("mq: Server closed(%s)", s.serverName)
+
 }

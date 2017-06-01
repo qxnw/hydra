@@ -7,6 +7,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type registryProxy struct {
@@ -16,7 +17,7 @@ type registryProxy struct {
 	services        []string
 	invoker         *rpc.RPCInvoker
 	registry        registry.Registry
-	serviceHandlers map[string]func(*context.Context) (string, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	registryAddrs   string
 }
 
@@ -24,7 +25,7 @@ func newRegistryProxy() *registryProxy {
 	r := &registryProxy{
 		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error), 8)
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 8)
 	r.serviceHandlers["/registry/save/all"] = r.saveAll
 	r.serviceHandlers["/registry/get/value"] = r.getValue
 	r.serviceHandlers["/registry/get/children"] = r.getChildren
@@ -56,12 +57,12 @@ func (s *registryProxy) Handle(svName string, mode string, service string, ctx *
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, err := s.serviceHandlers[service](ctx)
+	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:registry %v", err)
-		return &context.Response{Status: 500}, err
+		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
 	}
-	return &context.Response{Status: 200, Content: content}, nil
+	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
 }
 func (s *registryProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

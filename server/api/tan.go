@@ -164,7 +164,7 @@ func (t *WebServer) Run(address ...interface{}) error {
 	err = t.server.ListenAndServe()
 	if err != nil {
 		t.running = false
-		t.logger.Error(err)
+		t.logger.Infof("%v(%s)", err, t.serverName)
 		return err
 	}
 

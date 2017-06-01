@@ -6,6 +6,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type cacheProxy struct {
@@ -13,7 +14,7 @@ type cacheProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	dbs             cmap.ConcurrentMap
 }
 
@@ -22,7 +23,7 @@ func newCacheProxy() *cacheProxy {
 		dbs:      cmap.New(),
 		services: make([]string, 0, 4),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/cache/memcached/save"] = r.save
 	r.serviceHandlers["/cache/memcached/get"] = r.get
 	r.serviceHandlers["/cache/memcached/del"] = r.del
@@ -39,9 +40,6 @@ func (s *cacheProxy) Start(ctx *engine.EngineContext) (services []string, err er
 	s.serverType = ctx.ServerType
 	return s.services, nil
 }
-func (s *cacheProxy) Close() error {
-	return nil
-}
 
 //操作缓存
 //从input参数中获取 key,value,expiresAt
@@ -51,12 +49,12 @@ func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *con
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, err := s.serviceHandlers[service](ctx)
+	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:cache.%v", err)
-		return &context.Response{Status: 500}, err
+		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
 	}
-	return &context.Response{Status: 200, Content: content}, nil
+	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
 }
 
 func (s *cacheProxy) Has(shortName, fullName string) (err error) {
@@ -64,6 +62,9 @@ func (s *cacheProxy) Has(shortName, fullName string) (err error) {
 		return nil
 	}
 	return fmt.Errorf("engine:cache.不存在服务:%s", shortName)
+}
+func (s *cacheProxy) Close() error {
+	return nil
 }
 
 type memcacheProxyResolver struct {

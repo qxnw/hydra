@@ -23,7 +23,7 @@ type RPCInvoker struct {
 }
 
 type invokerOption struct {
-	logger       Logger
+	logger       *logger.Logger
 	timerout     time.Duration
 	balancerType int
 	servers      string
@@ -39,7 +39,7 @@ const (
 type InvokerOption func(*invokerOption)
 
 //WithInvokerLogger 设置日志记录器
-func WithInvokerLogger(log Logger) InvokerOption {
+func WithInvokerLogger(log *logger.Logger) InvokerOption {
 	return func(o *invokerOption) {
 		o.logger = log
 	}
@@ -81,7 +81,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 	return
 }
 func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
-	p, err := r.Get(service)
+	p, err := r.GetClientPool(service)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +95,9 @@ func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
 
 //Request 使用RPC调用Request函数
 func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	rservice, _, _, _ := r.resolvePath(service)
@@ -114,14 +114,13 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 
 //Delete 使用RPC调用Delete函数
 func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
+	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	rservice, _, _, err := r.resolvePath(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	return client.Delete(rservice, input, failFast)
@@ -129,14 +128,13 @@ func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bo
 
 //Insert 使用RPC调用Insert函数
 func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
+	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	rservice, _, _, err := r.resolvePath(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	return client.Insert(rservice, input, failFast)
@@ -144,14 +142,13 @@ func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bo
 
 //Query 使用RPC调用Query函数
 func (r *RPCInvoker) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	rservice, _, _, err := r.resolvePath(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	return client.Query(rservice, input, failFast)
@@ -159,23 +156,22 @@ func (r *RPCInvoker) Query(service string, input map[string]string, failFast boo
 
 //Update 使用RPC调用Update函数
 func (r *RPCInvoker) Update(service string, input map[string]string, failFast bool) (status int, err error) {
+	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	rservice, _, _, err := r.resolvePath(service)
 	if err != nil {
-		status = 500
 		return
 	}
 	return client.Update(rservice, input, failFast)
 }
 
-//Get 获取rpc client
+//GetClientPool 获取rpc client
 //addr 支持格式:
 //order.request#merchant.hydra,order.request,order.request@api.hydra,order.request@api
-func (r *RPCInvoker) Get(addr string) (c *RPCClientPool, err error) {
+func (r *RPCInvoker) GetClientPool(addr string) (c *RPCClientPool, err error) {
 	service, domain, server, err := r.resolvePath(addr)
 	if err != nil {
 		return
@@ -206,7 +202,7 @@ func (r *RPCInvoker) Get(addr string) (c *RPCClientPool, err error) {
 //PreInit 预初始化客户端
 func (r *RPCInvoker) PreInit(services ...string) (err error) {
 	for _, v := range services {
-		_, err = r.Get(v)
+		_, err = r.GetClientPool(v)
 		if err != nil {
 			return
 		}

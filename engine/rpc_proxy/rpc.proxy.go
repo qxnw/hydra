@@ -56,7 +56,7 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	return &context.Response{Status: status, Content: result}, err
 }
 func (s *rpcProxy) Has(shortName, fullName string) (err error) {
-	_, err = s.invoker.Get(fullName)
+	_, err = s.invoker.GetClientPool(fullName)
 	return err
 }
 

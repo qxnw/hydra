@@ -171,8 +171,10 @@ func (w *CronServer) Reset() {
 func (w *CronServer) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if !w.running {
+		return
+	}
 	w.running = false
-	w.Errorf("cron server(%s) closed", w.serverName)
 	w.unregistryServer()
 	w.done = true
 	w.once.Do(func() {
@@ -185,6 +187,7 @@ func (w *CronServer) Close() {
 			return true
 		})
 	}
+	w.Infof("cron: Server closed(%s)", w.serverName)
 }
 func (w *CronServer) execute() {
 	w.startTime = time.Now()

@@ -7,7 +7,7 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *emailProxy) sendMail(ctx *context.Context) (r string, err error) {
+func (s *emailProxy) sendMail(ctx *context.Context) (r string, t int, err error) {
 	m, err := s.getGetParams(ctx)
 	if err != nil {
 		return
@@ -16,7 +16,7 @@ func (s *emailProxy) sendMail(ctx *context.Context) (r string, err error) {
 	if err != nil {
 		return
 	}
-	return "SUCCESS", nil
+	return "SUCCESS", 200, nil
 }
 
 func (s *emailProxy) send(m *email) error {

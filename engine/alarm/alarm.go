@@ -7,6 +7,7 @@ import (
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/influxdb"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type alarmProxy struct {
@@ -14,7 +15,7 @@ type alarmProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	dbs             cmap.ConcurrentMap
 }
 
@@ -23,7 +24,7 @@ func newAlarmProxy() *alarmProxy {
 		services: make([]string, 0, 1),
 		dbs:      cmap.New(),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/alarm/influx/wx"] = r.influx2wx
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -37,14 +38,6 @@ func (s *alarmProxy) Start(ctx *engine.EngineContext) (services []string, err er
 	s.serverType = ctx.ServerType
 	return s.services, nil
 }
-func (s *alarmProxy) Close() error {
-	s.dbs.RemoveIterCb(func(key string, value interface{}) bool {
-		client := value.(*influxdb.InfluxClient)
-		client.Close()
-		return true
-	})
-	return nil
-}
 
 //Handle
 //save:从input中获取参数:measurement,tags,fields
@@ -56,12 +49,12 @@ func (s *alarmProxy) Handle(svName string, mode string, service string, ctx *con
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, err := s.serviceHandlers[service](ctx)
+	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:alarm %v", err)
-		return &context.Response{Status: 500}, err
+		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
 	}
-	return &context.Response{Status: 200, Content: content}, nil
+	return &context.Response{Status: utility.EqualAndSet(t, 0, 200), Content: content}, nil
 
 }
 
@@ -70,6 +63,14 @@ func (s *alarmProxy) Has(shortName, fullName string) (err error) {
 		return nil
 	}
 	return fmt.Errorf("engine:alarm不存在服务:%s", shortName)
+}
+func (s *alarmProxy) Close() error {
+	s.dbs.RemoveIterCb(func(key string, value interface{}) bool {
+		client := value.(*influxdb.InfluxClient)
+		client.Close()
+		return true
+	})
+	return nil
 }
 
 type alarmProxyResolver struct {

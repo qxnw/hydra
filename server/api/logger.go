@@ -32,7 +32,7 @@ func Logging() HandlerFunc {
 			p = p + "?" + ctx.Req().URL.RawQuery
 		}
 
-		ctx.Info("api.request:", ctx.tan.serverName, ctx.Req().Method, p, "for", ctx.IP())
+		ctx.Info("api.request:", ctx.tan.serverName, ctx.Req().Method, p, "from", ctx.IP())
 
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {
@@ -52,12 +52,12 @@ func Logging() HandlerFunc {
 		statusCode := ctx.Status()
 
 		if statusCode >= 200 && statusCode < 400 {
-			ctx.Info("api.response:", ctx.Req().Method, statusCode, time.Since(start), p)
+			ctx.Info("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		} else {
 			if reflect.TypeOf(ctx.Result).Kind() == reflect.String {
 				ctx.Error(ctx.Result.(string))
 			}
-			ctx.Error("api.response:", ctx.Req().Method, statusCode, time.Since(start), p)
+			ctx.Error("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		}
 	}
 }

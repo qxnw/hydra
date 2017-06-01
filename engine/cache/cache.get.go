@@ -8,6 +8,7 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) {
@@ -20,11 +21,11 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 	if err == nil {
 		return
 	}
-	if ctx.Input.Body != nil && err != nil {
+	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {
-			err = fmt.Errorf("body不是有效的json数据，(err:%v)", err)
+			err = fmt.Errorf("body不是有效的json数据，[%v](err:%v)", ctx.Input.Body, err)
 			return
 		}
 		msm, ok := inputMap["key"]
@@ -44,15 +45,18 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 
 }
 
-func (s *cacheProxy) get(ctx *context.Context) (r string, err error) {
+func (s *cacheProxy) get(ctx *context.Context) (r string, t int, err error) {
 	key, err := s.getGetParams(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	client, err := s.getMemcacheClient(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	r, err = client.Get(key)
+	if err != nil {
+		t = 410
+	}
 	return
 }

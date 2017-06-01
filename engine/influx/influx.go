@@ -7,6 +7,7 @@ import (
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/influxdb"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type influxProxy struct {
@@ -14,7 +15,7 @@ type influxProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	dbs             cmap.ConcurrentMap
 }
 
@@ -23,7 +24,7 @@ func newInfluxProxy() *influxProxy {
 		services: make([]string, 0, 4),
 		dbs:      cmap.New(),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/influx/save"] = r.save
 	r.serviceHandlers["/influx/query"] = r.query
 	for k := range r.serviceHandlers {
@@ -58,12 +59,12 @@ func (s *influxProxy) Handle(svName string, mode string, service string, ctx *co
 		return
 	}
 
-	content, err := s.serviceHandlers[service](ctx)
+	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:influxdb.%v", err)
-		return &context.Response{Status: 500}, err
+		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
 	}
-	return &context.Response{Status: 200, Content: content}, nil
+	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
 
 }
 

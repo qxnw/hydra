@@ -2,17 +2,12 @@ package rpc
 
 import (
 	"fmt"
-	"io"
 	"sync/atomic"
 	"time"
 
-	"github.com/lunny/log"
 	"github.com/qxnw/hydra/client/rpc/balancer"
 	"github.com/qxnw/hydra/server/rpc/pb"
-
-	"os"
-
-	"strings"
+	"github.com/qxnw/lib4go/logger"
 
 	"errors"
 
@@ -22,19 +17,9 @@ import (
 	"google.golang.org/grpc/naming"
 )
 
-//Logger 日志组件
-type Logger interface {
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Fatalln(args ...interface{})
-	Print(args ...interface{})
-	Printf(format string, args ...interface{})
-	Println(args ...interface{})
-}
-
-//Client client
+//RPCClient client
 type RPCClient struct {
-	address string
+	address string //RPC Server Address 或 registry target
 	conn    *grpc.ClientConn
 	*clientOption
 	client        pb.RPCClient
@@ -47,7 +32,7 @@ type RPCClient struct {
 
 type clientOption struct {
 	connectionTimeout time.Duration
-	log               Logger
+	log               *logger.Logger
 	balancer          balancer.CustomerBalancer
 	service           string
 	maxUsing          int32
@@ -64,7 +49,7 @@ func WithConnectionTimeout(t time.Duration) ClientOption {
 }
 
 //WithLogger 设置日志记录器
-func WithLogger(log Logger) ClientOption {
+func WithLogger(log *logger.Logger) ClientOption {
 	return func(o *clientOption) {
 		o.log = log
 	}
@@ -74,7 +59,7 @@ func WithLogger(log Logger) ClientOption {
 func WithRoundRobinBalancer(r naming.Resolver, service string, timeout time.Duration, limit map[string]int) ClientOption {
 	return func(o *clientOption) {
 		o.service = service
-		o.balancer = balancer.RoundRobin(service, r, limit)
+		o.balancer = balancer.RoundRobin(service, r, limit, o.log)
 	}
 }
 
@@ -82,7 +67,7 @@ func WithRoundRobinBalancer(r naming.Resolver, service string, timeout time.Dura
 func WithLocalFirstBalancer(r naming.Resolver, service string, local string, limit map[string]int) ClientOption {
 	return func(o *clientOption) {
 		o.service = service
-		o.balancer = balancer.FickFirst(service, local, r, limit)
+		o.balancer = balancer.LocalFirst(service, local, r, limit)
 	}
 }
 
@@ -108,10 +93,14 @@ func NewRPCClient(address string, opts ...ClientOption) (*RPCClient, error) {
 		opt(client.clientOption)
 	}
 	if client.log == nil {
-		client.log = NewLogger(os.Stdout)
+		client.log = logger.GetSession("rpc.client", logger.CreateSession())
 	}
 	grpclog.SetLogger(client.log)
 	err := client.connect()
+	if err != nil {
+		err = fmt.Errorf("rpc.client连接到服务器失败:%s(err:%v)", address, err)
+		return nil, err
+	}
 	return client, err
 }
 
@@ -135,7 +124,11 @@ func (c *RPCClient) connect() (err error) {
 	//检查是否已连接到服务器
 	response, err := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
 	c.IsConnect = err == nil && response.Pong == 0
-	return err
+	if err != nil {
+		err = fmt.Errorf("发送心跳失败:%v", err)
+		return
+	}
+	return nil
 }
 
 //Request 发送请求
@@ -157,9 +150,6 @@ func (c *RPCClient) Request(service string, input map[string]string, failFast bo
 func (c *RPCClient) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
-	if !strings.HasPrefix(service, c.service) {
-		return 500, "", fmt.Errorf("服务:%s调用失败", service)
-	}
 	response, err := c.client.Query(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
@@ -175,9 +165,6 @@ func (c *RPCClient) Query(service string, input map[string]string, failFast bool
 func (c *RPCClient) Update(service string, input map[string]string, failFast bool) (status int, err error) {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
-	if !strings.HasPrefix(service, c.service) {
-		return 500, fmt.Errorf("服务:%s调用失败", service)
-	}
 	response, err := c.client.Update(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
@@ -192,9 +179,6 @@ func (c *RPCClient) Update(service string, input map[string]string, failFast boo
 func (c *RPCClient) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
-	if !strings.HasPrefix(service, c.service) {
-		return 500, fmt.Errorf("服务:%s调用失败", service)
-	}
 	response, err := c.client.Insert(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
@@ -209,9 +193,6 @@ func (c *RPCClient) Insert(service string, input map[string]string, failFast boo
 func (c *RPCClient) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
-	if !strings.HasPrefix(service, c.service) {
-		return 500, fmt.Errorf("服务:%s调用失败", service)
-	}
 	response, err := c.client.Delete(context.Background(), &pb.RequestContext{Service: service, Args: input},
 		grpc.FailFast(failFast))
 	if err != nil {
@@ -229,23 +210,10 @@ func (c *RPCClient) UpdateLimiter(limit map[string]int) error {
 		c.balancer.UpdateLimiter(limit)
 		return nil
 	}
-	return errors.New("未指定balancer")
+	return errors.New("rpc.client.未指定balancer")
 }
 
-//UpdateAssign 修改指定条件规则
-func (c *RPCClient) UpdateAssign(limit map[string][]string) {
-
-}
-
-//logInfof 日志记录
-func (c *RPCClient) logInfof(format string, msg ...interface{}) {
-	if c.log == nil {
-		return
-	}
-	c.log.Printf(format, msg...)
-}
-
-func (c *RPCClient) CanUse() bool {
+func (c *RPCClient) canUse() bool {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
 	return c.maxUsing == 0 || atomic.AddInt32(&c.using, 1) < c.maxUsing
@@ -261,19 +229,4 @@ func (c *RPCClient) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
-}
-
-//NewLogger 创建日志组件
-func NewLogger(out io.Writer) Logger {
-	l := log.New(out, "[grpc client] ", log.Ldefault())
-	l.SetOutputLevel(log.Ldebug)
-	return &nLogger{Logger: l}
-}
-
-type nLogger struct {
-	*log.Logger
-}
-
-func (n *nLogger) Fatalln(args ...interface{}) {
-	n.Fatal(args...)
 }

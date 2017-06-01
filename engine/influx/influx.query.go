@@ -7,6 +7,7 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err error) {
@@ -16,7 +17,7 @@ func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err erro
 	}
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	sql, err = input.Get("q")
-	if ctx.Input.Body != nil && err != nil {
+	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
 		sql = ctx.Input.Body.(string)
 		if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "show") {
 			err = fmt.Errorf("输入的SQL语句必须是select或show开头，(%s)", sql)
@@ -35,10 +36,10 @@ func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err erro
 	return sql, nil
 }
 
-func (s *influxProxy) query(ctx *context.Context) (r string, err error) {
+func (s *influxProxy) query(ctx *context.Context) (r string, t int, err error) {
 	sql, err := s.getQueryParams(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	client, err := s.getInfluxClient(ctx)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 func (s *cacheProxy) getDelayParams(ctx *context.Context) (key string, expiresAt int, err error) {
@@ -17,7 +18,7 @@ func (s *cacheProxy) getDelayParams(ctx *context.Context) (key string, expiresAt
 	}
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	key, err = input.Get("key")
-	if ctx.Input.Body != nil && err != nil {
+	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {
@@ -63,14 +64,14 @@ func (s *cacheProxy) getDelayParams(ctx *context.Context) (key string, expiresAt
 	return
 }
 
-func (s *cacheProxy) delay(ctx *context.Context) (r string, err error) {
+func (s *cacheProxy) delay(ctx *context.Context) (r string, t int, err error) {
 	key, expiresAt, err := s.getDelayParams(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	client, err := s.getMemcacheClient(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	err = client.Delay(key, expiresAt)
 	if err != nil {

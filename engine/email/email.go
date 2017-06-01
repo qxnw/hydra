@@ -5,6 +5,7 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type emailProxy struct {
@@ -12,14 +13,14 @@ type emailProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 }
 
 func newEmailProxy() *emailProxy {
 	r := &emailProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/email/send"] = r.sendMail
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -46,12 +47,12 @@ func (s *emailProxy) Handle(svName string, mode string, service string, ctx *con
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, err := s.serviceHandlers[service](ctx)
+	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:email.%v", err)
-		return &context.Response{Status: 500}, err
+		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
 	}
-	return &context.Response{Status: 200, Content: content}, nil
+	return &context.Response{Status: utility.EqualAndSet(t, 0, 200), Content: content}, nil
 }
 
 func (s *emailProxy) Has(shortName, fullName string) (err error) {

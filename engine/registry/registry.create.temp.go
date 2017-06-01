@@ -6,7 +6,7 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *registryProxy) createTempPath(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
 		return
@@ -33,5 +33,6 @@ func (s *registryProxy) createTempPath(ctx *context.Context) (r string, err erro
 	if err != nil {
 		return
 	}
-	return "SUCCESS", nil
+	r = "SUCCESS"
+	return
 }

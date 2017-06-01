@@ -6,7 +6,7 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *registryProxy) createSEQPath(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) createSEQPath(ctx *context.Context) (r string, st int, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
 		return
@@ -33,5 +33,6 @@ func (s *registryProxy) createSEQPath(ctx *context.Context) (r string, err error
 	if err != nil {
 		return
 	}
-	return p, nil
+	r = p
+	return
 }

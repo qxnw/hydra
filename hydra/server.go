@@ -59,7 +59,7 @@ func NewHydraServer(domain string, runMode string, registry string, logger *logg
 //Start 启用服务器
 func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	if strings.EqualFold(cnf.String("status"), server.ST_STOP) {
-		return fmt.Errorf("服务器:%s 配置为:%s", cnf.String("name"), cnf.String("status"))
+		return fmt.Errorf("启动失败:%s 配置为:%s", cnf.String("name"), cnf.String("status"))
 	}
 	h.serverName = cnf.String("name")
 	h.serverType = cnf.String("type")
@@ -76,10 +76,10 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(err:%v)", h.domain, h.serverName, err)
 	}
-	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(h.localServices) == 0 {
+	if !server.IsDebug && strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(h.localServices) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s type:%s(err:engine中未找到任何服务)", h.domain, h.serverName, h.serverType)
 	}
-	h.logger.Infof("engine(%s.%s):已加载服务", h.serverName, h.serverType)
+	//h.logger.Infof("engine(%s.%s):已加载服务", h.serverName, h.serverType)
 	//构建服务器
 	h.server, err = server.NewServer(h.serverType, h.engine, h.serviceRegistry, cnf)
 	if err != nil {

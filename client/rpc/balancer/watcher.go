@@ -41,10 +41,10 @@ func (w *Watcher) Next() ([]*naming.Update, error) {
 		}
 	}
 
-	// generate etcd Watcher
+	// generate etcd/zk Watcher
 	watcherCh, err := w.client.WatchChildren(w.service)
 	if err != nil {
-		return w.getUpdates([]string{}), fmt.Errorf("未找到服务:%s(err:%v)", w.service, err)
+		return w.getUpdates([]string{}), fmt.Errorf("rpc.client.未找到服务:%s(err:%v)", w.service, err)
 	}
 	var watcher r.ChildrenWatcher
 	select {

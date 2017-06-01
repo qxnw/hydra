@@ -3,6 +3,8 @@ package balancer
 import (
 	"sync"
 
+	"github.com/qxnw/lib4go/logger"
+
 	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
@@ -13,8 +15,8 @@ import (
 
 // RoundRobin returns a Balancer that selects addresses round-robin. It uses r to watch
 // the name resolution updates and updates the addresses available correspondingly.
-func RoundRobin(service string, r naming.Resolver, limit map[string]int) CustomerBalancer {
-	return &roundRobin{r: r, limiter: NewLimiter(service, limit)}
+func RoundRobin(service string, r naming.Resolver, limit map[string]int, log *logger.Logger) CustomerBalancer {
+	return &roundRobin{r: r, limiter: NewLimiter(service, limit), Logger: log}
 }
 
 func (rr *roundRobin) UpdateLimiter(lt map[string]int) {
@@ -27,6 +29,7 @@ type addrInfo struct {
 }
 
 type roundRobin struct {
+	*logger.Logger
 	r       naming.Resolver
 	w       naming.Watcher
 	limiter *Limiter
@@ -41,7 +44,7 @@ type roundRobin struct {
 func (rr *roundRobin) watchAddrUpdates() error {
 	updates, err := rr.w.Next()
 	if err != nil {
-		grpclog.Printf("grpc: the naming watcher stops working due to %v.\n", err)
+		rr.Logger.Errorf("grpc: the naming watcher stops working due to %v.\n", err)
 		return err
 	}
 	rr.mu.Lock()
@@ -57,7 +60,7 @@ func (rr *roundRobin) watchAddrUpdates() error {
 			for _, v := range rr.addrs {
 				if addr == v.addr {
 					exist = true
-					grpclog.Println("grpc: The name resolver wanted to add an existing address: ", addr)
+					rr.Logger.Errorf("grpc: The name resolver wanted to add an existing address: ", addr)
 					break
 				}
 			}
@@ -74,7 +77,7 @@ func (rr *roundRobin) watchAddrUpdates() error {
 				}
 			}
 		default:
-			grpclog.Println("Unknown update.Op ", update.Op)
+			grpclog.Fatal("Unknown update.Op ", update.Op)
 		}
 	}
 	// Make a copy of rr.addrs and write it onto rr.addrCh so that gRPC internals gets notified.

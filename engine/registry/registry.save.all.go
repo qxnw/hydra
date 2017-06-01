@@ -11,15 +11,15 @@ import (
 )
 
 //saveAll 无需任何输入参数，直接备份当前域所在目录下的所有配置
-func (s *registryProxy) saveAll(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) saveAll(ctx *context.Context) (r string, st int, err error) {
 	serverData, err := s.getChildrenNodes(fmt.Sprintf("%s/servers", s.domain))
 	if err != nil {
-		return "", err
+		return
 	}
 
 	varData, err := s.getChildrenNodes(fmt.Sprintf("%s/var", s.domain))
 	if err != nil {
-		return "", err
+		return
 	}
 	serverData = append(serverData, varData...)
 	savePath := make([]string, 0, len(serverData))
@@ -28,19 +28,19 @@ func (s *registryProxy) saveAll(ctx *context.Context) (r string, err error) {
 		realPath := fmt.Sprintf("%s/%s", root, strings.Replace(v.path, "/", "-", -1))
 		f, err := file.CreateFile(realPath)
 		if err != nil {
-			return "", err
+			return "", 500, err
 		}
 		_, err = f.Write(v.value)
 		if err != nil {
-			return "", err
+			return "", 500, err
 		}
 		err = f.Close()
 		if err != nil {
-			return "", err
+			return "", 500, err
 		}
 		savePath = append(savePath, realPath)
 	}
-	return fmt.Sprintf("success.%d", len(savePath)), nil
+	return fmt.Sprintf("success.%d", len(savePath)), 200, nil
 }
 func (s *registryProxy) getChildrenNodes(p string) (r []kv, err error) {
 	r = make([]kv, 0, 2)

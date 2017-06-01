@@ -12,7 +12,7 @@ type kv struct {
 	value []byte
 }
 
-func (s *registryProxy) getChildren(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) getChildren(ctx *context.Context) (r string, st int, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
 		return
@@ -33,5 +33,6 @@ func (s *registryProxy) getChildren(ctx *context.Context) (r string, err error) 
 	if err != nil {
 		return
 	}
-	return string(buff), nil
+	r = string(buff)
+	return
 }

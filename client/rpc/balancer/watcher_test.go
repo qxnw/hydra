@@ -39,7 +39,9 @@ func (f testfileChecker) CreateFile(fileName string, data string) error {
 func (f testfileChecker) Delete(fileName string) error {
 	return nil
 }
-
+func (f testfileChecker) WriteFile(fileName string, data string) error {
+	return nil
+}
 func TestWatcher1(t *testing.T) {
 	client, err := registry.NewLocalRegistryWithChcker(testfileChecker{})
 	ut.ExpectSkip(t, err, nil)

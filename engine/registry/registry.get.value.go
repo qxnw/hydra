@@ -17,7 +17,7 @@ type nodeValue struct {
 }
 
 //获取指定path的值
-func (s *registryProxy) getValue(ctx *context.Context) (r string, err error) {
+func (s *registryProxy) getValue(ctx *context.Context) (r string, st int, err error) {
 	input, err := s.getGetParams(ctx)
 	if err != nil {
 		return

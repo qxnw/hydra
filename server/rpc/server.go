@@ -178,7 +178,7 @@ func (s *RPCServer) Close() {
 	s.running = false
 	s.unRegisterService()
 	if s.server != nil {
-		s.logger.Error("rpc: Server closed")
+		s.logger.Infof("rpc: Server closed(%s)", s.serverName)
 		s.server.GracefulStop()
 	}
 }

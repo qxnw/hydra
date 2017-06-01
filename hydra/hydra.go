@@ -137,7 +137,7 @@ func (h *Hydra) Start() (err error) {
 	h.notify = h.watcher.Notify()
 	err = h.watcher.Start()
 	if err != nil {
-		h.Error(fmt.Sprintf("watcher启用失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err))
+		h.Errorf("watcher启用失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err)
 		return
 	}
 	go h.loopCheckNotify()
@@ -157,7 +157,7 @@ LOOP:
 	for {
 		select {
 		case <-interrupt:
-			h.Errorf("hydra server(%s) was killed", h.domain)
+			h.Warnf("hydra server(%s) was killed", h.domain)
 			h.done = true
 			break LOOP
 		}
@@ -226,7 +226,7 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 		return err
 	}
 	h.servers[name] = srv
-	h.Logger.Infof("启动服务器:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
+	h.Logger.Infof("启动成功:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
 	return nil
 }
 func (h *Hydra) changeServer(cnf conf.Conf) error {
@@ -265,9 +265,12 @@ func (h *Hydra) Close() {
 	close(h.closeChan)
 	h.done = true
 	registry.Close()
-	select {
-	case <-h.closedNotify:
-	case <-time.After(time.Second * 3):
+	if len(h.servers) > 0 {
+		select {
+		case <-h.closedNotify:
+		case <-time.After(time.Second * 3):
+		}
+
 	}
 	time.Sleep(time.Millisecond * 100)
 	if h.watcher != nil {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/utility"
 )
 
 func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, tags map[string]string, fields map[string]interface{}, err error) {
@@ -19,7 +20,7 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	fields = make(map[string]interface{})
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	measurement, err = input.Get("measurement")
-	if ctx.Input.Body != nil && err != nil {
+	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {
@@ -100,14 +101,14 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	return
 }
 
-func (s *influxProxy) save(ctx *context.Context) (r string, err error) {
+func (s *influxProxy) save(ctx *context.Context) (r string, st int, err error) {
 	measurement, t, f, err := s.getSaveParams(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	client, err := s.getInfluxClient(ctx)
 	if err != nil {
-		return "", err
+		return
 	}
 	err = client.Send(measurement, t, f)
 	if err != nil {
