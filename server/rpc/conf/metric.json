@@ -1,0 +1,6 @@
+{
+    "host":"192.168.0.185:8086",
+    "dataBase":"hydra",
+    "userName":"hydra",
+    "password":"123456"
+}

@@ -1,0 +1,11 @@
+{
+    "tasks": [
+        {
+            "name": "job001",           
+			"cron":"@every 2s",
+            "service": "/order/request/query",
+			"mode": "http",
+            "args": "host=http://localhost:8800"
+        }
+    ]
+}
