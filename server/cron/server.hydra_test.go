@@ -75,7 +75,7 @@ func TestServer41(t *testing.T) {
 }
 */
 var confstr1 = `{   
-    "status": "starting",
+    "status": "start",
     "package": "1.0.0.1",  
 	"metric": "#@domain/var/db/influxdb",
     "task": "#@path/task"   

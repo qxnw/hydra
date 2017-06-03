@@ -10,6 +10,7 @@ import (
 	_ "github.com/qxnw/hydra/engine/email"
 	_ "github.com/qxnw/hydra/engine/file"
 	_ "github.com/qxnw/hydra/engine/goplugin"
+	_ "github.com/qxnw/hydra/engine/http"
 	_ "github.com/qxnw/hydra/engine/influx"
 	_ "github.com/qxnw/hydra/engine/registry"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"

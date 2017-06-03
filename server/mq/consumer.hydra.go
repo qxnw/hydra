@@ -86,16 +86,16 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			queue := c.String("name")
 			service := c.String("service")
-			action := c.String("action")
+			//action := c.String("action")
 			mode := c.String("mode", "*")
 			args := c.String("args")
-			if queue == "" || service == "" || action == "" {
-				return fmt.Errorf("queue配置错误:name,service,action不能为空（name:%s，service:%s，action:%s）", queue, service, action)
+			if queue == "" || service == "" {
+				return fmt.Errorf("queue配置错误:name,service不能为空（name:%s，service:%s）", queue, service)
 			}
-			queues = append(queues, task{name: queue, service: service, action: action, args: baseArgs + "&" + args, mode: mode})
+			queues = append(queues, task{name: queue, service: service, args: baseArgs + "&" + args, mode: mode})
 		}
 		for _, task := range queues {
-			w.server.Use(task.name, w.handle(task.service, task.mode, task.action, task.args))
+			w.server.Use(task.name, w.handle(task.service, task.mode, "", task.args))
 		}
 
 	}

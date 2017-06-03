@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"strings"
@@ -74,6 +75,14 @@ func NewJSONConfWatcher(domain string, tag string, log *logger.Logger) (w *jsonC
 	w.defTime, _ = time.Parse("2000-01-01", "2006-01-02")
 	return
 }
+func (w *jsonConfWatcher) getPathPrefix() string {
+	prefix := ""
+	if runtime.GOOS == "windows" {
+		p := os.Args[0]
+		prefix = string(p[0]) + ":"
+	}
+	return prefix
+}
 
 //Start 启用配置文件监控
 func (w *jsonConfWatcher) Start() error {
@@ -83,7 +92,7 @@ func (w *jsonConfWatcher) Start() error {
 		return nil
 	}
 	w.isInitialized = true
-	path := fmt.Sprintf("%s/servers", w.domain)
+	path := fmt.Sprintf("%s%s/servers", w.getPathPrefix(), w.domain)
 	w.cacheDir.Set(path, false)
 	w.watchRootChan <- path
 

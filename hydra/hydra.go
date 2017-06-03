@@ -75,7 +75,7 @@ func NewHydra() *Hydra {
 
 //Install 安装参数
 func (h *Hydra) Install() {
-	pflag.StringVarP(&h.domain, "domain name", "n", "", "域名称(必须)")
+	//pflag.StringVarP(&h.domain, "domain name", "n", "", "域名称(必须)")
 	pflag.StringVarP(&h.currentRegistry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
 	pflag.StringVarP(&h.mask, "ip mask", "i", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
 	pflag.StringVarP(&h.tag, "server tag", "t", "", "服务器名称(默认为本机IP地址)")
@@ -85,11 +85,11 @@ func (h *Hydra) Install() {
 }
 func (h *Hydra) checkFlag() (err error) {
 	pflag.Parse()
-	engine.IsDebug = server.IsDebug
-	if h.domain == "" {
-		pflag.Usage()
-		return errors.New("domain name 不能为空")
+	if len(os.Args) < 2 {
+		return errors.New("第一个参数必须为域名称")
 	}
+	engine.IsDebug = server.IsDebug
+	h.domain = os.Args[1]
 	if h.currentRegistry == "" {
 		h.runMode = mode_Standalone
 		h.currentRegistryAddress = []string{"localhost"}

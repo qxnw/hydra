@@ -32,7 +32,7 @@ func NewInfluxMetric() *InfluxMetric {
 func (m *InfluxMetric) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.reporter.influxdb != nil {
+	if m.reporter != nil && m.reporter.influxdb != nil {
 		m.reporter.influxdb.Close()
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 
 	"strings"
 
@@ -35,13 +36,21 @@ func newScriptWorker() *scriptWorker {
 		services:    make([]string, 0, 16),
 	}
 }
-
+func (w *scriptWorker) getPathPrefix() string {
+	prefix := ""
+	if runtime.GOOS == "windows" {
+		p := os.Args[0]
+		prefix = string(p[0]) + ":"
+	}
+	return prefix
+}
 func (s *scriptWorker) Start(ctx *engine.EngineContext) (services []string, err error) {
 	s.domain = ctx.Domain
 	s.serverName = ctx.ServerName
 	s.serverType = ctx.ServerType
 	s.invoker = ctx.Invoker
-	path := fmt.Sprintf("%s/servers/%s/%s/script", s.domain, s.serverName, s.serverType)
+
+	path := fmt.Sprintf("%s%s/servers/%s/%s/script", s.getPathPrefix(), s.domain, s.serverName, s.serverType)
 	p, err := file.GetAbs(path)
 	if err != nil {
 		return
@@ -107,7 +116,7 @@ func (s *scriptWorker) loadService(name string, parent string, root string) (fna
 }
 func (s *scriptWorker) getServiceName(svName string, parent string) string {
 	for _, method := range engine.EXCLUDE {
-		if strings.Contains(svName, method) || strings.Contains(parent, method) {
+		if (!strings.HasSuffix(svName, ".lua") && !strings.HasSuffix(svName, ".luac")) || strings.Contains(svName, method) || strings.Contains(parent, method) {
 			return ""
 		}
 	}

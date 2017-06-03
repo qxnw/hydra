@@ -7,7 +7,13 @@ func Logging() HandlerFunc {
 		start := time.Now()
 		ctx.Info("cron.request:", ctx.server.serverName, ctx.taskName)
 		ctx.DoNext()
-		ctx.Info("cron.response:", ctx.server.serverName, ctx.taskName, ctx.statusCode, time.Since(start))
+		if ctx.statusCode == 200 {
+			ctx.Info("cron.response:", ctx.server.serverName, ctx.taskName, ctx.statusCode, time.Since(start))
+
+		} else {
+			ctx.Error("cron.response:", ctx.server.serverName, ctx.taskName, ctx.statusCode, time.Since(start))
+
+		}
 
 	}
 }

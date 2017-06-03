@@ -12,6 +12,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
 	"github.com/zkfy/cron"
 )
@@ -79,18 +80,17 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
-			action := c.String("action")
 			args := c.String("args")
 			mode := c.String("mode", "*")
 			cronStr := c.String("cron")
-			if name == "" || service == "" || action == "" || cronStr == "" {
-				return fmt.Errorf("task配置错误:name,service,action,cron不能为空（name:%s，service:%s，action:%s,cron:%s）", name, service, action, cronStr)
+			if name == "" || service == "" || cronStr == "" {
+				return fmt.Errorf("task配置错误:name,service,cron不能为空（name:%s，service:%s,cron:%s）", name, service, cronStr)
 			}
 			s, err := cron.ParseStandard(cronStr)
 			if err != nil {
 				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), cronStr, err)
 			}
-			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, baseArgs+"&"+args), fmt.Sprintf("%s-%s", service, action)))
+			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, baseArgs+"&"+args), service))
 		}
 		for _, task := range tasks {
 			w.server.Add(task)
@@ -131,6 +131,8 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		//处理输入参数
 		context := context.GetContext()
 		defer context.Close()
+		context.Input.Input = transform.NewMap(make(map[string]string)).Data
+		context.Input.Params = context.Input.Input
 		context.Ext["hydra_sid"] = task.GetSessionID()
 		context.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {
@@ -151,7 +153,7 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
 			task.statusCode = 500
-			task.err = fmt.Errorf("cron.server.handler.error:%s(%v),err:%v", task.taskName, time.Since(start), task.err)
+			task.err = fmt.Errorf("cron.server.handler.error:%s(%v),err:%v", task.taskName, time.Since(start), err)
 			task.Error(task.err)
 			return task.err
 		}
