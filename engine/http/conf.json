@@ -1,0 +1,17 @@
+{
+    "url": "http://api.upay.com",
+    "method": "get",
+    "header": {
+        "Content-Type": "text/css",
+        "User-Agent": "hydra"
+    },
+    "data": {
+        "_c": "=",
+        "_k": "&",
+        "_sorted": true,
+        "_encrypt": "md5",
+        "id": "@id",
+        "time": "@timestamp",
+        "sign": "{@_raw}"
+    }
+}
