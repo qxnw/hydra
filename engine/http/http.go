@@ -9,16 +9,24 @@ import (
 )
 
 type httpProxy struct {
-	domain     string
-	serverName string
-	serverType string
-	services   []string
+	domain          string
+	serverName      string
+	serverType      string
+	services        []string
+	encrypts        []string
+	serviceHandlers map[string]func(*context.Context) (string, int, error)
 }
 
 func newHTTPProxy() *httpProxy {
 	r := &httpProxy{
 		services: make([]string, 0, 1),
 	}
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
+	r.serviceHandlers["/http/handle"] = r.httpHandle
+	for k := range r.serviceHandlers {
+		r.services = append(r.services, k)
+	}
+	r.encrypts = []string{"md5", "base64", "rsa/sha1", "rsa/md5", "aes", "des"}
 	return r
 }
 
@@ -38,8 +46,10 @@ func (s *httpProxy) Close() error {
 //配置文件格式:{"smtp":"smtp.exmail.qq.com:25", "sender":"yanglei@100bm.cn","password":"12333"}
 
 func (s *httpProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-
-	content, t, err := s.httpHandle(service, ctx)
+	if err = s.Has(service, service); err != nil {
+		return
+	}
+	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:http.%v", err)
 		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
@@ -48,7 +58,12 @@ func (s *httpProxy) Handle(svName string, mode string, service string, ctx *cont
 }
 
 func (s *httpProxy) Has(shortName, fullName string) (err error) {
-	return nil
+	for _, v := range s.services {
+		if v == shortName {
+			return nil
+		}
+	}
+	return fmt.Errorf("engine:http:不存在服务:%s", shortName)
 }
 
 type httpProxyResolver struct {

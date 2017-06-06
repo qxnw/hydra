@@ -61,7 +61,7 @@ func (s *emailProxy) Has(shortName, fullName string) (err error) {
 			return nil
 		}
 	}
-	return fmt.Errorf("不存在服务:%s", shortName)
+	return fmt.Errorf("engine:emmail:不存在服务:%s", shortName)
 }
 
 type emailProxyResolver struct {

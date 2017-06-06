@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/transform"
 )
 
 //WatchServices /api，mq，rpc，cron
@@ -69,6 +70,7 @@ type Conf interface {
 	Translate(format string) string
 	Set(string, string)
 	Len() int
+	Append(t transform.ITransformGetter)
 }
 
 //ParseBool 将字符串转换为bool值
