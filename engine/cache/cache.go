@@ -6,7 +6,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type cacheProxy struct {
@@ -52,9 +52,9 @@ func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *con
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:cache.%v", err)
-		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }
 
 func (s *cacheProxy) Has(shortName, fullName string) (err error) {

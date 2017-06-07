@@ -12,6 +12,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/types"
 )
 
 var plugines map[string]goplugin.PluginWorker
@@ -44,22 +45,21 @@ func (s *goPluginWorker) Start(ctx *engine.EngineContext) (services []string, er
 	s.invoker = ctx.Invoker
 	s.path = append(s.path, fmt.Sprintf("./%s_%s.so", s.serverName, s.serverType))
 	s.path = append(s.path, fmt.Sprintf("./%s.so", s.serverName))
-	//fmt.Println("s.path:", s.path)
 	for _, p := range s.path {
 		rwrk, err := s.loadPlugin(p)
 		if err != nil {
 			return nil, err
 		}
-		if rwrk == nil {
-			continue
+		if rwrk != nil {
+			srvs := rwrk.GetServices()
+			for _, v := range srvs {
+				svName := strings.ToLower(v)
+				s.srvPlugins[svName] = rwrk
+				s.services.SetIfAbsent(svName, svName)
+				services = append(services, svName)
+			}
 		}
-		srvs := rwrk.GetServices()
-		for _, v := range srvs {
-			svName := strings.ToLower(v)
-			s.srvPlugins[svName] = rwrk
-			s.services.SetIfAbsent(svName, svName)
-			services = append(services, svName)
-		}
+
 	}
 
 	return services, nil
@@ -76,9 +76,7 @@ func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx 
 		return &context.Response{Status: 404}, fmt.Errorf("engine:goplugin.未找到服务：%s", svName)
 	}
 	st, rs, pa, err := f.Handle(svName, mode, service, ctx, s.invoker)
-	if err != nil && (st == 0 || st == 200) {
-		st = 500
-	}
+	st = types.DecodeInt(err != nil && (st == 0 || st == 200), true, 500, st)
 	return &context.Response{Status: st, Content: rs, Params: pa}, err
 }
 func (s *goPluginWorker) Has(shortName, fullName string) error {

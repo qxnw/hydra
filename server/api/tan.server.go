@@ -146,7 +146,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			c.BadRequest(fmt.Sprintf("%+v", err))
 			return
 		}
-
 		tfParams := transform.NewGetter(c.Params())
 		tfParams.Set("method", c.Req().Method)
 		tfForm := transform.NewValues(c.Forms().Form)
@@ -157,11 +156,11 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return encoding.Convert(buf, c)
 		}
 		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
-			return cnf.GetContent(), nil
+			return string(cnf), nil
 		}
 		rservice := tfForm.Translate(tfParams.Translate(service))
 		rArgs := tfForm.Translate(tfParams.Translate(args))

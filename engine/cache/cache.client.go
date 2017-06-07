@@ -24,7 +24,7 @@ func (s *cacheProxy) getMemcacheClient(ctx *context.Context) (*memcache.Memcache
 		return nil, err
 	}
 	_, client, err := s.dbs.SetIfAbsentCb(content, func(i ...interface{}) (interface{}, error) {
-		cnf, err := conf.NewJSONConfWithJson(content, 0, nil)
+		cnf, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
 		if err != nil {
 			return nil, fmt.Errorf("args配置错误无法解析:%s(err:%v)", content, err)
 		}

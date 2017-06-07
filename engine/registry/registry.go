@@ -7,7 +7,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type registryProxy struct {
@@ -60,9 +60,9 @@ func (s *registryProxy) Handle(svName string, mode string, service string, ctx *
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:registry %v", err)
-		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }
 func (s *registryProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

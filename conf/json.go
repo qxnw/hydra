@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"time"
-
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
@@ -15,27 +13,29 @@ import (
 
 //JSONConf json配置文件
 type JSONConf struct {
-	data    map[string]interface{}
-	cache   cmap.ConcurrentMap
-	Content string
-	handle  func(path string) (Conf, error)
-	version int32
+	data     map[string]interface{}
+	cache    cmap.ConcurrentMap
+	Content  string
+	handle   func(path string) (Conf, error)
+	getValue func(path string) ([]byte, error)
+	version  int32
 	*transform.Transform
 }
 
-func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf, error)) (r *JSONConf, err error) {
+func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf, error), getValue func(path string) ([]byte, error)) (r *JSONConf, err error) {
 	m := make(map[string]interface{})
 	err = json.Unmarshal([]byte(c), &m)
 	if err != nil {
 		return
 	}
-	m["now"] = time.Now().Format("2006/01/02 15:04:05")
+	//m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
 		Content:   c,
 		data:      m,
 		cache:     cmap.New(),
 		Transform: transform.NewMaps(m),
 		version:   version,
+		getValue:  getValue,
 		handle:    handle,
 	}, nil
 }
@@ -43,18 +43,21 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 func NewJSONConfWithEmpty() *JSONConf {
 	return NewJSONConfWithHandle(make(map[string]interface{}), 0, func(string) (Conf, error) {
 		return NewJSONConfWithEmpty(), nil
+	}, func(string) ([]byte, error) {
+		return nil, nil
 	})
 }
 
 //NewJSONConfWithHandle 根据map和动态获取函数构建
-func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(path string) (Conf, error)) *JSONConf {
-	m["now"] = time.Now().Format("2006/01/02 15:04:05")
+func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(path string) (Conf, error), getValue func(path string) ([]byte, error)) *JSONConf {
+	//m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
 		data:      m,
 		cache:     cmap.New(),
 		Transform: transform.NewMaps(m),
 		version:   version,
 		handle:    handle,
+		getValue:  getValue,
 	}
 }
 func (j *JSONConf) GetContent() string {
@@ -192,12 +195,34 @@ func (j *JSONConf) Int(key string, def ...int) (r int, err error) {
 	return
 }
 
+//GetRawNodeWithValue 获取节点值
+func (j *JSONConf) GetRawNodeWithValue(value string, enableCache ...bool) (r []byte, err error) {
+	if j.getValue == nil {
+		return nil, errors.New("未指定NODE获取方式")
+	}
+
+	ec := true
+	if len(enableCache) > 0 {
+		ec = enableCache[0]
+	}
+	nkey := "_node_row_string_" + value
+	if v, ok := j.cache.Get(nkey); ok && ec {
+		r = v.([]byte)
+		return
+	}
+	if !strings.HasPrefix(value, "#") {
+		return nil, fmt.Errorf("该节点的值不允许使用GetNode方法获取：%s", value)
+	}
+	rx := j.TranslateAll(value[1:], true)
+	r, err = j.getValue(rx)
+	return
+}
+
 //GetNodeWithValue 获取节点值
 func (j *JSONConf) GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error) {
 	if j.handle == nil {
 		return nil, errors.New("未指定NODE获取方式")
 	}
-
 	ec := true
 	if len(enableCache) > 0 {
 		ec = enableCache[0]
@@ -298,7 +323,7 @@ func (j *JSONConf) GetSection(section string) (r Conf, err error) {
 	val := j.data[section]
 	if val != nil {
 		if v, ok := val.(map[string]interface{}); ok {
-			r = NewJSONConfWithHandle(v, j.version, j.handle)
+			r = NewJSONConfWithHandle(v, j.version, j.handle, j.getValue)
 			j.cache.Set(nkey, r)
 			return
 		}
@@ -329,7 +354,7 @@ func (j *JSONConf) GetSections(section string) (cs []Conf, err error) {
 						nmap[x] = y
 					}
 				}
-				cs = append(cs, NewJSONConfWithHandle(nmap, j.version, j.handle))
+				cs = append(cs, NewJSONConfWithHandle(nmap, j.version, j.handle, j.getValue))
 			}
 		}
 		j.cache.Set(nkey, cs)

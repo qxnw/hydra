@@ -75,7 +75,7 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 		return
 	}
 
-	form, err := conf.NewJSONConfWithJson(content, 0, nil)
+	form, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return

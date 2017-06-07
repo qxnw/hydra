@@ -27,7 +27,7 @@ func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, n
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return
 	}
-	form, err := conf.NewJSONConfWithJson(content, 0, nil)
+	form, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return
@@ -55,7 +55,7 @@ func (s *alarmProxy) influxQuery(ctx *context.Context, sql string) (rs []map[str
 		err = fmt.Errorf("sql执行出错:%s，(err:%v)", sql, err)
 		return
 	}
-	queryResult, err := conf.NewJSONConfWithJson(r, 0, nil)
+	queryResult, err := conf.NewJSONConfWithJson(r, 0, nil, nil)
 	if err != nil {
 		return
 	}

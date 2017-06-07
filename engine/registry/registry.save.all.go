@@ -25,7 +25,7 @@ func (s *registryProxy) saveAll(ctx *context.Context) (r string, st int, err err
 	savePath := make([]string, 0, len(serverData))
 	root := fmt.Sprintf("./bak/registry[%s]/%s/", strings.Replace(s.registryAddrs, "/", "-", -1), time.Now().Format("20060102150405"))
 	for _, v := range serverData {
-		realPath := fmt.Sprintf("%s/%s", root, strings.Replace(v.path, "/", "-", -1))
+		realPath := fmt.Sprintf("%s/%s.json", root, strings.Replace(v.path, "/", "-", -1))
 		f, err := file.CreateFile(realPath)
 		if err != nil {
 			return "", 500, err

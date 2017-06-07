@@ -239,12 +239,13 @@ START:
 					continue
 				}
 			}
-			updater.Conf, err = w.getConf(path)
+			cfx, err := w.getConf(path)
 			if err != nil {
 				w.Warnf("节点配置错误：%s(err:%v)", path, err)
 				time.Sleep(time.Second * 5)
 				continue
 			}
+			updater.Conf = cfx.(conf.Conf)
 			v.modTime = modify
 			v.conf = updater.Conf
 			v.send = true
@@ -253,6 +254,16 @@ START:
 	}
 	return
 }
+func (w *jsonConfWatcher) getValue(path string) (r []byte, err error) {
+	buf, err := w.checker.ReadAll(path)
+	if err != nil {
+		return
+	}
+	if len(buf) < 3 {
+		return nil, errors.New("配置文件为空")
+	}
+	return buf, nil
+}
 
 //getConf 获取配置
 func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
@@ -260,12 +271,9 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	if err != nil {
 		return
 	}
-	buf, err := w.checker.ReadAll(path)
+	buf, err := w.getValue(path)
 	if err != nil {
 		return
-	}
-	if len(buf) < 3 {
-		return nil, errors.New("配置文件为空")
 	}
 	c := make(map[string]interface{})
 	err = json.Unmarshal(buf, &c)
@@ -274,7 +282,7 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	}
 	c["domain"] = w.domain
 
-	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf)
+	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf, w.getValue)
 
 	if cc, ok := w.cacheAddress.Get(path); ok {
 		v := cc.(*watcherPath)

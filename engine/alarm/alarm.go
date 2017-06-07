@@ -7,7 +7,7 @@ import (
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/influxdb"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type alarmProxy struct {
@@ -52,9 +52,9 @@ func (s *alarmProxy) Handle(svName string, mode string, service string, ctx *con
 	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:alarm %v", err)
-		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(t, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content}, nil
 
 }
 

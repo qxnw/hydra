@@ -8,7 +8,7 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) {
@@ -21,7 +21,7 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 	if err == nil {
 		return
 	}
-	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
+	if err != nil && !types.IsEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {

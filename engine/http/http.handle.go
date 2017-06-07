@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -40,9 +41,10 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error
 	}
 	content, err := s.getVarParam(ctx, setting)
 	if err != nil {
+		err = fmt.Errorf("args配置错误，args.setting配置的节点:%s获取失败(err:%v)", setting, err)
 		return
 	}
-	config, err := conf.NewJSONConfWithJson(content, 0, nil)
+	config, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
 	if err != nil {
 		return
 	}
@@ -63,28 +65,47 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error
 		header = make(map[string]string)
 	}
 	method := config.String("method", "get") //获取请求方式，可以为空
-	charset := header["charset"]
+	charset := header["Charset"]
 	if charset == "" {
 		charset = "utf-8"
 	}
 
 	input, err := config.GetSection("data") //获取data标签，可以为空
 	if err != nil {
-		input = conf.NewJSONConfWithHandle(make(map[string]interface{}), 0, nil)
+		input = conf.NewJSONConfWithHandle(make(map[string]interface{}), 0, nil, nil)
 		return
 	}
-	input.Append(ctx.Input.Input.(transform.ITransformGetter))
-	input.Append(ctx.Input.Params.(transform.ITransformGetter))
-	values, err := s.GetData(u.Query(), input)
+
+	paraTransform := transform.NewGetter(ctx.Input.Params.(transform.ITransformGetter))
+	paraTransform.Append(ctx.Input.Input.(transform.ITransformGetter))
+	values, raw, err := s.GetData(u.Query(), input, paraTransform)
 	if err != nil {
 		return
 	}
 	requestData := values.Encode()
 	client := http.NewHTTPClient()
-	return client.Request(method, url, requestData, charset, header)
-
+	hc, t, err := client.Request(method, url, requestData, charset, header)
+	if err != nil {
+		return
+	}
+	result := make(map[string]interface{})
+	result["url"] = url
+	result["data"] = requestData
+	result["charset"] = charset
+	result["raw"] = raw
+	if strings.Contains(hc, "{") || strings.Contains(hc, "[") {
+		result["content"] = json.RawMessage(hc)
+	} else {
+		result["content"] = hc
+	}
+	buff, err := json.Marshal(result)
+	if err != nil {
+		return
+	}
+	r = string(buff)
+	return
 }
-func (s *httpProxy) GetData(u url.Values, data conf.Conf) (ua url.Values, err error) {
+func (s *httpProxy) GetData(u url.Values, data conf.Conf, trs *transform.Transform) (ua url.Values, rawStr string, err error) {
 	encrypt := strings.ToLower(data.String("_encrypt", "md5"))
 	hasEncrypt := false
 	for _, v := range s.encrypts {
@@ -95,25 +116,24 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf) (ua url.Values, err er
 	}
 	if !hasEncrypt {
 		err := fmt.Errorf("%s加密方式不支持，只支持:%v", encrypt, s.encrypts)
-		return u, err
+		return u, "", err
 	}
 	kc := data.String("_c", "=")
 	kvConnect := data.String("_k", "&")
 	sorted := data.String("_sorted", "true") == "true"
 	hasTimestamp := data.String("_timestamp", "true") == "true"
 	kvs := make([]string, 0, data.Len())
+	if hasTimestamp {
+		trs.Set("timestamp", time.Now().Format("20060102150405"))
+	}
 	data.Each(func(k string) {
 		if !strings.EqualFold(k, "sign") && !strings.HasPrefix(k, "_") {
 			kvs = append(kvs, fmt.Sprintf("%s", k))
-			u.Add(k, data.String(k))
+			u.Add(k, trs.Translate(data.String(k)))
 		}
 	})
-
+	data.Append(trs.Data)
 	if data.Has("sign") {
-		if hasTimestamp {
-			data.Set("timestamp", time.Now().Format("20160102150405"))
-			kvs = append(kvs, "timestamp")
-		}
 		if sorted {
 			sort.Slice(kvs, func(i, j int) bool {
 				return kvs[i] < kvs[j]
@@ -123,12 +143,13 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf) (ua url.Values, err er
 		for i, k := range kvs {
 			raw.WriteString(k)
 			raw.WriteString(kc)
-			raw.WriteString(data.String(k))
-			if i < len(kvs) {
+			raw.WriteString(trs.Translate(data.String(k)))
+			if i < len(kvs)-1 {
 				raw.WriteString(kvConnect)
 			}
 		}
-		data.Set("_raw", raw.String())
+		rawStr = raw.String()
+		data.Set("_raw", rawStr)
 		var sign string
 		switch encrypt {
 		case "md5":
@@ -137,40 +158,40 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf) (ua url.Values, err er
 			u.Add("sign", base64.URLEncode(data.String("sign")))
 		case "rsa/sha1":
 			if !data.Has("_key") {
-				return u, fmt.Errorf("rsa私钥不能为空")
+				return u, "", fmt.Errorf("rsa私钥不能为空")
 			}
 			if sign, err = rsa.Sign(data.String("sign"), data.String("_key"), "sha1"); err != nil {
-				return u, err
+				return u, "", err
 			}
 			u.Add("sign", sign)
 
 		case "rsa/md5":
 			if !data.Has("_key") {
-				return u, fmt.Errorf("rsa私钥不能为空")
+				return u, "", fmt.Errorf("rsa私钥不能为空")
 			}
 			if sign, err = rsa.Sign(data.String("sign"), data.String("_key"), "md5"); err != nil {
-				return u, err
+				return u, "", err
 			}
 			u.Add("sign", sign)
 		case "aes":
 			if !data.Has("_key") {
-				return u, fmt.Errorf("aes密钥不能为空")
+				return u, "", fmt.Errorf("aes密钥不能为空")
 			}
 			if sign, err = aes.Encrypt(data.String("sign"), data.String("_key")); err != nil {
-				return u, err
+				return u, "", err
 			}
 			u.Add("sign", sign)
 		case "des":
 			if !data.Has("_key") {
-				return u, fmt.Errorf("des密钥不能为空")
+				return u, "", fmt.Errorf("des密钥不能为空")
 			}
 			if sign, err = des.Encrypt(data.String("sign"), data.String("_key")); err != nil {
-				return u, err
+				return u, "", err
 			}
 			u.Add("sign", sign)
 		}
 	}
-	return u, nil
+	return u, rawStr, nil
 }
 func (s *httpProxy) getVarParam(ctx *context.Context, name string) (string, error) {
 	funcVar := ctx.Ext["__func_var_get_"]
@@ -178,7 +199,7 @@ func (s *httpProxy) getVarParam(ctx *context.Context, name string) (string, erro
 		return "", errors.New("未找到__func_var_get_")
 	}
 	if f, ok := funcVar.(func(c string, n string) (string, error)); ok {
-		return f("header", name)
+		return f("setting", name)
 	}
 	return "", errors.New("未找到__func_var_get_传入类型错误")
 }

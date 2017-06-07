@@ -5,7 +5,7 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type httpProxy struct {
@@ -52,9 +52,9 @@ func (s *httpProxy) Handle(svName string, mode string, service string, ctx *cont
 	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:http.%v", err)
-		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(t, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content}, nil
 }
 
 func (s *httpProxy) Has(shortName, fullName string) (err error) {

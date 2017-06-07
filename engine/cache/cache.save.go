@@ -10,7 +10,7 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value string, expiresAt int, err error) {
@@ -20,7 +20,7 @@ func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value stri
 	}
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	key, err = input.Get("key")
-	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
+	if err != nil && !types.IsEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {

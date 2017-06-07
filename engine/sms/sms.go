@@ -6,7 +6,7 @@ import (
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type smsProxy struct {
@@ -50,9 +50,9 @@ func (s *smsProxy) Handle(svName string, mode string, service string, ctx *conte
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:sms.%v", err)
-		return &context.Response{Status: utility.EqualAndSet(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(st, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }
 func (s *smsProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

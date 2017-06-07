@@ -8,7 +8,7 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, tags map[string]string, fields map[string]interface{}, err error) {
@@ -20,7 +20,7 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	fields = make(map[string]interface{})
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	measurement, err = input.Get("measurement")
-	if err != nil && !utility.IsStringEmpty(ctx.Input.Body) {
+	if err != nil && !types.IsEmpty(ctx.Input.Body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
 		if err != nil {

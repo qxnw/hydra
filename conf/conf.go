@@ -60,6 +60,7 @@ type Conf interface {
 	GetSection(section string) (Conf, error)
 	GetIMap(section string) (map[string]interface{}, error)
 	GetSMap(section string) (map[string]string, error)
+	GetRawNodeWithValue(value string, enableCache ...bool) (r []byte, err error)
 	GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error)
 	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)

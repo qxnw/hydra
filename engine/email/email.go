@@ -5,7 +5,7 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/utility"
+	"github.com/qxnw/lib4go/types"
 )
 
 type emailProxy struct {
@@ -50,9 +50,9 @@ func (s *emailProxy) Handle(svName string, mode string, service string, ctx *con
 	content, t, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:email.%v", err)
-		return &context.Response{Status: utility.EqualAndSet(t, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
 	}
-	return &context.Response{Status: utility.EqualAndSet(t, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content}, nil
 }
 
 func (s *emailProxy) Has(shortName, fullName string) (err error) {

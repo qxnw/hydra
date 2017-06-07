@@ -7,13 +7,14 @@ import (
 )
 
 func TestConfig1(t *testing.T) {
-	c := NewJSONConfWithHandle(getMap(), 100, nil)
+	c := NewJSONConfWithHandle(getMap(), 100, nil, nil)
 	root := c.String("root")
-	expect(t, len(c.data), 8+1)
+	///expect(t, len(c.data), 8+1)
+	expect(t, len(c.data), 8)
 	expect(t, root, "api/merchant.api")
 }
 func TestConfig2(t *testing.T) {
-	c := NewJSONConfWithHandle(getMap(), 100, nil)
+	c := NewJSONConfWithHandle(getMap(), 100, nil, nil)
 	qps, err := c.Int("QPS")
 	if err != nil {
 		t.Error(err)
@@ -21,7 +22,7 @@ func TestConfig2(t *testing.T) {
 	expect(t, qps, 1000)
 }
 func TestConfig3(t *testing.T) {
-	c := NewJSONConfWithHandle(getMap(), 100, nil)
+	c := NewJSONConfWithHandle(getMap(), 100, nil, nil)
 	limiter, err := c.GetSections("limit")
 	if err != nil {
 		t.Error(err)
@@ -29,18 +30,18 @@ func TestConfig3(t *testing.T) {
 	expect(t, len(limiter), 2)
 }
 func TestConfig4(t *testing.T) {
-	c := NewJSONConfWithHandle(getMap(), 100, nil)
+	c := NewJSONConfWithHandle(getMap(), 100, nil, nil)
 	routes, err := c.GetSections("routes")
 	if err != nil {
 		t.Error(err)
 	}
 	expect(t, len(routes), 1)
-	expect(t, routes[0].String("to"), "../api/merchant.api/script/:request/starting")
+	expect(t, routes[0].String("to"), "../api/merchant.api/script/@module_@action:request/starting")
 
 }
 func TestConfig5(t *testing.T) {
-	c := NewJSONConfWithHandle(getMap(), 100, nil)
-	r := NewJSONConfWithHandle(getMap2(), 100, nil)
+	c := NewJSONConfWithHandle(getMap(), 100, nil, nil)
+	r := NewJSONConfWithHandle(getMap2(), 100, nil, nil)
 	expect(t, c.Len(), r.Len())
 	router1, err := c.GetSections("routes")
 	if err != nil {
