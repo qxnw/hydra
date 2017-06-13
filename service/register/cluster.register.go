@@ -36,6 +36,10 @@ func (w *clusterServiceRegister) Register(serviceName string, endPointName strin
 		err = fmt.Errorf("service.registry.failed:%s(err:%v)", path, err)
 		return
 	}
+	if b, err := w.registry.Exists(path); !b || err != nil {
+		err = fmt.Errorf("service.registry.failed:节点不存在%s(err:%v)", path, err)
+		return "", err
+	}
 	return path, err
 }
 func (w *clusterServiceRegister) RegisterWithPath(path string, data string) (r string, err error) {
@@ -45,6 +49,10 @@ func (w *clusterServiceRegister) RegisterWithPath(path string, data string) (r s
 	if err != nil {
 		err = fmt.Errorf("service.registry.failed:%s(err:%v)", rpath, err)
 		return
+	}
+	if b, err := w.registry.Exists(r); !b || err != nil {
+		err = fmt.Errorf("service.registry.failed:节点不存在%s(err:%v)", r, err)
+		return "", err
 	}
 	return
 }

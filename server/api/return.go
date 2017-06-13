@@ -124,9 +124,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]json.RawMessage{
-					"data": res,
-				})
+				encoder.Encode(res)
 			case []byte:
 				if statusCode == 0 {
 					statusCode = http.StatusOK

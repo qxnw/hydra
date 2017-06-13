@@ -13,6 +13,7 @@ import (
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/file"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lua4go"
@@ -116,9 +117,12 @@ func (s *scriptWorker) loadService(name string, parent string, root string) (fna
 }
 func (s *scriptWorker) getServiceName(svName string, parent string) string {
 	for _, method := range engine.EXCLUDE {
-		if (!strings.HasSuffix(svName, ".lua") && !strings.HasSuffix(svName, ".luac")) || strings.Contains(svName, method) || strings.Contains(parent, method) {
+		fnames := strings.Contains(svName, method) || strings.Contains(parent, method)
+		extName := (server.IsDebug && strings.HasSuffix(svName, ".luac")) || (!server.IsDebug && (strings.HasSuffix(svName, ".luac") || strings.HasSuffix(svName, ".lua")))
+		if fnames || !extName {
 			return ""
 		}
+
 	}
 	i := strings.LastIndex(svName, ".")
 	return parent + svName[0:i]

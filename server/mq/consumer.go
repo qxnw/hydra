@@ -45,6 +45,7 @@ func WithVersion(version string) TaskOption {
 
 //MQConsumer 消息消费队列服务器
 type MQConsumer struct {
+	domain      string
 	address     string
 	consumer    mq.MQConsumer
 	handlers    []Handler
@@ -56,8 +57,8 @@ type MQConsumer struct {
 }
 
 //NewMQConsumer 构建服务器
-func NewMQConsumer(name string, address string, opts ...TaskOption) (s *MQConsumer, err error) {
-	s = &MQConsumer{serverName: name, address: address, handlers: make([]Handler, 0, 3),
+func NewMQConsumer(domain string, name string, address string, opts ...TaskOption) (s *MQConsumer, err error) {
+	s = &MQConsumer{domain: domain, serverName: name, address: address, handlers: make([]Handler, 0, 3),
 		p: &sync.Pool{
 			New: func() interface{} {
 				return &Context{}
@@ -94,7 +95,7 @@ func (s *MQConsumer) Run() error {
 
 //SetInfluxMetric 重置metric
 func (s *MQConsumer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	s.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.Logger)
 }
 
 //SetName 设置组件的server name

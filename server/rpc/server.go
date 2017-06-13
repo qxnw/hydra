@@ -20,6 +20,7 @@ import (
 
 //RPCServer RPC Server
 type RPCServer struct {
+	domain     string
 	server     *grpc.Server
 	serverName string
 	address    string
@@ -41,7 +42,7 @@ func Version() string {
 
 type serverOption struct {
 	ip           string
-	logger       logger.ILogger
+	logger       *logger.Logger
 	extHandlers  []Handler
 	metric       *InfluxMetric
 	limiter      *Limiter
@@ -55,7 +56,7 @@ type serverOption struct {
 type Option func(*serverOption)
 
 //WithLogger 设置日志记录组件
-func WithLogger(logger logger.ILogger) Option {
+func WithLogger(logger *logger.Logger) Option {
 	return func(o *serverOption) {
 		o.logger = logger
 	}
@@ -64,7 +65,7 @@ func WithLogger(logger logger.ILogger) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *serverOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.logger)
 	}
 }
 
@@ -105,8 +106,8 @@ func WithPlugins(handlers ...Handler) Option {
 }
 
 //NewRPCServer 初始化
-func NewRPCServer(name string, opts ...Option) *RPCServer {
-	s := &RPCServer{serverName: name, Router: NewRouter()}
+func NewRPCServer(domain string, name string, opts ...Option) *RPCServer {
+	s := &RPCServer{domain: domain, serverName: name, Router: NewRouter()}
 	s.serverOption = &serverOption{metric: NewInfluxMetric(), limiter: NewLimiter(map[string]int{})}
 
 	s.process = newProcess(s)
@@ -197,7 +198,7 @@ func (s *RPCServer) UpdateLimiter(limit map[string]int) {
 
 //SetInfluxMetric 重置metric
 func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) error {
-	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.logger)
 	if err != nil {
 		s.logger.Error(err)
 	}

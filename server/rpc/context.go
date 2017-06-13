@@ -28,7 +28,7 @@ type Handler interface {
 }
 type Writer struct {
 	Code int
-	bytes.Buffer
+	*bytes.Buffer
 	isWritten bool
 }
 
@@ -54,7 +54,7 @@ func (ctx *Context) reset(method string, context context.Context, request *pb.Re
 	ctx.method = method
 	ctx.context = context
 	ctx.request = request
-	ctx.Writer = &Writer{Code: 0}
+	ctx.Writer = &Writer{Code: 0, Buffer: bytes.NewBufferString("")}
 	ctx.idx = 0
 	ctx.stage = 0
 	ctx.route = nil

@@ -34,7 +34,7 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 	ctx.invoke()
 	p = &pb.ResponseContext{}
 	p.Status = int32(ctx.Writer.Code)
-	p.Result = ctx.Writer.String()
+	p.Result = string(ctx.Writer.Buffer.Bytes())
 	ctx.Writer.Reset()
 	ctx.Close()
 	r.p.Put(ctx)

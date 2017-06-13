@@ -126,7 +126,7 @@ func (h *Hydra) Start() (err error) {
 		return
 	}
 
-	if err = h.StartStatusServer(); err != nil {
+	if err = h.StartStatusServer(h.domain); err != nil {
 		return
 	}
 	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag, h.Logger, h.currentRegistryAddress)

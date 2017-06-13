@@ -51,7 +51,7 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	input["hydra_sid"] = ctx.Ext["hydra_sid"].(string)
 	status, result, err := s.invoker.Request(service, input, true)
 	if err != nil {
-		err = fmt.Errorf("engine:rpc.%v", err)
+		err = fmt.Errorf("engine:rpc.%v,status：%v,%v", err, status, result)
 	}
 	return &context.Response{Status: status, Content: result}, err
 }

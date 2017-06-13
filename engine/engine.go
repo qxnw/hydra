@@ -14,7 +14,7 @@ var IsDebug = false
 
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
-	EXCLUDE     = []string{"lib", "conf", "config"}
+	EXCLUDE     = []string{"lib", "conf"}
 )
 
 //IWorker 插件

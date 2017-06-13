@@ -18,8 +18,8 @@ type ServerStatus struct {
 	Services []string `json:"srvs,omitempty"`
 }
 
-func (h *Hydra) StartStatusServer() (err error) {
-	ws := api.New("status.server")
+func (h *Hydra) StartStatusServer(domain string) (err error) {
+	ws := api.New(domain, "status.server")
 	ws.Route("GET", "/sys/server/query", func(c *api.Context) {
 		status := make([]ServerStatus, 0, len(h.servers))
 		for _, v := range h.servers {

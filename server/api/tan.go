@@ -23,6 +23,7 @@ func Version() string {
 
 //WebServer web服务器
 type WebServer struct {
+	domain     string
 	server     *http.Server
 	serverName string
 	proto      string
@@ -82,7 +83,7 @@ func WithIP(ip string) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *webServerOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.logger)
 	}
 }
 
@@ -128,7 +129,7 @@ func (t *WebServer) SetHost(host string) {
 
 //SetInfluxMetric 重置metric
 func (t *WebServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan, t.logger)
 	if err != nil {
 		t.logger.Error("启动metric失败：", err)
 	}
@@ -193,8 +194,9 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 }
 
 //New create new server
-func New(name string, opts ...Option) *WebServer {
+func New(domain string, name string, opts ...Option) *WebServer {
 	t := &WebServer{
+		domain:          domain,
 		serverName:      name,
 		Router:          NewRouter(),
 		ErrHandler:      Errors(),

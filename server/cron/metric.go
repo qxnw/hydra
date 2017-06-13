@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/metrics"
 )
 
@@ -19,6 +20,7 @@ type reporter struct {
 	done     bool
 }
 type InfluxMetric struct {
+	logger          *logger.Logger
 	reporter        *reporter
 	registry        cmap.ConcurrentMap
 	mu              sync.Mutex
@@ -37,14 +39,18 @@ func (m *InfluxMetric) Stop() {
 		m.reporter.influxdb.Close()
 	}
 }
-func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, timeSpan time.Duration) (err error) {
+func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, timeSpan time.Duration, lg *logger.Logger) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.reporter != nil && m.reporter.influxdb != nil {
 		m.reporter.influxdb.Close()
 	}
+	m.logger = lg
+	if m.logger == nil {
+		m.logger = logger.GetSession("cron.metric", logger.CreateSession())
+	}
 	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, timeSpan: timeSpan}
-	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password)
+	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password, m.logger)
 	if err != nil {
 		return
 	}
@@ -59,15 +65,15 @@ func (m *InfluxMetric) execute(task *Task) {
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Task) {
 
-	conterName := metrics.MakeName("cron.server.process", metrics.WORKING, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
-	timerName := metrics.MakeName("cron.server.process", metrics.TIMER, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
+	conterName := metrics.MakeName("cron.server.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
+	timerName := metrics.MakeName("cron.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
 
 	process := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	process.Inc(1)
 	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
 
-	responseName := metrics.MakeName("cron.server.response", metrics.METER, "name", ctx.server.serverName, "server",
+	responseName := metrics.MakeName("cron.server.response", metrics.METER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server",
 		ctx.server.ip, "task", ctx.taskName, "status", fmt.Sprintf("%d", ctx.statusCode))
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 }

@@ -59,6 +59,7 @@ func (h HandlerFunc) Handle(ctx *Task) {
 
 //CronServer 基于HashedWheelTimer算法的定时任务
 type CronServer struct {
+	domain     string
 	serverName string
 	length     int
 	index      int
@@ -77,8 +78,8 @@ type CronServer struct {
 }
 
 //NewCronServer 构建定时任务
-func NewCronServer(name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
-	w = &CronServer{serverName: name, length: length, span: span, index: 0}
+func NewCronServer(domain string, name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
+	w = &CronServer{domain: domain, serverName: name, length: length, span: span, index: 0}
 	w.Logger = logger.GetSession("hydra.cron", logger.CreateSession())
 	w.cronOption = &cronOption{metric: NewInfluxMetric(), startTime: time.Now()}
 	w.close = make(chan struct{})
@@ -208,6 +209,7 @@ func (w *CronServer) execute() {
 	w.mu.Unlock()
 }
 func (w *CronServer) move() {
+	time.Sleep(time.Second * 3) //延迟3秒执行，等待服务器就绪
 START:
 	for {
 		select {
@@ -221,7 +223,7 @@ START:
 
 //SetInfluxMetric 重置metric
 func (w *CronServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	w.metric.RestartReport(host, dataBase, userName, password, timeSpan)
+	w.metric.RestartReport(host, dataBase, userName, password, timeSpan, w.Logger)
 }
 
 //StopInfluxMetric stop metric

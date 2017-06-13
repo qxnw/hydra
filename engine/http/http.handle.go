@@ -84,7 +84,8 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error
 	}
 	requestData := values.Encode()
 	client := http.NewHTTPClient()
-	hc, t, err := client.Request(method, url, requestData, charset, header)
+	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.Ext["hydra_sid"])
+	hc, t, err := client.Request(method, url+"?"+requestData, "", charset, header)
 	if err != nil {
 		return
 	}

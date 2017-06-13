@@ -7,6 +7,7 @@ package rpc
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -23,7 +24,7 @@ type StatusResult struct {
 
 const (
 	AutoResponse = iota
-	JsonResponse = iota
+	JsonResponse
 	XmlResponse
 )
 
@@ -89,6 +90,7 @@ func Return() HandlerFunc {
 		if res, ok := ctx.Result.(*StatusResult); ok {
 			statusCode = res.Code
 			result = res.Result
+			rt = res.Type
 		}
 
 		if rt == JsonResponse {
@@ -131,7 +133,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				err := encoder.Encode(result)
+				err := encoder.Encode(res)
 				if err != nil {
 					ctx.Result = err
 					encoder.Encode(map[string]string{
@@ -191,7 +193,6 @@ func Return() HandlerFunc {
 			}
 			return
 		}
-
 		switch res := result.(type) {
 		case AbortError, error:
 			ctx.HandleError()
@@ -207,6 +208,16 @@ func Return() HandlerFunc {
 			}
 			ctx.WriteHeader(statusCode)
 			ctx.WriteString(res)
+		default:
+			if statusCode == 0 {
+				statusCode = http.StatusOK
+			}
+			ctx.WriteHeader(statusCode)
+			_, err := ctx.WriteString(fmt.Sprintf("%+v", res))
+			if err != nil {
+				ctx.Result = err
+				ctx.WriteString(fmt.Sprintf("err:%v", err.Error()))
+			}
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 	"github.com/zkfy/cron"
 )
@@ -31,8 +32,8 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
-		server: NewCronServer(cnf.String("name", "cron.server"),
-			60,
+		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
+			3600,
 			time.Second,
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
@@ -44,8 +45,8 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 //restartServer 重启服务器
 func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
-	w.server = NewCronServer(cnf.String("name", "cron.server"),
-		60,
+	w.server = NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
+		3600,
 		time.Second,
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
@@ -113,7 +114,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -142,18 +143,18 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		}
 
 		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
-			return cnf.GetContent(), nil
+			return string(cnf), nil
 		}
 		//执行服务调用
 		start := time.Now()
 		response, err := w.handler.Handle(task.taskName, mode, service, context)
 		if err != nil {
 			task.statusCode = 500
-			task.err = fmt.Errorf("cron.server.handler.error:%s(%v),err:%v", task.taskName, time.Since(start), err)
+			task.err = fmt.Errorf("cron.server.handler.error:%s,%s(%v),err:%v", task.taskName, types.GetString(response.Content), time.Since(start), err)
 			task.Error(task.err)
 			return task.err
 		}
@@ -163,9 +164,7 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 				response.Status = s
 			}
 		}
-		if response.Status == 0 {
-			response.Status = 200
-		}
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
 		task.Result = response.Content
 		task.statusCode = response.Status
 		return nil

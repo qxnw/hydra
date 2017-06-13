@@ -14,11 +14,13 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
 //hydraWebServer web server适配器
 type hydraMQConsumer struct {
+	domain   string
 	server   *MQConsumer
 	registry server.IServiceRegistry
 	conf     conf.Conf
@@ -32,7 +34,7 @@ func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 	}
-	h.server, err = NewMQConsumer(cnf.String("name", "mq.server"),
+	h.server, err = NewMQConsumer(cnf.String("domain"), cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
 		WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
@@ -47,7 +49,7 @@ func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry
 //restartServer 重启服务器
 func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
-	w.server, err = NewMQConsumer(cnf.String("name", "mq.server"),
+	w.server, err = NewMQConsumer(cnf.String("domain"), cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
@@ -116,7 +118,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -143,11 +145,11 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		}
 		ctx.Ext["hydra_sid"] = task.GetSessionID()
 		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
-			return cnf.GetContent(), nil
+			return string(cnf), nil
 		}
 
 		//执行服务调用
@@ -156,12 +158,12 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		if err != nil {
 			task.statusCode = 500
 			task.err = err
-			task.Errorf(fmt.Sprintf("mq.server.handler.error:%+v", err.Error()))
+			task.Errorf(fmt.Sprintf("mq.server.handler.error:%s %+v", types.GetString(response.Content), err.Error()))
 			if server.IsDebug {
-				task.Errorf("mq:%s(%v),err:%v", task.queue, time.Since(start), task.err)
+				task.Errorf("mq:%s %s(%v),err:%v", task.queue, types.GetString(response.Content), time.Since(start), task.err)
 				return err
 			}
-			task.err = errors.New("Internal Server Error(工作引擎发生异常)")
+			task.err = errors.New(types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content))
 			task.Errorf("mq:%s(%v),err:%v", task.queue, time.Since(start), task.err)
 			return task.err
 		}
@@ -171,9 +173,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 				response.Status = s
 			}
 		}
-		if response.Status == 0 {
-			response.Status = 200
-		}
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
 		task.Result = response.Content
 		task.statusCode = response.Status
 		return nil

@@ -37,7 +37,7 @@ func (c *Context) GetExt() map[string]interface{} {
 
 //Response 响应
 type Response struct {
-	Content string
+	Content interface{}
 	Status  int
 	Params  map[string]interface{}
 }

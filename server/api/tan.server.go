@@ -17,6 +17,7 @@ import (
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -34,7 +35,7 @@ func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry,
 	h = &hydraWebServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
-		server: New(cnf.String("name", "api.server"),
+		server: New(cnf.String("domain"), cnf.String("name", "api.server"),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
 	err = h.setConf(cnf)
@@ -44,7 +45,7 @@ func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry,
 func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	w.server = New(cnf.String("name", "api.server"),
+	w.server = New(cnf.String("domain"), cnf.String("name", "api.server"),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
@@ -123,7 +124,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*10)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*60)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -171,22 +172,24 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		ctx.Input.Args, err = utility.GetMapWithQuery(rArgs)
 		if err != nil {
-			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: 0}
+			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
 			return
 		}
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
 		if err != nil {
-			status := 500
 			if response != nil {
-				status = response.Status
+				response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
 			}
 			c.Errorf(fmt.Sprintf("api.server.handler.error:%+v", err.Error()))
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: status, Result: fmt.Sprintf("%+v", err.Error()), Type: 0}
+				c.Result = &StatusResult{Code: response.Status, Result: fmt.Sprintf("%v %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
 				return
 			}
-			c.Result = &StatusResult{Code: status, Result: "Internal Server Error(工作引擎发生异常)", Type: 0}
+			if response.Content == "" {
+				response.Content = "Internal Server Error(工作引擎发生异常)"
+			}
+			c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: AutoResponse}
 			return
 		}
 
@@ -214,9 +217,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 				response.Status = s
 			}
 		}
-		if response.Status == 0 {
-			response.Status = 200
-		}
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
 		var typeID = JsonResponse
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
@@ -225,13 +226,15 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 				typeID = AutoResponse
 			}
 		}
-
 		if typeID == JsonResponse {
-			response.Content = jsons.Escape(response.Content)
-			if strings.HasPrefix(response.Content, "{") && strings.HasSuffix(response.Content, "}") {
-				c.Result = &StatusResult{Code: response.Status, Result: json.RawMessage(response.Content), Type: typeID}
-				return
+			if strContent, ok := response.Content.(string); ok {
+				strContent = strings.Trim(jsons.Escape(strContent), " ")
+				if strings.HasPrefix(strContent, "{") && strings.HasSuffix(strContent, "}") {
+					c.Result = &StatusResult{Code: response.Status, Result: json.RawMessage(strContent), Type: typeID}
+					return
+				}
 			}
+
 		}
 		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
 	}
@@ -297,6 +300,9 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 	if w.conf.String("address") != conf.String("address") {
+		return true, nil
+	}
+	if w.conf.String("host") != conf.String("host") {
 		return true, nil
 	}
 	routers, err := conf.GetNodeWithSection("router")

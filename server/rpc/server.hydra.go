@@ -14,6 +14,7 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -31,7 +32,7 @@ func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry,
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
-		server: NewRPCServer(cnf.String("name", "rpc.server"),
+		server: NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
@@ -43,7 +44,7 @@ func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry,
 func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	w.server = NewRPCServer(cnf.String("name", "rpc.server"),
+	w.server = NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
@@ -127,7 +128,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			if !strings.Contains(host, "://") {
 				host = "http://" + host
 			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 10*time.Second)
+			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
 		}
 	} else {
 		w.server.StopInfluxMetric()
@@ -194,12 +195,15 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, context)
 		if err != nil {
-			c.Errorf(fmt.Sprintf("rpc.server.handler.error:%+v", err.Error()))
+			c.Errorf(fmt.Sprintf("rpc.server.handler.error:%s %v", types.GetString(response.Content), err))
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf(":%+v", err.Error()), Type: AutoResponse}
+				c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: fmt.Sprintf("%s %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
 				return
 			}
-			c.Result = &StatusResult{Code: 500, Result: "500 Internal Server Error(工作引擎发生异常)", Type: AutoResponse}
+			if response.Content == "" {
+				response.Content = "Internal Server Error(工作引擎发生异常)"
+			}
+			c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: response.Content, Type: AutoResponse}
 			return
 		}
 		if status, ok := response.Params["Status"]; ok {
@@ -209,10 +213,16 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			}
 		}
 		//处理返回参数
-		if response.Status == 0 {
-			response.Status = 200
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
+		var typeID = JsonResponse
+		if tp, ok := response.Params["Content-Type"].(string); ok {
+			if strings.Contains(tp, "xml") {
+				typeID = XmlResponse
+			} else if strings.Contains(tp, "plain") {
+				typeID = AutoResponse
+			}
 		}
-		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: JsonResponse}
+		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
 	}
 }
 
