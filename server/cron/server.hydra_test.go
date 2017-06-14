@@ -28,23 +28,23 @@ func (h contextHandler) Handle(name string, method string, s string, c *context.
 }
 func (h contextHandler) GetPath(p string) (conf.Conf, error) {
 	if strings.HasSuffix(p, "influxdb") {
-		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(metricStr1, h.version, h.GetPath, nil)
 	} else if strings.HasSuffix(p, "task") {
-		return conf.NewJSONConfWithJson(taskStr1, h.version, h.GetPath)
+		return conf.NewJSONConfWithJson(taskStr1, h.version, h.GetPath, nil)
 	}
 	return nil, errors.New("not find")
 }
 
 func TestCronServer1(t *testing.T) {
 	handler := &contextHandler{version: 101, services: make(chan string, 1)}
-	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath, nil)
 	ut.Expect(t, err, nil)
 	_, err = server.NewServer("cron", handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)
 }
 func TestCronServer2(t *testing.T) {
 	handler := &contextHandler{version: 101, services: make(chan string, 1)}
-	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath)
+	conf, err := conf.NewJSONConfWithJson(confstr1, 100, handler.GetPath, nil)
 	ut.Expect(t, err, nil)
 	server, err := newHydraCronServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)

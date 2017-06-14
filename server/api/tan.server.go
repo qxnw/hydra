@@ -226,16 +226,16 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 				typeID = AutoResponse
 			}
 		}
-		if typeID == JsonResponse {
-			if strContent, ok := response.Content.(string); ok {
-				strContent = strings.Trim(jsons.Escape(strContent), " ")
-				if strings.HasPrefix(strContent, "{") && strings.HasSuffix(strContent, "}") {
-					c.Result = &StatusResult{Code: response.Status, Result: json.RawMessage(strContent), Type: typeID}
-					return
-				}
+		if strContent, ok := response.Content.(string); ok {
+			strContent = strings.Trim(jsons.Escape(strContent), " ")
+			if strings.HasPrefix(strContent, "{") && strings.HasSuffix(strContent, "}") {
+				c.Result = &StatusResult{Code: response.Status, Result: json.RawMessage(strContent), Type: typeID}
+				return
 			}
-
+			typeID = AutoResponse
 		}
+
+		fmt.Println("api.params:", response.Params)
 		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
 	}
 }

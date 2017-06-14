@@ -10,7 +10,7 @@ import (
 
 func TestGetOffset1(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron", 10, time.Second, WithStartTime(start))
 	cronStr := "@every 8s"
 	s, err := cron.ParseStandard(cronStr)
 	ut.ExpectSkip(t, err, nil)
@@ -22,7 +22,7 @@ func TestGetOffset1(t *testing.T) {
 }
 func TestGetOffset2(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron", 10, time.Second, WithStartTime(start))
 	cronStr := "@every 11s"
 	s, err := cron.ParseStandard(cronStr)
 	ut.ExpectSkip(t, err, nil)
@@ -34,7 +34,7 @@ func TestGetOffset2(t *testing.T) {
 }
 func TestGetOffset3(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
 	cronStr := "@every 10s"
 	s, err := cron.ParseStandard(cronStr)
@@ -55,7 +55,7 @@ func (ctx *offsetTask) NextTime() time.Time {
 }
 func TestGetOffset5(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
 
 	cronStr := "@every 2s"
@@ -79,7 +79,7 @@ func TestGetOffset5(t *testing.T) {
 }
 func TestGetOffset6(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron", 10, time.Second, WithStartTime(start))
 	timer.index = 4
 	value := 0
 
@@ -112,7 +112,7 @@ func TestGetOffset6(t *testing.T) {
 }
 func TestGetOffset7(t *testing.T) {
 	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
-	timer := NewCronServer("cron.server", 10, time.Second, WithStartTime(start))
+	timer := NewCronServer("hydra", "cron.server", 10, time.Second, WithStartTime(start))
 	timer.index = 4
 
 	cronStr := "@every 2s"
@@ -128,4 +128,26 @@ func TestGetOffset7(t *testing.T) {
 	ut.ExpectSkip(t, timer.slots[offset].Count(), 1)
 	timer.Reset()
 	ut.ExpectSkip(t, timer.slots[offset].Count(), 0)
+}
+func TestGetOffset8(t *testing.T) {
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("hydra", "cron", 2, time.Second, WithStartTime(start))
+	cronStr := "@every 2s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+	next := s.Next(start)
+	offset, round := timer.getOffset(next)
+	ut.Expect(t, offset, 1)
+	ut.Expect(t, round, 1)
+}
+func TestGetOffset9(t *testing.T) {
+	start, _ := time.Parse("2006/01/02 15:04:05", "2099/10/10 10:11:00")
+	timer := NewCronServer("hydra", "cron", 2, time.Second, WithStartTime(start))
+	cronStr := "@every 4s"
+	s, err := cron.ParseStandard(cronStr)
+	ut.ExpectSkip(t, err, nil)
+	next := s.Next(start)
+	offset, round := timer.getOffset(next)
+	ut.Expect(t, offset, 1)
+	ut.Expect(t, round, 2)
 }
