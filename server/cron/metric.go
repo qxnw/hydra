@@ -67,6 +67,8 @@ func (m *InfluxMetric) Handle(ctx *Task) {
 
 	conterName := metrics.MakeName("cron.server.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
 	timerName := metrics.MakeName("cron.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
+	requestName := metrics.MakeName("cron.server.process", metrics.QPS, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
+	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	process := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	process.Inc(1)

@@ -67,6 +67,8 @@ func (m *InfluxMetric) execute(task *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	processName := metrics.MakeName("mq.consumer.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
 	timerName := metrics.MakeName("mq.consumer.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
+	requestName := metrics.MakeName("mq.consumer.process", metrics.QPS, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
+	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
