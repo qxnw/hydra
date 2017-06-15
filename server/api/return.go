@@ -175,9 +175,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(XmlString{
-					Content: res,
-				})
+				ctx.WriteString(res)
 			case []byte:
 				if statusCode == 0 {
 					statusCode = http.StatusOK

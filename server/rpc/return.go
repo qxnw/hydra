@@ -117,17 +117,13 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]string{
-					"data": res,
-				})
+				ctx.WriteString(res)
 			case []byte:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]string{
-					"data": string(res),
-				})
+				ctx.WriteString(string(res))
 			default:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
@@ -156,7 +152,7 @@ func Return() HandlerFunc {
 				})
 			case error:
 				if statusCode == 0 {
-					statusCode = http.StatusOK
+					statusCode = http.StatusInternalServerError
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(XmlError{
@@ -167,17 +163,13 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(XmlString{
-					Content: res,
-				})
+				ctx.WriteString(res)
 			case []byte:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(XmlString{
-					Content: string(res),
-				})
+				ctx.Write(res)
 			default:
 				if statusCode == 0 {
 					statusCode = http.StatusOK

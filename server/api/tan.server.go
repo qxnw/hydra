@@ -177,6 +177,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
+		fmt.Println("content:", response.Content)
 		if err != nil {
 			if response != nil {
 				response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
