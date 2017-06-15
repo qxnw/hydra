@@ -7,6 +7,7 @@ package api
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"reflect"
 )
@@ -81,7 +82,7 @@ func Return() HandlerFunc {
 		}
 
 		var result = ctx.Result
-		var statusCode int = 0
+		var statusCode = 0
 		if res, ok := ctx.Result.(*StatusResult); ok {
 			statusCode = res.Code
 			result = res.Result
@@ -105,7 +106,7 @@ func Return() HandlerFunc {
 				})
 			case error:
 				if statusCode == 0 {
-					statusCode = http.StatusOK
+					statusCode = http.StatusInternalServerError
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
@@ -116,9 +117,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]interface{}{
-					"data": res,
-				})
+				ctx.WriteString(res)
 			case json.RawMessage:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
@@ -130,9 +129,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(map[string]string{
-					"data": string(res),
-				})
+				ctx.Write(res)
 			default:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
@@ -164,7 +161,7 @@ func Return() HandlerFunc {
 				})
 			case error:
 				if statusCode == 0 {
-					statusCode = http.StatusOK
+					statusCode = http.StatusInternalServerError
 				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(XmlError{
@@ -181,9 +178,7 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
-				encoder.Encode(XmlString{
-					Content: string(res),
-				})
+				ctx.Write(res)
 			default:
 				if statusCode == 0 {
 					statusCode = http.StatusOK
@@ -203,6 +198,11 @@ func Return() HandlerFunc {
 		switch res := result.(type) {
 		case AbortError, error:
 			ctx.HandleError()
+			if statusCode == 0 {
+				statusCode = http.StatusInternalServerError
+			}
+			ctx.WriteHeader(statusCode)
+			ctx.WriteString(fmt.Sprintf("%v", res))
 		case []byte:
 			if statusCode == 0 {
 				statusCode = http.StatusOK
@@ -215,6 +215,12 @@ func Return() HandlerFunc {
 			}
 			ctx.WriteHeader(statusCode)
 			ctx.WriteString(res)
+		default:
+			if statusCode == 0 {
+				statusCode = http.StatusOK
+			}
+			ctx.WriteHeader(statusCode)
+			ctx.WriteString(fmt.Sprintf("%v", res))
 		}
 	}
 }
