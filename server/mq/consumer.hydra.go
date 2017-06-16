@@ -1,7 +1,6 @@
 package mq
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,7 +12,9 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
+	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/net"
+	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
@@ -136,11 +137,19 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		var err error
 		ctx := context.GetContext()
 		defer ctx.Close()
-		ctx.Input.Input = json.RawMessage(task.params)
+		data, err := jsons.Unmarshal([]byte(task.params))
+		if err != nil {
+			task.statusCode = 500
+			task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
+			return err
+		}
+		ctx.Input.Input = transform.NewMaps(data)
+		ctx.Input.Params = transform.NewMaps(make(map[string]interface{}))
+		ctx.Input.Body = ""
 		ctx.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {
 			task.statusCode = 500
-			task.Result = err
+			task.Result = fmt.Errorf("args格式错误:%s(err:%v)", args, err)
 			return err
 		}
 		ctx.Ext["hydra_sid"] = task.GetSessionID()
