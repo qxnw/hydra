@@ -143,8 +143,8 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 			task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
 			return err
 		}
-		ctx.Input.Input = transform.NewMaps(data)
-		ctx.Input.Params = transform.NewMaps(make(map[string]interface{}))
+		ctx.Input.Input = transform.NewMaps(data).Data
+		ctx.Input.Params = transform.NewMaps(make(map[string]interface{})).Data
 		ctx.Input.Body = ""
 		ctx.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {
