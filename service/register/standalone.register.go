@@ -26,11 +26,11 @@ func newStandaloneServiceRegister(domain string, serverName string, r registry.C
 }
 
 //Register 服务注册
-func (w *standaloneServiceRegister) Register(serviceName string, endPointName string, data string) (string, error) {
+func (w *standaloneServiceRegister) RegisterTempNode(serviceName string, endPointName string, data string) (string, error) {
 	path := fmt.Sprintf("/%s/services/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
 	return path, w.registry.CreateFile(path, data)
 }
-func (w *standaloneServiceRegister) RegisterWithPath(path string, data string) (string, error) {
+func (w *standaloneServiceRegister) RegisterSeqNode(path string, data string) (string, error) {
 	rp := path + "_" + utility.GetGUID()
 	return rp, w.registry.CreateFile(rp, data)
 }

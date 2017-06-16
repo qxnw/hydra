@@ -95,7 +95,7 @@ func (h *HydraServer) Start(cnf conf.Conf) (err error) {
 	//注册服务列表
 	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) {
 		for _, v := range h.localServices {
-			path, err := h.serviceRegistry.Register(v, strings.Replace(h.server.GetAddress(), "//", "", -1), h.server.GetAddress())
+			path, err := h.serviceRegistry.RegisterTempNode(v, strings.Replace(h.server.GetAddress(), "//", "", -1), h.server.GetAddress())
 			if err != nil {
 				return err
 			}

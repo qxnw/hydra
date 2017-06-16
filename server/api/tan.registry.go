@@ -3,7 +3,7 @@ package api
 func (s *WebServer) registryServer() (err error) {
 	if s.registry != nil {
 		addr := s.GetAddress()
-		s.clusterPath, err = s.registry.RegisterWithPath(s.registryRoot, addr)
+		s.clusterPath, err = s.registry.RegisterSeqNode(s.registryRoot, addr)
 		return
 	}
 	return

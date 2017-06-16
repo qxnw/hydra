@@ -151,8 +151,8 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		}
 		//执行服务调用
 		start := time.Now()
-		//response, err := w.handler.Handle(task.taskName, mode, service, context)
-		response := &context.Response{Status: 200, Content: "success"}
+		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
+		//response := &context.Response{Status: 200, Content: "success"}
 		if err != nil {
 			task.statusCode = 500
 			task.err = fmt.Errorf("cron.server.handler.error:%s,%s(%v),err:%v", task.taskName, types.GetString(response.Content), time.Since(start), err)

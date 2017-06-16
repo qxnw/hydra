@@ -19,8 +19,8 @@ var (
 )
 
 type IServiceRegistry interface {
-	Register(serviceName string, endPointName string, data string) (string, error)
-	RegisterWithPath(path string, data string) (string, error)
+	RegisterTempNode(serviceName string, endPointName string, data string) (string, error)
+	RegisterSeqNode(path string, data string) (string, error)
 	Unregister(path string) error
 	Close() error
 }
