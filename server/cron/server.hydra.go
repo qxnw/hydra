@@ -134,6 +134,7 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 		defer ctx.Close()
 		ctx.Input.Input = transform.NewMap(make(map[string]string)).Data
 		ctx.Input.Params = ctx.Input.Input
+		ctx.Input.Body = ""
 		ctx.Ext["hydra_sid"] = task.GetSessionID()
 		ctx.Input.Args, err = utility.GetMapWithQuery(args)
 		if err != nil {

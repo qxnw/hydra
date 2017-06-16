@@ -222,7 +222,6 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 				typeID = AutoResponse
 			}
 		}
-		fmt.Println("params:", response.Params)
 		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
 	}
 }
