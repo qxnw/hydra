@@ -9,7 +9,7 @@ import (
 	"github.com/qxnw/lib4go/file"
 )
 
-func (s *goPluginWorker) loadPlugin(p string) (r goplugin.PluginWorker, err error) {
+func (s *goPluginWorker) loadPlugin(p string) (r goplugin.Worker, err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	path, err := file.GetAbs(p)
@@ -31,7 +31,7 @@ func (s *goPluginWorker) loadPlugin(p string) (r goplugin.PluginWorker, err erro
 	if err != nil {
 		return nil, fmt.Errorf("未找到函数GetWorker:%s,err:%v", path, err)
 	}
-	wkr, ok := work.(func() goplugin.PluginWorker)
+	wkr, ok := work.(func() goplugin.Worker)
 	if !ok {
 		return nil, fmt.Errorf("GetWorker函数必须为 func() PluginWorker 类型:%s", path)
 	}

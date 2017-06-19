@@ -44,7 +44,7 @@ func (l *LocalRegistry) WatchChildren(path string) (data chan registry.ChildrenW
 				}
 				if t, ok := l.chilren[path]; !ok || t != modify {
 					l.chilren[path] = modify
-					ve := &valuesEntity{}
+					ve := &valuesEntity{path: path}
 					ve.values, ve.Err = l.checker.ReadDir(path)
 					data <- ve
 				}
@@ -77,7 +77,7 @@ func (l *LocalRegistry) WatchValue(path string) (data chan registry.ValueWatcher
 				}
 				if t, ok := l.chilren[path]; !ok || t != modify {
 					l.chilren[path] = modify
-					ve := &valueEntity{}
+					ve := &valueEntity{path: path}
 					ve.Value, ve.Err = l.checker.ReadAll(path)
 					data <- ve
 				}
@@ -153,12 +153,18 @@ func NewLocalRegistryWithChcker(c Checker) (r *LocalRegistry, err error) {
 type valueEntity struct {
 	Value   []byte
 	version int32
+	path    string
 	Err     error
 }
 type valuesEntity struct {
 	values  []string
 	version int32
+	path    string
 	Err     error
+}
+
+func (v *valueEntity) GetPath() string {
+	return v.path
 }
 
 func (v *valueEntity) GetValue() ([]byte, int32) {
@@ -173,6 +179,9 @@ func (v *valuesEntity) GetValue() ([]string, int32) {
 }
 func (v *valuesEntity) GetError() error {
 	return v.Err
+}
+func (v *valuesEntity) GetPath() string {
+	return v.path
 }
 
 type localRegistryResolver struct {

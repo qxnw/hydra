@@ -15,7 +15,7 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
-var plugines map[string]goplugin.PluginWorker
+var plugines map[string]goplugin.Worker
 var mu sync.Mutex
 
 //go build -buildmode=plugin
@@ -24,7 +24,7 @@ type goPluginWorker struct {
 	serverName string
 	serverType string
 	scriptPath string
-	srvPlugins map[string]goplugin.PluginWorker
+	srvPlugins map[string]goplugin.Worker
 	services   cmap.ConcurrentMap
 	invoker    *rpc.RPCInvoker
 	path       []string
@@ -33,7 +33,7 @@ type goPluginWorker struct {
 func newGoPluginWorker() *goPluginWorker {
 	return &goPluginWorker{
 		services:   cmap.New(),
-		srvPlugins: make(map[string]goplugin.PluginWorker),
+		srvPlugins: make(map[string]goplugin.Worker),
 		path:       make([]string, 0, 2),
 	}
 }
@@ -98,6 +98,6 @@ func (s *goResolver) Resolve() engine.IWorker {
 }
 
 func init() {
-	plugines = make(map[string]goplugin.PluginWorker)
+	plugines = make(map[string]goplugin.Worker)
 	engine.Register("go", &goResolver{})
 }
