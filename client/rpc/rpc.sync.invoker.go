@@ -18,6 +18,7 @@ type RpcResult struct {
 	Service string
 	Status  int
 	Result  string
+	Params  map[string]string
 	Err     error
 }
 
@@ -58,51 +59,7 @@ func (r *RPCInvoker) AsyncRequest(service string, input map[string]string, failF
 	result := NewRPCResponse(service)
 	go func() {
 		data := &RpcResult{Service: service}
-		data.Status, data.Result, data.Err = r.Request(service, input, failFast)
-		result.Result <- data
-	}()
-	return result
-}
-
-//AsyncQuery 异步请求
-func (r *RPCInvoker) AsyncQuery(service string, input map[string]string, failFast bool) rpc.IRPCResponse {
-	result := NewRPCResponse(service)
-	go func() {
-		data := &RpcResult{Service: service}
-		data.Status, data.Result, data.Err = r.Query(service, input, failFast)
-		result.Result <- data
-	}()
-	return result
-}
-
-//AsyncDelete 异步请求
-func (r *RPCInvoker) AsyncDelete(service string, input map[string]string, failFast bool) rpc.IRPCResponse {
-	result := NewRPCResponse(service)
-	go func() {
-		data := &RpcResult{Service: service}
-		data.Status, data.Err = r.Delete(service, input, failFast)
-		result.Result <- data
-	}()
-	return result
-}
-
-//AsyncInsert 异步请求
-func (r *RPCInvoker) AsyncInsert(service string, input map[string]string, failFast bool) rpc.IRPCResponse {
-	result := NewRPCResponse(service)
-	go func() {
-		data := &RpcResult{Service: service}
-		data.Status, data.Err = r.Insert(service, input, failFast)
-		result.Result <- data
-	}()
-	return result
-}
-
-//AsyncUpdate 异步请求
-func (r *RPCInvoker) AsyncUpdate(service string, input map[string]string, failFast bool) rpc.IRPCResponse {
-	result := NewRPCResponse(service)
-	go func() {
-		data := &RpcResult{Service: service}
-		data.Status, data.Err = r.Update(service, input, failFast)
+		data.Status, data.Result, data.Params, data.Err = r.Request(service, input, failFast)
 		result.Result <- data
 	}()
 	return result

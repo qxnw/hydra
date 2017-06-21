@@ -200,7 +200,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 				c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: fmt.Sprintf("%s %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
 				return
 			}
-			if response.Content == "" {
+			if response.Content == "" && (response.Status >= 500 || response.Status == 0) {
 				response.Content = "Internal Server Error(工作引擎发生异常)"
 			}
 			c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: response.Content, Type: AutoResponse}

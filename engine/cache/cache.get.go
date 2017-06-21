@@ -18,7 +18,8 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 	}
 	input := ctx.Input.Input.(transform.ITransformGetter)
 	key, err = input.Get("key")
-	if err == nil {
+	if err == nil || key == "" {
+		err = fmt.Errorf("输入参数缺少key")
 		return
 	}
 	if err != nil && !types.IsEmpty(ctx.Input.Body) {
@@ -48,6 +49,7 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 func (s *cacheProxy) get(ctx *context.Context) (r string, t int, err error) {
 	key, err := s.getGetParams(ctx)
 	if err != nil {
+		t = 406
 		return
 	}
 	client, err := s.getMemcacheClient(ctx)

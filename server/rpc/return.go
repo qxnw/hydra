@@ -129,6 +129,9 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
+				if res == nil {
+					return
+				}
 				err := encoder.Encode(res)
 				if err != nil {
 					ctx.Result = err
@@ -175,6 +178,9 @@ func Return() HandlerFunc {
 					statusCode = http.StatusOK
 				}
 				ctx.WriteHeader(statusCode)
+				if result == nil {
+					return
+				}
 				err := encoder.Encode(result)
 				if err != nil {
 					ctx.Result = err
@@ -205,6 +211,9 @@ func Return() HandlerFunc {
 				statusCode = http.StatusOK
 			}
 			ctx.WriteHeader(statusCode)
+			if res == nil {
+				return
+			}
 			_, err := ctx.WriteString(fmt.Sprintf("%+v", res))
 			if err != nil {
 				ctx.Result = err

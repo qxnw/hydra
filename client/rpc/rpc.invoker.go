@@ -94,14 +94,14 @@ func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
 }
 
 //Request 使用RPC调用Request函数
-func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
 	status = 500
 	client, err := r.prepareClient(service)
 	if err != nil {
 		return
 	}
 	rservice, _, _, _ := r.resolvePath(service)
-	status, result, err = client.Request(rservice, input, failFast)
+	status, result, params, err = client.Request(rservice, input, failFast)
 	if status != 200 {
 		if err != nil {
 			err = fmt.Errorf("%s err:%v", result, err)
@@ -110,62 +110,6 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 		}
 	}
 	return
-}
-
-//Delete 使用RPC调用Delete函数
-func (r *RPCInvoker) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
-	status = 500
-	client, err := r.prepareClient(service)
-	if err != nil {
-		return
-	}
-	rservice, _, _, err := r.resolvePath(service)
-	if err != nil {
-		return
-	}
-	return client.Delete(rservice, input, failFast)
-}
-
-//Insert 使用RPC调用Insert函数
-func (r *RPCInvoker) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
-	status = 500
-	client, err := r.prepareClient(service)
-	if err != nil {
-		return
-	}
-	rservice, _, _, err := r.resolvePath(service)
-	if err != nil {
-		return
-	}
-	return client.Insert(rservice, input, failFast)
-}
-
-//Query 使用RPC调用Query函数
-func (r *RPCInvoker) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-	status = 500
-	client, err := r.prepareClient(service)
-	if err != nil {
-		return
-	}
-	rservice, _, _, err := r.resolvePath(service)
-	if err != nil {
-		return
-	}
-	return client.Query(rservice, input, failFast)
-}
-
-//Update 使用RPC调用Update函数
-func (r *RPCInvoker) Update(service string, input map[string]string, failFast bool) (status int, err error) {
-	status = 500
-	client, err := r.prepareClient(service)
-	if err != nil {
-		return
-	}
-	rservice, _, _, err := r.resolvePath(service)
-	if err != nil {
-		return
-	}
-	return client.Update(rservice, input, failFast)
 }
 
 //GetClientPool 获取rpc client

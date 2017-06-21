@@ -132,7 +132,7 @@ func (c *RPCClient) connect() (err error) {
 }
 
 //Request 发送请求
-func (c *RPCClient) Request(service string, input map[string]string, failFast bool) (status int, result string, err error) {
+func (c *RPCClient) Request(service string, input map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
 	atomic.AddInt32(&c.using, 1)
 	defer atomic.AddInt32(&c.using, -1)
 	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
@@ -143,65 +143,8 @@ func (c *RPCClient) Request(service string, input map[string]string, failFast bo
 	}
 	status = int(response.Status)
 	result = response.GetResult()
+	param = response.Params
 	return
-}
-
-//Query 发送请求
-func (c *RPCClient) Query(service string, input map[string]string, failFast bool) (status int, result string, err error) {
-	atomic.AddInt32(&c.using, 1)
-	defer atomic.AddInt32(&c.using, -1)
-	response, err := c.client.Query(context.Background(), &pb.RequestContext{Service: service, Args: input},
-		grpc.FailFast(failFast))
-	if err != nil {
-		status = 500
-		return
-	}
-	status = int(response.Status)
-	result = response.GetResult()
-	return
-}
-
-//Update 发送请求
-func (c *RPCClient) Update(service string, input map[string]string, failFast bool) (status int, err error) {
-	atomic.AddInt32(&c.using, 1)
-	defer atomic.AddInt32(&c.using, -1)
-	response, err := c.client.Update(context.Background(), &pb.RequestContext{Service: service, Args: input},
-		grpc.FailFast(failFast))
-	if err != nil {
-		status = 500
-		return
-	}
-	status = int(response.Status)
-	return
-}
-
-//Insert 发送请求
-func (c *RPCClient) Insert(service string, input map[string]string, failFast bool) (status int, err error) {
-	atomic.AddInt32(&c.using, 1)
-	defer atomic.AddInt32(&c.using, -1)
-	response, err := c.client.Insert(context.Background(), &pb.RequestContext{Service: service, Args: input},
-		grpc.FailFast(failFast))
-	if err != nil {
-		status = 500
-		return
-	}
-	status = int(response.Status)
-	return
-}
-
-//Delete 发送请求
-func (c *RPCClient) Delete(service string, input map[string]string, failFast bool) (status int, err error) {
-	atomic.AddInt32(&c.using, 1)
-	defer atomic.AddInt32(&c.using, -1)
-	response, err := c.client.Delete(context.Background(), &pb.RequestContext{Service: service, Args: input},
-		grpc.FailFast(failFast))
-	if err != nil {
-		status = 500
-		return
-	}
-	status = int(response.Status)
-	return
-
 }
 
 //UpdateLimiter 修改限流规则

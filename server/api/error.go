@@ -35,6 +35,9 @@ func Abort(code int, content ...string) AbortError {
 }
 
 func NotFound(content ...string) AbortError {
+	if len(content) == 0 {
+		return Abort(http.StatusNotFound, "找不到路由")
+	}
 	return Abort(http.StatusNotFound, content...)
 }
 

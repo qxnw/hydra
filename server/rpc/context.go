@@ -215,7 +215,7 @@ func (ctx *Context) Unauthorized() {
 // NotFound writes a 404 HTTP response
 func (ctx *Context) NotFound(message ...string) {
 	if len(message) == 0 {
-		ctx.Abort(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		ctx.Abort(http.StatusNotFound, "找不到路由"+http.StatusText(http.StatusNotFound))
 		return
 	}
 	ctx.Abort(http.StatusNotFound, message[0])
