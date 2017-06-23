@@ -12,13 +12,10 @@ import (
 )
 
 func (s *alarmProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClient, error) {
-	argsMap, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		return nil, fmt.Errorf("Args输入参数类型错误不是map[string]string类型:%v", ctx.Input.Args)
-	}
+	argsMap := ctx.GetArgs()
 	db, ok := argsMap["db"]
 	if db == "" || !ok {
-		return nil, fmt.Errorf("args配置错误，缺少db参数:%v", ctx.Input.Args)
+		return nil, fmt.Errorf("args配置错误，缺少db参数:%v", ctx.GetArgs())
 	}
 	content, err := s.getVarParam(ctx, "db", db)
 	if err != nil {
@@ -51,7 +48,7 @@ func (s *alarmProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClie
 
 }
 func (s *alarmProxy) getVarParam(ctx *context.Context, tpName string, name string) (string, error) {
-	func_var := ctx.Ext["__func_var_get_"]
+	func_var := ctx.GetExt()["__func_var_get_"]
 	if func_var == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

@@ -29,7 +29,7 @@ type watchVarConf struct {
 
 func newWatchVarConf(domain string) *watchVarConf {
 	r := &watchVarConf{domain: domain,
-		cache:      cmap.New(),
+		cache:      cmap.New(2),
 		dirPaths:   make([]string, 10),
 		valuePaths: make([]string, 10),
 	}

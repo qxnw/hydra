@@ -40,7 +40,7 @@ const (
 var registryMap cmap.ConcurrentMap
 
 func init() {
-	registryMap = cmap.New()
+	registryMap = cmap.New(2)
 }
 
 //RegistryResolver 定义配置文件转换方法

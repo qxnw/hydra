@@ -6,7 +6,6 @@ import (
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
 )
 
@@ -37,24 +36,17 @@ func (s *rpcProxy) Close() error {
 	return nil
 }
 func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	input := map[string]string{}
-	if ctx.Input.Input == nil {
-		return &context.Response{Status: 500}, fmt.Errorf("engine:rpc_proxy.输入参数为空:%s", service)
-	}
-	if d, ok := ctx.Input.Input.(transform.ITransformGetter); ok {
-		d.Each(func(k string, v string) {
-			input[k] = v
-		})
-	}
-	if s, ok := ctx.Input.Body.(string); ok {
-		input["__body"] = s
-	}
-	input["hydra_sid"] = ctx.Ext["hydra_sid"].(string)
-	status, result, params, err := s.invoker.Request(service, input, true)
+
+	input := make(map[string]string)
+	ctx.GetInput().Each(func(k string, v string) {
+		input[k] = v
+	})
+	input["__body"] = ctx.GetBody()
+	input["hydra_sid"] = ctx.GetExt()["hydra_sid"].(string)
+	status, result, params, err := s.invoker.Request(service, input, false)
 	if err != nil {
 		err = fmt.Errorf("engine:rpc_proxy.%v,status：%v,%v", err, status, result)
 	}
-
 	return &context.Response{Status: status, Content: result, Params: types.GetIMap(params)}, err
 }
 func (s *rpcProxy) Has(shortName, fullName string) (err error) {

@@ -12,13 +12,9 @@ import (
 )
 
 func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClient, error) {
-	argsMap, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		return nil, fmt.Errorf("Args输入参数类型错误不是map[string]string类型:%v", ctx.Input.Args)
-	}
-	db, ok := argsMap["db"]
+	db, ok := ctx.GetArgs()["db"]
 	if db == "" || !ok {
-		return nil, fmt.Errorf("args配置错误，缺少db参数:%v", ctx.Input.Args)
+		return nil, fmt.Errorf("args配置错误，缺少db参数:%v", ctx.GetArgs())
 	}
 	content, err := s.getVarParam(ctx, db)
 	if err != nil {
@@ -51,7 +47,7 @@ func (s *influxProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxCli
 
 }
 func (s *influxProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	func_var := ctx.Ext["__func_var_get_"]
+	func_var := ctx.GetExt()["__func_var_get_"]
 	if func_var == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

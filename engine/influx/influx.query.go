@@ -6,19 +6,13 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
 )
 
 func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	sql, err = input.Get("q")
-	if err != nil && !types.IsEmpty(ctx.Input.Body) {
-		sql = ctx.Input.Body.(string)
+	sql, err = ctx.GetInput().Get("q")
+	if err != nil && !types.IsEmpty(ctx.GetBody()) {
+		sql = ctx.GetBody()
 		if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "show") {
 			err = fmt.Errorf("输入的SQL语句必须是select或show开头，(%s)", sql)
 			return

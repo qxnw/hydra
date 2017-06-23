@@ -11,13 +11,9 @@ import (
 )
 
 func (s *cacheProxy) getMemcacheClient(ctx *context.Context) (*memcache.MemcacheClient, error) {
-	args, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		return nil, fmt.Errorf("args配置错误，不是map[string]string类型:%v", ctx.Input.Args)
-	}
-	cacheName, ok := args["cache"]
+	cacheName, ok := ctx.GetArgs()["cache"]
 	if cacheName == "" || !ok {
-		return nil, fmt.Errorf("args配置错误，缺少cache参数:%v", ctx.Input.Args)
+		return nil, fmt.Errorf("args配置错误，缺少cache参数:%v", ctx.GetArgs())
 	}
 	content, err := s.getVarParam(ctx, cacheName)
 	if err != nil {
@@ -43,7 +39,7 @@ func (s *cacheProxy) getMemcacheClient(ctx *context.Context) (*memcache.Memcache
 }
 
 func (s *cacheProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.Ext["__func_var_get_"]
+	funcVar := ctx.GetExt()["__func_var_get_"]
 	if funcVar == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

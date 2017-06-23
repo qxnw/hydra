@@ -145,36 +145,39 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		buf, err := c.Body()
 		if err != nil {
 			c.BadRequest(fmt.Sprintf("%+v", err))
+			c.Logger.Errorf("获取body数据失败:%v", err)
 			return
 		}
-		tfParams := transform.NewGetter(c.Params())
-		tfParams.Set("method", c.Req().Method)
-		tfForm := transform.NewValues(c.Forms().Form)
-		ctx.Ext["hydra_sid"] = c.GetSessionID()
-		ctx.Ext["__func_http_request_"] = c.Req()
-		ctx.Ext["__func_http_response_"] = c.ResponseWriter
-		ctx.Ext["__func_body_get_"] = func(c string) (string, error) {
+
+		ext := make(map[string]interface{})
+		ext["hydra_sid"] = c.GetSessionID()
+		ext["__func_http_request_"] = c.Req()
+		ext["__func_http_response_"] = c.ResponseWriter
+		ext["__func_body_get_"] = func(c string) (string, error) {
 			return encoding.Convert(buf, c)
 		}
-		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
 			return string(cnf), nil
 		}
+
+		tfParams := transform.NewGetter(c.Params())
+		tfParams.Set("method", c.Req().Method)
+		tfForm := transform.NewValues(c.Forms().Form)
 		rservice := tfForm.Translate(tfParams.Translate(service))
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 
-		ctx.Input.Input = tfForm.Data
-		ctx.Input.Body = string(buf)
-		ctx.Input.Params = tfParams.Data
-
-		ctx.Input.Args, err = utility.GetMapWithQuery(rArgs)
+		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
 			return
 		}
+
+		ctx.Set(tfForm.Data, tfParams.Data, string(buf), margs, ext)
+
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
 		if err != nil {

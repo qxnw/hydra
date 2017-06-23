@@ -9,15 +9,12 @@ import (
 
 type kv struct {
 	path  string
+	vp    string
 	value []byte
 }
 
 func (s *registryProxy) getChildren(ctx *context.Context) (r string, st int, err error) {
-	input, err := s.getGetParams(ctx)
-	if err != nil {
-		return
-	}
-	p, err := input.Get("path")
+	p, err := ctx.GetInput().Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return

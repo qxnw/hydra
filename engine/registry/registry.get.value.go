@@ -7,8 +7,6 @@ import (
 	"github.com/qxnw/hydra/context"
 
 	"strings"
-
-	"github.com/qxnw/lib4go/transform"
 )
 
 type nodeValue struct {
@@ -18,11 +16,7 @@ type nodeValue struct {
 
 //获取指定path的值
 func (s *registryProxy) getValue(ctx *context.Context) (r string, st int, err error) {
-	input, err := s.getGetParams(ctx)
-	if err != nil {
-		return
-	}
-	p, err := input.Get("path")
+	p, err := ctx.GetInput().Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return
@@ -45,14 +39,5 @@ func (s *registryProxy) getValue(ctx *context.Context) (r string, st int, err er
 		return
 	}
 	r = string(buff)
-	return
-}
-
-func (s *registryProxy) getGetParams(ctx *context.Context) (input transform.ITransformGetter, err error) {
-	if ctx.Input.Input == nil {
-		err = fmt.Errorf("input不能为空:%v", ctx.Input)
-		return
-	}
-	input = ctx.Input.Input.(transform.ITransformGetter)
 	return
 }

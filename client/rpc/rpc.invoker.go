@@ -69,7 +69,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 		domain:        domain,
 		server:        server,
 		address:       address,
-		cache:         cmap.New(),
+		cache:         cmap.New(4),
 		invokerOption: &invokerOption{balancerType: RoundRobin},
 	}
 	for _, opt := range opts {

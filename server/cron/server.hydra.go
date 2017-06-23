@@ -33,7 +33,7 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
-			60,
+			60, // 86400,
 			time.Second,
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
@@ -46,7 +46,7 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	w.server = NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
-		60,
+		60, //86400,
 		time.Second,
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
@@ -81,17 +81,20 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
+			input := c.String("input")
+			body := c.String("body")
 			args := c.String("args")
 			mode := c.String("mode", "*")
 			cronStr := c.String("cron")
 			if name == "" || service == "" || cronStr == "" {
 				return fmt.Errorf("task配置错误:name,service,cron不能为空（name:%s，service:%s,cron:%s）", name, service, cronStr)
 			}
+
 			s, err := cron.ParseStandard(cronStr)
 			if err != nil {
 				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), cronStr, err)
 			}
-			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, baseArgs+"&"+args), service))
+			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, input, body, baseArgs+"&"+args), service))
 		}
 		for _, task := range tasks {
 			w.server.Add(task)
@@ -127,23 +130,58 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 设置路由
-func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) error {
+func (w *hydraCronServer) handle(service, mode, input, body, args string) func(task *Task) error {
 	return func(task *Task) (err error) {
 		//处理输入参数
 		ctx := context.GetContext()
 		defer ctx.Close()
-		ctx.Input.Input = transform.NewMap(make(map[string]string)).Data
-		ctx.Input.Params = ctx.Input.Input
-		ctx.Input.Body = ""
-		ctx.Ext["hydra_sid"] = task.GetSessionID()
-		ctx.Input.Args, err = utility.GetMapWithQuery(args)
+
+		ext := map[string]interface{}{"hydra_sid": task.GetSessionID()}
+		margs, err := utility.GetMapWithQuery(args)
+		if err != nil {
+			task.statusCode = 500
+			task.err = fmt.Errorf("args配置出错(%s)：%v", args, err)
+			task.Result = task.err
+			task.Error(task.err)
+			return
+		}
+		var inputGetter transform.ITransformGetter
+		var paramGetter transform.ITransformGetter
+		var inputBody string
 		if err != nil {
 			task.statusCode = 500
 			task.Result = err
 			return err
 		}
-
-		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+		if input != "" {
+			input, err := utility.GetMapWithQuery(input)
+			if err != nil {
+				task.statusCode = 500
+				task.Result = err
+				return err
+			}
+			inputGetter = transform.NewMap(input).Data
+			paramGetter = inputGetter
+		} else {
+			inputGetter = transform.NewMap(make(map[string]string)).Data
+			paramGetter = inputGetter
+		}
+		if body != "" {
+			if strings.HasPrefix(body, "#") {
+				cnf, err := w.conf.GetRawNodeWithValue(body, true)
+				if err != nil {
+					task.statusCode = 500
+					task.err = err
+					task.Result = err
+					task.Errorf("获取body节点(%s)数据失败:(err:%v)", body, task.err)
+					return err
+				}
+				inputBody = string(cnf)
+			} else {
+				inputBody = body
+			}
+		}
+		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
@@ -151,12 +189,11 @@ func (w *hydraCronServer) handle(service, mode, args string) func(task *Task) er
 			return string(cnf), nil
 		}
 		//执行服务调用
-		start := time.Now()
+		ctx.Set(inputGetter, paramGetter, inputBody, margs, ext)
 		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
-		//response := &context.Response{Status: 200, Content: "success"}
 		if err != nil {
 			task.statusCode = 500
-			task.err = fmt.Errorf("cron.server.handler.error:%s,%s(%v),err:%v", task.taskName, types.GetString(response.Content), time.Since(start), err)
+			task.err = fmt.Errorf("cron.server.handler.error:%s,(%s),err:%v", task.taskName, types.GetString(response.Content), err)
 			task.Error(task.err)
 			return task.err
 		}

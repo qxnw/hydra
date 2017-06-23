@@ -20,7 +20,7 @@ type cacheProxy struct {
 
 func newCacheProxy() *cacheProxy {
 	r := &cacheProxy{
-		dbs:      cmap.New(),
+		dbs:      cmap.New(2),
 		services: make([]string, 0, 4),
 	}
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))

@@ -89,7 +89,7 @@ func NewCronServer(domain string, name string, length int, span time.Duration, o
 		opt(w.cronOption)
 	}
 	for i := 0; i < length; i++ {
-		w.slots[i] = cmap.New()
+		w.slots[i] = cmap.New(2)
 	}
 	w.handlers = append(w.handlers, Recovery(), Logging(), w.metric)
 	return w
@@ -114,7 +114,17 @@ func (w *CronServer) Start() error {
 	go w.move()
 	return nil
 }
+func (w *CronServer) getOffset(next time.Time) (pos int, circle int) {
+	d := next.Sub(time.Now()) //剩余时间
+	delaySeconds := int(d / 1e9)
+	delaySeconds++
+	intervalSeconds := int(w.span.Seconds())
+	circle = int(delaySeconds / intervalSeconds / w.length)
+	pos = int(w.index+delaySeconds/intervalSeconds) % w.length
+	return
+}
 
+/*
 //GetOffset 获取当前任务的偏移量
 func (w *CronServer) getOffset(next time.Time) (offset int, round int) {
 	deadline := next.Sub(w.startTime) //剩余时间
@@ -133,7 +143,7 @@ func (w *CronServer) getOffset(next time.Time) (offset int, round int) {
 	}
 	return
 }
-
+*/
 //Add 添加任务
 func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	w.mu.Lock()

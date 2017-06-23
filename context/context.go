@@ -3,6 +3,8 @@ package context
 import (
 	"encoding/json"
 	"sync"
+
+	"github.com/qxnw/lib4go/transform"
 )
 
 //EngineHandler context handle
@@ -12,27 +14,27 @@ type EngineHandler interface {
 
 //Context 服务输出及Task执行的上下文
 type Context struct {
-	Input InputArgs
-	Ext   map[string]interface{}
+	input InputArgs
+	ext   map[string]interface{}
 }
 
-func (c *Context) GetInput() interface{} {
-	return c.Input.Input
+func (c *Context) GetInput() transform.ITransformGetter {
+	return c.input.input
 }
-func (c *Context) GetArgs() interface{} {
-	return c.Input.Args
+func (c *Context) GetArgs() map[string]string {
+	return c.input.args
 }
-func (c *Context) GetBody() interface{} {
-	return c.Input.Body
+func (c *Context) GetBody() string {
+	return c.input.body
 }
-func (c *Context) GetParams() interface{} {
-	return c.Input.Params
+func (c *Context) GetParams() transform.ITransformGetter {
+	return c.input.params
 }
 func (c *Context) GetJson() string {
-	return c.Input.ToJson()
+	return c.input.ToJson()
 }
 func (c *Context) GetExt() map[string]interface{} {
-	return c.Ext
+	return c.ext
 }
 
 //Response 响应
@@ -47,28 +49,35 @@ var contextPool *sync.Pool
 func init() {
 	contextPool = &sync.Pool{
 		New: func() interface{} {
-			return &Context{Input: InputArgs{},
-				Ext: make(map[string]interface{}),
+			return &Context{input: InputArgs{},
+				ext: make(map[string]interface{}),
 			}
 		},
 	}
 }
 func (c *Context) Close() {
-	c.Input = InputArgs{}
-	c.Ext = make(map[string]interface{})
+	c.input = InputArgs{}
+	c.ext = make(map[string]interface{})
 	contextPool.Put(c)
 }
 
 func GetContext() *Context {
 	return contextPool.Get().(*Context)
 }
+func (c *Context) Set(input transform.ITransformGetter, param transform.ITransformGetter, body string, args map[string]string, ext map[string]interface{}) {
+	c.input.input = input
+	c.input.params = param
+	c.input.args = args
+	c.input.body = body
+	c.ext = ext
+}
 
 //InputArgs 上下文输入参数
 type InputArgs struct {
-	Input  interface{} `json:"input"`
-	Body   interface{} `json:"body"`
-	Params interface{} `json:"params"`
-	Args   interface{} `json:"args"`
+	input  transform.ITransformGetter `json:"input"`
+	body   string                     `json:"body"`
+	params transform.ITransformGetter `json:"params"`
+	args   map[string]string          `json:"args"`
 }
 
 func (c *InputArgs) ToJson() string {

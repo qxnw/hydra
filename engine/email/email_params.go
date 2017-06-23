@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/transform"
 )
 
 type email struct {
@@ -24,35 +23,24 @@ type email struct {
 }
 
 func (s *emailProxy) getGetParams(ctx *context.Context) (mail *email, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
 	mail = &email{mailtype: "Content-Type: text/plain; charset=UTF-8"}
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	receivers, err := input.Get("receiver")
+	receivers, err := ctx.GetInput().Get("receiver")
 	if err != nil || receivers == "" {
 		err = fmt.Errorf("邮件接收人不能为空")
 		return
 	}
 	mail.receiver = strings.Split(receivers, ";")
-	mail.subject, err = input.Get("subject")
+	mail.subject, err = ctx.GetInput().Get("subject")
 	if err != nil || mail.subject == "" {
 		err = fmt.Errorf("邮件标题不能为空")
 		return
 	}
-	mail.content, err = input.Get("content")
+	mail.content, err = ctx.GetInput().Get("content")
 	if err != nil || mail.content == "" {
 		err = fmt.Errorf("邮件内容不能为空")
 		return
 	}
-
-	params, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		err = fmt.Errorf("未设置Args参数")
-		return
-	}
-	setting, ok := params["setting"]
+	setting, ok := ctx.GetArgs()["setting"]
 	if !ok {
 		err = fmt.Errorf("邮件Args.setting配置不能为空")
 		return
@@ -94,7 +82,7 @@ func (s *emailProxy) getGetParams(ctx *context.Context) (mail *email, err error)
 }
 
 func (s *emailProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.Ext["__func_var_get_"]
+	funcVar := ctx.GetExt()["__func_var_get_"]
 	if funcVar == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

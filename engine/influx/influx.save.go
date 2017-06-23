@@ -7,22 +7,17 @@ import (
 	"github.com/qxnw/hydra/context"
 
 	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
 )
 
 func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, tags map[string]string, fields map[string]interface{}, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
+
 	tags = make(map[string]string)
 	fields = make(map[string]interface{})
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	measurement, err = input.Get("measurement")
-	if err != nil && !types.IsEmpty(ctx.Input.Body) {
+	measurement, err = ctx.GetInput().Get("measurement")
+	if err != nil && !types.IsEmpty(ctx.GetBody()) {
 		inputMap := make(map[string]interface{})
-		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
+		inputMap, err = jsons.Unmarshal([]byte(ctx.GetBody()))
 		if err != nil {
 			err = fmt.Errorf("输入的body不是有效的json数据，(err:%v)", err)
 			return
@@ -71,12 +66,12 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 		return
 	}
 
-	tagStr, err := input.Get("tags")
+	tagStr, err := ctx.GetInput().Get("tags")
 	if err != nil {
 		err = errors.New("form中未包含tags标签")
 		return
 	}
-	fieldStr, err := input.Get("fields")
+	fieldStr, err := ctx.GetInput().Get("fields")
 	if err != nil {
 		err = errors.New("form中未包含fields标签")
 		return

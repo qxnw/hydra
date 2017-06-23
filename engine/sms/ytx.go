@@ -26,7 +26,6 @@ import (
 	"github.com/qxnw/lib4go/encoding/base64"
 	"github.com/qxnw/lib4go/net/http"
 	"github.com/qxnw/lib4go/security/md5"
-	"github.com/qxnw/lib4go/transform"
 )
 
 type eSMS struct {
@@ -39,19 +38,14 @@ type eSMS struct {
 }
 
 func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("engine:cache.input,params,args不能为空:%v", ctx.Input)
-		return
-	}
 	sms = &eSMS{header: make(map[string]string)}
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	sms.mobile, err = input.Get("mobile")
+	sms.mobile, err = ctx.GetInput().Get("mobile")
 	if err != nil || sms.mobile == "" {
 		err = fmt.Errorf("接收人手机号不能为空")
 		return
 	}
 
-	data, err := input.Get("data")
+	data, err := ctx.GetInput().Get("data")
 	if err != nil || data == "" {
 		err = fmt.Errorf("短信内容(data)不能为空")
 		return
@@ -60,12 +54,7 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 	for _, v := range datas {
 		sms.data = fmt.Sprintf("%s<data>%s</data>", sms.data, v)
 	}
-	params, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		err = fmt.Errorf("未设置Args参数")
-		return
-	}
-	setting, ok := params["setting"]
+	setting, ok := ctx.GetArgs()["setting"]
 	if !ok {
 		err = fmt.Errorf("Args.setting配置不能为空")
 		return
@@ -127,7 +116,7 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 }
 
 func (s *smsProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.Ext["__func_var_get_"]
+	funcVar := ctx.GetExt()["__func_var_get_"]
 	if funcVar == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

@@ -32,7 +32,7 @@ type goPluginWorker struct {
 
 func newGoPluginWorker() *goPluginWorker {
 	return &goPluginWorker{
-		services:   cmap.New(),
+		services:   cmap.New(2),
 		srvPlugins: make(map[string]goplugin.Worker),
 		path:       make([]string, 0, 2),
 	}

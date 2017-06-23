@@ -167,33 +167,32 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 func (w *hydraRPCServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 		//处理输入参数
-		context := context.GetContext()
-		defer context.Close()
+		ctx := context.GetContext()
+		defer ctx.Close()
 		tfParams := transform.NewGetter(c.Params())
 		tfParams.Set("method", c.Method())
-
 		tfForm := transform.NewMap(c.Req().GetArgs())
 		rArgs := tfForm.Translate(tfParams.Translate(args))
-		context.Ext["hydra_sid"] = c.GetSessionID()
-		var err error
-		context.Input.Input = tfForm.Data
-		context.Input.Params = tfParams.Data
-		context.Input.Body, _ = tfForm.Get("__body")
+		body, _ := tfForm.Get("__body")
+		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}
 
-		context.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
 			return cnf.GetContent(), nil
 		}
-		context.Input.Args, err = utility.GetMapWithQuery(rArgs)
+		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
 			return
 		}
+
+		ctx.Set(tfForm.Data, tfParams.Data, body, margs, ext)
+
 		//执行服务调用
-		response, err := w.handler.Handle(name, mode, c.Req().Service, context)
+		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
 		if err != nil {
 			c.Errorf(fmt.Sprintf("rpc.server.handler.error:%s %v", types.GetString(response.Content), err))
 			if server.IsDebug {

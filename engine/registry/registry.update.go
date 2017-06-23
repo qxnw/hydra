@@ -9,11 +9,8 @@ import (
 
 //根据path,value,version更新指定节点的值
 func (s *registryProxy) updateValue(ctx *context.Context) (r string, st int, err error) {
-	input, err := s.getGetParams(ctx)
-	if err != nil {
-		return
-	}
-	path, err := input.Get("path")
+
+	path, err := ctx.GetInput().Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return
@@ -26,12 +23,12 @@ func (s *registryProxy) updateValue(ctx *context.Context) (r string, st int, err
 		err = fmt.Errorf("节点不存在:%s", path)
 		return
 	}
-	value, err := input.Get("value")
+	value, err := ctx.GetInput().Get("value")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数value")
 		return
 	}
-	version, err := input.Get("version")
+	version, err := ctx.GetInput().Get("version")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数version")
 		return

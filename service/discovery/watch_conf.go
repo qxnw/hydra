@@ -26,7 +26,7 @@ func NewWatchConf(path string, registry registry.Registry, updater chan []*regis
 	return &watchConf{path: path,
 		registry:       registry,
 		notifyConfChan: updater,
-		cacheAddress:   cmap.New(),
+		cacheAddress:   cmap.New(2),
 		timeSpan:       timeSpan}
 }
 

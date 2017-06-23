@@ -8,16 +8,7 @@ import (
 )
 
 func (s *alarmProxy) getQueryParams(ctx *context.Context) (dbSeting conf.Conf, notifySetting conf.Conf, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
-	params, ok := ctx.Input.Args.(map[string]string)
-	if !ok {
-		err = fmt.Errorf("未设置Args参数")
-		return
-	}
-	setting, ok := params["setting"]
+	setting, ok := ctx.GetArgs()["setting"]
 	if !ok {
 		err = fmt.Errorf("Args参数未配置setting属性")
 		return

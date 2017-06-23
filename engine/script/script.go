@@ -138,10 +138,10 @@ func (s *scriptWorker) Handle(svName string, mode string, service string, ctx *c
 	if !ok {
 		return &context.Response{Status: 404}, fmt.Errorf("script plugin 未找到服务：%s", svName)
 	}
-	log := logger.GetSession(svName, ctx.Ext["hydra_sid"].(string))
+	log := logger.GetSession(svName, ctx.GetExt()["hydra_sid"].(string))
 	defer log.Close()
-	ctx.Ext["__func_rpc_invoker_"] = s.invoker
-	input := lua4go.NewContextWithLogger(ctx.Input.ToJson(), ctx.Ext, log)
+	ctx.GetExt()["__func_rpc_invoker_"] = s.invoker
+	input := lua4go.NewContextWithLogger("", ctx.GetExt(), log)
 	result, m, err := s.vm.Call(f, input)
 	if err != nil {
 		err = fmt.Errorf("engine:script:%v", err)

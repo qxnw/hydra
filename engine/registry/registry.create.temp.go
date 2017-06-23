@@ -7,11 +7,7 @@ import (
 )
 
 func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, err error) {
-	input, err := s.getGetParams(ctx)
-	if err != nil {
-		return
-	}
-	path, err := input.Get("path")
+	path, err := ctx.GetInput().Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return
@@ -24,7 +20,7 @@ func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, 
 		err = fmt.Errorf("节点已经存在不能创建:%s", path)
 		return
 	}
-	value, err := input.Get("value")
+	value, err := ctx.GetInput().Get("value")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数value")
 		return

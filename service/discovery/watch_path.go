@@ -27,7 +27,7 @@ type watchPath struct {
 
 func NewWatchPath(domain string, tag string, path string, registry registry.Registry, updater chan []*registry.ServiceUpdater, timeSpan time.Duration) *watchPath {
 	return &watchPath{
-		cacheAddress:  cmap.New(),
+		cacheAddress:  cmap.New(2),
 		watchRootChan: make(chan string, 1),
 		domain:        domain,
 		tag:           tag,

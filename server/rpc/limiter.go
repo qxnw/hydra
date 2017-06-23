@@ -11,7 +11,7 @@ type Limiter struct {
 //NewLimiter 创建流程限制组件
 func NewLimiter(lt map[string]int) *Limiter {
 	m := &Limiter{}
-	m.data = cmap.New()
+	m.data = cmap.New(4)
 	for k, v := range lt {
 		m.data.Set(k, float64(v))
 	}

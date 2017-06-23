@@ -7,20 +7,14 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
 )
 
 func (s *cacheProxy) getDelayParams(ctx *context.Context) (key string, expiresAt int, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
-	input := ctx.Input.Input.(transform.ITransformGetter)
-	key, err = input.Get("key")
-	if err != nil && !types.IsEmpty(ctx.Input.Body) {
+	key, err = ctx.GetInput().Get("key")
+	if err != nil && !types.IsEmpty(ctx.GetBody()) {
 		inputMap := make(map[string]interface{})
-		inputMap, err = jsons.Unmarshal([]byte(ctx.Input.Body.(string)))
+		inputMap, err = jsons.Unmarshal([]byte(ctx.GetBody()))
 		if err != nil {
 			err = fmt.Errorf("body不是有效的json数据，(err:%v)", err)
 			return
@@ -46,12 +40,12 @@ func (s *cacheProxy) getDelayParams(ctx *context.Context) (key string, expiresAt
 		}
 		return key, expiresAt, nil
 	}
-	key, err = input.Get("key")
+	key, err = ctx.GetInput().Get("key")
 	if err != nil {
 		err = errors.New("form中未包含key标签")
 		return
 	}
-	expires, err := input.Get("expiresAt")
+	expires, err := ctx.GetInput().Get("expiresAt")
 	if err != nil {
 		err = errors.New("form中未包含expiresAt标签")
 		return

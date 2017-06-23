@@ -33,7 +33,7 @@ func NewRegistryConfWatcher(domain string, serverName string, registry registry.
 		watchRootChan:  make(chan string, 1),
 		notifyConfChan: make(chan *conf.Updater, 10),
 		closeChan:      make(chan struct{}),
-		watchPaths:     cmap.New(),
+		watchPaths:     cmap.New(2),
 		registry:       registry,
 		timeSpan:       time.Second,
 		domain:         domain,

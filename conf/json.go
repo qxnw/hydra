@@ -32,7 +32,7 @@ func NewJSONConfWithJson(c string, version int32, handle func(path string) (Conf
 	return &JSONConf{
 		Content:   c,
 		data:      m,
-		cache:     cmap.New(),
+		cache:     cmap.New(8),
 		Transform: transform.NewMaps(m),
 		version:   version,
 		getValue:  getValue,
@@ -53,7 +53,7 @@ func NewJSONConfWithHandle(m map[string]interface{}, version int32, handle func(
 	//m["now"] = time.Now().Format("2006/01/02 15:04:05")
 	return &JSONConf{
 		data:      m,
-		cache:     cmap.New(),
+		cache:     cmap.New(8),
 		Transform: transform.NewMaps(m),
 		version:   version,
 		handle:    handle,

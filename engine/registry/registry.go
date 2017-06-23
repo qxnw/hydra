@@ -33,6 +33,7 @@ func newRegistryProxy() *registryProxy {
 	r.serviceHandlers["/registry/create/ephemeral/path"] = r.createTempPath
 	r.serviceHandlers["/registry/create/sequence/path"] = r.createSEQPath
 	r.serviceHandlers["/registry/update/value"] = r.updateValue
+	r.serviceHandlers["/registry/domain/copy"] = r.domainCopy
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}

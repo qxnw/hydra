@@ -22,7 +22,7 @@ type alarmProxy struct {
 func newAlarmProxy() *alarmProxy {
 	r := &alarmProxy{
 		services: make([]string, 0, 1),
-		dbs:      cmap.New(),
+		dbs:      cmap.New(2),
 	}
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/alarm/influx/wx"] = r.influx2wx

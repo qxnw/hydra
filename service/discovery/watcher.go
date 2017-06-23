@@ -28,7 +28,7 @@ func newServiceDiscovery(domain string, sysName string, r registry.Registry) (w 
 	w = &serviceDiscovery{
 		watchRootChan:  make(chan string, 10),
 		notifyConfChan: make(chan []*registry.ServiceUpdater, 1),
-		watchPaths:     cmap.New(),
+		watchPaths:     cmap.New(2),
 		registry:       r,
 		timeSpan:       time.Second,
 		domain:         domain,

@@ -36,7 +36,7 @@ func NewWatchPath(domain string, serverName string, path string, registry regist
 		updater:      updater,
 		timeSpan:     timeSpan,
 		path:         path,
-		cacheAddress: cmap.New(),
+		cacheAddress: cmap.New(2),
 		Logger:       log,
 		closeChan:    make(chan struct{}),
 	}

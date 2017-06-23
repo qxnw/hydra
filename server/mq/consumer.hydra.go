@@ -89,7 +89,6 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		for _, c := range rts {
 			queue := c.String("name")
 			service := c.String("service")
-			//action := c.String("action")
 			mode := c.String("mode", "*")
 			args := c.String("args")
 			if queue == "" || service == "" {
@@ -143,17 +142,18 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 			task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
 			return err
 		}
-		ctx.Input.Input = transform.NewMaps(data).Data
-		ctx.Input.Params = transform.NewMaps(make(map[string]interface{})).Data
-		ctx.Input.Body = ""
-		ctx.Input.Args, err = utility.GetMapWithQuery(args)
+		margs, err := utility.GetMapWithQuery(args)
 		if err != nil {
 			task.statusCode = 500
 			task.Result = fmt.Errorf("args格式错误:%s(err:%v)", args, err)
 			return err
 		}
-		ctx.Ext["hydra_sid"] = task.GetSessionID()
-		ctx.Ext["__func_var_get_"] = func(c string, n string) (string, error) {
+
+		input := transform.NewMaps(data).Data
+		params := transform.NewMaps(make(map[string]interface{})).Data
+		ext := make(map[string]interface{})
+		ext["hydra_sid"] = task.GetSessionID()
+		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
@@ -162,18 +162,18 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		}
 
 		//执行服务调用
-		start := time.Now()
+		ctx.Set(input, params, "", margs, ext)
 		response, err := w.handler.Handle(task.queue, mode, service, ctx)
 		if err != nil {
 			task.statusCode = 500
 			task.err = err
 			task.Errorf(fmt.Sprintf("mq.server.handler.error:%s %+v", types.GetString(response.Content), err.Error()))
 			if server.IsDebug {
-				task.Errorf("mq:%s %s(%v),err:%v", task.queue, types.GetString(response.Content), time.Since(start), task.err)
+				task.Errorf("mq:%s %s,err:%v", task.queue, types.GetString(response.Content), task.err)
 				return err
 			}
 			task.err = errors.New(types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content))
-			task.Errorf("mq:%s(%v),err:%v", task.queue, time.Since(start), task.err)
+			task.Errorf("mq:%s,err:%v", task.queue, task.err)
 			return task.err
 		}
 		if status, ok := response.Params["Status"]; ok {

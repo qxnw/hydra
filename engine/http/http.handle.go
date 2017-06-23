@@ -23,20 +23,12 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
+//httpHandle get请求,input获取参数
+//body
 func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error) {
-	if ctx.Input.Input == nil || ctx.Input.Args == nil || ctx.Input.Params == nil {
-		err = fmt.Errorf("input,params,args不能为空:%v", ctx.Input)
-		return
-	}
-
-	args, ok := ctx.Input.Args.(map[string]string)
+	setting, ok := ctx.GetArgs()["setting"]
 	if !ok {
-		err = fmt.Errorf("args类型错误必须为map[string]string:%v", ctx.Input)
-		return
-	}
-	setting, ok := args["setting"]
-	if !ok {
-		err = fmt.Errorf("args配置错误，未指定setting参数的值:%v", args)
+		err = fmt.Errorf("args配置错误，未指定setting参数的值:%v", ctx.GetArgs())
 		return
 	}
 	content, err := s.getVarParam(ctx, setting)
@@ -76,15 +68,15 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error
 		return
 	}
 
-	paraTransform := transform.NewGetter(ctx.Input.Params.(transform.ITransformGetter))
-	paraTransform.Append(ctx.Input.Input.(transform.ITransformGetter))
+	paraTransform := transform.NewGetter(ctx.GetParams())
+	paraTransform.Append(ctx.GetInput())
 	values, raw, err := s.GetData(u.Query(), input, paraTransform)
 	if err != nil {
 		return
 	}
 	requestData := values.Encode()
 	client := http.NewHTTPClient()
-	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.Ext["hydra_sid"])
+	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.GetExt()["hydra_sid"])
 	hc, t, err := client.Request(method, url+"?"+requestData, "", charset, header)
 	if err != nil {
 		return
@@ -195,7 +187,7 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf, trs *transform.Transfo
 	return u, rawStr, nil
 }
 func (s *httpProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.Ext["__func_var_get_"]
+	funcVar := ctx.GetExt()["__func_var_get_"]
 	if funcVar == nil {
 		return "", errors.New("未找到__func_var_get_")
 	}

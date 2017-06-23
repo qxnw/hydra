@@ -14,7 +14,7 @@ type Limiter struct {
 func NewLimiter(service string, lt map[string]int) *Limiter {
 	m := &Limiter{currentService: service}
 	m.metricRegistry = metrics.NewRegistry()
-	m.settings = cmap.New()
+	m.settings = cmap.New(8)
 	for k, v := range lt {
 		m.settings.Set(k, float64(v))
 	}

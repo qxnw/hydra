@@ -22,7 +22,7 @@ type influxProxy struct {
 func newInfluxProxy() *influxProxy {
 	r := &influxProxy{
 		services: make([]string, 0, 4),
-		dbs:      cmap.New(),
+		dbs:      cmap.New(2),
 	}
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
 	r.serviceHandlers["/influx/save"] = r.save
