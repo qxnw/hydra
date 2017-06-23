@@ -60,6 +60,16 @@ func TestCronServer2(t *testing.T) {
 	ut.Expect(t, sv, "/order/request:request")
 
 }
+func TestCronServer3(t *testing.T) {
+	server := NewCronServer("", "", 60, time.Second)
+	p, c := server.getOffset(time.Now().Add(90 * time.Second))
+	ut.Expect(t, p, 30)
+	ut.Expect(t, c, 1)
+
+	p, c = server.getOffset(time.Now().Add(300 * time.Second))
+	ut.Expect(t, p, 0)
+	ut.Expect(t, c, 5)
+}
 
 /*
 func TestServer41(t *testing.T) {

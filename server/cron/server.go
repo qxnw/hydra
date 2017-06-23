@@ -116,8 +116,7 @@ func (w *CronServer) Start() error {
 }
 func (w *CronServer) getOffset(next time.Time) (pos int, circle int) {
 	d := next.Sub(time.Now()) //剩余时间
-	delaySeconds := int(d / 1e9)
-	delaySeconds++
+	delaySeconds := int(d/1e9) + 1
 	intervalSeconds := int(w.span.Seconds())
 	circle = int(delaySeconds / intervalSeconds / w.length)
 	pos = int(w.index+delaySeconds/intervalSeconds) % w.length
@@ -207,13 +206,13 @@ func (w *CronServer) execute() {
 	current := w.slots[w.index]
 	current.RemoveIterCb(func(k string, value interface{}) bool {
 		task := value.(*cronTask)
-		task.round--
-		task.executed++
-		go w.handle(task)
-		if task.round <= 0 {
+		if task.round == 0 {
+			go w.handle(task)
 			atomic.AddInt32(&w.taskCount, -1)
 			return true
 		}
+		task.round--
+		task.executed++
 		return false
 	})
 	w.mu.Unlock()
