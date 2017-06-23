@@ -1,4 +1,8 @@
-# hydra  通用服务器，提供http api server, rpc server, mq consumer,cron server
+# hydra
+通用业务基础框架，一个框架集成http,rpc,mq,job等server,并提供一致的业务监控，日志存储，服务注册与发现，负载均衡，限流，限量，自动更新等统一治理
+
+
+ 通用服务器，提供http api server, rpc server, mq consumer,cron server
 * 通过注册中心(目前支持zookeeper,本地文件)集中管理，本地零配置。服务器启动后自动从注册中心拉取配置，根据配置启动服务器。
 * 启动的服务器为每个域(系统)配置的不同类型服务器，可以是一个或多个根据配置标识指定，配置变化后自动更新本地配置，必要时自动安全重启。
 * 服务器自动采集请求数据，对并发数，请求时长，请求状态码等进行计数，定时发送到influxdb, 可通过grafana配置图形报表显示
