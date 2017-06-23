@@ -1,5 +1,5 @@
 # hydra 
-通用服务框架，实现一个框架集成多个服务如：http server,rpc server,mq consumer,job server等,并提供一致的业务监控，日志存储，服务注册与发现，负载均衡，限流，限量，自动更新等统一治理可通过go或lua编写业务代码，并集成:缓存服务，数据库服务，邮件服务，短信服务，RCP代理,MOCK等基础服务
+通用服务框架，实现一个框架集成多个服务器如：http server,rpc server,mq consumer,job server等,并提供一致的业务监控，日志存储，服务注册与发现，负载均衡，限流，限量，自动更新等统一治理可通过go或lua编写业务代码，并集成:缓存服务，数据库服务，邮件服务，短信服务，RCP代理,MOCK等基础服务引擎
 
   hydra特点
 * 部署简单: 本地零配置，通过服务治理中心简单配置即可启动; 每台服务器可部署多个hydra,每个hydra可启动多个服务
@@ -10,6 +10,16 @@
 * 服务治理: 通过zookeeper注册与发现服务，多种负载均衡，流量控制，灰度发布等
 * 简单高效: http api以tango，rpc以grpc,cron以timewheel为基础进行开发，逻辑简单可应付大流量场景
 
+ # 服务器介绍
+   http api server
+* 支持RESTful,适合以http接口作为服务的场景，将go,lua或集成服务，配置到http路由配置中即可供外部调用
+* 服务器监控址，路由变化后自动重启(不影响业务)
+* 将可将执行配置为rpc模式，则可将RPC服务转换为http服务供外部调用
+* 配置执行引擎为mock模式，则可以根据配置返回内容，可用于基本的打桩测试
+
+
+
+
 
 
 
@@ -18,4 +28,3 @@
     go get github.com/qxnw/hydra
 
 
-    
