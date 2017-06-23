@@ -13,6 +13,6 @@
 
 
 
-## Download and install
+## 下载 安装
 
     go get github.com/qxnw/hydra
