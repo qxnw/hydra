@@ -29,7 +29,7 @@ func (w *Watcher) Close() {
 	close(w.closeCh)
 }
 
-// Next to return the updates
+// Next 监控服务器地址变化,监控发生异常时移除所有服务,否则等待服务器地址变化
 func (w *Watcher) Next() ([]*naming.Update, error) {
 	w.lastErr = nil
 	if !w.isInitialized {
@@ -44,7 +44,7 @@ func (w *Watcher) Next() ([]*naming.Update, error) {
 	// generate etcd/zk Watcher
 	watcherCh, err := w.client.WatchChildren(w.service)
 	if err != nil {
-		return w.getUpdates([]string{}), fmt.Errorf("rpc.client.未找到服务:%s(err:%v)", w.service, err)
+		return nil, fmt.Errorf("rpc.client.未找到服务:%s(err:%v)", w.service, err)
 	}
 	var watcher r.ChildrenWatcher
 	select {

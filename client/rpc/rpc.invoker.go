@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -69,7 +68,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 		domain:        domain,
 		server:        server,
 		address:       address,
-		cache:         cmap.New(4),
+		cache:         cmap.New(8),
 		invokerOption: &invokerOption{balancerType: RoundRobin},
 	}
 	for _, opt := range opts {
@@ -102,20 +101,20 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 	}
 	rservice, _, _, _ := r.resolvePath(service)
 	status, result, params, err = client.Request(rservice, input, failFast)
-	if status != 200 {
+	if status != 200 || err != nil {
 		if err != nil {
-			err = fmt.Errorf("%s err:%v", result, err)
+			err = fmt.Errorf("rpc request error:%d,%s err:%v", status, result, err)
 		} else {
-			err = errors.New(result)
+			err = fmt.Errorf("rpc request error:%d,%s", status, result)
 		}
 	}
 	return
 }
 
-//GetClientPool 获取rpc client
+//GetClientFromPool 获取rpc client
 //addr 支持格式:
 //order.request#merchant.hydra,order.request,order.request@api.hydra,order.request@api
-func (r *RPCInvoker) GetClientPool(addr string) (c *RPCClientPool, err error) {
+func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClientPool, err error) {
 	service, domain, server, err := r.resolvePath(addr)
 	if err != nil {
 		return
@@ -134,7 +133,7 @@ func (r *RPCInvoker) GetClientPool(addr string) (c *RPCClientPool, err error) {
 			opts = append(opts, WithLocalFirstBalancer(rs, rsrvs, r.localPrefix, map[string]int{}))
 		default:
 		}
-		return NewRPCClientPool(r.address, 100, time.Second*300, opts...)
+		return NewRPCClientPool(r.address, 100, time.Minute*60, opts...)
 	}, fullService)
 	if err != nil {
 		return
@@ -146,7 +145,7 @@ func (r *RPCInvoker) GetClientPool(addr string) (c *RPCClientPool, err error) {
 //PreInit 预初始化客户端
 func (r *RPCInvoker) PreInit(services ...string) (err error) {
 	for _, v := range services {
-		_, err = r.GetClientPool(v)
+		_, err = r.GetClientFromPool(v)
 		if err != nil {
 			return
 		}

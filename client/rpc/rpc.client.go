@@ -14,7 +14,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/naming"
 )
 
 //RPCClient client
@@ -34,6 +33,7 @@ type clientOption struct {
 	connectionTimeout time.Duration
 	log               *logger.Logger
 	balancer          balancer.CustomerBalancer
+	resolver          balancer.ServiceResolver
 	service           string
 	maxUsing          int32
 }
@@ -56,17 +56,19 @@ func WithLogger(log *logger.Logger) ClientOption {
 }
 
 //WithRoundRobinBalancer 设置轮询负载均衡器
-func WithRoundRobinBalancer(r naming.Resolver, service string, timeout time.Duration, limit map[string]int) ClientOption {
+func WithRoundRobinBalancer(r balancer.ServiceResolver, service string, timeout time.Duration, limit map[string]int) ClientOption {
 	return func(o *clientOption) {
 		o.service = service
+		o.resolver = r
 		o.balancer = balancer.RoundRobin(service, r, limit, o.log)
 	}
 }
 
 //WithLocalFirstBalancer 设置本地优先负载均衡器
-func WithLocalFirstBalancer(r naming.Resolver, service string, local string, limit map[string]int) ClientOption {
+func WithLocalFirstBalancer(r balancer.ServiceResolver, service string, local string, limit map[string]int) ClientOption {
 	return func(o *clientOption) {
 		o.service = service
+		o.resolver = r
 		o.balancer = balancer.LocalFirst(service, local, r, limit)
 	}
 }
@@ -169,7 +171,11 @@ func (c *RPCClient) Close() {
 	if c.longTicker != nil {
 		c.longTicker.Stop()
 	}
+	if c.resolver != nil {
+		c.resolver.Close()
+	}
 	if c.conn != nil {
 		c.conn.Close()
 	}
+
 }
