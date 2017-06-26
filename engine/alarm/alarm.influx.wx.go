@@ -43,7 +43,6 @@ func (s *alarmProxy) getInflux2WxParams(ctx *context.Context) (sql string, wxSet
 		return
 	}
 	return
-
 }
 func (s *alarmProxy) influx2wx(ctx *context.Context) (r string, t int, err error) {
 	sql, wxSetting, wxUsers, err := s.getInflux2WxParams(ctx)

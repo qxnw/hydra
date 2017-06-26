@@ -80,7 +80,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 	return
 }
 func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
-	p, err := r.GetClientPool(service)
+	p, err := r.GetClientFromPool(service)
 	if err != nil {
 		return nil, err
 	}

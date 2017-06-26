@@ -3,7 +3,7 @@ package main
 import (
 	"runtime"
 
-	//_ "github.com/mattn/go-oci8"
+	_ "github.com/mattn/go-oci8"
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
 	_ "github.com/qxnw/hydra/engine/alarm"

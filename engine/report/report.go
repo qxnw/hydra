@@ -1,19 +1,21 @@
-package collect
+package report
 
 import (
 	"fmt"
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/types"
 )
 
 type collectProxy struct {
-	domain     string
-	serverName string
-	serverType string
-	services   []string
-
+	domain          string
+	serverName      string
+	serverType      string
+	services        []string
+	registryAddrs   string
+	registry        registry.Registry
 	serviceHandlers map[string]func(*context.Context) (string, int, error)
 }
 
@@ -33,6 +35,8 @@ func (s *collectProxy) Start(ctx *engine.EngineContext) (services []string, err 
 	s.serverName = ctx.ServerName
 	s.serverType = ctx.ServerType
 	services = s.services
+	s.registryAddrs = ctx.Registry
+	s.registry, err = registry.NewRegistryWithAddress(ctx.Registry, ctx.Logger)
 	return
 
 }
