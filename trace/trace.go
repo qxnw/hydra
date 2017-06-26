@@ -22,6 +22,6 @@ func Start(log *logger.Logger) error {
 	}
 	defer trace.Stop()
 	addr := "localhost:19999"
-	log.Info("启用项目跟踪:http://localhost:19999/debug/pprof/")
+	log.Info("启用项目跟踪:http://0.0.0.0:19999/debug/pprof/")
 	return http.ListenAndServe(addr, nil)
 }
