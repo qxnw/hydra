@@ -3,7 +3,7 @@ package balancer
 import "github.com/qxnw/lib4go/metrics"
 import "github.com/qxnw/lib4go/concurrent/cmap"
 
-//Limiter 限流组件
+//Limiter 限流组件,用于限制客户端每分钟请求服务器的数量,当超过限制数量时不再选择该服务提供者
 type Limiter struct {
 	settings       cmap.ConcurrentMap //限流规则配置
 	currentService string             //当前服务名称
@@ -29,20 +29,20 @@ func (m *Limiter) Update(lt map[string]int) {
 	}
 }
 
-//Check 检查当前服务是否达到限流条件
+//Check 检查当前服务IP是否达到限流条件
 func (m *Limiter) Check(ip string) bool {
 	if count, ok := m.settings.Get("*"); ok {
-		limiterName := metrics.MakeName(".limiter", metrics.METER, "service", m.currentService)
-		meter := metrics.GetOrRegisterMeter(limiterName, m.metricRegistry)
-		if meter.Rate1() >= count.(float64) {
+		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService)
+		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
+		if meter.M1() >= count.(int64) {
 			return false
 		}
 		meter.Mark(1)
 	}
 	if count, ok := m.settings.Get(m.currentService); ok {
-		limiterName := metrics.MakeName(".limiter", metrics.METER, "service", m.currentService, "ip", ip)
-		meter := metrics.GetOrRegisterMeter(limiterName, m.metricRegistry)
-		if meter.Rate1() >= count.(float64) {
+		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService, "ip", ip)
+		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
+		if meter.M1() >= count.(int64) {
 			return false
 		}
 		meter.Mark(1)
