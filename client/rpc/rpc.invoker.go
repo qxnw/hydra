@@ -119,7 +119,7 @@ func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClientPool, err error
 	if err != nil {
 		return
 	}
-	fullService := fmt.Sprintf("%s/services/%s%s/providers", domain, server, service)
+	fullService := fmt.Sprintf("/%s/services/%s%s/providers", domain, server, service)
 	_, client, err := r.cache.SetIfAbsentCb(fullService, func(i ...interface{}) (interface{}, error) {
 		rsrvs := i[0].(string)
 		opts := make([]ClientOption, 0, 0)

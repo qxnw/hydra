@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/encoding"
-	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -228,14 +226,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			} else if strings.Contains(tp, "plain") {
 				typeID = AutoResponse
 			}
-		}
-		if strContent, ok := response.Content.(string); ok {
-			strContent = strings.Trim(jsons.Escape(strContent), " ")
-			if strings.HasPrefix(strContent, "{") && strings.HasSuffix(strContent, "}") {
-				c.Result = &StatusResult{Code: response.Status, Result: json.RawMessage(strContent), Type: typeID}
-				return
-			}
-			typeID = AutoResponse
 		}
 
 		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}

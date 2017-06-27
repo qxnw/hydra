@@ -8,6 +8,7 @@ import (
 	_ "github.com/qxnw/hydra/conf/standalone"
 	_ "github.com/qxnw/hydra/engine/alarm"
 	_ "github.com/qxnw/hydra/engine/cache"
+	_ "github.com/qxnw/hydra/engine/collect"
 	_ "github.com/qxnw/hydra/engine/email"
 	_ "github.com/qxnw/hydra/engine/file"
 	_ "github.com/qxnw/hydra/engine/goplugin"
