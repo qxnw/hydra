@@ -21,12 +21,12 @@ type Resolver struct {
 	timeout    time.Duration
 	service    string
 	sortPrefix string
-	closeCh    []chan struct{}
+	closeCh    []*Watcher
 }
 
 //NewResolver 返回服务解析器
 func NewResolver(service string, timeout time.Duration, sortPrefix string) ServiceResolver {
-	return &Resolver{timeout: timeout, service: service, sortPrefix: sortPrefix, closeCh: make([]chan struct{}, 0, 2)}
+	return &Resolver{timeout: timeout, service: service, sortPrefix: sortPrefix, closeCh: make([]*Watcher, 0, 2)}
 }
 
 // Resolve to resolve the service from zookeeper, target is the dial address of zookeeper
@@ -37,13 +37,13 @@ func (v *Resolver) Resolve(target string) (naming.Watcher, error) {
 		return nil, fmt.Errorf("rpc.client.resolver target err:%v", err)
 	}
 	rw := &Watcher{client: r, service: v.service, sortPrefix: v.sortPrefix, closeCh: make(chan struct{})}
-	v.closeCh = append(v.closeCh, rw.closeCh)
+	v.closeCh = append(v.closeCh, rw)
 	return rw, nil
 }
 
 //Close 关闭所有watcher
 func (v *Resolver) Close() {
 	for _, c := range v.closeCh {
-		close(c)
+		c.Close()
 	}
 }

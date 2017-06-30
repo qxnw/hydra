@@ -82,10 +82,10 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		routers := make([]*rpcRouter, 0, len(rts))
 		for _, c := range rts {
 			name := c.String("name")
-			service := c.String("service")
 			action := strings.Split(strings.ToUpper(c.String("action", "request")), ",")
 			args := c.String("args")
 			mode := c.String("mode", "*")
+			service := c.String("service")
 			if name == "" || service == "" {
 				return fmt.Errorf("router配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
 			}
@@ -169,9 +169,14 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		//处理输入参数
 		ctx := context.GetContext()
 		defer ctx.Close()
-		tfParams := transform.NewGetter(c.Params())
+
+		tfParams := transform.New()
+		c.Params().Each(func(k, v string) {
+			tfParams.Set(k, v)
+		})
 		tfParams.Set("method", c.Method())
 		tfForm := transform.NewMap(c.Req().GetArgs())
+
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		body, _ := tfForm.Get("__body")
 		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}

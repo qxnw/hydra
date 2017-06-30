@@ -18,7 +18,7 @@ import (
 	_ "github.com/qxnw/hydra/engine/registry"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"
 	_ "github.com/qxnw/hydra/engine/script"
-	_ "github.com/qxnw/hydra/engine/sms"
+	_ "github.com/qxnw/hydra/engine/ssm"
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/hydra/server/api"
 	_ "github.com/qxnw/hydra/server/cron"

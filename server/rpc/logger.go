@@ -51,7 +51,7 @@ func Logging() HandlerFunc {
 		ctx.Info("rpc.request:", ctx.server.serverName, ctx.method, ctx.Req().Service)
 		ctx.Next()
 		status := ctx.GetStatusCode()
-		if status == 200 {
+		if status >= 200 && status < 400 {
 			ctx.Info("rpc.response:", ctx.server.serverName, ctx.method, ctx.Req().Service, status, time.Since(start))
 		} else {
 			ctx.Error("rpc.response:", ctx.server.serverName, ctx.method, ctx.Req().Service, status, time.Since(start))

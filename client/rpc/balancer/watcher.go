@@ -10,6 +10,8 @@ import (
 
 	"fmt"
 
+	"sync"
+
 	"google.golang.org/grpc/naming"
 )
 
@@ -22,11 +24,14 @@ type Watcher struct {
 	sortPrefix    string
 	closeCh       chan struct{}
 	lastErr       error
+	once          sync.Once
 }
 
 // Close do nothing
 func (w *Watcher) Close() {
-	close(w.closeCh)
+	w.once.Do(func() {
+		close(w.closeCh)
+	})
 }
 
 // Next 监控服务器地址变化,监控发生异常时移除所有服务,否则等待服务器地址变化

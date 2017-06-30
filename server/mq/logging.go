@@ -7,7 +7,7 @@ func Logging() HandlerFunc {
 		start := time.Now()
 		ctx.Info("mq.request:", ctx.server.serverName, ctx.queue)
 		ctx.Next()
-		if ctx.statusCode == 200 {
+		if ctx.statusCode >= 200 && ctx.statusCode < 400 {
 			ctx.Info("mq.response:", ctx.server.serverName, ctx.queue, ctx.statusCode, time.Since(start))
 		} else {
 			ctx.Error("mq.response:", ctx.server.serverName, ctx.queue, ctx.statusCode, time.Since(start))

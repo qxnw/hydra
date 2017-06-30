@@ -21,12 +21,12 @@ func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, t i
 	}
 	root, ok := ctx.GetArgs()["root"]
 	if !ok {
-		err = fmt.Errorf("输入参数args未配置root参数")
+		err = fmt.Errorf("输入参数args未配置root目录参数")
 		return
 	}
 
-	httpRequest := ctx.GetExt()["__func_http_request_"]
-	if httpRequest == nil {
+	httpRequest, ok := ctx.GetExt()["__func_http_request_"]
+	if !ok {
 		err = errors.New("未找到__func_http_request_")
 		return
 	}
@@ -38,17 +38,18 @@ func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, t i
 
 	uf, _, err := f.FormFile(name)
 	if err != nil {
-		err = fmt.Errorf("读取文件错误:%s(err:%v)", name, err)
+		err = fmt.Errorf("无法读取上传的文件:%s(err:%v)", name, err)
 		return
 	}
 	defer uf.Close()
-	nfilePath := fmt.Sprintf("%s/%s%s", root, utility.GetGUID(), path.Ext(name))
+	name = fmt.Sprintf("%s%s", utility.GetGUID(), path.Ext(name))
+	nfilePath := fmt.Sprintf("%s/%s", root, name)
 	nf, err := os.Create(nfilePath)
 	if err != nil {
-		err = fmt.Errorf("创建文件失败:%s(err:%v)", nfilePath, err)
+		err = fmt.Errorf("保存文件失败:%s(err:%v)", nfilePath, err)
 		return
 	}
 	defer nf.Close()
 	io.Copy(nf, uf)
-	return nfilePath, 200, nil
+	return name, 200, nil
 }

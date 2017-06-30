@@ -162,7 +162,10 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return string(cnf), nil
 		}
 
-		tfParams := transform.NewGetter(c.Params())
+		tfParams := transform.New()
+		c.Params().Each(func(k, v string) {
+			tfParams.Set(k, v)
+		})
 		tfParams.Set("method", c.Req().Method)
 		tfForm := transform.NewValues(c.Forms().Form)
 		rservice := tfForm.Translate(tfParams.Translate(service))

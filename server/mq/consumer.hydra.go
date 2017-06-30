@@ -136,11 +136,15 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		var err error
 		ctx := context.GetContext()
 		defer ctx.Close()
-		data, err := jsons.Unmarshal([]byte(task.params))
-		if err != nil {
-			task.statusCode = 500
-			task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
-			return err
+		data := make(map[string]interface{})
+		body := task.params
+		if strings.HasPrefix(task.params, "{") && strings.HasPrefix(task.params, "}") {
+			data, err = jsons.Unmarshal([]byte(task.params))
+			if err != nil {
+				task.statusCode = 500
+				task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
+				return err
+			}
 		}
 		margs, err := utility.GetMapWithQuery(args)
 		if err != nil {
@@ -162,7 +166,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		}
 
 		//执行服务调用
-		ctx.Set(input, params, "", margs, ext)
+		ctx.Set(input, params, body, margs, ext)
 		response, err := w.handler.Handle(task.queue, mode, service, ctx)
 		if err != nil {
 			task.statusCode = 500
