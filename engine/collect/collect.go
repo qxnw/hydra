@@ -42,13 +42,13 @@ func newCollectProxy() *collectProxy {
 	r.queryMap["mem"] = `select value from hydra_collector where "type"='mem' and "host"='@host' and "time">'now()-6h' order by time desc limit 1`
 	r.queryMap["disk"] = `select value from hydra_collector where "type"='disk' and "host"='@host' and "time">'now()-6h' order by time desc limit 1`
 
-	r.reportMap["http"] = "hydra_collector,type=http,host=@host,group=@group,level=@level,t=@time value=@value"
-	r.reportMap["tcp"] = "hydra_collector,type=tcp,host=@host,group=@group,level=@level,t=@time value=@value"
-	r.reportMap["registry"] = "hydra_collector,type=registry,host=@host,group=@group,level=@level,t=@time  value=@value"
-	r.reportMap["db"] = "hydra_collector,type=db,host=@host,group=@group,level=@level,t=@time  value=@value"
-	r.reportMap["cpu"] = "hydra_collector,type=cpu,host=@host,group=@group,level=@level,t=@time  value=@value"
-	r.reportMap["mem"] = "hydra_collector,type=mem,host=@host,group=@group,level=@level,t=@time  value=@value"
-	r.reportMap["disk"] = "hydra_collector,type=disk,host=@host,group=@group,level=@level,t=@time  value=@value"
+	r.reportMap["http"] = "hydra_collector,type=http,host=@host,group=@group,level=@level,t=@time,msg=@msg value=@value"
+	r.reportMap["tcp"] = "hydra_collector,type=tcp,host=@host,group=@group,level=@level,t=@time,msg=@msg value=@value"
+	r.reportMap["registry"] = "hydra_collector,type=registry,host=@host,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["db"] = "hydra_collector,type=db,host=@host,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["cpu"] = "hydra_collector,type=cpu,host=@host,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["mem"] = "hydra_collector,type=mem,host=@host,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["disk"] = "hydra_collector,type=disk,host=@host,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	r.collector["http"] = r.httpCollect
 	r.collector["tcp"] = r.tcpCollect
@@ -60,6 +60,7 @@ func newCollectProxy() *collectProxy {
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 8)
 	r.serviceHandlers["/collect/http/status"] = r.httpHandle
 	r.serviceHandlers["/collect/tcp/status"] = r.tcpHandle
+	r.serviceHandlers["/collect/sql/query"] = r.dbHandle
 	r.serviceHandlers["/collect/registry/count"] = r.registryHandle
 	r.serviceHandlers["/collect/cpu/used"] = r.cpuHandle
 	r.serviceHandlers["/collect/mem/used"] = r.memHandle

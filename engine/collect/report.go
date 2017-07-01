@@ -94,19 +94,34 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 		case "cpu", "mem", "disk":
 			title = fmt.Sprintf("服务器%v负载恢复正常", input["type"])
 			content = fmt.Sprintf("%v服务器%s负载已恢复正常", input["host"], input["type"])
+		case "db":
+			title = fmt.Sprintf("%v恢复正常", input["host"])
+			content = fmt.Sprintf("%v恢复正常", input["host"])
+		}
+		msg := types.GetString(input["msg"])
+		if len(msg) > 3 {
+			content = fmt.Sprintf("%s，%s", content, msg)
 		}
 	} else {
 		switch types.GetString(input["type"]) {
 		case "http", "tcp":
 			title = fmt.Sprintf("[%v]服务器无法访问", input["type"])
-			content = fmt.Sprintf("%v服务器 %v 服务无法请求，可能已宕机，请及时处理", input["type"], input["host"])
+			content = fmt.Sprintf("%v服务器 %v 服务无法请求，可能已宕机", input["type"], input["host"])
 		case "registry":
 			title = "注册中心服务器宕机"
-			content = fmt.Sprintf("%s的服务器数量小于预设阀值，部分服务器已宕机，请及时处理", input["host"])
+			content = fmt.Sprintf("%s的服务器数量小于预设阀值，部分服务器已宕机", input["host"])
 		case "cpu", "mem", "disk":
 			title = fmt.Sprintf("服务器%v负载过高", input["type"])
-			content = fmt.Sprintf("%v服务器%s负载过高，请及时处理", input["host"], input["type"])
+			content = fmt.Sprintf("%v服务器%s负载过高", input["host"], input["type"])
+		case "db":
+			title = fmt.Sprintf("%v出现异常", input["host"])
+			content = fmt.Sprintf("%v出现异常", input["host"])
 		}
+		msg := types.GetString(input["msg"])
+		if len(msg) > 3 {
+			content = fmt.Sprintf("%s，%s", content, msg)
+		}
+		content = fmt.Sprintf("%s，请及时处理", content)
 	}
 	happendTime = lastTime.Format("2006/01/02 15:04")
 	return

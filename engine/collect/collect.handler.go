@@ -118,39 +118,17 @@ func (s *collectProxy) diskHandle(ctx *context.Context) (r string, st int, err e
 	}
 	return
 }
-
-func (s *collectProxy) reportCollect(ctx *context.Context) (r string, st int, err error) {
-	data, err := s.getVarParam(ctx, "setting", ctx.GetArgs()["setting"])
-	if err != nil {
-		err = fmt.Errorf("setting.%s未配置:err:%v", ctx.GetArgs()["setting"], err)
-		return
-	}
+func (s *collectProxy) dbHandle(ctx *context.Context) (r string, st int, err error) {
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	clct := &collector{}
-	err = json.Unmarshal([]byte(data), clct)
-	if err != nil {
-		err = fmt.Errorf("setting.%s的内容必须是json字符串:%v", ctx.GetArgs()["setting"], err)
-		return
+	r, err = s.dbCollect(ctx, influxdb)
+	if r == "NONEED" {
+		st = 204
 	}
-	for _, v := range clct.Collector {
-		if collector, ok := s.collector[v.Mode]; ok {
-			r, err = collector(ctx, v.Params, influxdb)
-			if err != nil {
-				return r, 500, err
-			}
-
-		} else {
-			err = fmt.Errorf("不支持的模式:%s", v.Mode)
-			return
-		}
-	}
-	return "SUCCESS", 200, nil
-
+	return
 }
-
 func (s *collectProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClient, error) {
 	db, ok := ctx.GetArgs()["influxdb"]
 	if db == "" || !ok {

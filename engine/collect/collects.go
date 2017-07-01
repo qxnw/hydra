@@ -60,7 +60,7 @@ func (s *collectProxy) checkAndSave(mode string, db *influxdb.InfluxClient, tf *
 			}
 		}
 	}
-	err = db.SendLineProto(tf.Translate(s.reportMap[mode]))
+	err = db.SendLineProto(tf.TranslateAll(s.reportMap[mode], true))
 	if err != nil {
 		return "", err
 	}
@@ -86,6 +86,7 @@ func (s *collectProxy) httpCollect(ctx *context.Context, param []interface{}, db
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
 	return s.checkAndSave("http", db, tf, result, timeSpan)
 }
@@ -106,6 +107,7 @@ func (s *collectProxy) tcpCollect(ctx *context.Context, param []interface{}, db 
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
 	return s.checkAndSave("tcp", db, tf, result, timeSpan)
 }
@@ -127,13 +129,92 @@ func (s *collectProxy) registryCollect(ctx *context.Context, param []interface{}
 	tf := transform.NewMap(map[string]string{})
 	tf.Set("host", path)
 	tf.Set("value", strconv.Itoa(result))
+	tf.Set("count", strconv.Itoa(len(data)))
+	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
+	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
+	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
+	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
+	return s.checkAndSave("registry", db, tf, result, timeSpan)
+}
+func (s *collectProxy) dbCollect(ctx *context.Context, db *influxdb.InfluxClient) (rlt string, err error) {
+	sql, ok := ctx.GetArgs()["sql"]
+	if !ok {
+		err = fmt.Errorf("args中未配置sql字段")
+		return
+	}
+	sql, err = s.getVarParam(ctx, "sql", sql)
+	if err != nil || sql == "" {
+		err = fmt.Errorf("var.sql参数未配置")
+		return
+	}
+	title, ok := ctx.GetArgs()["title"]
+	if !ok {
+		err = fmt.Errorf("args未配置title字段")
+		return
+	}
+	msg, ok := ctx.GetArgs()["msg"]
+	if !ok {
+		err = fmt.Errorf("args未配置msg字段")
+		return
+	}
+	smax, ok1 := ctx.GetArgs()["max"]
+	smin, ok2 := ctx.GetArgs()["min"]
+	if !ok1 && !ok2 {
+		err = fmt.Errorf("args未配置max或min")
+		return
+	}
+	max := 0
+	min := 0
+	if ok1 {
+		max, err = strconv.Atoi(smax)
+		if err != nil {
+			err = fmt.Errorf("args未配置max参数必须是数字:%v", err)
+			return
+		}
+	}
+	if ok2 {
+		min, err = strconv.Atoi(smin)
+		if err != nil {
+			err = fmt.Errorf("args未配置min参数必须是数字:%v", err)
+			return
+		}
+	}
+	sdb, err := s.getDB(ctx)
+	if err != nil {
+		err = fmt.Errorf("args数据库db配置有错误:%v", err)
+		return
+	}
+	data, _, _, err := sdb.Scalar(sql, map[string]interface{}{})
+	if err != nil {
+		err = fmt.Errorf("数据查询出错:sql:%v,err:%v", sql, err)
+		return
+	}
+	if data == nil {
+		rlt = "NONEED"
+		return
+	}
+	value, err := strconv.Atoi(fmt.Sprintf("%v", data))
+	if err != nil {
+		err = fmt.Errorf("sql:%s返回结果不是有效的数字", sql)
+		return
+	}
+	result := 1
+	if ((min > 0 && value >= min) || min == 0) && ((max > 0 && value < max) || max == 0) {
+		result = 0
+	}
+
+	tf := transform.NewMap(map[string]string{})
+	tf.Set("host", title)
+	tf.Set("value", strconv.Itoa(result))
+	tf.Set("count", strconv.Itoa(value))
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
-	return s.checkAndSave("registry", db, tf, result, timeSpan)
+	tf.Set("msg", tf.Translate(msg))
+	return s.checkAndSave("db", db, tf, result, timeSpan)
 }
-
 func (s *collectProxy) cpuCollect(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (rlt string, err error) {
 	maxValue, err := strconv.ParseFloat(fmt.Sprintf("%v", param[0]), 64)
 	if err != nil {
@@ -151,6 +232,7 @@ func (s *collectProxy) cpuCollect(ctx *context.Context, param []interface{}, db 
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
 	return s.checkAndSave("cpu", db, tf, result, timeSpan)
 }
@@ -171,6 +253,7 @@ func (s *collectProxy) memCollect(ctx *context.Context, param []interface{}, db 
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
 	return s.checkAndSave("mem", db, tf, result, timeSpan)
 }
@@ -191,6 +274,7 @@ func (s *collectProxy) diskCollect(ctx *context.Context, param []interface{}, db
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("msg", tf.Translate(types.GetMapValue("msg", ctx.GetArgs(), "-")))
 	timeSpan := types.ToInt(ctx.GetArgs()["span"], 5)
 	return s.checkAndSave("disk", db, tf, result, timeSpan)
 }
