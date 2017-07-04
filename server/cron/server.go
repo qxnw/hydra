@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"fmt"
-
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/logger"
@@ -98,7 +96,7 @@ func (w *CronServer) handle(task *cronTask) {
 	task.task.Invoke()
 	_, _, err := w.Add(task.task)
 	if err != nil {
-		fmt.Println("err:", err)
+		w.Logger.Errorf("添加任务失败:%v", err)
 	}
 }
 
@@ -114,8 +112,8 @@ func (w *CronServer) Start() error {
 	go w.move()
 	return nil
 }
-func (w *CronServer) getOffset(next time.Time) (pos int, circle int) {
-	d := next.Sub(time.Now()) //剩余时间
+func (w *CronServer) getOffset(now time.Time, next time.Time) (pos int, circle int) {
+	d := next.Sub(now) //剩余时间
 	delaySeconds := int(d/1e9) + 1
 	intervalSeconds := int(w.span.Seconds())
 	circle = int(delaySeconds / intervalSeconds / w.length)
@@ -147,11 +145,12 @@ func (w *CronServer) getOffset(next time.Time) (offset int, round int) {
 func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	nextTime := task.NextTime()
-	if nextTime.Sub(time.Now()) < 0 {
+	now := time.Now()
+	nextTime := task.NextTime(now)
+	if nextTime.Sub(now) < 0 {
 		return -1, -1, errors.New("next time less than now.1")
 	}
-	offset, round = w.getOffset(nextTime)
+	offset, round = w.getOffset(now, nextTime)
 	if offset < 0 || round < 0 {
 		return -1, -1, errors.New("next time less than now.2")
 	}
@@ -161,7 +160,6 @@ func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 		w.slots[offset].Set(utility.GetGUID(), ctask)
 		atomic.AddInt32(&w.taskCount, 1)
 	}
-
 	return
 }
 

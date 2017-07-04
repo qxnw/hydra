@@ -52,7 +52,6 @@ func (s *collectProxy) checkAndSave(mode string, db *influxdb.InfluxClient, tf *
 			//fmt.Println("time:", value[0][0]["time"], value)
 			lastTime, err := time.Parse("2006-01-02T15:04:05.999999999Z07:00", fmt.Sprintf("%v", value[0][0]["time"]))
 			if err != nil {
-				fmt.Println("日期格式转换出错", err)
 				return result, err
 			}
 			if time.Now().Sub(lastTime).Minutes() < float64(span) {

@@ -164,13 +164,12 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		tfParams := transform.New()
 		c.Params().Each(func(k, v string) {
-			tfParams.Set(k, v)
+			tfParams.Set(k[1:], v)
 		})
 		tfParams.Set("method", c.Req().Method)
 		tfForm := transform.NewValues(c.Forms().Form)
 		rservice := tfForm.Translate(tfParams.Translate(service))
 		rArgs := tfForm.Translate(tfParams.Translate(args))
-
 		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {
 			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
@@ -313,7 +312,7 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 
 //Shutdown 关闭服务
 func (w *hydraWebServer) Shutdown() {
-	timeout, _ := w.conf.Int("timeout", 5)
+	timeout, _ := w.conf.Int("timeout", 10)
 	w.server.Shutdown(time.Duration(timeout) * time.Second)
 }
 

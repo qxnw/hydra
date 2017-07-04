@@ -172,7 +172,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 
 		tfParams := transform.New()
 		c.Params().Each(func(k, v string) {
-			tfParams.Set(k, v)
+			tfParams.Set(k[1:], v)
 		})
 		tfParams.Set("method", c.Method())
 		tfForm := transform.NewMap(c.Req().GetArgs())

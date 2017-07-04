@@ -15,7 +15,7 @@ type ITask interface {
 	Reset(s *CronServer, l *logger.Logger)
 	GetName() string
 	DoNext()
-	NextTime() time.Time
+	NextTime(time.Time) time.Time
 	Invoke()
 }
 
@@ -49,8 +49,8 @@ func (ctx *Task) DoNext() {
 	ctx.idx += 1
 	ctx.Invoke()
 }
-func (ctx *Task) NextTime() time.Time {
-	return ctx.schedule.Next(time.Now())
+func (ctx *Task) NextTime(t time.Time) time.Time {
+	return ctx.schedule.Next(t)
 }
 
 func (ctx *Task) Invoke() {
@@ -58,5 +58,8 @@ func (ctx *Task) Invoke() {
 		ctx.server.handlers[ctx.idx].Handle(ctx)
 	} else {
 		ctx.err = ctx.handle(ctx)
+		if ctx.err != nil {
+			ctx.Logger.Errorf("cron.task执行异常:%v", ctx.err)
+		}
 	}
 }

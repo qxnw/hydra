@@ -1,6 +1,7 @@
 package mq
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -124,7 +125,8 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 		s.p.Put(r)
 	})
 	if err != nil {
-		s.Errorf("server:%s(err:%v)", s.serverName, err)
+		err = fmt.Errorf("server:%s(err:%v)", s.serverName, err)
+		return err
 	}
 	return nil
 }

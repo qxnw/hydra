@@ -97,7 +97,10 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 			queues = append(queues, task{name: queue, service: service, args: baseArgs + "&" + args, mode: mode})
 		}
 		for _, task := range queues {
-			w.server.Use(task.name, w.handle(task.service, task.mode, "", task.args))
+			err := w.server.Use(task.name, w.handle(task.service, task.mode, "", task.args))
+			if err != nil {
+				return err
+			}
 		}
 
 	}
