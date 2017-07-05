@@ -157,7 +157,6 @@ func (h *Hydra) Start() (err error) {
 	case "web":
 		go pprof.StartTraceServer(h.Logger)
 	default:
-		h.Logger.Info("未启用项目 跟踪")
 	}
 
 	interrupt := make(chan os.Signal, 1)

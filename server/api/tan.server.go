@@ -180,6 +180,12 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
+		if response != nil {
+			//处理返回参数
+			for k, v := range response.Params {
+				c.Header().Set(k, v.(string))
+			}
+		}
 		if err != nil {
 			if response != nil {
 				response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
@@ -196,10 +202,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		//处理返回参数
-		for k, v := range response.Params {
-			c.Header().Set(k, v.(string))
-		}
 		//处理跳转
 		if location, ok := response.Params["Location"]; ok {
 			response.Status = 302
