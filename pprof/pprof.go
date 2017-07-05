@@ -14,9 +14,10 @@ var (
 	ErrCPUProfileNotStart = errors.New("CPU profile not start")
 )
 
-func StartCPUProfile(file string) error {
+//StartCPUProfile 生成CPU性能监控文件
+func StartCPUProfile() error {
 	if atomic.CompareAndSwapInt32(&cpuProfiling, 0, 1) {
-		cpuProfile, err := os.Create(file)
+		cpuProfile, err := os.Create("./cpu.pprof")
 		if err != nil {
 			return err
 		}
@@ -25,6 +26,7 @@ func StartCPUProfile(file string) error {
 	return nil
 }
 
+//StopCPUProfile 停止生成CPU监控文件
 func StopCPUProfile() {
 	if atomic.LoadInt32(&cpuProfiling) == 1 {
 		pprof.StopCPUProfile()

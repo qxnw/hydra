@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/pkg/profile"
+	"github.com/qxnw/hydra/pprof"
 	"github.com/qxnw/hydra/server"
-	"github.com/qxnw/hydra/trace"
 
 	"sync"
 
@@ -44,7 +44,7 @@ type Hydra struct {
 	crossRegistry          string
 	ip                     string
 	baseData               *transform.Transform
-	trace                  bool
+	trace                  string
 	collectIndex           int
 	currentRegistryAddress []string
 	crossRegistryAddress   []string
@@ -79,7 +79,7 @@ func (h *Hydra) Install() {
 	pflag.StringVarP(&h.currentRegistry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
 	pflag.StringVarP(&h.mask, "ip mask", "i", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
 	pflag.StringVarP(&h.tag, "server tag", "t", "", "服务器名称(默认为本机IP地址)")
-	pflag.BoolVarP(&h.trace, "enable trace", "p", false, "启用项目性能跟踪")
+	pflag.StringVarP(&h.trace, "enable trace", "p", "", "启用项目性能跟踪cpu/mem/block/mutex/server")
 	pflag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 	pflag.StringVarP(&h.crossRegistry, "cross  registry  center address", "c", "", "跨域注册中心地址")
 }
@@ -145,10 +145,19 @@ func (h *Hydra) Start() (err error) {
 	//go h.collectSys()
 	h.Infof("启动 hydra server(%s)...", h.tag)
 	//启用项目性能跟踪
-	if h.trace {
-		p := profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook)
-		defer p.Stop()
-		go trace.Start(h.Logger)
+	switch h.trace {
+	case "cpu":
+		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mem":
+		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "block":
+		defer profile.Start(profile.BlockProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mutex":
+		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "web":
+		go pprof.StartTraceServer(h.Logger)
+	default:
+		h.Logger.Info("未启用项目 跟踪")
 	}
 
 	interrupt := make(chan os.Signal, 1)

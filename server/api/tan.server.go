@@ -229,7 +229,9 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 				typeID = AutoResponse
 			}
 		}
-
+		if server.IsDebug {
+			c.Debugf("api.response.raw:%+v", response.Content)
+		}
 		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
 	}
 }

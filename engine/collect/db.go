@@ -9,6 +9,7 @@ import (
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/jsons"
+	"github.com/qxnw/lib4go/types"
 )
 
 var dbCache cmap.ConcurrentMap
@@ -46,7 +47,7 @@ func getDBFromCache(conf string) (*db.DB, error) {
 		if !ok {
 			return nil, fmt.Errorf("db配置文件错误，未包含connString节点:%s", config)
 		}
-		return db.NewDB(provider.(string), connString.(string), 10)
+		return db.NewDB(provider.(string), connString.(string), types.ToInt(configMap["max"], 2))
 	}, conf)
 	if err != nil {
 		return nil, err

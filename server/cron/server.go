@@ -93,7 +93,9 @@ func NewCronServer(domain string, name string, length int, span time.Duration, o
 	return w
 }
 func (w *CronServer) handle(task *cronTask) {
+	w.Logger.Infof("invok.cron:%s", task.task.GetName())
 	task.task.Invoke()
+	w.Logger.Infof("add2list.cron:%s", task.task.GetName())
 	_, _, err := w.Add(task.task)
 	if err != nil {
 		w.Logger.Errorf("添加任务失败:%v", err)
@@ -157,6 +159,7 @@ func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	ctask := &cronTask{task: task, round: round}
 	ctask.task.Reset(w, logger.GetSession(task.GetName(), logger.CreateSession()))
 	if !w.done {
+		w.Logger.Infof("%s,round:%d,offset:%d,index:%d,now:%v,next:%v", task.GetName(), round, offset, w.index, now, nextTime)
 		w.slots[offset].Set(utility.GetGUID(), ctask)
 		atomic.AddInt32(&w.taskCount, 1)
 	}
@@ -209,8 +212,10 @@ func (w *CronServer) execute() {
 			atomic.AddInt32(&w.taskCount, -1)
 			return true
 		}
+
 		task.round--
 		task.executed++
+		w.Logger.Infof("%s,round:%d,index:%d", task.task.GetName(), task.round, w.index)
 		return false
 	})
 	w.mu.Unlock()
