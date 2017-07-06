@@ -191,7 +191,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 				response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
 			}
 			c.Errorf(fmt.Sprintf("api.server.handler.error:%+v", err.Error()))
-			if server.IdsDebug {
+			if server.IsDebug {
 				c.Result = &StatusResult{Code: response.Status, Result: fmt.Sprintf("%v %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
 				return
 			}
