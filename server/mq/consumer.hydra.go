@@ -140,12 +140,12 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		ctx := context.GetContext()
 		defer ctx.Close()
 		data := make(map[string]interface{})
-		body := task.params
-		if strings.HasPrefix(task.params, "{") && strings.HasPrefix(task.params, "}") {
-			data, err = jsons.Unmarshal([]byte(task.params))
+		body := task.msg.GetMessage()
+		if strings.HasPrefix(body, "{") && strings.HasPrefix(body, "}") {
+			data, err = jsons.Unmarshal([]byte(body))
 			if err != nil {
 				task.statusCode = 500
-				task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", task.params)
+				task.Result = fmt.Errorf("输入参数不是有效的json字符串:%s", body)
 				return err
 			}
 		}

@@ -114,10 +114,15 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 	//s.Infof("start consume(%s/%s)", s.serverName, queue)
 	err := s.consumer.Consume(queue, func(m mq.IMessage) {
 		r := s.p.Get().(*Context)
-		message := m.GetMessage()
-		r.reset(queue, m, s, message, handle)
+		r.reset(queue, m, s, "", handle)
 		r.Logger = logger.GetSession(queue, logger.CreateSession())
+		if server.IsDebug {
+			r.Debugf("mq.request.raw:", r.msg.GetMessage())
+		}
 		r.invoke()
+		if r.err != nil || r.statusCode != 200 {
+			r.Errorf("mq执行失败:%d,err:%v", r.statusCode, r.err)
+		}
 		if r.statusCode == 200 {
 			m.Ack()
 		}
