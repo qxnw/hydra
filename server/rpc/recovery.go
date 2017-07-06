@@ -27,15 +27,14 @@ func Recovery(debug bool) HandlerFunc {
 					}
 					fmt.Fprintf(&buf, "%v:%v", file, line)
 				}
-
 				var content = buf.String()
 				ctx.Error(content)
 
 				if !ctx.Written() {
 					if !debug {
-						ctx.Result = InternalServerError(http.StatusText(http.StatusInternalServerError))
+						ctx.Result = &StatusResult{Code: 500, Result: InternalServerError(http.StatusText(http.StatusInternalServerError))}
 					} else {
-						ctx.Result = InternalServerError(content)
+						ctx.Result = &StatusResult{Code: 500, Result: content}
 					}
 				}
 			}
