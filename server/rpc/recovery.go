@@ -29,7 +29,7 @@ func Recovery(debug bool) HandlerFunc {
 				}
 				var content = buf.String()
 				ctx.Error(content)
-
+				ctx.Writer.Code = 500
 				if !ctx.Written() {
 					if !debug {
 						ctx.Result = &StatusResult{Code: 500, Result: InternalServerError(http.StatusText(http.StatusInternalServerError))}
