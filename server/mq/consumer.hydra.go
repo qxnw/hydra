@@ -141,7 +141,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		defer ctx.Close()
 		data := make(map[string]interface{})
 		body := task.msg.GetMessage()
-		if strings.HasPrefix(body, "{") && strings.HasPrefix(body, "}") {
+		if strings.HasPrefix(body, "{") && strings.HasSuffix(body, "}") {
 			data, err = jsons.Unmarshal([]byte(body))
 			if err != nil {
 				task.statusCode = 500
