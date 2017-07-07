@@ -92,6 +92,17 @@ func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
 	return client, nil
 }
 
+//RequestFailRetry 失败重试请求
+func (r *RPCInvoker) RequestFailRetry(service string, input map[string]string, times int) (status int, result string, params map[string]string, err error) {
+	for i := 0; i < times; i++ {
+		status, result, params, err = r.Request(service, input, true)
+		if err == nil {
+			return
+		}
+	}
+	return
+}
+
 //Request 使用RPC调用Request函数
 func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
 	status = 500

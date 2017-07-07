@@ -112,9 +112,11 @@ func (c *RPCClient) connect() (err error) {
 		return nil
 	}
 	if c.balancer == nil {
-		c.conn, err = grpc.Dial(c.address, grpc.WithInsecure(), grpc.WithTimeout(c.connectionTimeout))
+		fmt.Println("no balancer:", c.address, c.connectionTimeout)
+		c.conn, err = grpc.Dial(c.address, grpc.WithInsecure(), grpc.WithTimeout(c.connectionTimeout*10))
 	} else {
-		ctx, _ := context.WithTimeout(context.Background(), c.connectionTimeout)
+		fmt.Println("balancer:", c.address, c.connectionTimeout)
+		ctx, _ := context.WithTimeout(context.Background(), c.connectionTimeout*10)
 		c.conn, err = grpc.DialContext(ctx, c.address, grpc.WithInsecure(), grpc.WithBalancer(c.balancer))
 	}
 	if err != nil {
