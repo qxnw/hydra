@@ -124,12 +124,12 @@ func (c *RPCClient) connect() (err error) {
 
 	c.client = pb.NewRPCClient(c.conn)
 	//检查是否已连接到服务器
-	response, err := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
+	/*response, err := c.client.Heartbeat(context.Background(), &pb.HBRequest{Ping: 0})
 	c.IsConnect = err == nil && response.Pong == 0
 	if err != nil {
 		err = fmt.Errorf("发送心跳失败:%v", err)
 		return
-	}
+	}*/
 	return nil
 }
 
