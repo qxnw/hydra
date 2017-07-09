@@ -9,6 +9,7 @@ import (
 
 	"github.com/qxnw/hydra/server/api"
 	"github.com/qxnw/lib4go/jsons"
+	"github.com/qxnw/lib4go/net"
 )
 
 type ServerStatus struct {
@@ -17,6 +18,8 @@ type ServerStatus struct {
 	Start    int64    `json:"start"`
 	Services []string `json:"srvs,omitempty"`
 }
+
+var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 10167}
 
 func (h *Hydra) StartStatusServer(domain string) (err error) {
 	ws := api.New(domain, "status.server")
@@ -56,7 +59,7 @@ func (h *Hydra) StartStatusServer(domain string) (err error) {
 	})
 
 	go func() error {
-		err = ws.Run(":10161")
+		err = ws.Run(net.GetAvailablePort(statusLocalPort))
 		if err != nil {
 			return err
 		}
