@@ -152,7 +152,6 @@ func (t *WebServer) SetRouters(routers ...*webRouter) {
 
 //SetStatic 设置静态文件路由
 func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
-	fmt.Println("static：", dir, listDir, exts)
 	t.handlers[5] = Static(StaticOptions{
 		Prefix:     prefix,
 		RootPath:   dir,

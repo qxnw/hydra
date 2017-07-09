@@ -14,6 +14,7 @@ import (
 	_ "github.com/qxnw/hydra/engine/goplugin"
 	_ "github.com/qxnw/hydra/engine/http"
 	_ "github.com/qxnw/hydra/engine/influx"
+	_ "github.com/qxnw/hydra/engine/log"
 	_ "github.com/qxnw/hydra/engine/mock"
 	_ "github.com/qxnw/hydra/engine/registry"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"

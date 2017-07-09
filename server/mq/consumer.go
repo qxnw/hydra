@@ -117,14 +117,20 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 		r.reset(queue, m, s, "", handle)
 		r.Logger = logger.GetSession(queue, logger.CreateSession())
 		if server.IsDebug {
-			r.Debugf("mq.request.raw:", r.msg.GetMessage())
+			r.Debugf("mq.request.raw:%s", r.msg.GetMessage())
 		}
 		r.invoke()
 		if r.err != nil || r.statusCode != 200 {
 			r.Errorf("mq执行失败:%d,err:%v", r.statusCode, r.err)
 		}
+		var err error
 		if r.statusCode == 200 {
-			m.Ack()
+			err = m.Ack()
+		} //else {
+		//err = m.Nack()
+		//}
+		if err != nil {
+			r.Errorf("mq消息ack/nack失败:queue:%s,msg:%s,err:%v", queue, m.GetMessage(), err)
 		}
 		r.Close()
 		s.p.Put(r)

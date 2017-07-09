@@ -106,13 +106,15 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 
 		staticConf, err := routers.GetSection("static")
 		if err == nil {
+			w.server.logger.Info("当前服务器支持静态文件下载")
+			prefix := staticConf.String("prefix")
 			dir := staticConf.String("dir")
 			showDir := staticConf.String("showDir") == "true"
 			exts := staticConf.Strings("exts")
-			if dir == "" || len(exts) == 0 {
-				return fmt.Errorf("static配置错误:dir,exts不能为空(%s,%s)", dir, exts)
+			if dir == "" {
+				return fmt.Errorf("static配置错误：%s,dir,exts不能为空(%s)", conf.String("name"), dir)
 			}
-			w.server.SetStatic(dir, showDir, exts)
+			w.server.SetStatic(prefix, dir, showDir, exts)
 		}
 	}
 
