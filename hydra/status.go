@@ -56,7 +56,7 @@ func (h *Hydra) StartStatusServer(domain string) (err error) {
 	})
 
 	go func() error {
-		err = ws.Run(":10160")
+		err = ws.Run(":10161")
 		if err != nil {
 			return err
 		}
