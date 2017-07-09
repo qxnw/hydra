@@ -8,7 +8,7 @@ import (
 )
 
 //WatchServices /api，mq，rpc，cron
-var WatchServices = []string{"api", "rpc", "cron", "mq"}
+var WatchServices = []string{"api", "rpc", "cron", "mq", "file"}
 
 type Updater struct {
 	Conf Conf

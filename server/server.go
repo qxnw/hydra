@@ -10,12 +10,13 @@ import (
 //IsDebug 当前服务器是处于调试模式
 var IsDebug = false
 var (
-	ST_RUNNING  = "running"
-	ST_STOP     = "stop"
-	SRV_TP_API  = "api"
-	SRV_TP_RPC  = "rpc"
-	SRV_TP_CRON = "cron"
-	SRV_TP_MQ   = "mq"
+	ST_RUNNING   = "running"
+	ST_STOP      = "stop"
+	SRV_TP_API   = "api"
+	SRV_FILE_API = "file"
+	SRV_TP_RPC   = "rpc"
+	SRV_TP_CRON  = "cron"
+	SRV_TP_MQ    = "mq"
 )
 
 type IServiceRegistry interface {

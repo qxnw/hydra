@@ -36,7 +36,7 @@ type WebServer struct {
 	clusterPath string
 	mu          sync.RWMutex
 	*webServerOption
-	running bool
+	Running bool
 }
 
 var (
@@ -150,6 +150,17 @@ func (t *WebServer) SetRouters(routers ...*webRouter) {
 	}
 }
 
+//SetStatic 设置静态文件路由
+func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
+	fmt.Println("static：", dir, listDir, exts)
+	t.handlers[5] = Static(StaticOptions{
+		Prefix:     prefix,
+		RootPath:   dir,
+		ListDir:    listDir,
+		FilterExts: exts,
+	})
+}
+
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
 func (t *WebServer) Run(address ...interface{}) error {
 	addr := t.getAddress(address...)
@@ -161,10 +172,10 @@ func (t *WebServer) Run(address ...interface{}) error {
 		t.logger.Error(err)
 		return err
 	}
-	t.running = true
+	t.Running = true
 	err = t.server.ListenAndServe()
 	if err != nil {
-		t.running = false
+		t.Running = false
 		t.logger.Infof("%v(%s)", err, t.serverName)
 		return err
 	}
@@ -183,10 +194,10 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 		t.logger.Error(err)
 		return err
 	}
-	t.running = true
+	t.Running = true
 	err = t.server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
-		t.running = false
+		t.Running = false
 		t.logger.Error(err)
 		return err
 	}
@@ -235,7 +246,7 @@ func New(domain string, name string, opts ...Option) *WebServer {
 
 //Shutdown shutdown server
 func (t *WebServer) Shutdown(timeout time.Duration) {
-	t.running = false
+	t.Running = false
 	t.unregistryServer()
 	if t.server != nil {
 		xt, _ := ctx.WithTimeout(ctx.Background(), timeout)

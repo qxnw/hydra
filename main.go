@@ -22,6 +22,7 @@ import (
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/hydra/server/api"
 	_ "github.com/qxnw/hydra/server/cron"
+	_ "github.com/qxnw/hydra/server/file"
 	_ "github.com/qxnw/hydra/server/mq"
 	_ "github.com/qxnw/hydra/server/rpc"
 	_ "github.com/qxnw/hydra/service/discovery"

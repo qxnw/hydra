@@ -73,7 +73,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		if err != nil || len(rts) == 0 {
 			return fmt.Errorf("routers路由未配置或配置有误:%s(len:%d,err:%+v)", conf.String("name"), len(rts), err)
 		}
-		routers := make([]*webRouter, 0, len(rts))
+		apiRouters := make([]*webRouter, 0, len(rts))
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
@@ -95,14 +95,25 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
 				}
 			}
-			routers = append(routers, w.getCheckerRouter())
-			routers = append(routers, &webRouter{
+			apiRouters = append(apiRouters, w.getCheckerRouter())
+			apiRouters = append(apiRouters, &webRouter{
 				Method:      actions,
 				Path:        name,
 				Handler:     w.handle(name, mode, service, baseArgs+"&"+args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
-		w.server.SetRouters(routers...)
+		w.server.SetRouters(apiRouters...)
+
+		staticConf, err := routers.GetSection("static")
+		if err == nil {
+			dir := staticConf.String("dir")
+			showDir := staticConf.String("showDir") == "true"
+			exts := staticConf.Strings("exts")
+			if dir == "" || len(exts) == 0 {
+				return fmt.Errorf("static配置错误:dir,exts不能为空(%s,%s)", dir, exts)
+			}
+			w.server.SetStatic(dir, showDir, exts)
+		}
 	}
 
 	//设置metric上报
@@ -253,7 +264,7 @@ func (w *hydraWebServer) GetAddress() string {
 	return w.server.GetAddress()
 }
 func (w *hydraWebServer) GetStatus() string {
-	if w.server.running {
+	if w.server.Running {
 		return server.ST_RUNNING
 	}
 	return server.ST_STOP
