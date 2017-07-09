@@ -127,7 +127,7 @@ func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
 		if r.statusCode == 200 {
 			err = m.Ack()
 		} //else {
-		//err = m.Nack()
+		//	err = m.Nack()
 		//}
 		if err != nil {
 			r.Errorf("mq消息ack/nack失败:queue:%s,msg:%s,err:%v", queue, m.GetMessage(), err)

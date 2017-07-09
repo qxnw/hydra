@@ -228,6 +228,9 @@ func (w *hydraMQConsumer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
 		return true, nil
 	}
+	if !strings.EqualFold(conf.String("version"), w.conf.String("version")) {
+		return true, nil
+	}
 	routers, err := conf.GetNodeWithSection("queue")
 	if err != nil {
 		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
