@@ -1,10 +1,12 @@
 package hydra
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -121,6 +123,7 @@ func (h *Hydra) checkFlag() (err error) {
 
 //Start 启动服务
 func (h *Hydra) Start() (err error) {
+	defer h.recovery()
 	if err = h.checkFlag(); err != nil {
 		h.Error(err)
 		return
@@ -143,7 +146,7 @@ func (h *Hydra) Start() (err error) {
 	go h.loopCheckNotify()
 	go h.freeMemory()
 	//go h.collectSys()
-	h.Infof("启动 hydra server(%s)...", h.tag)
+	h.Infof("启动 hydra server(%s,%s)...", h.tag, h.runMode)
 	//启用项目性能跟踪
 	switch h.trace {
 	case "cpu":
@@ -320,5 +323,22 @@ func (h *Hydra) collectSys() {
 			dsk := disk.GetInfo()
 			diskUsed.Update(dsk.UsedPercent)
 		}
+	}
+}
+func (h *Hydra) recovery() {
+	if e := recover(); e != nil {
+		var buf bytes.Buffer
+		fmt.Fprintf(&buf, "hydra执行期间出现异常: %v", e)
+		for i := 1; ; i++ {
+			_, file, line, ok := runtime.Caller(i)
+			if !ok {
+				break
+			} else {
+				fmt.Fprintf(&buf, "\n")
+			}
+			fmt.Fprintf(&buf, "%v:%v", file, line)
+		}
+		var content = buf.String()
+		h.Error(content)
 	}
 }
