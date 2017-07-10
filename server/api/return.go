@@ -88,7 +88,11 @@ func Return() HandlerFunc {
 			result = res.Result
 			rt = res.Type
 		}
-
+		if len(ctx.tan.headers) > 0 {
+			for k, v := range ctx.tan.headers {
+				ctx.Header().Set(k, v)
+			}
+		}
 		if rt == JsonResponse {
 			encoder := json.NewEncoder(ctx)
 			if len(ctx.Header().Get("Content-Type")) <= 0 {
