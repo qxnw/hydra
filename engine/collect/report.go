@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -61,8 +63,9 @@ func (s *collectProxy) notify(ctx *context.Context) (r string, st int, err error
 			if err != nil {
 				return "", 500, err
 			}
+			groups := strings.Split(group, ",")
 			for _, u := range settingObj.Users {
-				if group == u.Group || u.Group == "" {
+				if s.checkNeedSend(groups, u.Group) {
 					st, err = s.sendWXNotify(alarm, u.OpenID, settingObj.WxNotify, title, content, happendTime, remark)
 					if err != nil {
 						return "", st, err
@@ -72,6 +75,17 @@ func (s *collectProxy) notify(ctx *context.Context) (r string, st int, err error
 		}
 	}
 	return
+}
+func (s *collectProxy) checkNeedSend(dataGroups []string, ugroup string) bool {
+	if ugroup == "" {
+		return true
+	}
+	for _, v := range dataGroups {
+		if v == ugroup {
+			return true
+		}
+	}
+	return false
 }
 func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, title string, content string, happendTime string, group string, remark string, err error) {
 	title = "服务器发生错误"
