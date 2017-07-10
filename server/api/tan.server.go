@@ -104,7 +104,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		}
 		w.server.SetRouters(apiRouters...)
 		//设置头信息
-		headers, err := routers.GetIMap("header")
+		headers, err := routers.GetIMap("headers")
 		if err == nil {
 			nheader := make(map[string]string)
 			for k, v := range headers {
