@@ -103,7 +103,16 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 				Middlewares: make([]Handler, 0, 0)})
 		}
 		w.server.SetRouters(apiRouters...)
-
+		//设置头信息
+		headers, err := routers.GetIMap("header")
+		if err == nil {
+			nheader := make(map[string]string)
+			for k, v := range headers {
+				nheader[k] = fmt.Sprint(v)
+			}
+			w.server.SetHeader(nheader)
+		}
+		//设置静态文件路由
 		staticConf, err := routers.GetSection("static")
 		if err == nil {
 			w.server.logger.Info("当前服务器支持静态文件下载")

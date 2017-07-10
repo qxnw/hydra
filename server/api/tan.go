@@ -37,6 +37,7 @@ type WebServer struct {
 	mu          sync.RWMutex
 	*webServerOption
 	Running bool
+	headers map[string]string
 }
 
 var (
@@ -257,4 +258,7 @@ func (t *WebServer) Shutdown(timeout time.Duration) {
 //GetAddress 获取当前服务地址
 func (t *WebServer) GetAddress() string {
 	return fmt.Sprintf("%s://%s:%d", t.proto, t.ip, t.port)
+}
+func (t *WebServer) SetHeader(headers map[string]string) {
+	t.headers = headers
 }

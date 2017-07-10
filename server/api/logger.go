@@ -39,9 +39,7 @@ func Logging() HandlerFunc {
 				l.SetLogger(ctx.Logger)
 			}
 		}
-
 		ctx.Next()
-
 		if !ctx.Written() {
 			if ctx.Result == nil {
 				ctx.Result = NotFound()

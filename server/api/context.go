@@ -37,9 +37,8 @@ type Context struct {
 	callArgs []reflect.Value
 	matched  bool
 	stage    byte
-
-	action interface{}
-	Result interface{}
+	action   interface{}
+	Result   interface{}
 }
 
 func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {

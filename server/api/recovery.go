@@ -17,7 +17,6 @@ func Recovery(debug bool) HandlerFunc {
 			if e := recover(); e != nil {
 				var buf bytes.Buffer
 				fmt.Fprintf(&buf, "Handler crashed with error: %v", e)
-
 				for i := 1; ; i++ {
 					_, file, line, ok := runtime.Caller(i)
 					if !ok {
@@ -30,7 +29,11 @@ func Recovery(debug bool) HandlerFunc {
 
 				var content = buf.String()
 				ctx.Logger.Error(content)
-
+				if len(ctx.tan.headers) > 0 {
+					for k, v := range ctx.tan.headers {
+						ctx.Header().Set(k, v)
+					}
+				}
 				if !ctx.Written() {
 					if !debug {
 						ctx.Result = InternalServerError(http.StatusText(http.StatusInternalServerError))

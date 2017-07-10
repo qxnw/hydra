@@ -80,9 +80,12 @@ func (s *collectProxy) checkNeedSend(dataGroups []string, ugroup string) bool {
 	if ugroup == "" {
 		return true
 	}
+	ugroups := strings.Split(ugroup, ",")
 	for _, v := range dataGroups {
-		if v == ugroup {
-			return true
+		for _, k := range ugroups {
+			if v == k {
+				return true
+			}
 		}
 	}
 	return false
