@@ -218,16 +218,12 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		}
 		//处理返回参数
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		var typeID = AutoResponse
+		var typeID = JsonResponse
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
 				typeID = XmlResponse
-			} else if strings.Contains(tp, "json") {
-				typeID = JsonResponse
-			} else {
-				if _, ok := response.Content.(string); !ok {
-					typeID = JsonResponse
-				}
+			} else if strings.Contains(tp, "plain") {
+				typeID = AutoResponse
 			}
 		}
 		if server.IsDebug {

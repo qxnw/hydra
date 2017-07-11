@@ -254,15 +254,10 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
 				typeID = XmlResponse
-			} else if strings.Contains(tp, "json") {
-				typeID = JsonResponse
-			} else {
-				if _, ok := response.Content.(string); !ok {
-					typeID = JsonResponse
-				}
+			} else if strings.Contains(tp, "plain") {
+				typeID = AutoResponse
 			}
 		}
-
 		if server.IsDebug {
 			c.Debugf("api.response.raw:%+v", response.Content)
 		}
