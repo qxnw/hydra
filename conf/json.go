@@ -205,7 +205,7 @@ func (j *JSONConf) GetRawNodeWithValue(value string, enableCache ...bool) (r []b
 	if len(enableCache) > 0 {
 		ec = enableCache[0]
 	}
-	nkey := "_node_row_string_" + value
+	nkey := "_node_raw_string_" + value
 	if v, ok := j.cache.Get(nkey); ok && ec {
 		r = v.([]byte)
 		return
@@ -215,6 +215,10 @@ func (j *JSONConf) GetRawNodeWithValue(value string, enableCache ...bool) (r []b
 	}
 	rx := j.TranslateAll(value[1:], true)
 	r, err = j.getValue(rx)
+	if err != nil {
+		return
+	}
+	j.cache.Set(nkey, r)
 	return
 }
 
