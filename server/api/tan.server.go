@@ -250,7 +250,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			}
 		}
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		var typeID = AutoResponse
+		var typeID = JsonResponse
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
 				typeID = XmlResponse

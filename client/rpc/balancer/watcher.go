@@ -58,7 +58,7 @@ func (w *Watcher) Next() ([]*naming.Update, error) {
 		return w.getUpdates([]string{}), w.lastErr
 	}
 	if err = watcher.GetError(); err != nil {
-		return w.getUpdates([]string{}), err
+		return nil, err
 	}
 	chilren, _ := watcher.GetValue()
 	addrs := w.extractAddrs(chilren)
