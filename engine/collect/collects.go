@@ -198,9 +198,9 @@ func (s *collectProxy) dbCollect(ctx *context.Context, db *influxdb.InfluxClient
 		err = fmt.Errorf("sql:%s返回结果不是有效的数字", sql)
 		return
 	}
-	result := 1
+	result := 1 //需要报警
 	if ((min > 0 && value >= min) || min == 0) && ((max > 0 && value < max) || max == 0) {
-		result = 0
+		result = 0 //恢复
 	}
 
 	tf := transform.NewMap(map[string]string{})

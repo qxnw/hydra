@@ -11,7 +11,7 @@ type zkRegistryResolver struct {
 }
 
 func (z *zkRegistryResolver) Resolve(servers []string, log *logger.Logger) (Registry, error) {
-	zclient, err := zk.NewWithLogger(servers, time.Second*3, log)
+	zclient, err := zk.NewWithLogger(servers, time.Second*5, log)
 	if err != nil {
 		return nil, err
 	}

@@ -38,20 +38,8 @@ type WebServer struct {
 	*webServerOption
 	Running bool
 	headers map[string]string
+	xsrf    *XSRF
 }
-
-var (
-	//ClassicHandlers 标准插件
-	ClassicHandlers = []Handler{
-		Logging(),
-		Recovery(false),
-		Compresses([]string{}),
-		Static(StaticOptions{Prefix: "public"}),
-		Return(),
-		Param(),
-		Contexts(),
-	}
-)
 
 type webServerOption struct {
 	ip           string
@@ -153,12 +141,17 @@ func (t *WebServer) SetRouters(routers ...*webRouter) {
 
 //SetStatic 设置静态文件路由
 func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
-	t.handlers[5] = Static(StaticOptions{
+	t.handlers[6] = Static(StaticOptions{
 		Prefix:     prefix,
 		RootPath:   dir,
 		ListDir:    listDir,
 		FilterExts: exts,
 	})
+}
+
+//SetXSRF 设置XSRF参数，并启用XSRF校验
+func (t *WebServer) SetXSRF(key string, secret string) {
+	t.xsrf = &XSRF{Key: key, Secret: secret}
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
@@ -224,6 +217,7 @@ func New(domain string, name string, opts ...Option) *WebServer {
 		t.webServerOption.host,
 		t.webServerOption.metric,
 		Compresses([]string{}),
+		XSRFFilter(),
 		Static(StaticOptions{Prefix: "public"}),
 		Return(),
 		Param(),

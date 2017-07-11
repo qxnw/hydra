@@ -28,17 +28,18 @@ type Handler interface {
 type Context struct {
 	tan *WebServer
 	*logger.Logger
-
-	idx int
-	req *http.Request
+	BodyBuffer []byte
+	idx        int
+	req        *http.Request
 	ResponseWriter
-	route    *Route
-	params   context.Params
-	callArgs []reflect.Value
-	matched  bool
-	stage    byte
-	action   interface{}
-	Result   interface{}
+	route      *Route
+	params     context.Params
+	callArgs   []reflect.Value
+	matched    bool
+	stage      byte
+	action     interface{}
+	Result     interface{}
+	_xsrfToken string
 }
 
 func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
@@ -52,6 +53,7 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 	ctx.matched = false
 	ctx.action = nil
 	ctx.Result = nil
+	ctx.BodyBuffer = nil
 	session_id := ctx.Cookie("hydra_sid", logger.CreateSession())
 	ctx.Logger = logger.GetSession(removeStick(ctx.Req().URL.Path), session_id)
 }
@@ -80,6 +82,7 @@ func (ctx *Context) Cookies() Cookies {
 }
 
 func (ctx *Context) Forms() *Forms {
+	ctx.BodyBuffer, _ = ctx.Body()
 	ctx.req.ParseForm()
 	return (*Forms)(ctx.req)
 }

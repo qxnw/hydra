@@ -11,11 +11,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/qxnw/lib4go/security/xsrf"
 )
 
 func isValidCookieValue(p []byte) bool {
@@ -423,32 +424,13 @@ type secureCookies struct {
 
 var _ Cookies = &secureCookies{}
 
-func parseSecureCookie(secret string, value string) string {
-	parts := strings.SplitN(value, "|", 3)
-	val, timestamp, sig := parts[0], parts[1], parts[2]
-	if getCookieSig(secret, []byte(val), timestamp) != sig {
-		return ""
-	}
-
-	ts, _ := strconv.ParseInt(timestamp, 0, 64)
-	if time.Now().Unix()-31*86400 > ts {
-		return ""
-	}
-
-	buf := bytes.NewBufferString(val)
-	encoder := base64.NewDecoder(base64.StdEncoding, buf)
-
-	res, _ := ioutil.ReadAll(encoder)
-	return string(res)
-}
-
 func (c *secureCookies) Get(key string) *http.Cookie {
 	ck := c.cookies.Get(key)
 	if ck == nil {
 		return nil
 	}
 
-	v := parseSecureCookie(c.secret, ck.Value)
+	v := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	if v == "" {
 		return nil
 	}
@@ -461,7 +443,7 @@ func (c *secureCookies) String(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	v := parseSecureCookie(c.secret, ck.Value)
+	v := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return v, nil
 }
 
@@ -470,7 +452,7 @@ func (c *secureCookies) Int(key string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return strconv.Atoi(s)
 }
 
@@ -479,7 +461,7 @@ func (c *secureCookies) Int32(key string) (int32, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseInt(s, 10, 32)
 	return int32(v), err
 }
@@ -489,7 +471,7 @@ func (c *secureCookies) Int64(key string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return strconv.ParseInt(s, 10, 64)
 }
 
@@ -498,7 +480,7 @@ func (c *secureCookies) Uint(key string) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseUint(s, 10, 64)
 	return uint(v), err
 }
@@ -508,7 +490,7 @@ func (c *secureCookies) Uint32(key string) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseUint(s, 10, 32)
 	return uint32(v), err
 }
@@ -518,7 +500,7 @@ func (c *secureCookies) Uint64(key string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return strconv.ParseUint(s, 10, 64)
 }
 
@@ -527,7 +509,7 @@ func (c *secureCookies) Float32(key string) (float32, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseFloat(s, 32)
 	return float32(v), err
 }
@@ -537,7 +519,7 @@ func (c *secureCookies) Float64(key string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return strconv.ParseFloat(s, 32)
 }
 
@@ -546,7 +528,7 @@ func (c *secureCookies) Bool(key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return strconv.ParseBool(s)
 }
 
@@ -558,7 +540,7 @@ func (c *secureCookies) MustString(key string, defaults ...string) string {
 		}
 		return ""
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return s
 }
 
@@ -570,7 +552,7 @@ func (c *secureCookies) MustEscape(key string, defaults ...string) string {
 		}
 		return ""
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	return template.HTMLEscapeString(s)
 }
 
@@ -582,7 +564,7 @@ func (c *secureCookies) MustInt(key string, defaults ...int) int {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.Atoi(s)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -598,7 +580,7 @@ func (c *secureCookies) MustInt32(key string, defaults ...int32) int32 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseInt(s, 10, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -614,7 +596,7 @@ func (c *secureCookies) MustInt64(key string, defaults ...int64) int64 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseInt(s, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -630,7 +612,7 @@ func (c *secureCookies) MustUint(key string, defaults ...uint) uint {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseUint(s, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -646,7 +628,7 @@ func (c *secureCookies) MustUint32(key string, defaults ...uint32) uint32 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseUint(s, 10, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -662,7 +644,7 @@ func (c *secureCookies) MustUint64(key string, defaults ...uint64) uint64 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseUint(s, 10, 64)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -678,7 +660,7 @@ func (c *secureCookies) MustFloat32(key string, defaults ...float32) float32 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseFloat(s, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -694,7 +676,7 @@ func (c *secureCookies) MustFloat64(key string, defaults ...float64) float64 {
 		}
 		return 0
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseFloat(s, 32)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]
@@ -710,7 +692,7 @@ func (c *secureCookies) MustBool(key string, defaults ...bool) bool {
 		}
 		return false
 	}
-	s := parseSecureCookie(c.secret, ck.Value)
+	s := xsrf.ParseXSRFToken(c.secret, ck.Value)
 	v, err := strconv.ParseBool(s)
 	if len(defaults) > 0 && err != nil {
 		return defaults[0]

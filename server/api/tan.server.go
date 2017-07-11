@@ -115,7 +115,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		//设置静态文件路由
 		staticConf, err := routers.GetSection("static")
 		if err == nil {
-			w.server.logger.Info("当前服务器支持静态文件下载")
+			w.server.logger.Infof("%s:启用静态文件", conf.String("name"))
 			prefix := staticConf.String("prefix")
 			dir := staticConf.String("dir")
 			showDir := staticConf.String("showDir") == "true"
@@ -124,6 +124,17 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 				return fmt.Errorf("static配置错误：%s,dir,exts不能为空(%s)", conf.String("name"), dir)
 			}
 			w.server.SetStatic(prefix, dir, showDir, exts)
+		}
+		//设置xsrf参数，并启用xsrf校验
+		xsrf, err := routers.GetSection("xsrf")
+		if err == nil {
+			w.server.logger.Infof("%s:启用xsrf校验", conf.String("name"))
+			key := xsrf.String("key")
+			secret := xsrf.String("secret")
+			if key == "" || secret == "" {
+				return fmt.Errorf("xsrf配置错误：key,secret不能为空(%s,%s,%s)", conf.String("name"), key, secret)
+			}
+			w.server.SetXSRF(key, secret)
 		}
 	}
 
@@ -162,19 +173,13 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		//处理输入参数
 		ctx := context.GetContext()
 		defer ctx.Close()
-		buf, err := c.Body()
-		if err != nil {
-			c.BadRequest(fmt.Sprintf("%+v", err))
-			c.Logger.Errorf("获取body数据失败:%v", err)
-			return
-		}
 
 		ext := make(map[string]interface{})
 		ext["hydra_sid"] = c.GetSessionID()
 		ext["__func_http_request_"] = c.Req()
 		ext["__func_http_response_"] = c.ResponseWriter
-		ext["__func_body_get_"] = func(c string) (string, error) {
-			return encoding.Convert(buf, c)
+		ext["__func_body_get_"] = func(ch string) (string, error) {
+			return encoding.Convert(c.BodyBuffer, ch)
 		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
@@ -198,7 +203,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		ctx.Set(tfForm.Data, tfParams.Data, string(buf), margs, ext)
+		ctx.Set(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
 
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
@@ -245,14 +250,19 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			}
 		}
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		var typeID = JsonResponse
+		var typeID = AutoResponse
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
 				typeID = XmlResponse
-			} else if strings.Contains(tp, "plain") {
-				typeID = AutoResponse
+			} else if strings.Contains(tp, "json") {
+				typeID = JsonResponse
+			} else {
+				if _, ok := response.Content.(string); !ok {
+					typeID = JsonResponse
+				}
 			}
 		}
+
 		if server.IsDebug {
 			c.Debugf("api.response.raw:%+v", response.Content)
 		}
