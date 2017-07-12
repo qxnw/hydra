@@ -136,6 +136,11 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 			}
 			w.server.SetXSRF(key, secret)
 		}
+		allowAjax := routers.String("onlyAllowAjaxRequest", "false") == "true"
+		if allowAjax {
+			w.server.logger.Infof("%s:启用ajax调用限制", conf.String("name"))
+		}
+		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
 
 	//设置metric上报

@@ -36,9 +36,10 @@ type WebServer struct {
 	clusterPath string
 	mu          sync.RWMutex
 	*webServerOption
-	Running bool
-	headers map[string]string
-	xsrf    *XSRF
+	Running              bool
+	headers              map[string]string
+	xsrf                 *XSRF
+	onlyAllowAjaxRequest bool
 }
 
 type webServerOption struct {
@@ -108,6 +109,11 @@ func (t *WebServer) SetName(name string) {
 	t.serverName = name
 }
 
+//OnlyAllowAjaxRequest 只允许ajax请求
+func (t *WebServer) OnlyAllowAjaxRequest(allow bool) {
+	t.onlyAllowAjaxRequest = allow
+}
+
 //SetHost 设置组件的host name
 func (t *WebServer) SetHost(host string) {
 	if len(host) > 0 {
@@ -137,16 +143,6 @@ func (t *WebServer) SetRouters(routers ...*webRouter) {
 	for _, v := range routers {
 		t.Route(v.Method, v.Path, v.Handler, v.Middlewares...)
 	}
-}
-
-//SetStatic 设置静态文件路由
-func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
-	t.handlers[6] = Static(StaticOptions{
-		Prefix:     prefix,
-		RootPath:   dir,
-		ListDir:    listDir,
-		FilterExts: exts,
-	})
 }
 
 //SetXSRF 设置XSRF参数，并启用XSRF校验
@@ -217,6 +213,7 @@ func New(domain string, name string, opts ...Option) *WebServer {
 		t.webServerOption.host,
 		t.webServerOption.metric,
 		Compresses([]string{}),
+		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
 		Static(StaticOptions{Prefix: "public"}),
 		Return(),
@@ -236,6 +233,16 @@ func New(domain string, name string, opts ...Option) *WebServer {
 
 	t.Use(handlers...)
 	return t
+}
+
+//SetStatic 设置静态文件路由
+func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
+	t.handlers[7] = Static(StaticOptions{
+		Prefix:     prefix,
+		RootPath:   dir,
+		ListDir:    listDir,
+		FilterExts: exts,
+	})
 }
 
 //Shutdown shutdown server
