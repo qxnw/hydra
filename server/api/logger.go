@@ -33,7 +33,7 @@ func Logging() HandlerFunc {
 		}
 
 		ctx.Info("api.request:", ctx.tan.serverName, ctx.Req().Method, p, "from", ctx.IP())
-
+		ctx.Debug("api.request.raw:", ctx.Forms().Form, string(ctx.BodyBuffer))
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {
 				l.SetLogger(ctx.Logger)

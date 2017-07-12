@@ -37,6 +37,7 @@ type Context struct {
 	callArgs   []reflect.Value
 	matched    bool
 	stage      byte
+	formed     bool
 	action     interface{}
 	Result     interface{}
 	_xsrfToken string
@@ -54,6 +55,7 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 	ctx.action = nil
 	ctx.Result = nil
 	ctx.BodyBuffer = nil
+	ctx.formed = false
 	session_id := ctx.Cookie("hydra_sid", logger.CreateSession())
 	ctx.Logger = logger.GetSession(removeStick(ctx.Req().URL.Path), session_id)
 }
@@ -82,8 +84,11 @@ func (ctx *Context) Cookies() Cookies {
 }
 
 func (ctx *Context) Forms() *Forms {
-	ctx.BodyBuffer, _ = ctx.Body()
-	ctx.req.ParseForm()
+	if !ctx.formed {
+		ctx.formed = true
+		ctx.BodyBuffer, _ = ctx.Body()
+		ctx.req.ParseForm()
+	}
 	return (*Forms)(ctx.req)
 }
 

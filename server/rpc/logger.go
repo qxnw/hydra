@@ -49,6 +49,7 @@ func Logging() HandlerFunc {
 	return func(ctx *Context) {
 		start := time.Now()
 		ctx.Info("rpc.request:", ctx.server.serverName, ctx.method, ctx.Req().Service)
+		ctx.Debug("rpc.request.raw:", ctx.Req().GetArgs())
 		ctx.Next()
 		status := ctx.GetStatusCode()
 		if status >= 200 && status < 400 {
