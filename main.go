@@ -27,7 +27,7 @@ import (
 	_ "github.com/qxnw/hydra/server/rpc"
 	_ "github.com/qxnw/hydra/service/discovery"
 	_ "github.com/qxnw/hydra/service/register"
-	_ "github.com/qxnw/lib4go/mq/kafka"
+	//_ "github.com/qxnw/lib4go/mq/kafka"
 	_ "github.com/qxnw/lib4go/mq/stomp"
 )
 
