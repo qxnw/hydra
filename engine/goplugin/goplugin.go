@@ -28,6 +28,7 @@ type goPluginWorker struct {
 	services   cmap.ConcurrentMap
 	invoker    *rpc.RPCInvoker
 	path       []string
+	isClose    bool
 }
 
 func newGoPluginWorker() *goPluginWorker {
@@ -66,11 +67,18 @@ func (s *goPluginWorker) Start(ctx *engine.EngineContext) (services []string, er
 
 }
 func (s *goPluginWorker) Close() error {
+	s.isClose = true
+	for _, v := range s.srvPlugins {
+		v.Close()
+	}
 	return nil
 }
 
 //Handle 从bin目录下获取当前应用匹配的动态库，并返射加载服务
 func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+	if s.isClose {
+		return &context.Response{Status: 520}, fmt.Errorf("engine:goplugin.服务已关闭：%s", svName)
+	}
 	f, ok := s.srvPlugins[svName]
 	if !ok {
 		return &context.Response{Status: 404}, fmt.Errorf("engine:goplugin.未找到服务：%s", svName)

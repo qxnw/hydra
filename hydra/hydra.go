@@ -25,6 +25,7 @@ import (
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
 
+	log "github.com/qxnw/hydra/logger"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/metrics"
 	"github.com/qxnw/lib4go/net"
@@ -58,6 +59,7 @@ type Hydra struct {
 	closeChan    chan struct{}
 	done         bool
 	mu           sync.Mutex
+	rpcLogger    bool
 }
 
 var (
@@ -84,6 +86,8 @@ func (h *Hydra) Install() {
 	pflag.StringVarP(&h.trace, "enable trace", "p", "", "启用项目性能跟踪cpu/mem/block/mutex/server")
 	pflag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 	pflag.StringVarP(&h.crossRegistry, "cross  registry  center address", "c", "", "跨域注册中心地址")
+	pflag.BoolVarP(&h.rpcLogger, "use rpc logger", "g", false, "使用RPC远程记录日志")
+
 }
 func (h *Hydra) checkFlag() (err error) {
 	pflag.Parse()
@@ -127,6 +131,14 @@ func (h *Hydra) Start() (err error) {
 	if err = h.checkFlag(); err != nil {
 		h.Error(err)
 		return
+	}
+	if h.rpcLogger && h.runMode != mode_Standalone {
+		err = log.ConfigRPCLogger(h.domain, h.currentRegistry, h.Logger)
+		if err != nil {
+			h.Errorf("无法启用RPC日志:%v", err)
+			return
+		}
+		h.Info("hydra:启用RPC日志")
 	}
 
 	if err = h.StartStatusServer(h.domain); err != nil {
@@ -280,11 +292,10 @@ func (h *Hydra) Close() {
 	if len(h.servers) > 0 {
 		select {
 		case <-h.closedNotify:
-		case <-time.After(time.Second * 3):
+		case <-time.After(time.Second * 2):
 		}
-
 	}
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 500)
 	if h.watcher != nil {
 		h.watcher.Close()
 	}

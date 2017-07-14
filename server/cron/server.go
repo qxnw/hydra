@@ -157,7 +157,7 @@ func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	ctask := &cronTask{task: task, round: round}
 	ctask.task.Reset(w, logger.GetSession(task.GetName(), logger.CreateSession()))
 	if !w.done {
-		w.Logger.Debugf("任务(%s)重新添加到时间列表round:%d,offset:%d,index:%d,%v/%v", task.GetName(), round, offset, w.index, now, nextTime)
+		w.Logger.Debugf("任务(%s)添加到时间列表round:%d,offset:%d,index:%d,%v/%v", task.GetName(), round, offset, w.index, now, nextTime)
 		w.slots[offset].Set(utility.GetGUID(), ctask)
 		atomic.AddInt32(&w.taskCount, 1)
 	}
