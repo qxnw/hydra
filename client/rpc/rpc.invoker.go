@@ -81,15 +81,7 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 }
 func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
 	p, err := r.GetClientFromPool(service)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := p.GetClient()
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
+	return p, err
 }
 
 //RequestFailRetry 失败重试请求
@@ -125,7 +117,7 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 //GetClientFromPool 获取rpc client
 //addr 支持格式:
 //order.request#merchant.hydra,order.request,order.request@api.hydra,order.request@api
-func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClientPool, err error) {
+func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClient, err error) {
 	service, domain, server, err := r.resolvePath(addr)
 	if err != nil {
 		return
@@ -136,7 +128,6 @@ func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClientPool, err error
 		opts := make([]ClientOption, 0, 0)
 		opts = append(opts, WithLogger(r.logger))
 		rs := balancer.NewResolver(rsrvs, time.Second, r.localPrefix)
-		opts = append(opts, WithMaxUsing(100000))
 		switch r.balancerType {
 		case RoundRobin:
 			opts = append(opts, WithRoundRobinBalancer(rs, rsrvs, time.Second, map[string]int{}))
@@ -144,12 +135,12 @@ func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClientPool, err error
 			opts = append(opts, WithLocalFirstBalancer(rs, rsrvs, r.localPrefix, map[string]int{}))
 		default:
 		}
-		return NewRPCClientPool(r.address, 100, time.Minute*60, opts...)
+		return NewRPCClient(r.address, opts...)
 	}, fullService)
 	if err != nil {
 		return
 	}
-	c = client.(*RPCClientPool)
+	c = client.(*RPCClient)
 	return
 }
 
@@ -167,7 +158,7 @@ func (r *RPCInvoker) PreInit(services ...string) (err error) {
 //Close 关闭当前服务
 func (r *RPCInvoker) Close() {
 	r.cache.RemoveIterCb(func(k string, v interface{}) bool {
-		client := v.(*RPCClientPool)
+		client := v.(*RPCClient)
 		client.Close()
 		return true
 	})

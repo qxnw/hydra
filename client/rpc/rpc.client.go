@@ -35,7 +35,6 @@ type clientOption struct {
 	balancer          balancer.CustomerBalancer
 	resolver          balancer.ServiceResolver
 	service           string
-	maxUsing          int32
 }
 
 //ClientOption 客户端配置选项
@@ -78,13 +77,6 @@ func WithBalancer(service string, lb balancer.CustomerBalancer) ClientOption {
 	return func(o *clientOption) {
 		o.service = service
 		o.balancer = lb
-	}
-}
-
-//WithMaxUsing 设置最大使用次数
-func WithMaxUsing(max int) ClientOption {
-	return func(o *clientOption) {
-		o.maxUsing = int32(max)
 	}
 }
 
@@ -158,13 +150,6 @@ func (c *RPCClient) UpdateLimiter(limit map[string]int) error {
 	return errors.New("rpc.client.未指定balancer")
 }
 
-func (c *RPCClient) canUse() bool {
-	atomic.AddInt32(&c.using, 1)
-	defer atomic.AddInt32(&c.using, -1)
-	return c.maxUsing == 0 || atomic.AddInt32(&c.using, 1) < c.maxUsing
-
-}
-
 //Close 关闭连接
 func (c *RPCClient) Close() {
 	c.isClose = true
@@ -177,5 +162,4 @@ func (c *RPCClient) Close() {
 	if c.conn != nil {
 		c.conn.Close()
 	}
-
 }

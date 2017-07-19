@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 
+	"github.com/golang/snappy"
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
@@ -69,7 +70,16 @@ func newRPCWriter(domain string, address string, logger *logger.Logger) (r *rpcW
 }
 
 func (r *rpcWriter) Write(p []byte) (n int, err error) {
-	str := fmt.Sprintf("[%s]", string(p[1:]))
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+			n = len(p) - 1
+		}
+	}()
+	p[0] = byte('[')
+	p = append(p, byte(']'))
+	dst := snappy.Encode(nil, p)
+	str := fmt.Sprintf("%s", string(dst))
 	input := map[string]string{
 		"__body": str,
 	}
@@ -78,7 +88,7 @@ func (r *rpcWriter) Write(p []byte) (n int, err error) {
 		fmt.Println(err)
 		return len(p), nil
 	}
-	return len(p), nil
+	return len(p) - 1, nil
 }
 func (r *rpcWriter) Close() error {
 	if r.rpcInvoker != nil {

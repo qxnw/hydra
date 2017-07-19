@@ -29,6 +29,13 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 	r.srv.mu.RLock()
 	defer r.srv.mu.RUnlock()
 	ctx := r.p.Get().(*Context)
+	defer func() {
+		ctx.context = nil
+		ctx.request = nil
+		ctx.Writer = nil
+		ctx.Close()
+		r.p.Put(ctx)
+	}()
 	ctx.server = r.srv
 	ctx.reset("REQUEST", context, request)
 	ctx.invoke()
@@ -36,8 +43,6 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 	p.Status = int32(ctx.Writer.Code)
 	p.Result = string(ctx.Writer.Buffer.Bytes())
 	ctx.Writer.Reset()
-	ctx.Close()
-	r.p.Put(ctx)
 	return
 }
 
