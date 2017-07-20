@@ -23,12 +23,12 @@ type registryConfWatcher struct {
 	timeSpan       time.Duration
 	mu             sync.Mutex
 	domain         string
-	serverName     string
+	clientTag      string
 	*logger.Logger
 }
 
-//NewRegistryConfWatcher 创建zookeeper配置文件监控器
-func NewRegistryConfWatcher(domain string, serverName string, registry registry.Registry, log *logger.Logger) (w *registryConfWatcher) {
+//newRegistryConfWatcher 创建基于注册中心的配置监控器
+func newRegistryConfWatcher(domain string, clientTag string, registry registry.Registry, log *logger.Logger) (w *registryConfWatcher) {
 	w = &registryConfWatcher{
 		watchRootChan:  make(chan string, 1),
 		notifyConfChan: make(chan *conf.Updater, 10),
@@ -37,13 +37,13 @@ func NewRegistryConfWatcher(domain string, serverName string, registry registry.
 		registry:       registry,
 		timeSpan:       time.Second,
 		domain:         domain,
-		serverName:     serverName,
+		clientTag:      clientTag,
 		Logger:         log,
 	}
 	return
 }
 
-//Start 启用配置文件监控
+//Start 监控servers目录下服务器节点变化
 func (w *registryConfWatcher) Start() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -58,22 +58,23 @@ func (w *registryConfWatcher) Start() error {
 	return nil
 }
 
-//watch 监控配置路径变化和配置数据变化
+//watch 启动实时监控，监控服务器节点变化
 func (w *registryConfWatcher) watch() {
 START:
 	for {
 		select {
 		case <-w.closeChan:
 			break START
-		case p, ok := <-w.watchRootChan:
+		case path, ok := <-w.watchRootChan:
 			if w.done || !ok {
 				break START
 			}
-			w.watchPaths.SetIfAbsentCb(p, func(input ...interface{}) (interface{}, error) {
-				watcher := NewWatchPath(w.domain, w.serverName, p, w.registry, w.notifyConfChan, w.timeSpan, w.Logger)
+			w.watchPaths.SetIfAbsentCb(path, func(input ...interface{}) (interface{}, error) {
+				p := input[0].(string)
+				watcher := newWatchServer(w.domain, w.clientTag, p, w.registry, w.notifyConfChan, w.timeSpan, w.Logger)
 				go watcher.watch()
 				return watcher, nil
-			})
+			}, path)
 
 		}
 	}
@@ -84,7 +85,7 @@ func (w *registryConfWatcher) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.watchPaths.RemoveIterCb(func(key string, value interface{}) bool {
-		value.(*watchPath).Close()
+		value.(*watchServer).Close()
 		return true
 	})
 	w.registry.Close()

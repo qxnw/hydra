@@ -15,7 +15,7 @@ type registryProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	invoker         *rpc.RPCInvoker
+	invoker         *rpc.Invoker
 	registry        registry.Registry
 	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	registryAddrs   string

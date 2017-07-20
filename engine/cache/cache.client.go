@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/qxnw/hydra/context"
@@ -11,11 +10,11 @@ import (
 )
 
 func (s *cacheProxy) getMemcacheClient(ctx *context.Context) (*memcache.MemcacheClient, error) {
-	cacheName, ok := ctx.GetArgs()["cache"]
-	if cacheName == "" || !ok {
-		return nil, fmt.Errorf("args配置错误，缺少cache参数:%v", ctx.GetArgs())
+	cacheName, err := ctx.GetArgByName("cache")
+	if err != nil {
+		return nil, err
 	}
-	content, err := s.getVarParam(ctx, cacheName)
+	content, err := ctx.GetVarParam("cache", cacheName)
 	if err != nil {
 		return nil, err
 	}
@@ -36,15 +35,4 @@ func (s *cacheProxy) getMemcacheClient(ctx *context.Context) (*memcache.Memcache
 	}
 	return client.(*memcache.MemcacheClient), err
 
-}
-
-func (s *cacheProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.GetExt()["__func_var_get_"]
-	if funcVar == nil {
-		return "", errors.New("未找到__func_var_get_")
-	}
-	if f, ok := funcVar.(func(c string, n string) (string, error)); ok {
-		return f("cache", name)
-	}
-	return "", errors.New("未找到__func_var_get_传入类型错误")
 }

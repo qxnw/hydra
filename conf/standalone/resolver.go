@@ -10,8 +10,8 @@ type JSONConfResolver struct {
 }
 
 //Resolve 从服务器获取数据
-func (j *JSONConfResolver) Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (conf.ConfWatcher, error) {
-	return NewJSONConfWatcher(domain, tag, log)
+func (j *JSONConfResolver) Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (conf.Watcher, error) {
+	return newSAWatcher(domain, tag, log)
 }
 func init() {
 	conf.Register("standalone", &JSONConfResolver{})

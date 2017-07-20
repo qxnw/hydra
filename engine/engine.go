@@ -22,7 +22,7 @@ type IWorker interface {
 	Has(shortName, fullName string) error
 	Start(ctx *EngineContext) ([]string, error)
 	Close() error
-	context.EngineHandler
+	context.Handler
 }
 
 //IEngine 执行引擎
@@ -36,7 +36,7 @@ type EngineContext struct {
 	Domain     string
 	ServerName string
 	ServerType string
-	Invoker    *rpc.RPCInvoker
+	Invoker    *rpc.Invoker
 	Registry   string
 	Logger     *logger.Logger
 }
@@ -49,7 +49,7 @@ type standardEngine struct {
 	plugins    map[string]IWorker
 	domain     string
 	serverName string
-	invoker    *rpc.RPCInvoker
+	invoker    *rpc.Invoker
 	logger     *logger.Logger
 }
 
@@ -68,7 +68,7 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 	e.domain = domain
 	e.serverName = serverName
 	e.logger = logger
-	e.invoker = rpc.NewRPCInvoker(domain, serverName, rpcRegistryAddrss)
+	e.invoker = rpc.NewInvoker(domain, serverName, rpcRegistryAddrss)
 	//根据解析器生成引擎
 	for k, v := range resolvers {
 		hasExist := false

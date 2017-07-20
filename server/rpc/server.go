@@ -291,5 +291,4 @@ func (s *RPCServer) getAddress(args ...interface{}) string {
 //GetAddress 获取当前服务地址
 func (s *RPCServer) GetAddress() string {
 	return fmt.Sprintf("%s:%d", s.ip, s.port)
-	//return fmt.Sprintf("tcp://%s:%d", s.ip, s.port)
 }

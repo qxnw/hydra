@@ -17,7 +17,7 @@ type collectProxy struct {
 	serverType      string
 	services        []string
 	registryAddrs   string
-	rpc             *rpc.RPCInvoker
+	rpc             *rpc.Invoker
 	registry        registry.Registry
 	queryMap        map[string]string
 	reportMap       map[string]string
@@ -53,7 +53,6 @@ func newCollectProxy() *collectProxy {
 	r.collector["http"] = r.httpCollect
 	r.collector["tcp"] = r.tcpCollect
 	r.collector["registry"] = r.registryCollect
-	//r.collector["db"] = r.dbCollect
 	r.collector["cpu"] = r.cpuCollect
 	r.collector["mem"] = r.memCollect
 	r.collector["disk"] = r.diskCollect
@@ -92,8 +91,7 @@ func (s *collectProxy) Handle(svName string, mode string, service string, ctx *c
 	}
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
-		err = fmt.Errorf("engine:collect %s,%v", service, err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:collect %s,%v", service, err)
 	}
 	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }

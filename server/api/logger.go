@@ -7,8 +7,6 @@ package api
 import (
 	"time"
 
-	"reflect"
-
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -31,9 +29,9 @@ func Logging() HandlerFunc {
 		if len(ctx.Req().URL.RawQuery) > 0 {
 			p = p + "?" + ctx.Req().URL.RawQuery
 		}
-
 		ctx.Info("api.request:", ctx.tan.serverName, ctx.Req().Method, p, "from", ctx.IP())
 		ctx.Debug("api.request.raw:", ctx.Forms().Form, string(ctx.BodyBuffer))
+
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {
 				l.SetLogger(ctx.Logger)
@@ -52,9 +50,6 @@ func Logging() HandlerFunc {
 		if statusCode >= 200 && statusCode < 400 {
 			ctx.Info("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		} else {
-			if reflect.TypeOf(ctx.Result).Kind() == reflect.String {
-				ctx.Error(ctx.Result.(string))
-			}
 			ctx.Error("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		}
 	}

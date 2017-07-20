@@ -11,7 +11,7 @@ import (
 )
 
 func (s *collectProxy) getExectionParams(ctx *context.Context) (clct *collector, err error) {
-	data, err := s.getVarParam(ctx, "setting", ctx.GetArgs()["setting"])
+	data, err := ctx.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("setting.%s未配置:err:%v", ctx.GetArgs()["setting"], err)
 		return
@@ -25,94 +25,94 @@ func (s *collectProxy) getExectionParams(ctx *context.Context) (clct *collector,
 	return
 }
 func (s *collectProxy) httpHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["url"]; !ok {
-		err = fmt.Errorf("args中必须包含参数url,%v", ctx.GetArgs())
+	url, err := ctx.GetArgByName("url")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.httpCollect(ctx, []interface{}{ctx.GetArgs()["url"]}, influxdb)
+	r, err = s.httpCollect(ctx, []interface{}{url}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
 	return
 }
 func (s *collectProxy) tcpHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["host"]; !ok {
-		err = fmt.Errorf("args中必须包含参数host,%v", ctx.GetArgs())
+	host, err := ctx.GetArgByName("host")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.tcpCollect(ctx, []interface{}{ctx.GetArgs()["host"]}, influxdb)
+	r, err = s.tcpCollect(ctx, []interface{}{host}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
 	return
 }
 func (s *collectProxy) registryHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["path"]; !ok {
-		err = fmt.Errorf("args中必须包含参数path,%v", ctx.GetArgs())
+	path, err := ctx.GetArgByName("path")
+	if err != nil {
 		return
 	}
-	if _, ok := ctx.GetArgs()["min"]; !ok {
-		err = fmt.Errorf("args中必须包含参数min,%v", ctx.GetArgs())
+	min, err := ctx.GetArgByName("min")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.registryCollect(ctx, []interface{}{ctx.GetArgs()["path"], ctx.GetArgs()["min"]}, influxdb)
+	r, err = s.registryCollect(ctx, []interface{}{path, min}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
 	return
 }
 func (s *collectProxy) cpuHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["max"]; !ok {
-		err = fmt.Errorf("args中必须包含参数max,%v", ctx.GetArgs())
+	max, err := ctx.GetArgByName("max")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.cpuCollect(ctx, []interface{}{ctx.GetArgs()["max"]}, influxdb)
+	r, err = s.cpuCollect(ctx, []interface{}{max}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
 	return
 }
 func (s *collectProxy) memHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["max"]; !ok {
-		err = fmt.Errorf("args中必须包含参数max,%v", ctx.GetArgs())
+	max, err := ctx.GetArgByName("max")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.memCollect(ctx, []interface{}{ctx.GetArgs()["max"]}, influxdb)
+	r, err = s.memCollect(ctx, []interface{}{max}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
 	return
 }
 func (s *collectProxy) diskHandle(ctx *context.Context) (r string, st int, err error) {
-	if _, ok := ctx.GetArgs()["max"]; !ok {
-		err = fmt.Errorf("args中必须包含参数max,%v", ctx.GetArgs())
+	max, err := ctx.GetArgByName("max")
+	if err != nil {
 		return
 	}
 	influxdb, err := s.getInfluxClient(ctx)
 	if err != nil {
 		return
 	}
-	r, err = s.diskCollect(ctx, []interface{}{ctx.GetArgs()["max"]}, influxdb)
+	r, err = s.diskCollect(ctx, []interface{}{max}, influxdb)
 	if r == "NONEED" {
 		st = 204
 	}
@@ -130,15 +130,10 @@ func (s *collectProxy) dbHandle(ctx *context.Context) (r string, st int, err err
 	return
 }
 func (s *collectProxy) getInfluxClient(ctx *context.Context) (*influxdb.InfluxClient, error) {
-	db, ok := ctx.GetArgs()["influxdb"]
-	if db == "" || !ok {
-		return nil, fmt.Errorf("args配置错误，缺少influxdb参数:%v", ctx.GetArgs())
-	}
-	content, err := s.getVarParam(ctx, "db", db)
+	content, err := ctx.GetVarParamByArgsName("influxdb", "influxdb")
 	if err != nil {
-		return nil, fmt.Errorf("无法获取args参数influxdb的值:%s(err:%v)", db, err)
+		return nil, err
 	}
-
 	_, client, err := influxdbCache.SetIfAbsentCb(content, func(i ...interface{}) (interface{}, error) {
 		cnf, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
 		if err != nil {

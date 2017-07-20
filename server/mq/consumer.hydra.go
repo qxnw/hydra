@@ -1,9 +1,7 @@
 package mq
 
 import (
-	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,18 +17,18 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-//hydraWebServer web server适配器
+//hydraWebServer mq consumer服务器
 type hydraMQConsumer struct {
 	domain   string
 	server   *MQConsumer
 	registry server.IServiceRegistry
 	conf     conf.Conf
-	handler  context.EngineHandler
+	handler  context.Handler
 	mu       sync.Mutex
 }
 
-//newHydraRPCServer 构建基本配置参数的web server
-func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
+//newHydraRPCServer 构建mq consumer服务器
+func newHydraMQConsumer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -68,18 +66,20 @@ func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
+	//检查版本是否一致
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
+	//检查状态是否一致
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
-	//设置消息队列
-	routers, err := conf.GetNodeWithSection("queue")
+	//设置监控的对列
+	routers, err := conf.GetNodeWithSectionName("queue")
 	if err != nil {
 		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNodeWithSection("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
 		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("queues")
 		if err != nil {
@@ -104,13 +104,13 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		}
 
 	}
-	//设置metric上报
+	//设置metric监控数据
 	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSection("metric")
+		metric, err := conf.GetNodeWithSectionName("metric")
 		if err != nil {
 			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 			host := metric.String("host")
 			dataBase := metric.String("dataBase")
 			userName := metric.String("userName")
@@ -126,7 +126,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 	} else {
 		w.server.StopInfluxMetric()
 	}
-
+	//更新配置
 	w.conf = conf
 	return nil
 
@@ -171,27 +171,22 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		//执行服务调用
 		ctx.Set(input, params, body, margs, ext)
 		response, err := w.handler.Handle(task.queue, mode, service, ctx)
-		if err != nil {
-			task.statusCode = 500
-			task.err = err
-			task.Errorf(fmt.Sprintf("mq.server.handler.error:%s %+v", types.GetString(response.Content), err.Error()))
-			if server.IsDebug {
-				task.Errorf("mq:%s %s,err:%v", task.queue, types.GetString(response.Content), task.err)
-				return err
-			}
-			task.err = errors.New(types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content))
-			task.Errorf("mq:%s,err:%v", task.queue, task.err)
+		if response == nil {
+			response = &context.Response{}
+		}
+		defer func() {
+			task.Debugf("mq.response.raw:%+v", response.Content)
+		}()
+		if err != nil || (response.Status >= 500 && response.Status < 600) {
+			task.err = fmt.Errorf("mq.server.handler.error:%s,%v,%v", task.queue, response.Content, err)
+			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
+			task.statusCode = response.Status
+			response.Content = task.err.Error()
 			return task.err
 		}
-		if status, ok := response.Params["Status"]; ok {
-			s, err := strconv.Atoi(status.(string))
-			if err == nil {
-				response.Status = s
-			}
-		}
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		task.Result = response.Content
 		task.statusCode = response.Status
+		task.Result = response.Content
 		return nil
 	}
 }
@@ -231,12 +226,12 @@ func (w *hydraMQConsumer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("version"), w.conf.String("version")) {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSection("queue")
+	routers, err := conf.GetNodeWithSectionName("queue")
 	if err != nil {
 		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSection("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil
@@ -256,7 +251,7 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraMQConsumer(c, r, conf)
 }
 

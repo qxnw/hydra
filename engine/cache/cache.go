@@ -10,9 +10,7 @@ import (
 )
 
 type cacheProxy struct {
-	domain          string
-	serverName      string
-	serverType      string
+	ctx             *engine.EngineContext
 	services        []string
 	serviceHandlers map[string]func(*context.Context) (string, int, error)
 	dbs             cmap.ConcurrentMap
@@ -35,9 +33,7 @@ func newCacheProxy() *cacheProxy {
 }
 
 func (s *cacheProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
+	s.ctx = ctx
 	return s.services, nil
 }
 
@@ -51,8 +47,7 @@ func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *con
 	}
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
-		err = fmt.Errorf("engine:cache.%v", err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:cache.%v", err)
 	}
 	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }

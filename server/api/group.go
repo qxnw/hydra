@@ -96,12 +96,12 @@ func joinRoute(p, url string) string {
 	return p + url
 }
 
-func (t *WebServer) addGroup(p string, g *Group) {
+func (t *HTTPServer) addGroup(p string, g *Group) {
 	for _, r := range g.routers {
 		t.Route(r.methods, joinRoute(p, r.url), r.c, append(g.handlers, r.handlers...)...)
 	}
 }
 
-func (t *WebServer) Group(p string, o interface{}) {
+func (t *HTTPServer) Group(p string, o interface{}) {
 	t.addGroup(p, getGroup(o))
 }

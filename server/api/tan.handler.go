@@ -25,10 +25,10 @@ func WrapAfter(handler http.Handler) HandlerFunc {
 	}
 }
 
-func (t *WebServer) UseHandler(handler http.Handler) {
+func (t *HTTPServer) UseHandler(handler http.Handler) {
 	t.Use(WrapBefore(handler))
 }
-func (t *WebServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (t *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	resp := t.respPool.Get().(*responseWriter)
@@ -71,7 +71,7 @@ func (t *WebServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	t.respPool.Put(resp)
 }
 
-func (t *WebServer) getAddress(args ...interface{}) string {
+func (t *HTTPServer) getAddress(args ...interface{}) string {
 	var host string
 	var port int
 

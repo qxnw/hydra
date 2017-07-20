@@ -11,12 +11,12 @@ type RegistryConfResolver struct {
 }
 
 //Resolve 从服务器获取数据
-func (j *RegistryConfResolver) Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (c conf.ConfWatcher, err error) {
+func (j *RegistryConfResolver) Resolve(adapter string, domain string, confTag string, log *logger.Logger, servers []string) (c conf.Watcher, err error) {
 	r, err := registry.NewRegistry(adapter, servers, log)
 	if err != nil {
 		return
 	}
-	c = NewRegistryConfWatcher(domain, tag, r, log)
+	c = newRegistryConfWatcher(domain, confTag, r, log)
 	return
 }
 

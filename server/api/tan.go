@@ -21,8 +21,8 @@ func Version() string {
 	return "0.0.0.1"
 }
 
-//WebServer web服务器
-type WebServer struct {
+//HTTPServer http服务器
+type HTTPServer struct {
 	domain     string
 	server     *http.Server
 	serverName string
@@ -100,22 +100,22 @@ func WithHandlers(handlers ...Handler) Option {
 }
 
 //Logger 获取日志组件
-func (t *WebServer) Logger() *logger.Logger {
+func (t *HTTPServer) Logger() *logger.Logger {
 	return t.logger
 }
 
 //SetName 设置组件的server name
-func (t *WebServer) SetName(name string) {
+func (t *HTTPServer) SetName(name string) {
 	t.serverName = name
 }
 
 //OnlyAllowAjaxRequest 只允许ajax请求
-func (t *WebServer) OnlyAllowAjaxRequest(allow bool) {
+func (t *HTTPServer) OnlyAllowAjaxRequest(allow bool) {
 	t.onlyAllowAjaxRequest = allow
 }
 
 //SetHost 设置组件的host name
-func (t *WebServer) SetHost(host string) {
+func (t *HTTPServer) SetHost(host string) {
 	if len(host) > 0 {
 		t.hostNames = strings.Split(host, ",")
 	}
@@ -123,7 +123,7 @@ func (t *WebServer) SetHost(host string) {
 }
 
 //SetInfluxMetric 重置metric
-func (t *WebServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
+func (t *HTTPServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
 	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan, t.logger)
 	if err != nil {
 		t.logger.Error("启动metric失败：", err)
@@ -131,12 +131,12 @@ func (t *WebServer) SetInfluxMetric(host string, dataBase string, userName strin
 }
 
 //StopInfluxMetric stop metric
-func (t *WebServer) StopInfluxMetric() {
+func (t *HTTPServer) StopInfluxMetric() {
 	t.metric.Stop()
 }
 
 //SetRouters 设置路由规则
-func (t *WebServer) SetRouters(routers ...*webRouter) {
+func (t *HTTPServer) SetRouters(routers ...*webRouter) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.Router = NewRouter()
@@ -146,12 +146,12 @@ func (t *WebServer) SetRouters(routers ...*webRouter) {
 }
 
 //SetXSRF 设置XSRF参数，并启用XSRF校验
-func (t *WebServer) SetXSRF(key string, secret string) {
+func (t *HTTPServer) SetXSRF(key string, secret string) {
 	t.xsrf = &XSRF{Key: key, Secret: secret}
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
-func (t *WebServer) Run(address ...interface{}) error {
+func (t *HTTPServer) Run(address ...interface{}) error {
 	addr := t.getAddress(address...)
 	t.logger.Info("Listening on http://" + addr)
 	t.proto = "http"
@@ -173,7 +173,7 @@ func (t *WebServer) Run(address ...interface{}) error {
 }
 
 //RunTLS RunTLS server
-func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
+func (t *HTTPServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
 	addr := t.getAddress(address...)
 	t.logger.Info("Listening on https://" + addr)
 	t.proto = "https"
@@ -194,8 +194,8 @@ func (t *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 }
 
 //New create new server
-func New(domain string, name string, opts ...Option) *WebServer {
-	t := &WebServer{
+func New(domain string, name string, opts ...Option) *HTTPServer {
+	t := &HTTPServer{
 		domain:          domain,
 		serverName:      name,
 		Router:          NewRouter(),
@@ -236,7 +236,7 @@ func New(domain string, name string, opts ...Option) *WebServer {
 }
 
 //SetStatic 设置静态文件路由
-func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
+func (t *HTTPServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
 	t.handlers[7] = Static(StaticOptions{
 		Prefix:     prefix,
 		RootPath:   dir,
@@ -246,7 +246,7 @@ func (t *WebServer) SetStatic(prefix string, dir string, listDir bool, exts []st
 }
 
 //Shutdown shutdown server
-func (t *WebServer) Shutdown(timeout time.Duration) {
+func (t *HTTPServer) Shutdown(timeout time.Duration) {
 	t.Running = false
 	t.unregistryServer()
 	if t.server != nil {
@@ -257,9 +257,9 @@ func (t *WebServer) Shutdown(timeout time.Duration) {
 }
 
 //GetAddress 获取当前服务地址
-func (t *WebServer) GetAddress() string {
+func (t *HTTPServer) GetAddress() string {
 	return fmt.Sprintf("%s://%s:%d", t.proto, t.ip, t.port)
 }
-func (t *WebServer) SetHeader(headers map[string]string) {
+func (t *HTTPServer) SetHeader(headers map[string]string) {
 	t.headers = headers
 }

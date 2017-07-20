@@ -1,4 +1,4 @@
-package sms
+package ssm
 
 import (
 	"fmt"
@@ -27,12 +27,7 @@ func (s *smsProxy) checkInputField(input transform.ITransformGetter, fields ...s
 	return nil
 }
 func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err error) {
-	setting, ok := ctx.GetArgs()["setting"]
-	if !ok {
-		err = fmt.Errorf("Args参数未配置setting属性")
-		return
-	}
-	content, err := s.getVarParam(ctx, setting)
+	content, err := ctx.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return

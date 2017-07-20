@@ -13,29 +13,30 @@ import (
 	"github.com/qxnw/lib4go/logger"
 )
 
-type watchPath struct {
+type watchServer struct {
 	updater      chan *conf.Updater
 	cacheAddress cmap.ConcurrentMap
 	exists       bool
-	path         string
+	serverRoot   string
 	registry     registry.Registry
 	timeSpan     time.Duration
 	closeChan    chan struct{}
-	serverName   string
+	clientTag    string
 	domain       string
 	done         bool
 	mu           sync.Mutex
 	*logger.Logger
 }
 
-func NewWatchPath(domain string, serverName string, path string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration, log *logger.Logger) *watchPath {
-	return &watchPath{
+//newWatchServer 监控每个子系统的服务器节点变化
+func newWatchServer(domain string, clientTag string, serverRoot string, registry registry.Registry, updater chan *conf.Updater, timeSpan time.Duration, log *logger.Logger) *watchServer {
+	return &watchServer{
 		domain:       domain,
-		serverName:   serverName,
+		clientTag:    clientTag,
 		registry:     registry,
 		updater:      updater,
 		timeSpan:     timeSpan,
-		path:         path,
+		serverRoot:   serverRoot,
 		cacheAddress: cmap.New(2),
 		Logger:       log,
 		closeChan:    make(chan struct{}),
@@ -43,32 +44,35 @@ func NewWatchPath(domain string, serverName string, path string, registry regist
 
 }
 
-//watchPath 监控当前节点是否存在，不存在时也持续监控只到当前监控被关闭
-//节点存在时，获取所有子节点，并启动配置路径监控
-//节点由存在变为不存在时，关闭所有子节点
-func (w *watchPath) watch() (err error) {
+//watchPath 监控子系统、服务器变化
+//服务器不存在时持续检查，直到子系统出现
+func (w *watchServer) watch() (err error) {
 LOOP:
 	w.exists = false
-	isExists, _ := w.registry.Exists(w.path)
-	for !isExists {
+	isExists, _ := w.registry.Exists(w.serverRoot)
+	for !isExists { //检查服务器存储目录是否存在，不存在时持续进行检查
 		select {
 		case <-time.After(w.timeSpan):
 			if w.done {
 				return errors.New("watcher is closing")
 			}
-			if isExists, err = w.registry.Exists(w.path); !isExists && err == nil {
-				w.notifyPathDel()
+			if isExists, err = w.registry.Exists(w.serverRoot); !isExists && err == nil {
+				w.delWatchConf()
 			}
 		}
 	}
-	children, version, err := w.registry.GetChildren(w.path)
+	//获取系统列表，获取失败后持续进行检查
+	children, version, err := w.registry.GetChildren(w.serverRoot)
 	if err != nil {
 		goto LOOP
 	}
 	w.exists = isExists
-	w.checkChildrenChange(children, version)
-	//监控子节点变化
-	ch, err := w.registry.WatchChildren(w.path)
+
+	//根据服务列表，查询并监控配置信息
+	w.startWatchConf(children, version)
+
+	//持续监控子系统变化
+	ch, err := w.registry.WatchChildren(w.serverRoot)
 	if err != nil {
 		goto LOOP
 	}
@@ -84,9 +88,10 @@ LOOP:
 			if err = children.GetError(); err != nil {
 				goto LOOP
 			}
-			w.checkChildrenChange(children.GetValue())
-			//继续监控子节点变化
-			ch, err = w.registry.WatchChildren(w.path)
+
+			//根据服务列表，查询并监控配置信息
+			w.startWatchConf(children.GetValue())
+			ch, err = w.registry.WatchChildren(w.serverRoot)
 			if err != nil {
 				goto LOOP
 			}
@@ -94,21 +99,21 @@ LOOP:
 	}
 }
 
-//notifyPathDel 关闭所有配置项的监控
-func (w *watchPath) notifyPathDel() {
+//delWatchConf 删除配置文件监控
+func (w *watchServer) delWatchConf() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.exists { //目录已删除
 		w.exists = false
 		w.cacheAddress.RemoveIterCb(func(key string, value interface{}) bool {
-			value.(*watchConf).NotifyConfDel()
+			value.(*watchConf).notifyDeleted()
 			return true
 		})
 	}
 }
 
 //Close 推出当前流程，并闭所有子流程
-func (w *watchPath) Close() {
+func (w *watchServer) Close() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.done = true
@@ -118,20 +123,22 @@ func (w *watchPath) Close() {
 		return true
 	})
 }
-func (w *watchPath) checkChildrenChange(children []string, version int32) {
+
+//startWatchConf 启动服务器配置项监控
+func (w *watchServer) startWatchConf(children []string, version int32) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for _, v := range children { //检查当前配置地址未缓存
-		for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/rpc/conf/conf
-			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.serverName)
+		for _, sv := range conf.WatchServers { //hydra/servers/merchant.api/rpc/conf/conf
+			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
-					f := NewWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan, w.Logger)
+					f := newWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan, w.Logger)
 					f.args = map[string]string{
 						"domain": w.domain,
-						"root":   fmt.Sprintf("%s/%s/%s/conf", w.path, v, sv),
+						"root":   fmt.Sprintf("%s/%s/%s/conf", w.serverRoot, v, sv),
 						"path":   name,
 					}
 					go f.watch()
@@ -145,15 +152,15 @@ func (w *watchPath) checkChildrenChange(children []string, version int32) {
 		exists := false
 	START:
 		for _, v := range children {
-			for _, sv := range conf.WatchServices {
-				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.path, v, sv, w.serverName)
+			for _, sv := range conf.WatchServers {
+				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
 				if exists {
 					break START
 				}
 			}
 		}
 		if !exists {
-			value.(*watchConf).NotifyConfDel()
+			value.(*watchConf).notifyDeleted()
 			value.(*watchConf).Close()
 			return true
 		}

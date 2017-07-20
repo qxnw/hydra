@@ -137,24 +137,17 @@ func (s *collectProxy) registryCollect(ctx *context.Context, param []interface{}
 	return s.checkAndSave("registry", db, tf, result, timeSpan)
 }
 func (s *collectProxy) dbCollect(ctx *context.Context, db *influxdb.InfluxClient) (rlt string, err error) {
-	sql, ok := ctx.GetArgs()["sql"]
-	if !ok {
-		err = fmt.Errorf("args中未配置sql字段")
-		return
-	}
-	sql, err = s.getVarParam(ctx, "sql", sql)
+	sql, err := ctx.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {
-		err = fmt.Errorf("var.sql参数未配置")
+		err = fmt.Errorf("var.sql参数未配置:%v", err)
 		return
 	}
-	title, ok := ctx.GetArgs()["title"]
-	if !ok {
-		err = fmt.Errorf("args未配置title字段")
+	title, err := ctx.GetArgByName("title")
+	if err != nil {
 		return
 	}
-	msg, ok := ctx.GetArgs()["msg"]
-	if !ok {
-		err = fmt.Errorf("args未配置msg字段")
+	msg, err := ctx.GetArgByName("msg")
+	if err != nil {
 		return
 	}
 	smax, ok1 := ctx.GetArgs()["max"]

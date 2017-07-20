@@ -7,10 +7,12 @@ import (
 	"github.com/qxnw/lib4go/zk"
 )
 
-type zkRegistryResolver struct {
+//zookeeper 基于zookeeper的注册中心
+type zookeeper struct {
 }
 
-func (z *zkRegistryResolver) Resolve(servers []string, log *logger.Logger) (Registry, error) {
+//Resolve 根据配置生成zookeeper客户端
+func (z *zookeeper) Resolve(servers []string, log *logger.Logger) (Registry, error) {
 	zclient, err := zk.NewWithLogger(servers, time.Second*5, log)
 	if err != nil {
 		return nil, err
@@ -20,5 +22,5 @@ func (z *zkRegistryResolver) Resolve(servers []string, log *logger.Logger) (Regi
 }
 
 func init() {
-	Register("zk", &zkRegistryResolver{})
+	Register("zk", &zookeeper{})
 }

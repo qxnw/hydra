@@ -121,26 +121,6 @@ func (w *CronServer) getOffset(now time.Time, next time.Time) (pos int, circle i
 	return
 }
 
-/*
-//GetOffset 获取当前任务的偏移量
-func (w *CronServer) getOffset(next time.Time) (offset int, round int) {
-	deadline := next.Sub(w.startTime) //剩余时间
-	tick := int(deadline / w.span)    //总格数
-	remain := w.length - w.index - 1
-	offset = tick + w.index + 1 //相当于当前位置的偏移量
-	round = 0
-	if tick >= remain {
-		round = (tick-remain)/w.length + 1
-		offset = (tick - remain) % w.length
-	} else {
-		offset = offset % w.length
-	}
-	if offset < 0 {
-		offset = 0
-	}
-	return
-}
-*/
 //Add 添加任务
 func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	w.mu.Lock()
@@ -196,7 +176,7 @@ func (w *CronServer) Close() {
 			return true
 		})
 	}
-	w.Infof("cron: Server closed(%s)", w.serverName)
+	w.Infof("cron Server closed(%s)", w.serverName)
 }
 func (w *CronServer) execute() {
 	w.startTime = time.Now()
@@ -244,4 +224,11 @@ func (w *CronServer) StopInfluxMetric() {
 //SetName 设置组件的server name
 func (w *CronServer) SetName(name string) {
 	w.serverName = name
+}
+
+type cronTask struct {
+	task     ITask
+	round    int
+	executed int
+	idx      int
 }

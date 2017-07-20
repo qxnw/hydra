@@ -10,8 +10,8 @@ import (
 	"github.com/qxnw/lib4go/logger"
 )
 
-//RPCInvoker rpc client factory
-type RPCInvoker struct {
+//Invoker RPC服务调用器，封装基于域及负载算法的RPC客户端
+type Invoker struct {
 	cache   cmap.ConcurrentMap
 	address string
 	opts    []ClientOption
@@ -30,7 +30,9 @@ type invokerOption struct {
 }
 
 const (
+	//RoundRobin 轮询负载算法
 	RoundRobin = iota + 1
+	//LocalFirst 本地优先负载算法
 	LocalFirst
 )
 
@@ -51,7 +53,7 @@ func WithRoundRobin() InvokerOption {
 	}
 }
 
-//WithLocalFirst 设置为轮询负载
+//WithLocalFirst 设置为本地优先负载
 func WithLocalFirst(prefix string) InvokerOption {
 	return func(o *invokerOption) {
 		o.balancerType = LocalFirst
@@ -59,12 +61,12 @@ func WithLocalFirst(prefix string) InvokerOption {
 	}
 }
 
-//NewRPCInvoker new rpc client factory
+//NewInvoker 构建RPC服务调用器
 //domain: 当前服务所在域
 //server: 当前服务器名称
 //addrss: 注册中心地址格式: zk://192.168.0.1166:2181或standalone://localhost
-func NewRPCInvoker(domain string, server string, address string, opts ...InvokerOption) (f *RPCInvoker) {
-	f = &RPCInvoker{
+func NewInvoker(domain string, server string, address string, opts ...InvokerOption) (f *Invoker) {
+	f = &Invoker{
 		domain:        domain,
 		server:        server,
 		address:       address,
@@ -75,20 +77,16 @@ func NewRPCInvoker(domain string, server string, address string, opts ...Invoker
 		opt(f.invokerOption)
 	}
 	if f.invokerOption.logger == nil {
-		f.invokerOption.logger = logger.GetSession("rpc.client", logger.CreateSession())
+		f.invokerOption.logger = logger.GetSession("rpc.invoker", logger.CreateSession())
 	}
 	return
 }
-func (r *RPCInvoker) prepareClient(service string) (*RPCClient, error) {
-	p, err := r.GetClientFromPool(service)
-	return p, err
-}
 
 //RequestFailRetry 失败重试请求
-func (r *RPCInvoker) RequestFailRetry(service string, input map[string]string, times int) (status int, result string, params map[string]string, err error) {
+func (r *Invoker) RequestFailRetry(service string, input map[string]string, times int) (status int, result string, params map[string]string, err error) {
 	for i := 0; i < times; i++ {
 		status, result, params, err = r.Request(service, input, true)
-		if err == nil {
+		if err == nil || status < 500 {
 			return
 		}
 	}
@@ -96,9 +94,9 @@ func (r *RPCInvoker) RequestFailRetry(service string, input map[string]string, t
 }
 
 //Request 使用RPC调用Request函数
-func (r *RPCInvoker) Request(service string, input map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
+func (r *Invoker) Request(service string, input map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
 	status = 500
-	client, err := r.prepareClient(service)
+	client, err := r.GetClient(service)
 	if err != nil {
 		return
 	}
@@ -114,10 +112,12 @@ func (r *RPCInvoker) Request(service string, input map[string]string, failFast b
 	return
 }
 
-//GetClientFromPool 获取rpc client
+//GetClient 获取RPC客户端
 //addr 支持格式:
-//order.request#merchant.hydra,order.request,order.request@api.hydra,order.request@api
-func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClient, err error) {
+//order.request#merchant.hydra
+//order.request,order.request@api.hydra
+//order.request@api
+func (r *Invoker) GetClient(addr string) (c *Client, err error) {
 	service, domain, server, err := r.resolvePath(addr)
 	if err != nil {
 		return
@@ -135,19 +135,19 @@ func (r *RPCInvoker) GetClientFromPool(addr string) (c *RPCClient, err error) {
 			opts = append(opts, WithLocalFirstBalancer(rs, rsrvs, r.localPrefix, map[string]int{}))
 		default:
 		}
-		return NewRPCClient(r.address, opts...)
+		return NewClient(r.address, opts...)
 	}, fullService)
 	if err != nil {
 		return
 	}
-	c = client.(*RPCClient)
+	c = client.(*Client)
 	return
 }
 
-//PreInit 预初始化客户端
-func (r *RPCInvoker) PreInit(services ...string) (err error) {
+//PreInit 预初始化服务器连接
+func (r *Invoker) PreInit(services ...string) (err error) {
 	for _, v := range services {
-		_, err = r.GetClientFromPool(v)
+		_, err = r.GetClient(v)
 		if err != nil {
 			return
 		}
@@ -155,21 +155,21 @@ func (r *RPCInvoker) PreInit(services ...string) (err error) {
 	return
 }
 
-//Close 关闭当前服务
-func (r *RPCInvoker) Close() {
+//Close 关闭当前客户端与服务器的连接
+func (r *Invoker) Close() {
 	r.cache.RemoveIterCb(func(k string, v interface{}) bool {
-		client := v.(*RPCClient)
+		client := v.(*Client)
 		client.Close()
 		return true
 	})
 }
 
-//resolvePath   解析服务地址:
+//resolvePath   解析注册中心地址
 //domain:hydra,server:merchant_cron
 //order.request#merchant_api.hydra 解析为:service: /order/request,server:merchant_api,domain:hydra
 //order.request 解析为 service: /order/request,server:merchant_cron,domain:hydra
 //order.request#merchant_rpc 解析为 service: /order/request,server:merchant_rpc,domain:hydra
-func (r *RPCInvoker) resolvePath(address string) (service string, domain string, server string, err error) {
+func (r *Invoker) resolvePath(address string) (service string, domain string, server string, err error) {
 	raddress := strings.TrimRight(address, "#")
 	addrs := strings.SplitN(raddress, "#", 2)
 	if len(addrs) == 1 {

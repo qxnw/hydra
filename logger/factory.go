@@ -27,6 +27,9 @@ func (f *RPCAppenderFactory) MakeAppender(l *logger.Appender, event *logger.LogE
 }
 func ConfigRPCLogger(domain string, address string, log *logger.Logger) error {
 	f, err := NewRPCAppenderFactory(domain, address, log)
+	if err != nil {
+		return err
+	}
 	f.appender = &logger.Appender{Type: "rpc", Level: f.writer.level, Layout: f.writer.layout, Interval: f.writer.interval}
 	if err != nil {
 		return err

@@ -111,14 +111,11 @@ func (s *MQConsumer) StopInfluxMetric() {
 
 //Use 启用消息处理
 func (s *MQConsumer) Use(queue string, handle func(*Context) error) error {
-	//s.Infof("start consume(%s/%s)", s.serverName, queue)
 	err := s.consumer.Consume(queue, func(m mq.IMessage) {
 		r := s.p.Get().(*Context)
 		r.reset(queue, m, s, "", handle)
 		r.Logger = logger.GetSession(queue, logger.CreateSession())
-		if server.IsDebug {
-			r.Debugf("mq.request.raw:%s", r.msg.GetMessage())
-		}
+
 		r.invoke()
 		if r.err != nil || r.statusCode != 200 {
 			r.Errorf("mq执行失败:%d,err:%v", r.statusCode, r.err)
@@ -152,6 +149,14 @@ func (s *MQConsumer) Close() {
 	s.running = false
 	s.unregistryServer()
 	s.consumer.Close()
-	s.Infof("mq: Server closed(%s)", s.serverName)
+	s.Infof("mq Server closed(%s)", s.serverName)
 
+}
+
+type task struct {
+	name    string
+	action  string
+	mode    string
+	service string
+	args    string
 }

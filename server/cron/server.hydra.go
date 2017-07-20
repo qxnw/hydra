@@ -2,7 +2,6 @@ package cron
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -23,17 +22,17 @@ type hydraCronServer struct {
 	server   *CronServer
 	conf     conf.Conf
 	registry server.IServiceRegistry
-	handler  context.EngineHandler
+	handler  context.Handler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
-			60, // 86400,
+			60,
 			time.Second,
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
@@ -46,7 +45,7 @@ func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry
 func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	w.server = NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
-		60, //86400,
+		60,
 		time.Second,
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
@@ -60,18 +59,20 @@ func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraCronServer) setConf(conf conf.Conf) error {
+	//检查配置版本是否变更
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
+	//检查服务器状态是否停止
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置任务
-	routers, err := conf.GetNodeWithSection("task")
+	routers, err := conf.GetNodeWithSectionName("task")
 	if err != nil {
 		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNodeWithSection("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("task"); err != nil || r.GetVersion() != routers.GetVersion() {
 		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("tasks")
 		if err != nil {
@@ -100,13 +101,13 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			w.server.Add(task)
 		}
 	}
-	//设置metric上报
+	//设置metric上报监控数据
 	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSection("metric")
+		metric, err := conf.GetNodeWithSectionName("metric")
 		if err != nil {
 			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 			host := metric.String("host")
 			dataBase := metric.String("dataBase")
 			userName := metric.String("userName")
@@ -129,7 +130,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 
 }
 
-//setRouter 设置路由
+//setRouter 执行引擎操作
 func (w *hydraCronServer) handle(service, mode, input, body, args string) func(task *Task) error {
 	return func(task *Task) (err error) {
 		//处理输入参数
@@ -137,22 +138,9 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 		defer ctx.Close()
 
 		ext := map[string]interface{}{"hydra_sid": task.GetSessionID()}
-		margs, err := utility.GetMapWithQuery(args)
-		if err != nil {
-			task.statusCode = 500
-			task.err = fmt.Errorf("args配置出错(%s)：%v", args, err)
-			task.Result = task.err
-			task.Error(task.err)
-			return
-		}
 		var inputGetter transform.ITransformGetter
 		var paramGetter transform.ITransformGetter
 		var inputBody string
-		if err != nil {
-			task.statusCode = 500
-			task.Result = err
-			return err
-		}
 		if input != "" {
 			input, err := utility.GetMapWithQuery(input)
 			if err != nil {
@@ -188,20 +176,29 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 			}
 			return string(cnf), nil
 		}
+		margs, err := utility.GetMapWithQuery(args)
+		if err != nil {
+			task.statusCode = 500
+			task.err = fmt.Errorf("args配置出错(%s)：%v", args, err)
+			task.Result = task.err
+			task.Error(task.err)
+			return
+		}
 		//执行服务调用
 		ctx.Set(inputGetter, paramGetter, inputBody, margs, ext)
 		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
-		if err != nil {
-			task.statusCode = 500
-			task.err = fmt.Errorf("cron.server.handler.error:%s,(%s),err:%v", task.taskName, types.GetString(response.Content), err)
-			task.Error(task.err)
-			return task.err
+		if response == nil {
+			response = &context.Response{}
 		}
-		if status, ok := response.Params["Status"]; ok {
-			s, err := strconv.Atoi(status.(string))
-			if err == nil {
-				response.Status = s
-			}
+		defer func() {
+			task.Debugf("cron.response.raw:%+v", response.Content)
+		}()
+		if err != nil || (response.Status >= 500 && response.Status < 600) {
+			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.Content, err)
+			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
+			task.statusCode = response.Status
+			response.Content = task.err.Error()
+			return task.err
 		}
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
 		task.Result = response.Content
@@ -238,20 +235,24 @@ func (w *hydraCronServer) Notify(conf conf.Conf) error {
 	//任务列表无变化
 	return w.setConf(conf)
 }
+
+//needRestart 检查是否需要重启
 func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSection("task")
+	routers, err := conf.GetNodeWithSectionName("task")
 	if err != nil {
 		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSection("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("task"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil
 }
+
+//GetStatus 获取服务器运行状态
 func (w *hydraCronServer) GetStatus() string {
 	if w.server.running {
 		return server.ST_RUNNING
@@ -267,7 +268,7 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraCronServer(c, r, conf)
 }
 

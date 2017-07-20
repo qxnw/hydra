@@ -26,7 +26,7 @@ type Handler interface {
 }
 
 type Context struct {
-	tan *WebServer
+	tan *HTTPServer
 	*logger.Logger
 	BodyBuffer []byte
 	idx        int

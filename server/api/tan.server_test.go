@@ -64,7 +64,7 @@ func TestServer1(t *testing.T) {
 }
 func TestServer2(t *testing.T) {
 	handler := &contextHandler{version: 101, services: make(chan string, 1)}
-	conf, err := conf.NewJSONConfWithJson(confstr2, 100, handler.GetPath)
+	conf, err := conf.NewJSONConfWithJson(confstr2, 100, handler.GetPath, handler.GetPath)
 	ut.Expect(t, err, nil)
 	server, err := newHydraWebServer(handler, nil, conf)
 	ut.ExpectSkip(t, err, nil)

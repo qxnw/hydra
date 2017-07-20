@@ -14,7 +14,7 @@ type rpcProxy struct {
 	serverName string
 	serverType string
 	services   []string
-	invoker    *rpc.RPCInvoker
+	invoker    *rpc.Invoker
 }
 
 func newRPCProxy() *rpcProxy {
@@ -50,7 +50,7 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	return &context.Response{Status: status, Content: result, Params: types.GetIMap(params)}, err
 }
 func (s *rpcProxy) Has(shortName, fullName string) (err error) {
-	_, err = s.invoker.GetClientFromPool(fullName)
+	_, err = s.invoker.GetClient(fullName)
 	return err
 }
 

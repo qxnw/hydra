@@ -26,7 +26,7 @@ type goPluginWorker struct {
 	scriptPath string
 	srvPlugins map[string]goplugin.Worker
 	services   cmap.ConcurrentMap
-	invoker    *rpc.RPCInvoker
+	invoker    *rpc.Invoker
 	path       []string
 	isClose    bool
 }

@@ -1,4 +1,4 @@
-package sms
+package ssm
 
 import (
 	"fmt"
@@ -14,17 +14,18 @@ type smsProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	invoker         *rpc.RPCInvoker
+	invoker         *rpc.Invoker
 	serviceHandlers map[string]func(*context.Context) (string, int, error)
 }
 
 func newSmsProxy() *smsProxy {
 	p := &smsProxy{
-		services:        make([]string, 0, 1),
+		services:        make([]string, 0, 4),
 		serviceHandlers: make(map[string]func(*context.Context) (string, int, error)),
 	}
 	p.serviceHandlers["/ssm/ytx/send"] = p.ytxSend
 	p.serviceHandlers["/ssm/wx/send"] = p.wxSend
+	p.serviceHandlers["/ssm/email/send"] = p.sendMail
 	for k := range p.serviceHandlers {
 		p.services = append(p.services, k)
 	}
@@ -50,8 +51,7 @@ func (s *smsProxy) Close() error {
 func (s *smsProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
 	content, st, err := s.serviceHandlers[service](ctx)
 	if err != nil {
-		err = fmt.Errorf("engine:sms.%v", err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:ssm.%v", err)
 	}
 	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
 }
@@ -59,7 +59,7 @@ func (s *smsProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {
 		return nil
 	}
-	return fmt.Errorf("engine:sms.不存在服务:%s", shortName)
+	return fmt.Errorf("engine:ssm.不存在服务:%s", shortName)
 }
 
 type ytxProxyResolver struct {

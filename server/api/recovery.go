@@ -16,7 +16,7 @@ func Recovery(debug bool) HandlerFunc {
 		defer func() {
 			if e := recover(); e != nil {
 				var buf bytes.Buffer
-				fmt.Fprintf(&buf, "Handler crashed with error: %v", e)
+				fmt.Fprintf(&buf, "api request handler crashed with error: %v", e)
 				for i := 1; ; i++ {
 					_, file, line, ok := runtime.Caller(i)
 					if !ok {

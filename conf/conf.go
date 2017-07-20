@@ -3,53 +3,10 @@ package conf
 import (
 	"fmt"
 
-	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/transform"
 )
 
-//WatchServices /api，mq，rpc，cron
-var WatchServices = []string{"api", "rpc", "cron", "mq"}
-
-type Updater struct {
-	Conf Conf
-	Op   int
-}
-
-//ConfWatcher 配置文件监控器
-type ConfWatcher interface {
-	Start() error
-	Notify() chan *Updater
-	Close() error
-}
-
-//ConfResolver 定义配置文件转换方法
-type ConfResolver interface {
-	Resolve(adapter string, domain string, tag string, log *logger.Logger, servers []string) (ConfWatcher, error)
-}
-
-var confResolvers = make(map[string]ConfResolver)
-
-//Register 注册配置文件适配器
-func Register(name string, resolver ConfResolver) {
-	if resolver == nil {
-		panic("config: Register adapter is nil")
-	}
-	if _, ok := confResolvers[name]; ok {
-		panic("config: Register called twice for adapter " + name)
-	}
-	confResolvers[name] = resolver
-}
-
-//NewWatcher 根据适配器名称及参数返回配置处理器
-func NewWatcher(adapter string, domain string, tag string, log *logger.Logger, servers []string) (ConfWatcher, error) {
-	resolver, ok := confResolvers[adapter]
-	if !ok {
-		return nil, fmt.Errorf("config: unknown adapter name %q (forgotten import?)", adapter)
-	}
-	return resolver.Resolve(adapter, domain, tag, log, servers)
-}
-
-//Conf 配置提供从配置文件中读取参数的方法
+//Conf 基本JSON的配置管理器
 type Conf interface {
 	GetVersion() int32
 	Has(key string) bool
@@ -61,8 +18,8 @@ type Conf interface {
 	GetIMap(section string) (map[string]interface{}, error)
 	GetSMap(section string) (map[string]string, error)
 	GetRawNodeWithValue(value string, enableCache ...bool) (r []byte, err error)
-	GetNodeWithValue(value string, enableCache ...bool) (r Conf, err error)
-	GetNodeWithSection(section string, enableCache ...bool) (Conf, error)
+	GetNodeWithSectionValue(sectionValue string, enableCache ...bool) (r Conf, err error)
+	GetNodeWithSectionName(sectionName string, enableCache ...bool) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
 	GetSectionString(section string) (r string, err error)
 	GetArray(key string) (r []interface{}, err error)

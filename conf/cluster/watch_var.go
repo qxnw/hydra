@@ -1,5 +1,6 @@
 package cluster
 
+/*
 import (
 	"fmt"
 
@@ -125,3 +126,4 @@ func (w *watchVarConf) watchValue() {
 		}
 	}
 }
+*/

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"sync"
@@ -23,12 +22,12 @@ type hydraRPCServer struct {
 	server   *RPCServer
 	registry server.IServiceRegistry
 	conf     conf.Conf
-	handler  context.EngineHandler
+	handler  context.Handler
 	mu       sync.Mutex
 }
 
-//newHydraRPCServer 构建基本配置参数的web server
-func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
+//newHydraRPCServer 构建RPC服务器
+func newHydraRPCServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -40,7 +39,7 @@ func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry,
 	return
 }
 
-//restartServer 重启服务器
+//restartServer 重启RPC服务器
 func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
@@ -62,18 +61,20 @@ func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 
 //SetConf 设置配置参数
 func (w *hydraRPCServer) setConf(conf conf.Conf) error {
+	//检查版本是否发生变化
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
+	//检查服务器状态是否正确
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置路由
-	routers, err := conf.GetNodeWithSection("router")
+	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("routers")
 		if err != nil {
@@ -110,14 +111,13 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.SetRouters(routers...)
 	}
 
-	//设置metric上报
+	//设置metric服务器监控状态
 	if conf.Has("metric") {
-
-		metric, err := conf.GetNodeWithSection("metric")
+		metric, err := conf.GetNodeWithSectionName("metric")
 		if err != nil {
 			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 			host := metric.String("host")
 			dataBase := metric.String("dataBase")
 			userName := metric.String("userName")
@@ -134,12 +134,13 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.StopInfluxMetric()
 	}
 
+	//设置限流规则
 	if conf.Has("limiter") {
-		limiter, err := conf.GetNodeWithSection("limiter")
+		limiter, err := conf.GetNodeWithSectionName("limiter")
 		if err != nil {
 			return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSection("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
+		if r, err := w.conf.GetNodeWithSectionName("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
 			lmts, err := limiter.GetSections("QPS")
 			if err != nil {
 				return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -158,6 +159,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 	} else {
 		w.server.UpdateLimiter(make(map[string]int))
 	}
+
 	//设置基本参数
 	w.conf = conf
 	return nil
@@ -182,7 +184,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}
 
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetNodeWithSectionName(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
@@ -198,38 +200,37 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
-		if err != nil {
-			c.Errorf(fmt.Sprintf("rpc.server.handler.error:%s %v", types.GetString(response.Content), err))
-			if server.IsDebug {
-				c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: fmt.Sprintf("%s %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
-				return
-			}
-			if response.Content == "" && (response.Status >= 500 || response.Status == 0) {
-				response.Content = "Internal Server Error(工作引擎发生异常)"
-			}
-			c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: response.Content, Type: AutoResponse}
-			return
+		if response == nil {
+			response = &context.Response{}
 		}
-		if status, ok := response.Params["Status"]; ok {
-			s, err := strconv.Atoi(status.(string))
-			if err == nil {
-				response.Status = s
-			}
-		}
-		//处理返回参数
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		var typeID = JsonResponse
+		defer func() {
+			c.Debugf("rpc.response.raw:%+v", response.Content)
+		}()
+
+		//处理输入content-type
+		var responseType = JsonResponse
 		if tp, ok := response.Params["Content-Type"].(string); ok {
 			if strings.Contains(tp, "xml") {
-				typeID = XmlResponse
+				responseType = XmlResponse
 			} else if strings.Contains(tp, "plain") {
-				typeID = AutoResponse
+				responseType = AutoResponse
 			}
 		}
-		if server.IsDebug {
-			c.Debugf("rpc.response.raw:%+v", response.Content)
+
+		//处理错误err,500+
+		if err != nil || (response.Status >= 500 && response.Status < 600) {
+			err = fmt.Errorf("rpc.server.handler.error:%v", err)
+			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
+			if server.IsDebug {
+				c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: fmt.Sprintf("%v %v", response.Content, err), Type: responseType}
+				return
+			}
+			response.Content = types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content)
+			c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
+			return
 		}
-		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
+		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
 	}
 }
 
@@ -273,12 +274,12 @@ func (w *hydraRPCServer) needRestart(conf conf.Conf) (bool, error) {
 	if w.conf.String("address") != conf.String("address") {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSection("router")
+	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil
@@ -298,7 +299,7 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraRPCServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraRPCServer(c, r, conf)
 }
 

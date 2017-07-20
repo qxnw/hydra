@@ -19,18 +19,18 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-//hydraWebServer web server适配器
-type hydraWebServer struct {
-	server   *WebServer
+//hydraAPIServer api 服务器
+type hydraAPIServer struct {
+	server   *HTTPServer
 	conf     conf.Conf
 	registry server.IServiceRegistry
-	handler  context.EngineHandler
+	handler  context.Handler
 	mu       sync.Mutex
 }
 
-//newHydraWebServer 构建基本配置参数的web server
-func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
-	h = &hydraWebServer{handler: handler,
+//newHydraAPIServer 创建API服务器
+func newHydraAPIServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraAPIServer, err error) {
+	h = &hydraAPIServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
 		server: New(cnf.String("domain"), cnf.String("name", "api.server"),
@@ -40,7 +40,8 @@ func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry,
 	return
 }
 
-func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
+//restartServer 重启服务器
+func (w *hydraAPIServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = New(cnf.String("domain"), cnf.String("name", "api.server"),
@@ -54,20 +55,22 @@ func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	return w.Start()
 }
 
-//SetConf 设置配置参数
-func (w *hydraWebServer) setConf(conf conf.Conf) error {
+//setConf 设置配置参数
+func (w *hydraAPIServer) setConf(conf conf.Conf) error {
+	//检查版本号
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
+	//检查服务器状态
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置路由
-	routers, err := conf.GetNodeWithSection("router")
+	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
-	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("routers")
 		if err != nil || len(rts) == 0 {
@@ -95,7 +98,6 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
 				}
 			}
-			apiRouters = append(apiRouters, w.getCheckerRouter())
 			apiRouters = append(apiRouters, &webRouter{
 				Method:      actions,
 				Path:        name,
@@ -103,7 +105,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 				Middlewares: make([]Handler, 0, 0)})
 		}
 		w.server.SetRouters(apiRouters...)
-		//设置头信息
+		//设置通用头信息
 		headers, err := routers.GetIMap("headers")
 		if err == nil {
 			nheader := make(map[string]string)
@@ -143,13 +145,13 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
 
-	//设置metric上报
+	//设置metric服务器监控数据
 	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSection("metric")
+		metric, err := conf.GetNodeWithSectionName("metric")
 		if err != nil {
 			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSection("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
+		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
 			host := metric.String("host")
 			dataBase := metric.String("dataBase")
 			userName := metric.String("userName")
@@ -166,14 +168,14 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.StopInfluxMetric()
 	}
 
-	//设置基本参数
+	//设置其它参数
 	w.server.SetHost(conf.String("host"))
 	w.conf = conf
 	return nil
 }
 
-//setRouter 设置路由
-func (w *hydraWebServer) handle(name string, mode string, service string, args string) func(c *Context) {
+//handle api请求处理程序
+func (w *hydraAPIServer) handle(name string, mode string, service string, args string) func(c *Context) {
 	return func(c *Context) {
 		//处理输入参数
 		ctx := context.GetContext()
@@ -210,81 +212,75 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		ctx.Set(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
 
-		//执行服务调用
+		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
-		if response != nil {
-			//处理返回参数
-			for k, v := range response.Params {
-				c.Header().Set(k, v.(string))
+		if response == nil {
+			response = &context.Response{}
+		}
+		defer func() {
+			c.Debugf("api.response.raw:%+v", response.Content)
+		}()
+
+		//处理头信息
+		for k, v := range response.Params {
+			c.Header().Set(k, v.(string))
+		}
+
+		//处理输入content-type
+		var responseType = JsonResponse
+		if tp, ok := response.Params["Content-Type"].(string); ok {
+			if strings.Contains(tp, "xml") {
+				responseType = XmlResponse
+			} else if strings.Contains(tp, "plain") {
+				responseType = AutoResponse
 			}
 		}
-		if err != nil {
-			if response != nil {
-				response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
-			}
-			c.Errorf(fmt.Sprintf("api.server.handler.error:%+v", err.Error()))
+
+		//处理错误err,500+
+		if err != nil || (response.Status >= 500 && response.Status < 600) {
+			err = fmt.Errorf("api.server.handler.error:%v", err)
+			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: response.Status, Result: fmt.Sprintf("%v %+v", types.GetString(response.Content), err.Error()), Type: AutoResponse}
+				c.Result = &StatusResult{Code: response.Status, Result: fmt.Sprintf("%v %v", response.Content, err), Type: responseType}
 				return
 			}
-			if response.Content == "" && (response.Status >= 500 || response.Status == 0) {
-				response.Content = "Internal Server Error(工作引擎发生异常)"
-			}
-			c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: response.Content, Type: AutoResponse}
+			response.Content = types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content)
+			c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
 			return
 		}
 
-		//处理跳转
+		//处理跳转302,303
 		if location, ok := response.Params["Location"]; ok {
-			response.Status = 302
 			if status, ok := response.Params["Status"]; ok {
 				s, err := strconv.Atoi(status.(string))
 				if err == nil {
 					response.Status = s
 				}
 			}
+			if response.Status != 302 && response.Status != 303 {
+				response.Status = 302
+			}
 			if url, ok := location.(string); ok {
 				c.Redirect(url, response.Status)
 				return
 			}
+			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("返回的URL不正确:%v", location), Type: responseType}
+			return
 		}
-		if status, ok := response.Params["Status"]; ok {
-			s, err := strconv.Atoi(status.(string))
-			if err == nil {
-				response.Status = s
-			}
-		}
+
+		//处理400+,200+
 		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		var typeID = JsonResponse
-		if tp, ok := response.Params["Content-Type"].(string); ok {
-			if strings.Contains(tp, "xml") {
-				typeID = XmlResponse
-			} else if strings.Contains(tp, "plain") {
-				typeID = AutoResponse
-			}
-		}
-		if server.IsDebug {
-			c.Debugf("api.response.raw:%+v", response.Content)
-		}
-		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: typeID}
+		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
 	}
 }
 
-func (w *hydraWebServer) getCheckerRouter() *webRouter {
-	return &webRouter{
-		Method: []string{"GET"},
-		Path:   "/server/checker",
-		Handler: func(c *Context) {
-			c.Result = &StatusResult{Code: 200, Result: "success", Type: 0}
-		},
-		Middlewares: make([]Handler, 0, 0)}
-}
-
 //GetAddress 获取服务器地址
-func (w *hydraWebServer) GetAddress() string {
+func (w *hydraAPIServer) GetAddress() string {
 	return w.server.GetAddress()
 }
-func (w *hydraWebServer) GetStatus() string {
+
+//GetStatus 获取当前服务器状态
+func (w *hydraAPIServer) GetStatus() string {
 	if w.server.Running {
 		return server.ST_RUNNING
 	}
@@ -292,7 +288,7 @@ func (w *hydraWebServer) GetStatus() string {
 }
 
 //Start 启用服务
-func (w *hydraWebServer) Start() (err error) {
+func (w *hydraAPIServer) Start() (err error) {
 	tls, err := w.conf.GetSection("tls")
 	if err != nil {
 		go func() {
@@ -307,14 +303,14 @@ func (w *hydraWebServer) Start() (err error) {
 	return nil
 }
 
-//接口服务变更通知
-func (w *hydraWebServer) Notify(conf conf.Conf) error {
+//Notify 服务器配置变更通知
+func (w *hydraAPIServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
 		return nil
 	}
-
+	//检查是否需要重启服务器
 	restart, err := w.needRestart(conf)
 	if err != nil {
 		return err
@@ -325,7 +321,9 @@ func (w *hydraWebServer) Notify(conf conf.Conf) error {
 	//服务器地址未变化，更新服务器当前配置，并立即生效
 	return w.setConf(conf)
 }
-func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
+
+//needRestart 检查配置判断是否需要重启服务器
+func (w *hydraAPIServer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
 		return true, nil
 	}
@@ -335,30 +333,30 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 	if w.conf.String("host") != conf.String("host") {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSection("router")
+	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSection("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil
 }
 
-//Shutdown 关闭服务
-func (w *hydraWebServer) Shutdown() {
+//Shutdown 关闭服务器
+func (w *hydraAPIServer) Shutdown() {
 	timeout, _ := w.conf.Int("timeout", 10)
 	w.server.Shutdown(time.Duration(timeout) * time.Second)
 }
 
-type hydraWebServerAdapter struct {
+type apiServerAdapter struct {
 }
 
-func (h *hydraWebServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraWebServer(c, r, conf)
+func (h *apiServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+	return newHydraAPIServer(c, r, conf)
 }
 
 func init() {
-	server.Register(server.SRV_TP_API, &hydraWebServerAdapter{})
+	server.Register(server.SRV_TP_API, &apiServerAdapter{})
 }

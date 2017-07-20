@@ -1,13 +1,6 @@
 package api
 
-import (
-	"errors"
-	"strings"
-
-	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/context"
-)
-
+/*
 type benchtHandler struct {
 	version int32
 }
@@ -29,7 +22,7 @@ func (h benchtHandler) GetPath(p string) (conf.Conf, error) {
 	return nil, errors.New("not find")
 }
 
-/*
+
 func TestNotify(t *testing.T) {
 	handler := &benchtHandler{version: 101}
 	conf, err := registry.NewJSONConfWithJson(confstr_b1, 100, handler.GetPath)

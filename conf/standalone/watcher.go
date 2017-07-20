@@ -32,7 +32,7 @@ type jsonConfWatcher struct {
 	checker        registry.Checker
 	timeSpan       time.Duration
 	domain         string
-	tag            string
+	serverTag      string
 	mu             sync.Mutex
 	closeChan      chan struct{}
 	*logger.Logger
@@ -50,8 +50,8 @@ type watcherPath struct {
 	send         bool
 }
 
-//NewJSONConfWatcher 创建zookeeper配置文件监控器
-func NewJSONConfWatcher(domain string, tag string, log *logger.Logger) (w *jsonConfWatcher, err error) {
+//newSAWatcher 创建基于本地文件的配置监控器
+func newSAWatcher(domain string, serverTag string, log *logger.Logger) (w *jsonConfWatcher, err error) {
 	w = &jsonConfWatcher{
 		notifyConfChan: make(chan *conf.Updater),
 		watchConfChan:  make(chan string, 2),
@@ -61,7 +61,7 @@ func NewJSONConfWatcher(domain string, tag string, log *logger.Logger) (w *jsonC
 		cacheAddress:   cmap.New(2),
 		cacheDir:       cmap.New(2),
 		domain:         domain,
-		tag:            tag,
+		serverTag:      serverTag,
 		timeSpan:       time.Second,
 		Logger:         log,
 	}
@@ -69,8 +69,8 @@ func NewJSONConfWatcher(domain string, tag string, log *logger.Logger) (w *jsonC
 	if err != nil {
 		return
 	}
-	if tag == "" {
-		w.tag = "conf"
+	if serverTag == "" {
+		w.serverTag = "conf"
 	}
 	w.defTime, _ = time.Parse("2000-01-01", "2006-01-02")
 	return
@@ -154,7 +154,7 @@ START:
 			}
 			w.cacheDir.Set(path, true)
 			for _, v := range children { //检查当前配置地址未缓存
-				for _, sv := range conf.WatchServices { //hydra/servers/merchant.api/api/conf.json
+				for _, sv := range conf.WatchServers { //hydra/servers/merchant.api/api/conf.json
 					name := fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv)
 					if _, ok := w.cacheAddress.Get(name); !ok {
 						w.cacheAddress.Set(name, &watcherPath{modTime: w.defTime,
@@ -171,7 +171,7 @@ START:
 			w.cacheAddress.IterCb(func(key string, value interface{}) bool {
 				exists := false
 				for _, v := range children {
-					for _, sv := range conf.WatchServices {
+					for _, sv := range conf.WatchServers {
 						if key == fmt.Sprintf("%s/%s/%s/conf/conf", path, v, sv) {
 							exists = true
 							break

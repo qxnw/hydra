@@ -25,12 +25,7 @@ type userInfo struct {
 }
 
 func (s *collectProxy) notify(ctx *context.Context) (r string, st int, err error) {
-	settingName, ok := ctx.GetArgs()["setting"]
-	if !ok {
-		err = fmt.Errorf("未配置setting属性(%v)，err:%v", ctx.GetArgs(), err)
-		return
-	}
-	settingData, err := s.getVarParam(ctx, "setting", settingName)
+	settingData, err := ctx.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("setting.%s未配置:err:%v", ctx.GetArgs()["setting"], err)
 		return

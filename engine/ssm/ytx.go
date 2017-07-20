@@ -1,4 +1,4 @@
-package sms
+package ssm
 
 /*配置文件内容：{
     "appid": "8a48b5514e5298b9014e67a3f02f1411",
@@ -13,7 +13,6 @@ package sms
 }*/
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/qxnw/hydra/conf"
@@ -37,7 +36,7 @@ type eSMS struct {
 	header  map[string]string
 }
 
-func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
+func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 	sms = &eSMS{header: make(map[string]string)}
 	sms.mobile, err = ctx.GetInput().Get("mobile")
 	if err != nil || sms.mobile == "" {
@@ -54,12 +53,7 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 	for _, v := range datas {
 		sms.data = fmt.Sprintf("%s<data>%s</data>", sms.data, v)
 	}
-	setting, ok := ctx.GetArgs()["setting"]
-	if !ok {
-		err = fmt.Errorf("Args.setting配置不能为空")
-		return
-	}
-	content, err := s.getVarParam(ctx, setting)
+	content, err := ctx.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return
 	}
@@ -75,37 +69,37 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 
 	sign := form.String("sign")
 	if sign == "" || strings.Contains(sign, "@") {
-		err = fmt.Errorf("setting[%s]配置错误，sign配置错误(sign:%s)", setting, sign)
+		err = fmt.Errorf("args.setting配置错误，sign配置错误(sign:%s)(%s)", sign, content)
 		return
 	}
 	form.Set("sign", strings.ToUpper(md5.Encrypt(sign)))
 
 	sms.url = form.String("url")
 	if sms.url == "" || strings.Contains(sms.url, "@") {
-		err = fmt.Errorf("setting[%s]配置错误，url配置错误(url:%s)", setting, sms.url)
+		err = fmt.Errorf("args.setting配置错误，url配置错误(url:%s)(%s)", sms.url, content)
 		return
 	}
 	sms.body = form.String("body")
 	if sms.body == "" || strings.Contains(sms.body, "@") {
-		err = fmt.Errorf("setting[%s]配置错误，body配置错误(body:%s)", setting, sms.body)
+		err = fmt.Errorf("args.setting配置错误，body配置错误(body:%s)(%s)", sms.body, content)
 		return
 	}
 	auth := form.String("auth")
 	if auth == "" || strings.Contains(auth, "@") {
-		err = fmt.Errorf("setting[%s]配置错误，auth配置错误(auth:%s)", setting, auth)
+		err = fmt.Errorf("args.setting配置错误，auth配置错误(auth:%s)(%s)", auth, content)
 		return
 	}
 	form.Set("auth", base64.Encode(auth))
 	header := form.String("header")
 	if header == "" || strings.Contains(header, "@") {
-		err = fmt.Errorf("setting[%s]配置错误，header配置错误(header:%s)", setting, header)
+		err = fmt.Errorf("args.setting配置错误，header配置错误(header:%s)(%s)", header, content)
 		return
 	}
 	headers := strings.Split(header, "\r\n")
 	for _, v := range headers {
 		hs := strings.SplitN(v, ":", 2)
 		if len(hs) != 2 {
-			err = fmt.Errorf("setting[%s]配置错误，header配置错误,不是有效的键值对(header:%s)", setting, header)
+			err = fmt.Errorf("args.setting配置错误，header配置错误,不是有效的键值对(header:%s)", header)
 			return
 		}
 		sms.header[hs[0]] = hs[1]
@@ -115,19 +109,8 @@ func (s *smsProxy) getGetParams(ctx *context.Context) (sms *eSMS, err error) {
 
 }
 
-func (s *smsProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.GetExt()["__func_var_get_"]
-	if funcVar == nil {
-		return "", errors.New("未找到__func_var_get_")
-	}
-	if f, ok := funcVar.(func(c string, n string) (string, error)); ok {
-		return f("setting", name)
-	}
-	return "", errors.New("未找到__func_var_get_传入类型错误")
-}
-
 func (s *smsProxy) ytxSend(ctx *context.Context) (r string, st int, err error) {
-	m, err := s.getGetParams(ctx)
+	m, err := s.getYtxParams(ctx)
 	if err != nil {
 		return
 	}

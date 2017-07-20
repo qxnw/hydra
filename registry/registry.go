@@ -10,7 +10,7 @@ import (
 	"github.com/qxnw/lib4go/registry"
 )
 
-//Registry 注册中心接口
+//Registry 注册中心接口,通过扩展支持zookeeper,consul,etcd
 type Registry interface {
 	Exists(path string) (bool, error)
 	WatchChildren(path string) (data chan registry.ChildrenWatcher, err error)
@@ -25,14 +25,12 @@ type Registry interface {
 	Close()
 }
 
-type ServiceUpdater struct {
-	Value string
-	Op    int
-}
-
 const (
+	//ADD 新增节点
 	ADD = iota + 1
+	//CHANGE 节点变更
 	CHANGE
+	//DEL 删除节点
 	DEL
 )
 
