@@ -42,12 +42,6 @@ func (c *Context) GetExt() map[string]interface{} {
 	return c.ext
 }
 
-//Response 响应
-type Response struct {
-	Content interface{}
-	Status  int
-	Params  map[string]interface{}
-}
 
 //Close 回收context
 func (c *Context) Close() {

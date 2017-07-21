@@ -58,7 +58,7 @@ type XmlString struct {
 	Content string   `xml:"content"`
 }
 
-func Return() HandlerFunc {
+func APIReturn() HandlerFunc {
 	return func(ctx *Context) {
 		var rt int
 		action := ctx.Action()
@@ -88,8 +88,8 @@ func Return() HandlerFunc {
 			result = res.Result
 			rt = res.Type
 		}
-		if len(ctx.tan.headers) > 0 {
-			for k, v := range ctx.tan.headers {
+		if len(ctx.Server.Headers) > 0 {
+			for k, v := range ctx.Server.Headers {
 				ctx.Header().Set(k, v)
 			}
 		}

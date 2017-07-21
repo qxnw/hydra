@@ -29,8 +29,8 @@ func Logging() HandlerFunc {
 		if len(ctx.Req().URL.RawQuery) > 0 {
 			p = p + "?" + ctx.Req().URL.RawQuery
 		}
-		ctx.Info("api.request:", ctx.tan.serverName, ctx.Req().Method, p, "from", ctx.IP())
-		ctx.Debug("api.request.raw:", ctx.Forms().Form, string(ctx.BodyBuffer))
+		ctx.Info(ctx.Server.typeName+".request:", ctx.Server.serverName, ctx.Req().Method, p, "from", ctx.IP())
+		ctx.Debug(ctx.Server.typeName+".request.raw:", ctx.Forms().Form, string(ctx.BodyBuffer))
 
 		if action := ctx.Action(); action != nil {
 			if l, ok := action.(LogInterface); ok {
@@ -48,9 +48,9 @@ func Logging() HandlerFunc {
 		statusCode := ctx.Status()
 
 		if statusCode >= 200 && statusCode < 400 {
-			ctx.Info("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
+			ctx.Info(ctx.Server.typeName+".response:", ctx.Server.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		} else {
-			ctx.Error("api.response:", ctx.tan.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
+			ctx.Error(ctx.Server.typeName+".response:", ctx.Server.serverName, ctx.Req().Method, p, statusCode, time.Since(start))
 		}
 	}
 }

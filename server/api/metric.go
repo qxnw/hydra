@@ -75,9 +75,9 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	url := ctx.Req().URL.Path
 	client := ctx.IP()
-	conterName := metrics.MakeName("api.server.request", metrics.WORKING, "domain", ctx.tan.domain, "name", ctx.tan.serverName, "server", ctx.tan.ip, "client", client, "url", url) //堵塞计数
-	timerName := metrics.MakeName("api.server.request", metrics.TIMER, "domain", ctx.tan.domain, "name", ctx.tan.serverName, "server", ctx.tan.ip, "client", client, "url", url)    //堵塞计数
-	requestName := metrics.MakeName("api.server.request", metrics.QPS, "domain", ctx.tan.domain, "name", ctx.tan.serverName, "server", ctx.tan.ip,
+	conterName := metrics.MakeName("api.server.request", metrics.WORKING, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "client", client, "url", url) //堵塞计数
+	timerName := metrics.MakeName("api.server.request", metrics.TIMER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "client", client, "url", url)    //堵塞计数
+	requestName := metrics.MakeName("api.server.request", metrics.QPS, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
 		"client", client, "url", url) //请求数
 	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
@@ -94,7 +94,7 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	}
 
 	statusCode := ctx.Status()
-	responseName := metrics.MakeName("api.server.response", metrics.METER, "domain", ctx.tan.domain, "name", ctx.tan.serverName, "server", ctx.tan.ip,
+	responseName := metrics.MakeName("api.server.response", metrics.METER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
 		"client", client, "url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 

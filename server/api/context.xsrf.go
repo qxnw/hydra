@@ -35,7 +35,7 @@ func (ctx *Context) CheckXSRFToken(key string, secret string) bool {
 
 func XSRFFilter() HandlerFunc {
 	return func(ctx *Context) {
-		if ctx.tan.xsrf != nil && !ctx.CheckXSRFToken(ctx.tan.xsrf.Key, ctx.tan.xsrf.Secret) {
+		if ctx.Server.xsrf != nil && !ctx.CheckXSRFToken(ctx.Server.xsrf.Key, ctx.Server.xsrf.Secret) {
 			ctx.WriteHeader(403)
 			ctx.Result = &StatusResult{Code: 403}
 			return

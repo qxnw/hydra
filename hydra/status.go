@@ -28,7 +28,7 @@ var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 101
 
 //StartStatusServer 启动状态服务器
 func (h *Hydra) StartStatusServer(domain string) (err error) {
-	ws := api.New(domain, "status.server")
+	ws := api.NewAPI(domain, "status.server")
 	ws.Route("GET", "/sys/server/query", func(c *api.Context) {
 		status := make([]StatusServer, 0, len(h.servers))
 		for _, v := range h.servers {

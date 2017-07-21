@@ -28,6 +28,7 @@ type HTTPServer struct {
 	serverName string
 	proto      string
 	port       int
+	typeName   string
 	Router
 	handlers    []Handler
 	ErrHandler  Handler
@@ -37,14 +38,14 @@ type HTTPServer struct {
 	mu          sync.RWMutex
 	*webServerOption
 	Running              bool
-	headers              map[string]string
+	Headers              map[string]string
 	xsrf                 *XSRF
 	onlyAllowAjaxRequest bool
 }
 
 type webServerOption struct {
-	ip           string
-	logger       *logger.Logger
+	ip string
+	*logger.Logger
 	registry     server.IServiceRegistry
 	metric       *InfluxMetric
 	hostNames    []string
@@ -59,7 +60,7 @@ type Option func(*webServerOption)
 //WithLogger 设置日志记录组件
 func WithLogger(logger *logger.Logger) Option {
 	return func(o *webServerOption) {
-		o.logger = logger
+		o.Logger = logger
 	}
 }
 
@@ -73,7 +74,7 @@ func WithIP(ip string) Option {
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *webServerOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.logger)
+		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.Logger)
 	}
 }
 
@@ -99,9 +100,9 @@ func WithHandlers(handlers ...Handler) Option {
 	}
 }
 
-//Logger 获取日志组件
-func (t *HTTPServer) Logger() *logger.Logger {
-	return t.logger
+//GetLogger 获取日志组件
+func (t *HTTPServer) GetLogger() *logger.Logger {
+	return t.Logger
 }
 
 //SetName 设置组件的server name
@@ -124,9 +125,9 @@ func (t *HTTPServer) SetHost(host string) {
 
 //SetInfluxMetric 重置metric
 func (t *HTTPServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan, t.logger)
+	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan, t.Logger)
 	if err != nil {
-		t.logger.Error("启动metric失败：", err)
+		t.Error("启动metric失败：", err)
 	}
 }
 
@@ -136,7 +137,7 @@ func (t *HTTPServer) StopInfluxMetric() {
 }
 
 //SetRouters 设置路由规则
-func (t *HTTPServer) SetRouters(routers ...*webRouter) {
+func (t *HTTPServer) SetRouters(routers ...*WebRouter) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.Router = NewRouter()
@@ -153,19 +154,19 @@ func (t *HTTPServer) SetXSRF(key string, secret string) {
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
 func (t *HTTPServer) Run(address ...interface{}) error {
 	addr := t.getAddress(address...)
-	t.logger.Info("Listening on http://" + addr)
+	t.Info("Listening on http://" + addr)
 	t.proto = "http"
 	t.server = &http.Server{Addr: addr, Handler: t}
 	err := t.registryServer()
 	if err != nil {
-		t.logger.Error(err)
+		t.Error(err)
 		return err
 	}
 	t.Running = true
 	err = t.server.ListenAndServe()
 	if err != nil {
 		t.Running = false
-		t.logger.Infof("%v(%s)", err, t.serverName)
+		t.Infof("%v(%s)", err, t.serverName)
 		return err
 	}
 
@@ -175,33 +176,46 @@ func (t *HTTPServer) Run(address ...interface{}) error {
 //RunTLS RunTLS server
 func (t *HTTPServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
 	addr := t.getAddress(address...)
-	t.logger.Info("Listening on https://" + addr)
+	t.Info("Listening on https://" + addr)
 	t.proto = "https"
 	t.server = &http.Server{Addr: addr, Handler: t}
 	err := t.registryServer()
 	if err != nil {
-		t.logger.Error(err)
+		t.Error(err)
 		return err
 	}
 	t.Running = true
 	err = t.server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
 		t.Running = false
-		t.logger.Error(err)
+		t.Error(err)
 		return err
 	}
 	return nil
 }
 
+//NewAPI create new server
+func NewAPI(domain string, name string, opts ...Option) *HTTPServer {
+	handlers := make([]Handler, 0, 8)
+	handlers = append(handlers,
+		APIReturn(),
+		Param(),
+		Contexts())
+	opts = append(opts, WithHandlers(handlers...))
+	return New(domain, name, "api", opts...)
+}
+
 //New create new server
-func New(domain string, name string, opts ...Option) *HTTPServer {
+func New(domain string, name string, typeName string, opts ...Option) *HTTPServer {
 	t := &HTTPServer{
+		typeName:        typeName,
 		domain:          domain,
 		serverName:      name,
 		Router:          NewRouter(),
 		ErrHandler:      Errors(),
-		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), logger: logger.GetSession(name, logger.CreateSession())},
+		webServerOption: &webServerOption{host: Host(), metric: NewInfluxMetric(), Logger: logger.GetSession(name, logger.CreateSession())},
 	}
+
 	//转换配置项
 	for _, opt := range opts {
 		opt(t.webServerOption)
@@ -215,15 +229,12 @@ func New(domain string, name string, opts ...Option) *HTTPServer {
 		Compresses([]string{}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
-		Static(StaticOptions{Prefix: "public"}),
-		Return(),
-		Param(),
-		Contexts())
+		Static(StaticOptions{Prefix: "public"}))
 	handlers = append(handlers, t.webServerOption.handlers...)
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
 		return &Context{
-			tan: t,
+			Server: t,
 		}
 	}
 
@@ -261,5 +272,5 @@ func (t *HTTPServer) GetAddress() string {
 	return fmt.Sprintf("%s://%s:%d", t.proto, t.ip, t.port)
 }
 func (t *HTTPServer) SetHeader(headers map[string]string) {
-	t.headers = headers
+	t.Headers = headers
 }

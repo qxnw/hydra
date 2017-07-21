@@ -1,6 +1,6 @@
 package api
 
-type webRouter struct {
+type WebRouter struct {
 	Method      []string
 	Path        string
 	Handler     interface{}

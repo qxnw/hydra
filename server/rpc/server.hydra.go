@@ -184,11 +184,11 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}
 
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetNodeWithSectionName(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
-			return cnf.GetContent(), nil
+			return string(cnf), nil
 		}
 		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {

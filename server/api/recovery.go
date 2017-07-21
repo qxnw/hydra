@@ -16,7 +16,7 @@ func Recovery(debug bool) HandlerFunc {
 		defer func() {
 			if e := recover(); e != nil {
 				var buf bytes.Buffer
-				fmt.Fprintf(&buf, "api request handler crashed with error: %v", e)
+				fmt.Fprintf(&buf, ctx.Server.typeName+" request handler crashed with error: %v", e)
 				for i := 1; ; i++ {
 					_, file, line, ok := runtime.Caller(i)
 					if !ok {
@@ -29,8 +29,8 @@ func Recovery(debug bool) HandlerFunc {
 
 				var content = buf.String()
 				ctx.Logger.Error(content)
-				if len(ctx.tan.headers) > 0 {
-					for k, v := range ctx.tan.headers {
+				if len(ctx.Server.Headers) > 0 {
+					for k, v := range ctx.Server.Headers {
 						ctx.Header().Set(k, v)
 					}
 				}

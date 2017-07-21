@@ -26,7 +26,7 @@ type Handler interface {
 }
 
 type Context struct {
-	tan *HTTPServer
+	Server *HTTPServer
 	*logger.Logger
 	BodyBuffer []byte
 	idx        int
@@ -61,7 +61,7 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 }
 
 func (ctx *Context) HandleError() {
-	ctx.tan.ErrHandler.Handle(ctx)
+	ctx.Server.ErrHandler.Handle(ctx)
 }
 
 func (ctx *Context) Req() *http.Request {
@@ -157,7 +157,7 @@ func (ctx *Context) WriteString(content string) (int, error) {
 func (ctx *Context) newAction() {
 	if !ctx.matched {
 		reqPath := removeStick(ctx.Req().URL.Path)
-		ctx.route, ctx.params = ctx.tan.Match(reqPath, ctx.Req().Method)
+		ctx.route, ctx.params = ctx.Server.Match(reqPath, ctx.Req().Method)
 		if ctx.route != nil {
 			vc := ctx.route.newAction()
 			ctx.action = vc.Interface()
@@ -235,8 +235,8 @@ func (ctx *Context) execute() {
 
 func (ctx *Context) invoke() {
 	if ctx.stage == 0 {
-		if ctx.idx < len(ctx.tan.handlers) {
-			ctx.tan.handlers[ctx.idx].Handle(ctx)
+		if ctx.idx < len(ctx.Server.handlers) {
+			ctx.Server.handlers[ctx.idx].Handle(ctx)
 		} else {
 			ctx.execute()
 		}

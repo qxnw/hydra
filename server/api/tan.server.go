@@ -33,7 +33,7 @@ func newHydraAPIServer(handler context.Handler, r server.IServiceRegistry, cnf c
 	h = &hydraAPIServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
-		server: New(cnf.String("domain"), cnf.String("name", "api.server"),
+		server: NewAPI(cnf.String("domain"), cnf.String("name", "api.server"),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
 	err = h.setConf(cnf)
@@ -44,7 +44,7 @@ func newHydraAPIServer(handler context.Handler, r server.IServiceRegistry, cnf c
 func (w *hydraAPIServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
-	w.server = New(cnf.String("domain"), cnf.String("name", "api.server"),
+	w.server = NewAPI(cnf.String("domain"), cnf.String("name", "api.server"),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
@@ -76,7 +76,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		if err != nil || len(rts) == 0 {
 			return fmt.Errorf("routers路由未配置或配置有误:%s(len:%d,err:%+v)", conf.String("name"), len(rts), err)
 		}
-		apiRouters := make([]*webRouter, 0, len(rts))
+		apiRouters := make([]*WebRouter, 0, len(rts))
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
@@ -98,7 +98,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
 				}
 			}
-			apiRouters = append(apiRouters, &webRouter{
+			apiRouters = append(apiRouters, &WebRouter{
 				Method:      actions,
 				Path:        name,
 				Handler:     w.handle(name, mode, service, baseArgs+"&"+args),
@@ -117,7 +117,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		//设置静态文件路由
 		staticConf, err := routers.GetSection("static")
 		if err == nil {
-			w.server.logger.Infof("%s:启用静态文件", conf.String("name"))
+			w.server.Infof("%s:启用静态文件", conf.String("name"))
 			prefix := staticConf.String("prefix")
 			dir := staticConf.String("dir")
 			showDir := staticConf.String("showDir") == "true"
@@ -130,7 +130,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		//设置xsrf参数，并启用xsrf校验
 		xsrf, err := routers.GetSection("xsrf")
 		if err == nil {
-			w.server.logger.Infof("%s:启用xsrf校验", conf.String("name"))
+			w.server.Infof("%s:启用xsrf校验", conf.String("name"))
 			key := xsrf.String("key")
 			secret := xsrf.String("secret")
 			if key == "" || secret == "" {
@@ -140,7 +140,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		}
 		allowAjax := routers.String("onlyAllowAjaxRequest", "false") == "true"
 		if allowAjax {
-			w.server.logger.Infof("%s:启用ajax调用限制", conf.String("name"))
+			w.server.Infof("%s:启用ajax调用限制", conf.String("name"))
 		}
 		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
@@ -257,7 +257,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 					response.Status = s
 				}
 			}
-			if response.Status != 302 && response.Status != 303 {
+			if !response.IsRedirect() {
 				response.Status = 302
 			}
 			if url, ok := location.(string); ok {
@@ -333,6 +333,7 @@ func (w *hydraAPIServer) needRestart(conf conf.Conf) (bool, error) {
 	if w.conf.String("host") != conf.String("host") {
 		return true, nil
 	}
+
 	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)

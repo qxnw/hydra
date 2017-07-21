@@ -7,13 +7,13 @@ import (
 
 func Host() HandlerFunc {
 	return func(ctx *Context) {
-		if len(ctx.tan.hostNames) == 0 {
+		if len(ctx.Server.hostNames) == 0 {
 			ctx.Next()
 			return
 		}
 		host := getHost(ctx.Req())
 		exist := false
-		for _, h := range ctx.tan.hostNames {
+		for _, h := range ctx.Server.hostNames {
 			if h == host {
 				exist = true
 				break

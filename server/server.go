@@ -17,6 +17,7 @@ var (
 	SRV_TP_RPC   = "rpc"
 	SRV_TP_CRON  = "cron"
 	SRV_TP_MQ    = "mq"
+	SRV_TP_WEB   = "web"
 )
 
 type IServiceRegistry interface {

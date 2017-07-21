@@ -35,7 +35,7 @@ func (t *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	resp.reset(w)
 
 	ctx := t.ctxPool.Get().(*Context)
-	ctx.tan = t
+	ctx.Server = t
 	ctx.reset(req, resp)
 
 	ctx.invoke()
@@ -49,7 +49,7 @@ func (t *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if ctx.Route() != nil {
 			if ctx.Result == nil {
 				ctx.WriteString("")
-				t.logger.Info(req.Method, ctx.Status(), p)
+				t.Info(req.Method, ctx.Status(), p)
 				ctx.Close()
 				t.ctxPool.Put(ctx)
 				t.respPool.Put(resp)
@@ -64,7 +64,7 @@ func (t *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 		ctx.HandleError()
 
-		t.logger.Error(req.Method, ctx.Status(), p)
+		t.Error(req.Method, ctx.Status(), p)
 	}
 	ctx.Close()
 	t.ctxPool.Put(ctx)
