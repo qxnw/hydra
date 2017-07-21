@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/gorilla/template/v0"
+	"github.com/qxnw/hydra/server/web/template"
 )
 
 func ExampleTemplate() {

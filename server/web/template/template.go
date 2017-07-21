@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/gorilla/template/v0/escape"
-	"github.com/gorilla/template/v0/parse"
+	"github.com/qxnw/hydra/server/web/template/escape"
+	"github.com/qxnw/hydra/server/web/template/parse"
 )
 
 // Set stores a collection of parsed templates.
@@ -178,7 +178,7 @@ func (s *Set) ParseFiles(filenames ...string) (*Set, error) {
 	for _, filename := range filenames {
 		if b, err := ioutil.ReadFile(filename); err != nil {
 			return nil, err
-		} else if _, err = s.parse(string(b), filename); err != nil {
+		} else if _, err = s.parse(s.fileblock(filename, string(b)), filename); err != nil {
 			return nil, err
 		}
 	}
@@ -215,6 +215,18 @@ func Must(s *Set, err error) *Set {
 		panic(err)
 	}
 	return s
+}
+func (s *Set) fileblock(p string, content string) string {
+	left := s.leftDelim
+	right := s.rightDelim
+	if left == "" {
+		left = "{{"
+	}
+	if right == "" {
+		right = "}}"
+	}
+	str := fmt.Sprintf(`%sdefine "%s"%s%s%send%s`, left, p, right, content, left, right)
+	return str
 }
 
 // This redundant API is probably not needed...

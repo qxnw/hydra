@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gorilla/template/v0/escape"
+	"github.com/qxnw/hydra/server/web/template/escape"
 )
 
 type badMarshaler struct{}

@@ -204,7 +204,9 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			response = &context.Response{}
 		}
 		defer func() {
-			c.Debugf("rpc.response.raw:%+v", response.Content)
+			if err != nil {
+				c.Errorf("rpc.response.error: %v", err)
+			}
 		}()
 
 		//处理输入content-type

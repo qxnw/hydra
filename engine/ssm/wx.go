@@ -82,3 +82,47 @@ func (s *smsProxy) wxSend(ctx *context.Context) (r string, t int, err error) {
 	}
 	return content, status, err
 }
+
+func (s *smsProxy) wxSend0(ctx *context.Context) (r string, t int, err error) {
+	setting, err := s.getwxSendarams(ctx)
+	if err != nil {
+		return
+	}
+	if err = s.checkMustField(setting, "host", "appId", "templateId", "data"); err != nil {
+		return
+	}
+	if err = s.checkInputField(ctx.GetInput(), "openId"); err != nil {
+		return
+	}
+	ctx.GetInput().Each(func(k, v string) {
+		setting.Set(k, v)
+	})
+	u, err := url.Parse(setting.String("host"))
+	if err != nil {
+		err = fmt.Errorf("wx.host配置错误 %s. err=%v", setting.String("host"), err)
+		return "", 500, err
+	}
+	values := u.Query()
+	unionID, _ := ctx.GetInput().Get("openId")
+	data, err := setting.GetSectionString("data")
+	if err != nil {
+		return
+	}
+	values.Set("app_id", setting.String("appId"))
+	values.Set("open_id", unionID)
+	values.Set("template_id", setting.String("templateId"))
+	values.Set("content", data)
+
+	u.RawQuery = values.Encode()
+	client := http.NewHTTPClient()
+	content, status, err := client.Get(u.String())
+	if err != nil {
+		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
+		return "", 500, err
+	}
+	if status != 200 {
+		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, setting.String("host"))
+		return "", status, err
+	}
+	return content, status, err
+}

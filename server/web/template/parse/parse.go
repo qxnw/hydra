@@ -135,7 +135,7 @@ func (p *parser) error(err error) {
 func (p *parser) expect(expected itemType, context string) item {
 	token := p.nextNonSpace()
 	if token.typ != expected {
-		p.errorf("expected %s in %s; got %s", expected, context, token)
+		p.errorf("expected1 %v in %s; got %s", expected, context, token)
 	}
 	return token
 }
@@ -144,7 +144,7 @@ func (p *parser) expect(expected itemType, context string) item {
 func (p *parser) expectOneOf(expected1, expected2 itemType, context string) item {
 	token := p.nextNonSpace()
 	if token.typ != expected1 && token.typ != expected2 {
-		p.errorf("expected %s or %s in %s; got %s", expected1, expected2, context, token)
+		p.errorf("expected2 %v or %s in %v; got %s", expected1, expected2, context, token)
 	}
 	return token
 }

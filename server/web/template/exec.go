@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gorilla/template/v0/parse"
+	"github.com/qxnw/hydra/server/web/template/parse"
 )
 
 // state represents the state of an execution. It's not part of the

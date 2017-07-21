@@ -191,7 +191,9 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 			response = &context.Response{}
 		}
 		defer func() {
-			task.Debugf("cron.response.raw:%+v", response.Content)
+			if err != nil {
+				task.Errorf("cron.response.error: %v", task.err)
+			}
 		}()
 		if err != nil || (response.Status >= 500 && response.Status < 600) {
 			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.Content, err)

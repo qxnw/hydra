@@ -32,15 +32,16 @@ type Context struct {
 	idx        int
 	req        *http.Request
 	ResponseWriter
-	route      *Route
-	params     context.Params
-	callArgs   []reflect.Value
-	matched    bool
-	stage      byte
-	formed     bool
-	action     interface{}
-	Result     interface{}
-	_xsrfToken string
+	route       *Route
+	params      context.Params
+	callArgs    []reflect.Value
+	matched     bool
+	stage       byte
+	formed      bool
+	action      interface{}
+	Result      interface{}
+	ServiceName string
+	_xsrfToken  string
 }
 
 func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {

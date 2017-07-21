@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gorilla/template/v0/parse"
+	"github.com/qxnw/hydra/server/web/template/parse"
 )
 
 func TestensurePipelineContains(t *testing.T) {

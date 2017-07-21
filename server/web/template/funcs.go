@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gorilla/template/v0/escape"
+	"github.com/qxnw/hydra/server/web/template/escape"
 )
 
 // FuncMap is the type of the map defining the mapping from names to functions.

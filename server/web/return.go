@@ -5,6 +5,7 @@
 package web
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/qxnw/hydra/server/api"
@@ -24,7 +25,7 @@ func isNil(a interface{}) bool {
 	return !aa.IsValid() || (aa.Type().Kind() == reflect.Ptr && aa.IsNil())
 }
 
-func Return() api.HandlerFunc {
+func (w *WebServer) Return() api.HandlerFunc {
 	return func(ctx *api.Context) {
 		action := ctx.Action()
 		ctx.Next()
@@ -44,6 +45,11 @@ func Return() api.HandlerFunc {
 			for k, v := range ctx.Server.Headers {
 				ctx.Header().Set(k, v)
 			}
+		}
+		viewPath := fmt.Sprintf("%s%s%s", w.viewRoot, ctx.ServiceName, w.viewExt)
+		err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
+		if err != nil {
+			ctx.Errorf("web.response.error: %v", err)
 		}
 	}
 }

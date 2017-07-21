@@ -7,7 +7,7 @@ package template
 import (
 	"fmt"
 
-	"github.com/gorilla/template/v0/parse"
+	"github.com/qxnw/hydra/server/web/template/parse"
 )
 
 // parentList returns the list of parent templates for a given template name.

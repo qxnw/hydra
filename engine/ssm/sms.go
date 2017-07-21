@@ -25,6 +25,7 @@ func newSmsProxy() *smsProxy {
 	}
 	p.serviceHandlers["/ssm/ytx/send"] = p.ytxSend
 	p.serviceHandlers["/ssm/wx/send"] = p.wxSend
+	p.serviceHandlers["/ssm/wx0/send"] = p.wxSend0
 	p.serviceHandlers["/ssm/email/send"] = p.sendMail
 	for k := range p.serviceHandlers {
 		p.services = append(p.services, k)

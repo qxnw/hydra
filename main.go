@@ -22,6 +22,7 @@ import (
 	_ "github.com/qxnw/hydra/server/cron"
 	_ "github.com/qxnw/hydra/server/mq"
 	_ "github.com/qxnw/hydra/server/rpc"
+	_ "github.com/qxnw/hydra/server/web"
 	_ "github.com/qxnw/lib4go/mq/stomp"
 )
 

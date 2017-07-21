@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"html"
 
-	"github.com/gorilla/template/v0/parse"
+	"github.com/qxnw/hydra/server/web/template/parse"
 )
 
 // EscapeTree rewrites the templates from the given tree to guarantee that

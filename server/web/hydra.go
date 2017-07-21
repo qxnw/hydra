@@ -201,7 +201,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		})
 		tfParams.Set("method", c.Req().Method)
 		tfForm := transform.NewValues(c.Forms().Form)
-		rservice := tfForm.Translate(tfParams.Translate(service))
+		c.ServiceName = tfForm.Translate(tfParams.Translate(service))
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {
@@ -212,19 +212,21 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		ctx.Set(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
 
 		//调用执行引擎进行逻辑处理
-		response, err := w.handler.Handle(name, mode, rservice, ctx)
+		response, err := w.handler.Handle(name, mode, c.ServiceName, ctx)
 		if response == nil {
 			response = &context.Response{}
 		}
 		defer func() {
-			c.Debugf("web.response.raw:%+v", response.Content)
+			if err != nil {
+				c.Errorf("web.response.error: %v", err)
+			}
 		}()
 
 		//处理头信息
 		for k, v := range response.Params {
 			c.Header().Set(k, v.(string))
 		}
-
+		c.Result = response.Content
 	}
 }
 
@@ -247,10 +249,16 @@ func (w *hydraWebServer) Start() (err error) {
 	if err != nil {
 		go func() {
 			err = w.server.Run(w.conf.String("address", ":9898"))
+			if err != nil {
+				w.server.Error(err)
+			}
 		}()
 	} else {
 		go func(tls conf.Conf) {
 			err = w.server.RunTLS(tls.String("cert"), tls.String("key"), tls.String("address", ":9898"))
+			if err != nil {
+				w.server.Error(err)
+			}
 		}(tls)
 	}
 	time.Sleep(time.Second)

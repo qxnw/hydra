@@ -211,14 +211,15 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		}
 
 		ctx.Set(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
-
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
 		if response == nil {
 			response = &context.Response{}
 		}
 		defer func() {
-			c.Debugf("api.response.raw:%+v", response.Content)
+			if err != nil {
+				c.Errorf("api.response.error: %v", err)
+			}
 		}()
 
 		//处理头信息

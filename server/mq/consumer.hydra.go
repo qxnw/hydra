@@ -175,7 +175,9 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 			response = &context.Response{}
 		}
 		defer func() {
-			task.Debugf("mq.response.raw:%+v", response.Content)
+			if err != nil {
+				task.Errorf("mq.response.error: %v", task.err)
+			}
 		}()
 		if err != nil || (response.Status >= 500 && response.Status < 600) {
 			task.err = fmt.Errorf("mq.server.handler.error:%s,%v,%v", task.queue, response.Content, err)
