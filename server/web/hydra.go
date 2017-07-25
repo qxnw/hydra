@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
+	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -205,7 +207,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		margs, err := utility.GetMapWithQuery(rArgs)
 		if err != nil {
-			//c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("err:%+v", err.Error()), Type: AutoResponse}
 			return
 		}
 
@@ -216,17 +217,48 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		if response == nil {
 			response = &context.Response{}
 		}
+		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
+		c.Result = response
 		defer func() {
 			if err != nil {
 				c.Errorf("web.response.error: %v", err)
 			}
 		}()
+		if err != nil {
+			c.Result = err
+		}
 
 		//处理头信息
 		for k, v := range response.Params {
-			c.Header().Set(k, v.(string))
+			if !strings.HasPrefix(k, "__") && v != nil && k != "Status" {
+				switch v.(type) {
+				case []string:
+					list := v.([]string)
+					for _, i := range list {
+						c.Header().Set(k, i)
+					}
+				default:
+					c.Header().Set(k, types.GetString(v))
+				}
+			}
 		}
-		c.Result = response.Content
+		if location, ok := response.Params["Location"]; ok {
+			if status, ok := response.Params["Status"]; ok {
+				s, err := strconv.Atoi(types.GetString(status))
+				if err == nil {
+					response.Status = s
+				}
+			}
+			if !response.IsRedirect() {
+				response.Status = 302
+			}
+			if url, ok := location.(string); ok {
+				c.Redirect(url, response.Status)
+				return
+			}
+			return
+		}
+
 	}
 }
 
@@ -246,23 +278,24 @@ func (w *hydraWebServer) GetStatus() string {
 //Start 启用服务
 func (w *hydraWebServer) Start() (err error) {
 	tls, err := w.conf.GetSection("tls")
+	startChan := make(chan error, 1)
 	if err != nil {
-		go func() {
+		go func(ch chan error) {
 			err = w.server.Run(w.conf.String("address", ":9898"))
-			if err != nil {
-				w.server.Error(err)
-			}
-		}()
+			startChan <- err
+		}(startChan)
 	} else {
-		go func(tls conf.Conf) {
+		go func(tls conf.Conf, ch chan error) {
 			err = w.server.RunTLS(tls.String("cert"), tls.String("key"), tls.String("address", ":9898"))
-			if err != nil {
-				w.server.Error(err)
-			}
-		}(tls)
+			startChan <- err
+		}(tls, startChan)
 	}
-	time.Sleep(time.Second)
-	return nil
+	select {
+	case <-time.After(time.Millisecond * 500):
+		return nil
+	case err := <-startChan:
+		return err
+	}
 }
 
 //Notify 服务器配置变更通知

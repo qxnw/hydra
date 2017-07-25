@@ -243,12 +243,7 @@ func (w *hydraRPCServer) GetAddress() string {
 
 //Start 启用服务
 func (w *hydraRPCServer) Start() (err error) {
-	err = w.server.Start(w.conf.String("address", ":9899"))
-	if err != nil {
-		return
-	}
-	time.Sleep(time.Second)
-	return nil
+	return w.server.Start(w.conf.String("address", ":9899"))
 }
 
 //接口服务变更通知

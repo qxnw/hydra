@@ -261,31 +261,6 @@ func toHTTPError(err error) (msg string, httpStatus int) {
 	return "500 Internal Server Error", http.StatusInternalServerError
 }
 
-func (ctx *Context) ServeFile(path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		msg, code := toHTTPError(err)
-		http.Error(ctx, msg, code)
-		return nil
-	}
-	defer f.Close()
-
-	d, err := f.Stat()
-	if err != nil {
-		msg, code := toHTTPError(err)
-		http.Error(ctx, msg, code)
-		return nil
-	}
-
-	if d.IsDir() {
-		http.Error(ctx, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return nil
-	}
-
-	http.ServeContent(ctx, ctx.Req(), d.Name(), d.ModTime(), f)
-	return nil
-}
-
 func (ctx *Context) ServeXml(obj interface{}) error {
 	encoder := xml.NewEncoder(ctx)
 	ctx.Header().Set("Content-Type", "application/xml; charset=UTF-8")
@@ -385,7 +360,7 @@ func (ctx *Context) Unauthorized() {
 // NotFound writes a 404 HTTP response
 func (ctx *Context) NotFound(message ...string) {
 	if len(message) == 0 {
-		ctx.Abort(http.StatusNotFound, "找不到路由"+http.StatusText(http.StatusNotFound))
+		ctx.Abort(http.StatusNotFound, http.StatusText(http.StatusNotFound))
 		return
 	}
 	ctx.Abort(http.StatusNotFound, message[0])

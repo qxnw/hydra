@@ -159,14 +159,12 @@ func (t *HTTPServer) Run(address ...interface{}) error {
 	t.server = &http.Server{Addr: addr, Handler: t}
 	err := t.registryServer()
 	if err != nil {
-		t.Error(err)
 		return err
 	}
 	t.Running = true
 	err = t.server.ListenAndServe()
 	if err != nil {
 		t.Running = false
-		t.Infof("%v(%s)", err, t.serverName)
 		return err
 	}
 
@@ -196,7 +194,7 @@ func (t *HTTPServer) RunTLS(certFile, keyFile string, address ...interface{}) er
 
 //NewAPI create new server
 func NewAPI(domain string, name string, opts ...Option) *HTTPServer {
-	handlers := make([]Handler, 0, 8)
+	handlers := make([]Handler, 0, 4)
 	handlers = append(handlers,
 		APIReturn(),
 		Param(),
@@ -229,7 +227,7 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 		Compresses([]string{}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
-		Static(StaticOptions{Prefix: "public"}))
+		Static(StaticOptions{Prefix: ""}))
 	handlers = append(handlers, t.webServerOption.handlers...)
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
@@ -249,9 +247,9 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 //SetStatic 设置静态文件路由
 func (t *HTTPServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
 	t.handlers[7] = Static(StaticOptions{
-		Prefix:     prefix,
-		RootPath:   dir,
-		ListDir:    listDir,
+		Prefix:   prefix,
+		RootPath: dir,
+		//	ListDir:    listDir,
 		FilterExts: exts,
 	})
 }

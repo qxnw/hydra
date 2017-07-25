@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -19,18 +18,20 @@ type WebServer struct {
 	viewTmpl   *template.Set
 	leftDelim  string
 	rightDelim string
+	views      []string
+	errorView  string
 }
 
 //New 构建WEB服务器
 func New(domain string, name string, opts ...api.Option) *WebServer {
-	server := &WebServer{viewTmpl: &template.Set{}, viewRoot: "../views", viewExt: ".html", leftDelim: "{{", rightDelim: "}}"}
-	handlers := make([]api.Handler, 0, 8)
+	server := &WebServer{viewTmpl: &template.Set{}, viewRoot: "../views", viewExt: ".html", leftDelim: "{{", rightDelim: "}}", errorView: "error"}
+	server.views = make([]string, 0, 20)
+	handlers := make([]api.Handler, 0, 4)
 	handlers = append(handlers,
 		server.Return(),
 		api.Param(),
 		api.Contexts())
 	opts = append(opts, api.WithHandlers(handlers...))
-
 	server.HTTPServer = api.New(domain, name, "web", opts...)
 	return server
 }
@@ -39,14 +40,16 @@ func New(domain string, name string, opts ...api.Option) *WebServer {
 func (w *WebServer) SetViewsPath(path string) {
 	w.viewRoot = path
 }
+
+//SetDelims 设置绑定表达式的
 func (w *WebServer) SetDelims(left string, right string) {
 	w.leftDelim = left
 	w.rightDelim = right
 }
 
-//Run 启动服务器
-func (w *WebServer) Run(address ...interface{}) error {
-	//w.viewTmpl.Delims(w.leftDelim, w.rightDelim)
+//loadTmpl 加载模板
+func (w *WebServer) loadTmpl() error {
+	w.viewTmpl.Delims(w.leftDelim, w.rightDelim)
 	err := filepath.Walk(w.viewRoot, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
 			return err
@@ -58,21 +61,40 @@ func (w *WebServer) Run(address ...interface{}) error {
 			return nil
 		}
 		_, er := w.viewTmpl.ParseFiles(path)
-		return er
+		if er != nil {
+			return er
+		}
+		w.views = append(w.views, path)
+		return nil
 	})
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+//Run 启动服务器
+func (w *WebServer) Run(address ...interface{}) error {
+	if err := w.loadTmpl(); err != nil {
+		return err
+	}
 	return w.HTTPServer.Run(address...)
 }
 
 //RunTLS 启动服务器
 func (w *WebServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
-	set := w.viewTmpl.Delims(w.leftDelim, w.rightDelim)
-	_, err := set.ParseGlob(fmt.Sprintf("%s/*.%s", w.viewRoot, w.viewExt))
-	if err != nil {
+	if err := w.loadTmpl(); err != nil {
 		return err
 	}
 	return w.HTTPServer.RunTLS(certFile, keyFile, address...)
+}
+
+//ExistView 是否存在view
+func (w *WebServer) ExistView(path string) bool {
+	for _, v := range w.views {
+		if v == path {
+			return true
+		}
+	}
+	return false
 }

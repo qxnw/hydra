@@ -224,7 +224,17 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 
 		//处理头信息
 		for k, v := range response.Params {
-			c.Header().Set(k, v.(string))
+			if !strings.HasPrefix(k, "__") && v != nil && k != "Status" {
+				switch v.(type) {
+				case []string:
+					list := v.([]string)
+					for _, i := range list {
+						c.Header().Set(k, i)
+					}
+				default:
+					c.Header().Set(k, types.GetString(v))
+				}
+			}
 		}
 
 		//处理输入content-type
@@ -291,17 +301,24 @@ func (w *hydraAPIServer) GetStatus() string {
 //Start 启用服务
 func (w *hydraAPIServer) Start() (err error) {
 	tls, err := w.conf.GetSection("tls")
+	startChan := make(chan error, 1)
 	if err != nil {
-		go func() {
-			err = w.server.Run(w.conf.String("address", ":9898"))
-		}()
+		go func(ch chan error) {
+			err = w.server.Run(w.conf.String("address", ":81"))
+			startChan <- err
+		}(startChan)
 	} else {
-		go func(tls conf.Conf) {
+		go func(tls conf.Conf, ch chan error) {
 			err = w.server.RunTLS(tls.String("cert"), tls.String("key"), tls.String("address", ":9898"))
-		}(tls)
+			startChan <- err
+		}(tls, startChan)
 	}
-	time.Sleep(time.Second)
-	return nil
+	select {
+	case <-time.After(time.Millisecond * 500):
+		return nil
+	case err := <-startChan:
+		return err
+	}
 }
 
 //Notify 服务器配置变更通知

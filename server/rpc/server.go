@@ -162,16 +162,20 @@ func (s *RPCServer) Start(address string) (err error) {
 	s.server = grpc.NewServer()
 	pb.RegisterRPCServer(s.server, s.process)
 	s.running = true
+	startChan := make(chan error, 1)
 	go func() {
 		err = s.server.Serve(lis)
 		s.running = false
+		startChan <- err
 	}()
-	if err != nil {
+	select {
+	case <-time.After(time.Millisecond * 500):
+		return nil
+	case err := <-startChan:
 		s.running = false
-		return
+		s.registerService()
+		return err
 	}
-	s.registerService()
-	return
 }
 
 //Close 关闭连接

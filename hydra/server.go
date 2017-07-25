@@ -64,7 +64,7 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	h.serverName = cnf.String("name")
 	h.serverType = cnf.String("type")
 	if strings.EqualFold(cnf.String("status"), server.ST_STOP) {
-		return fmt.Errorf("启动失败:%s_%s 配置为:%s", cnf.String("name"), h.serverType, cnf.String("status"))
+		return fmt.Errorf("server启动失败:%s_%s 配置为:%s", cnf.String("name"), h.serverType, cnf.String("status"))
 	}
 
 	h.extModes = cnf.String("extModes")
@@ -91,7 +91,7 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	}
 	err = h.server.Start()
 	if err != nil {
-		return err
+		return fmt.Errorf("server启动失败:%s_%s(err:%v)", h.serverName, h.serverType, err)
 	}
 	h.address = h.server.GetAddress()
 	h.runTime = time.Now()
