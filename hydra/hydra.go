@@ -2,7 +2,6 @@ package hydra
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,37 +14,23 @@ import (
 
 	"sync"
 
-	"strings"
-
 	"runtime/debug"
 
 	"github.com/qxnw/hydra/conf"
 
-	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
 
 	log "github.com/qxnw/hydra/logger"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/net"
-	"github.com/qxnw/lib4go/transform"
 	"github.com/spf13/pflag"
 )
 
 //Hydra Hydra server
 type Hydra struct {
-	domain                 string
-	runMode                string
-	tag                    string
-	mask                   string
-	system                 string
-	currentRegistry        string
-	crossRegistry          string
-	ip                     string
-	baseData               *transform.Transform
-	trace                  string
-	collectIndex           int
-	currentRegistryAddress []string
-	crossRegistryAddress   []string
+	system string
+
+	collectIndex int
+
 	*logger.Logger
 	watcher      conf.Watcher
 	servers      map[string]*Server
@@ -54,7 +39,7 @@ type Hydra struct {
 	closeChan    chan struct{}
 	done         bool
 	mu           sync.Mutex
-	rpcLogger    bool
+	*HFlags
 }
 
 //NewHydra 初始化Hydra服务
@@ -64,62 +49,23 @@ func NewHydra() *Hydra {
 		Logger:       logger.GetSession("hydra", logger.CreateSession()),
 		closedNotify: make(chan struct{}, 1),
 		closeChan:    make(chan struct{}),
+		HFlags:       &HFlags{},
 	}
-	pflag.StringVarP(&h.currentRegistry, "registry center address", "r", "", "注册中心地址(格式：zk://192.168.0.159:2181,192.168.0.158:2181)")
-	pflag.StringVarP(&h.mask, "ip mask", "i", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
-	pflag.StringVarP(&h.tag, "server tag", "t", "", "服务器名称(默认为本机IP地址)")
-	pflag.StringVarP(&h.trace, "enable trace", "p", "", "启用项目性能跟踪cpu/mem/block/mutex/server")
-	pflag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
-	pflag.StringVarP(&h.crossRegistry, "cross  registry  center address", "c", "", "跨域注册中心地址")
-	pflag.BoolVarP(&h.rpcLogger, "use rpc logger", "g", false, "使用RPC远程记录日志")
+	h.HFlags.BindFlags(pflag.CommandLine)
 	return h
-}
-
-func (h *Hydra) checkFlag() (err error) {
-	pflag.Parse()
-	if len(os.Args) < 2 {
-		return errors.New("未指定域名称")
-	}
-	engine.IsDebug = server.IsDebug
-	h.domain = os.Args[1]
-	if h.currentRegistry == "" {
-		h.runMode = modeStandalone
-		h.currentRegistryAddress = []string{"localhost"}
-		h.currentRegistry = fmt.Sprintf("%s://%s", h.runMode, strings.Join(h.currentRegistryAddress, ","))
-	} else {
-		h.runMode = modeCluster
-		h.runMode, h.currentRegistryAddress, err = registry.ResolveAddress(h.currentRegistry)
-		if err != nil {
-			return fmt.Errorf("集群地址配置有误:%v", err)
-		}
-	}
-	if h.crossRegistry != "" {
-		if strings.Contains(h.crossRegistry, "//") {
-			return fmt.Errorf("跨域注册中心地址不能指定协议信息:%s(err:%v)", h.crossRegistry, err)
-		}
-		h.crossRegistryAddress = strings.Split(h.crossRegistry, ",")
-	}
-	h.ip = net.GetLocalIPAddress(h.mask)
-	if h.tag == "" {
-		h.tag = h.ip
-	}
-	h.baseData = transform.NewMap(map[string]string{
-		"ip": h.ip,
-	})
-	h.tag = h.baseData.Translate(h.tag)
-	return nil
 }
 
 //Start 启动服务器
 func (h *Hydra) Start() (err error) {
 	defer h.recovery()
-	if err = h.checkFlag(); err != nil {
+	if err = h.CheckFlags(); err != nil {
 		h.Error(err)
 		return
 	}
+	server.IsDebug = h.IsDebug
 	//检查是否配置RPC日志服务
 	if h.rpcLogger && h.runMode != modeStandalone {
-		err = log.ConfigRPCLogger(h.domain, h.currentRegistry, h.Logger)
+		err = log.ConfigRPCLogger(h.Domain, h.currentRegistry, h.Logger)
 		if err != nil {
 			h.Errorf("无法启用RPC日志:%v", err)
 			return
@@ -127,7 +73,7 @@ func (h *Hydra) Start() (err error) {
 		h.Info("hydra:启用RPC日志")
 	}
 	//启动服务器状态查询服务
-	if err = h.StartStatusServer(h.domain); err != nil {
+	if err = h.StartStatusServer(h.Domain); err != nil {
 		return
 	}
 
@@ -147,15 +93,15 @@ func (h *Hydra) Start() (err error) {
 	}
 
 	//启动服务器配置监控
-	h.watcher, err = conf.NewWatcher(h.runMode, h.domain, h.tag, h.Logger, h.currentRegistryAddress)
+	h.watcher, err = conf.NewWatcher(h.runMode, h.Domain, h.tag, h.Logger, h.currentRegistryAddress)
 	if err != nil {
-		h.Error(fmt.Sprintf("watcher初始化失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err))
+		h.Error(fmt.Sprintf("watcher初始化失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.Domain, err))
 		return
 	}
 	h.notify = h.watcher.Notify()
 	err = h.watcher.Start()
 	if err != nil {
-		h.Errorf("watcher启用失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.domain, err)
+		h.Errorf("watcher启用失败 run mode:%s,domain:%s(err:%v)", h.runMode, h.Domain, err)
 		return
 	}
 	go h.loopRecvNotify()
@@ -169,7 +115,7 @@ LOOP:
 	for {
 		select {
 		case <-interrupt:
-			h.Warnf("hydra server(%s) was killed", h.domain)
+			h.Warnf("hydra server(%s) was killed", h.Domain)
 			h.done = true
 			break LOOP
 		}
@@ -237,7 +183,7 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 	if _, ok := h.servers[name]; ok {
 		return errServerIsExist
 	}
-	srv := NewHydraServer(h.domain, h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress, h.Logger)
+	srv := NewHydraServer(h.Domain, h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress, h.Logger)
 	err := srv.Start(cnf)
 	if err != nil {
 		return err
