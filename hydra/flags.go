@@ -29,6 +29,7 @@ type HFlags struct {
 	crossRegistryAddress   []string
 	ip                     string
 	baseData               *transform.Transform
+	flag                   *pflag.FlagSet
 }
 
 //BindFlags 绑定参数列表
@@ -40,11 +41,13 @@ func (h *HFlags) BindFlags(flag *pflag.FlagSet) {
 	flag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 	flag.StringVarP(&h.crossRegistry, "cross  registry  center address", "c", "", "跨域注册中心地址")
 	flag.BoolVarP(&h.rpcLogger, "use rpc logger", "g", false, "使用RPC远程记录日志")
+	h.flag = flag
+
 }
 
 //CheckFlags 检查输入参数
 func (h *HFlags) CheckFlags(i ...int) (err error) {
-	pflag.Parse()
+	h.flag.Parse(os.Args[1:])
 	index := 1
 	if len(i) > 0 {
 		index = i[0]

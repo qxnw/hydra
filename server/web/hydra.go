@@ -145,7 +145,19 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		}
 		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
-
+	if conf.Has("view") {
+		metric, err := conf.GetNodeWithSectionName("view")
+		if err != nil {
+			return fmt.Errorf("view未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		}
+		if r, err := w.conf.GetNodeWithSectionName("view"); err != nil || r.GetVersion() != metric.GetVersion() {
+			path := metric.String("path", "../views")
+			left := metric.String("left", "{{")
+			right := metric.String("right", "}}")
+			w.server.SetViewsPath(path)
+			w.server.SetDelims(left, right)
+		}
+	}
 	//设置metric服务器监控数据
 	if conf.Has("metric") {
 		metric, err := conf.GetNodeWithSectionName("metric")
@@ -328,9 +340,6 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 	if w.conf.String("host") != conf.String("host") {
 		return true, nil
 	}
-	if w.conf.String("views") != conf.String("views") {
-		return true, nil
-	}
 	routers, err := conf.GetNodeWithSectionName("router")
 	if err != nil {
 		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
@@ -338,6 +347,15 @@ func (w *hydraWebServer) needRestart(conf conf.Conf) (bool, error) {
 	//检查路由是否变化，已变化则需要重启服务
 	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
+	}
+	if conf.Has("view") {
+		view, err := conf.GetNodeWithSectionName("view")
+		if err != nil {
+			return false, fmt.Errorf("view未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		}
+		if r, err := w.conf.GetNodeWithSectionName("view"); err != nil || r.GetVersion() != view.GetVersion() {
+			return true, nil
+		}
 	}
 	return false, nil
 }
