@@ -63,6 +63,9 @@ func (h *Hydra) Start() (err error) {
 		return
 	}
 	server.IsDebug = h.IsDebug
+	if !server.IsDebug {
+		logger.AddWriteThread(49) //非调试模式时设置日志写协程数为50个
+	}
 	//检查是否配置RPC日志服务
 	if h.rpcLogger && h.runMode != modeStandalone {
 		err = log.ConfigRPCLogger(h.Domain, h.currentRegistry, h.Logger)
