@@ -154,7 +154,6 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 			path := view.String("viewPath", "../views")
 			left := view.String("left", "{{")
 			right := view.String("right", "}}")
-			fmt.Println("view.path:", path)
 			w.server.SetViewsPath(path)
 			w.server.SetDelims(left, right)
 		}
