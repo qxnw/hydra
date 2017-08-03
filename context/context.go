@@ -42,7 +42,6 @@ func (c *Context) GetExt() map[string]interface{} {
 	return c.ext
 }
 
-
 //Close 回收context
 func (c *Context) Close() {
 	c.input = InputArgs{}

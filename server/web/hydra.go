@@ -146,14 +146,15 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
 	if conf.Has("view") {
-		metric, err := conf.GetNodeWithSectionName("view")
+		view, err := conf.GetNodeWithSectionName("view")
 		if err != nil {
 			return fmt.Errorf("view未配置或配置有误:%s(%+v)", conf.String("name"), err)
 		}
-		if r, err := w.conf.GetNodeWithSectionName("view"); err != nil || r.GetVersion() != metric.GetVersion() {
-			path := metric.String("path", "../views")
-			left := metric.String("left", "{{")
-			right := metric.String("right", "}}")
+		if r, err := w.conf.GetNodeWithSectionName("view"); err != nil || r.GetVersion() != view.GetVersion() {
+			path := view.String("viewPath", "../views")
+			left := view.String("left", "{{")
+			right := view.String("right", "}}")
+			fmt.Println("view.path:", path)
 			w.server.SetViewsPath(path)
 			w.server.SetDelims(left, right)
 		}

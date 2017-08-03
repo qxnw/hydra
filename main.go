@@ -15,6 +15,7 @@ import (
 	_ "github.com/qxnw/hydra/engine/log"
 	_ "github.com/qxnw/hydra/engine/mock"
 	_ "github.com/qxnw/hydra/engine/registry"
+	_ "github.com/qxnw/hydra/engine/report"
 	_ "github.com/qxnw/hydra/engine/rpc_proxy"
 	_ "github.com/qxnw/hydra/engine/ssm"
 	"github.com/qxnw/hydra/hydra"

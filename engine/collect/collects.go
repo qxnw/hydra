@@ -207,6 +207,7 @@ func (s *collectProxy) dbCollect(ctx *context.Context, db *influxdb.InfluxClient
 	tf.Set("msg", tf.Translate(msg))
 	return s.checkAndSave("db", db, tf, result, timeSpan)
 }
+
 func (s *collectProxy) cpuCollect(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (rlt string, err error) {
 	maxValue, err := strconv.ParseFloat(fmt.Sprintf("%v", param[0]), 64)
 	if err != nil {

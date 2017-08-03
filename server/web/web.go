@@ -6,6 +6,8 @@ import (
 
 	"strings"
 
+	"fmt"
+
 	"github.com/qxnw/hydra/server/api"
 	"github.com/qxnw/hydra/server/web/template"
 )
@@ -62,12 +64,14 @@ func (w *WebServer) loadTmpl() error {
 		}
 		_, er := w.viewTmpl.ParseFiles(path)
 		if er != nil {
+			er = fmt.Errorf("转换模板文件失败:%s(err:%v)", path, er)
 			return er
 		}
 		w.views = append(w.views, path)
 		return nil
 	})
 	if err != nil {
+		err = fmt.Errorf("加载模板文件失败：%s,%v", w.viewRoot, err)
 		return err
 	}
 	return nil

@@ -239,7 +239,7 @@ func (h *Hydra) Close() {
 	if len(h.servers) > 0 {
 		select {
 		case <-h.closedNotify:
-		case <-time.After(time.Second * 3):
+			//case <-time.After(time.Second * 2):
 		}
 	}
 	registry.Close()

@@ -115,7 +115,9 @@ func (s *smsProxy) wxSend0(ctx *context.Context) (r string, t int, err error) {
 
 	u.RawQuery = values.Encode()
 	client := http.NewHTTPClient()
-	content, status, err := client.Get(u.String())
+	urlParams := u.String()
+	fmt.Println("http.get.", urlParams)
+	content, status, err := client.Get(urlParams)
 	if err != nil {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
 		return "", 500, err
