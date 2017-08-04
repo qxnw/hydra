@@ -40,10 +40,16 @@ func newCollectProxy() *collectProxy {
 	r.init()
 	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 8)
 	r.serviceHandlers["/collect/api/server/response"] = r.responseCollect("api_server_reponse")
-	r.serviceHandlers["/collect/rpc/server/response"] = r.responseCollect("rpc_server_reponse")
 	r.serviceHandlers["/collect/web/server/response"] = r.responseCollect("web_server_reponse")
-	r.serviceHandlers["/collect/mq/consumer/response"] = r.responseCollect("mq_consumer_reponse")
+	r.serviceHandlers["/collect/rpc/server/response"] = r.responseCollect("rpc_server_reponse")
 	r.serviceHandlers["/collect/cron/server/response"] = r.responseCollect("cron_server_reponse")
+	r.serviceHandlers["/collect/mq/consumer/response"] = r.responseCollect("mq_consumer_reponse")
+
+	r.serviceHandlers["/collect/api/server/qps"] = r.requestQPSCollect("api_server_qps")
+	r.serviceHandlers["/collect/web/server/qps"] = r.requestQPSCollect("web_server_qps")
+	r.serviceHandlers["/collect/rpc/server/qps"] = r.requestQPSCollect("rpc_server_qps")
+	r.serviceHandlers["/collect/cron/server/qps"] = r.requestQPSCollect("cron_server_qps")
+	r.serviceHandlers["/collect/mq/consumer/qps"] = r.requestQPSCollect("mq_consumer_qps")
 
 	r.serviceHandlers["/collect/http/status"] = r.httpCollect
 	r.serviceHandlers["/collect/tcp/status"] = r.tcpCollect

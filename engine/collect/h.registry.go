@@ -12,7 +12,7 @@ import (
 
 func (s *collectProxy) registryCollect(ctx *context.Context) (r string, st int, err error) {
 	title := ctx.GetArgValue("title", "注册中心服务")
-	msg := ctx.GetArgValue("msg", "注册中心服务:@url,当前数量:@current")
+	msg := ctx.GetArgValue("msg", "注册中心服务:@url当前数量:@current")
 	path, err := ctx.GetArgByName("path")
 	if err != nil {
 		return

@@ -14,7 +14,7 @@ import (
 func (s *collectProxy) dbCollect(ctx *context.Context) (r string, st int, err error) {
 
 	title := ctx.GetArgValue("title", "数据库监控服务")
-	msg := ctx.GetArgValue("msg", "数据库服务:@host,当前值:@current")
+	msg := ctx.GetArgValue("msg", "数据库服务:@host当前值:@current")
 	sql, err := ctx.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {
 		return

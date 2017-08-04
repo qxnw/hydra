@@ -11,8 +11,12 @@ import (
 )
 
 func (s *collectProxy) requestQPSCollect(tp string) func(ctx *context.Context) (r string, st int, err error) {
+
 	return func(ctx *context.Context) (r string, st int, err error) {
-		span, err := ctx.GetArgByName("span")
+		title := ctx.GetArgValue("title", "每秒钟请求数")
+		msg := ctx.GetArgValue("msg", "@url在@span内请求:@current次")
+
+		domain, err := ctx.GetArgByName("domain")
 		if err != nil {
 			return
 		}
@@ -25,27 +29,33 @@ func (s *collectProxy) requestQPSCollect(tp string) func(ctx *context.Context) (
 			return
 		}
 		tf := transform.New()
-		tf.Set("span", span)
-		tf.Set("code", ctx.GetArgValue("code", "500"))
+		tf.Set("domain", domain)
+		tf.Set("span", "5m")
 
 		sql := tf.Translate(s.srvQueryMap[tp])
-		domains, values, err := s.query(ctx, sql, tf)
+		urls, values, err := s.query(ctx, sql, tf)
 		if err != nil {
 			return
 		}
-		for i, domain := range domains {
+		if len(urls) == 0 {
+			st = 204
+			return
+		}
+		for i, url := range urls {
 			value := 1 //需要报警
 			val := values[i]
 			if ((min > 0 && val >= min) || min == 0) && ((max > 0 && val < max) || max == 0) {
 				value = 0 //恢复
 			}
-			tf.Set("domain", domain)
+			tf.Set("url", url)
 			tf.Set("value", strconv.Itoa(value))
 			tf.Set("level", ctx.GetArgValue("level", "1"))
 			tf.Set("group", ctx.GetArgValue("group", "D"))
 			tf.Set("current", strconv.Itoa(val))
 			tf.Set("time", time.Now().Format("20060102150405"))
-			tf.Set("msg", tf.TranslateAll(ctx.GetArgValue("msg", "-"), true))
+			tf.Set("unq", tf.Translate("{@domain}_{@url}_QPS"))
+			tf.Set("title", tf.TranslateAll(title, true))
+			tf.Set("msg", tf.TranslateAll(msg, true))
 			st, err = s.checkAndSave(ctx, tp, tf, value)
 			if err != nil {
 				return

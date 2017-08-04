@@ -99,9 +99,17 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 		title = fmt.Sprintf("%s恢复正常", input["title"])
 		content = fmt.Sprintf("%s已恢复正常", input["msg"])
 	} else {
-
 		title = fmt.Sprintf("%s出现异常", input["title"])
-		content = fmt.Sprintf("%s出现异常，请及时处理", input["msg"])
+		switch input["type"] {
+		case "cpu", "mem", "disk":
+			content = fmt.Sprintf("%s负载过高，请及时处理", input["msg"])
+		case "http", "tcp":
+			content = fmt.Sprintf("%s出现异常,可能服务器已宕机，请及时处理", input["msg"])
+		case "registry":
+			content = fmt.Sprintf("%s出现异常,可能部分服务器已宕机，请及时处理", input["msg"])
+		default:
+			content = fmt.Sprintf("%s，请及时处理", input["msg"])
+		}
 	}
 	happendTime = lastTime.Format("2006/01/02 15:04")
 	return

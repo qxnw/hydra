@@ -19,51 +19,65 @@ import (
 )
 
 func (r *collectProxy) init() {
-	r.reportSQL = `select * from hydra_collector where "time">now() - @time order by time`
+	r.reportSQL = `select * from alarm_records where "time">now() - @time order by time`
 
-	r.queryMap["http"] = `select value from hydra_collector where "type"='http' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["tcp"] = `select value from hydra_collector where "type"='tcp' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["registry"] = `select value from hydra_collector where "type"='registry' and UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["db"] = `select value from hydra_collector where "type"='db' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["cpu"] = `select value from hydra_collector where "type"='cpu' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["mem"] = `select value from hydra_collector where "type"='mem' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.queryMap["disk"] = `select value from hydra_collector where "type"='disk' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["http"] = `select value from alarm_records where "type"='http' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["tcp"] = `select value from alarm_records where "type"='tcp' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["registry"] = `select value from alarm_records where "type"='registry' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["db"] = `select value from alarm_records where "type"='db' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["cpu"] = `select value from alarm_records where "type"='cpu' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["mem"] = `select value from alarm_records where "type"='mem' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["disk"] = `select value from alarm_records where "type"='disk' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
 
-	r.reportMap["http"] = "hydra_collector,type=http,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
-	r.reportMap["tcp"] = "hydra_collector,type=tcp,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
-	r.reportMap["registry"] = "hydra_collector,type=registry,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
-	r.reportMap["db"] = "hydra_collector,type=db,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
-	r.reportMap["cpu"] = "hydra_collector,type=cpu,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
-	r.reportMap["mem"] = "hydra_collector,type=mem,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
-	r.reportMap["disk"] = "hydra_collector,type=disk,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["http"] = "alarm_records,type=http,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
+	r.reportMap["tcp"] = "alarm_records,type=tcp,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
+	r.reportMap["registry"] = "alarm_records,type=registry,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["db"] = "alarm_records,type=db,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["cpu"] = "alarm_records,type=cpu,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["mem"] = "alarm_records,type=mem,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["disk"] = "alarm_records,type=disk,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	//服务器响应码
 	r.srvQueryMap["api_server_reponse"] = `select m5 *300 as t from "api.server.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "url" fill(0) limit 1`
-	r.queryMap["api_server_reponse"] = `select value from hydra_collector where "type"='api_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["api_server_reponse"] = "hydra_collector,type=api_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.queryMap["api_server_reponse"] = `select value from alarm_records where "type"='api_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["api_server_reponse"] = "alarm_records,type=api_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	r.srvQueryMap["rpc_server_reponse"] = `select m5 *300 as t from "rpc.server.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "service" fill(0) limit 1`
-	r.queryMap["rpc_server_reponse"] = `select value from hydra_collector where "type"='rpc_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["rpc_server_reponse"] = "hydra_collector,type=rpc_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.queryMap["rpc_server_reponse"] = `select value from alarm_records where "type"='rpc_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["rpc_server_reponse"] = "alarm_records,type=rpc_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	r.srvQueryMap["web_server_reponse"] = `select m5 *300 as t from "web.server.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "url" fill(0) limit 1`
-	r.queryMap["web_server_reponse"] = `select value from hydra_collector where "type"='web_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["web_server_reponse"] = "hydra_collector,type=web_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.queryMap["web_server_reponse"] = `select value from alarm_records where "type"='web_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["web_server_reponse"] = "alarm_records,type=web_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	r.srvQueryMap["mq_consumer_reponse"] = `select m5 *300 as t from "mq.consumer.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "queue" fill(0)  limit 1`
-	r.queryMap["mq_consumer_reponse"] = `select value from hydra_collector where "type"='mq_consumer_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["mq_consumer_reponse"] = "hydra_collector,type=mq_consumer_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.queryMap["mq_consumer_reponse"] = `select value from alarm_records where "type"='mq_consumer_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["mq_consumer_reponse"] = "alarm_records,type=mq_consumer_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	r.srvQueryMap["cron_server_reponse"] = `select m5 *300 as t from "cron.server.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "task" fill(0) limit 1`
-	r.queryMap["cron_server_reponse"] = `select value from hydra_collector where "type"='cron_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["cron_server_reponse"] = "hydra_collector,type=cron_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
-
-	//服务器充值时长
-	r.srvQueryMap["api_server_qps"] = `select sum(count) from "api.server.request.qps"  where "status" = '@code' and "time" > now() - @span  group by "domain"`
-	r.queryMap["api_server_qps"] = `select value from hydra_collector where "type"='api_server_qps' and "domain"='@domain' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["api_server_qps"] = "hydra_collector,type=api_server_qps,domain=@domain,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.queryMap["cron_server_reponse"] = `select value from alarm_records where "type"='cron_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["cron_server_reponse"] = "alarm_records,type=cron_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 	//服务器并发数
+	r.srvQueryMap["api_server_qps"] = `select m5 as t from "api.server.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "url" fill(0) limit 1`
+	r.queryMap["api_server_qps"] = `select value from alarm_records where "type"='api_server_qps' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["api_server_qps"] = "alarm_records,type=api_server_qps,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+
+	r.srvQueryMap["web_server_qps"] = `select m5 as t from "web.server.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "url" fill(0) limit 1`
+	r.queryMap["web_server_qps"] = `select value from alarm_records where "type"='web_server_qps' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["web_server_qps"] = "alarm_records,type=web_server_qps,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+
+	r.srvQueryMap["rpc_server_qps"] = `select m5 as t from "api.server.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "service" fill(0) limit 1`
+	r.queryMap["rpc_server_qps"] = `select value from alarm_records where "type"='rpc_server_qps' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["rpc_server_qps"] = "alarm_records,type=rpc_server_qps,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+
+	r.srvQueryMap["mq_consumer_qps"] = `select m5 as t from "mq.consumer.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "queue" fill(0) limit 1`
+	r.queryMap["mq_consumer_qps"] = `select value from alarm_records where "type"='mq_consumer_qps' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["mq_consumer_qps"] = "alarm_records,type=mq_consumer_qps,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+
+	r.srvQueryMap["job_server_qps"] = `select m5 as t from "job.server.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "task" fill(0) limit 1`
+	r.queryMap["job_server_qps"] = `select value from alarm_records where "type"='job_server_qps' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.reportMap["job_server_qps"] = "alarm_records,type=job_server_qps,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
 
 }
 

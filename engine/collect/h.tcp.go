@@ -30,6 +30,7 @@ func (s *collectProxy) tcpCollect(ctx *context.Context) (r string, st int, err e
 	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
 	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
+	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
 	st, err = s.checkAndSave(ctx, "tcp", tf, result)
