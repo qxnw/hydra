@@ -9,9 +9,9 @@ import (
 )
 
 func (s *logProxy) logFileInfoHandle(ctx *context.Context) (r string, t int, headerMap map[string]interface{}, err error) {
-	if ctx.GetBody() == "" {
+	if b, err := ctx.GetBody(); b == "" || err != nil {
 		t = 204
-		return
+		return "", t, nil, err
 	}
 	name, ok := ctx.GetArgs()["name"]
 	if !ok {
@@ -27,7 +27,7 @@ func (s *logProxy) logFileInfoHandle(ctx *context.Context) (r string, t int, hea
 	return
 }
 func (s *logProxy) logFileErrorHandle(ctx *context.Context) (r string, t int, headerMap map[string]interface{}, err error) {
-	if ctx.GetBody() == "" {
+	if b, _ := ctx.GetBody(); b == "" {
 		t = 204
 		return
 	}

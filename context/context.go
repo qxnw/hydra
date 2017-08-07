@@ -3,6 +3,8 @@ package context
 import (
 	"sync"
 
+	"fmt"
+
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -28,8 +30,14 @@ func (c *Context) GetArgs() map[string]string {
 }
 
 //GetBody 获取body参数
-func (c *Context) GetBody() string {
-	return c.input.body
+func (c *Context) GetBody(encoding ...string) (string, error) {
+	if len(encoding) == 0 {
+		return c.input.body, nil
+	}
+	if fun, ok := c.ext["__func_body_get_"].(func(ch string) (string, error)); ok {
+		return fun(encoding[0])
+	}
+	return "", fmt.Errorf("无法根据%s格式转换数据:", encoding[0])
 }
 
 //GetParams 获取路由参数

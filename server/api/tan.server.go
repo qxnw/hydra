@@ -186,6 +186,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		ext["__func_http_request_"] = c.Req()
 		ext["__func_http_response_"] = c.ResponseWriter
 		ext["__func_body_get_"] = func(ch string) (string, error) {
+			fmt.Println("api.server:func_body_get")
 			return encoding.Convert(c.BodyBuffer, ch)
 		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {

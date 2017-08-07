@@ -15,11 +15,12 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 	if err == nil {
 		return
 	}
-	if err != nil && !types.IsEmpty(ctx.GetBody()) {
+	body, _ := ctx.GetBody()
+	if err != nil && !types.IsEmpty(body) {
 		inputMap := make(map[string]interface{})
-		inputMap, err = jsons.Unmarshal([]byte(ctx.GetBody()))
+		inputMap, err = jsons.Unmarshal([]byte(body))
 		if err != nil {
-			err = fmt.Errorf("body不是有效的json数据，[%v](err:%v)", ctx.GetBody(), err)
+			err = fmt.Errorf("body不是有效的json数据，[%v](err:%v)", body, err)
 			return
 		}
 		msm, ok := inputMap["key"]

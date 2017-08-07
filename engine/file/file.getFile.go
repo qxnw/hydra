@@ -79,7 +79,6 @@ func (s *fileProxy) saveFileFromHTTPRequest2(ctx *context.Context) (r string, t 
 		err = errors.New("未找到__func_http_request_类型错误，不是*http.Request")
 		return
 	}
-	fmt.Println("body:", ctx.GetBody())
 	uf, _, err := f.FormFile(name)
 	if err != nil {
 		err = fmt.Errorf("无法读取上传的文件:%s(err:%v)", name, err)

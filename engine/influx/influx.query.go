@@ -10,9 +10,10 @@ import (
 )
 
 func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err error) {
+	body, _ := ctx.GetBody()
 	sql, err = ctx.GetInput().Get("q")
-	if err != nil && !types.IsEmpty(ctx.GetBody()) {
-		sql = ctx.GetBody()
+	if err != nil && !types.IsEmpty(body) {
+		sql = body
 		if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "show") {
 			err = fmt.Errorf("输入的SQL语句必须是select或show开头，(%s)", sql)
 			return

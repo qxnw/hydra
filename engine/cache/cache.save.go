@@ -13,10 +13,11 @@ import (
 )
 
 func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value string, expiresAt int, err error) {
+	body, _ := ctx.GetBody()
 	key, err = ctx.GetInput().Get("key")
-	if err != nil && !types.IsEmpty(ctx.GetBody()) {
+	if err != nil && !types.IsEmpty(body) {
 		inputMap := make(map[string]interface{})
-		inputMap, err = jsons.Unmarshal([]byte(ctx.GetBody()))
+		inputMap, err = jsons.Unmarshal([]byte(body))
 		if err != nil {
 			err = fmt.Errorf("输入的body不是有效的json数据，(err:%v)", err)
 			return

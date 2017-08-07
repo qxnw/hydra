@@ -41,7 +41,7 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	ctx.GetInput().Each(func(k string, v string) {
 		input[k] = v
 	})
-	input["__body"] = ctx.GetBody()
+	input["__body"], _ = ctx.GetBody()
 	input["hydra_sid"] = ctx.GetExt()["hydra_sid"].(string)
 	status, result, params, err := s.invoker.Request(service, input, true)
 	if err != nil {
