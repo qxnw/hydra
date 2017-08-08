@@ -137,52 +137,67 @@ LOOP:
 		select {
 		case <-w.closer:
 			break LOOP
-		case <-time.After(time.Second * 60):
-			if w.registry == nil {
-				continue
-			}
-			for k, v := range w.localTmpServices {
-				if b, err := w.registry.Exists(k); err == nil && !b {
-					err := w.registry.CreateTempNode(k, v)
-					if err != nil {
-						goto END
-					}
+		case <-time.After(time.Second * 10): //每隔10秒检查一次节点，有节点不存在时调用全部检查创建
+			needCreate := false
+			for k := range w.localTmpServices {
+				if b, err := w.registry.Exists(k); !b && err == nil {
+					needCreate = true
+					break
 				}
+				break //只检查第一个节点
 			}
-			for k, v := range w.localRalationService {
-				if b, err := w.registry.Exists(k); err == nil && !b {
-					r, err := w.registry.CreateSeqNode(v, w.localSeqServices[v])
-					if err != nil {
-						goto END
-					}
-					delete(w.localRalationService, k)
-					w.localRalationService[r] = v
-				}
+			if needCreate {
+				w.checkAndCreate()
 			}
-			if w.crossRegistry == nil {
-				continue
-			}
-			for k, v := range w.crossTmpServices {
-				if b, err := w.crossRegistry.Exists(k); err == nil && !b {
-					err := w.crossRegistry.CreateTempNode(k, v)
-					if err != nil {
-						goto END
-					}
-				}
-			}
-			for k, v := range w.crosslRalationService {
-				if b, err := w.crossRegistry.Exists(v); err == nil && !b {
-					r, err := w.crossRegistry.CreateSeqNode(k, w.crossSeqServices[k])
-					if err != nil {
-						goto END
-					}
-					delete(w.crosslRalationService, k)
-					w.localRalationService[k] = r
-				}
-			}
-		END:
+		case <-time.After(time.Second * 60): //每隔60秒全部检查一次
+			w.checkAndCreate()
 		}
 	}
+}
+func (w *clusterServiceRegister) checkAndCreate() {
+	if w.registry == nil {
+		return
+	}
+	for k, v := range w.localTmpServices {
+		if b, err := w.registry.Exists(k); err == nil && !b {
+			err := w.registry.CreateTempNode(k, v)
+			if err != nil {
+				goto END
+			}
+		}
+	}
+	for k, v := range w.localRalationService {
+		if b, err := w.registry.Exists(k); err == nil && !b {
+			r, err := w.registry.CreateSeqNode(v, w.localSeqServices[v])
+			if err != nil {
+				goto END
+			}
+			delete(w.localRalationService, k)
+			w.localRalationService[r] = v
+		}
+	}
+	if w.crossRegistry == nil {
+		return
+	}
+	for k, v := range w.crossTmpServices {
+		if b, err := w.crossRegistry.Exists(k); err == nil && !b {
+			err := w.crossRegistry.CreateTempNode(k, v)
+			if err != nil {
+				goto END
+			}
+		}
+	}
+	for k, v := range w.crosslRalationService {
+		if b, err := w.crossRegistry.Exists(v); err == nil && !b {
+			r, err := w.crossRegistry.CreateSeqNode(k, w.crossSeqServices[k])
+			if err != nil {
+				goto END
+			}
+			delete(w.crosslRalationService, k)
+			w.localRalationService[k] = r
+		}
+	}
+END:
 }
 
 //Close 关闭所有监控项
