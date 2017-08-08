@@ -55,7 +55,7 @@ func (h *HFlags) CheckFlags(i ...int) (err error) {
 	if len(os.Args) < index {
 		return errors.New("未指定域名称")
 	}
-	engine.IsDebug = server.IsDebug
+	server.IsDebug = engine.IsDebug
 	h.Domain = os.Args[index]
 	if h.currentRegistry == "" {
 		h.runMode = modeStandalone
