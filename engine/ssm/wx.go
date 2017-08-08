@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"encoding/json"
+
+	"github.com/qxnw/goplugin"
+	"github.com/qxnw/goplugin/errorCode"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/net/http"
@@ -40,6 +44,52 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 	return
 }
 func (s *smsProxy) wxSend(ctx *context.Context) (r string, t int, err error) {
+	context, err := goplugin.GetContext(ctx, s.ctx.Invoker)
+	if err != nil {
+		t = errorCode.SERVER_ERROR
+		return
+	}
+	content, err := ctx.GetVarParamByArgsName("setting", "setting")
+	if err != nil {
+		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
+		return
+	}
+	m := make(map[string]interface{})
+	err = json.Unmarshal([]byte(content), &m)
+	if err != nil {
+		return
+	}
+
+	setting, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
+	if err != nil {
+		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
+		return
+	}
+
+	if err = s.checkMustField(setting, "service"); err != nil {
+		return
+	}
+	if err = s.checkInputField(ctx.GetInput(), "openid"); err != nil {
+		return
+	}
+	raw, err := setting.GetSectionString(setting.String("alarm", "alarm"))
+	if err != nil {
+		err = fmt.Errorf("notify配置文件未配置:%s节点", context.GetString("alarm", "alarm"))
+		return
+	}
+	ctx.GetInput().Each(func(k, v string) {
+		setting.Set(k, v)
+	})
+	service := setting.String("service")
+	if err != nil {
+		return
+	}
+	t, r, _, err = context.RPC.Request(service, map[string]string{
+		"__raw__": setting.Translate(raw),
+	}, true)
+	return
+}
+func (s *smsProxy) wxSend1(ctx *context.Context) (r string, t int, err error) {
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return

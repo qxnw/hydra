@@ -5,8 +5,6 @@ import (
 
 	"strings"
 
-	"regexp"
-
 	"strconv"
 
 	"github.com/qxnw/hydra/context"
@@ -56,7 +54,12 @@ func (s *reportProxy) sqlQueryHandle(ctx *context.Context) (r string, st int, er
 				err = fmt.Errorf("返回的数据集中未包含%s字段", v)
 				return
 			}
-			fields[v] = s.getData(row[v])
+			f, err := strconv.ParseFloat(row.GetString(v), 64)
+			if err != nil {
+				err = fmt.Errorf("字段%s不是有效的float类型段", v)
+				return "", 500, err
+			}
+			fields[v] = f
 		}
 		err = influxDB.Send(measurement, tags, fields)
 		if err != nil {
@@ -64,18 +67,4 @@ func (s *reportProxy) sqlQueryHandle(ctx *context.Context) (r string, st int, er
 		}
 	}
 	return
-}
-func (s *reportProxy) getData(v interface{}) interface{} {
-	str := fmt.Sprint(v)
-
-	if m, _ := regexp.MatchString(`[^\d|\.]+`, str); m {
-		return str
-	}
-	if m, _ := regexp.MatchString(`^[\d]+$`, str); m {
-		f, err := strconv.ParseFloat(str, 64)
-		if err == nil {
-			return f
-		}
-	}
-	return str
 }

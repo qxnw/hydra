@@ -121,7 +121,7 @@ func (s *collectProxy) sendWXNotify(alarm bool, openID string, service string, t
 		tp = "normal"
 	}
 	status, _, _, err = s.rpc.Request(service, map[string]string{
-		"openId":  openID,
+		"openid":  openID,
 		"title":   title,
 		"time":    time,
 		"content": content,

@@ -3,18 +3,14 @@ package ssm
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/types"
 )
 
 type smsProxy struct {
-	domain          string
-	serverName      string
-	serverType      string
+	ctx             *engine.EngineContext
 	services        []string
-	invoker         *rpc.Invoker
 	serviceHandlers map[string]func(*context.Context) (string, int, error)
 }
 
@@ -26,6 +22,7 @@ func newSmsProxy() *smsProxy {
 	p.serviceHandlers["/ssm/ytx/send"] = p.ytxSend
 	p.serviceHandlers["/ssm/wx/send"] = p.wxSend
 	p.serviceHandlers["/ssm/wx0/send"] = p.wxSend0
+	p.serviceHandlers["/ssm/wx1/send"] = p.wxSend1
 	p.serviceHandlers["/ssm/email/send"] = p.sendMail
 	for k := range p.serviceHandlers {
 		p.services = append(p.services, k)
@@ -34,10 +31,7 @@ func newSmsProxy() *smsProxy {
 }
 
 func (s *smsProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
-	s.invoker = ctx.Invoker
+	s.ctx = ctx
 	return s.services, nil
 
 }

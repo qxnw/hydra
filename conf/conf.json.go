@@ -78,6 +78,9 @@ func (j *JSONConf) GetVersion() int32 {
 
 //Set 设置参数值
 func (j *JSONConf) Set(key string, value string) {
+	if _, ok := j.data[key]; ok {
+		return
+	}
 	j.data[key] = value
 	j.Transform.Set(key, value)
 }
@@ -308,10 +311,10 @@ func (j *JSONConf) GetSMap(section string) (map[string]string, error) {
 
 //GetSectionString 获取section原始JSON串
 func (j *JSONConf) GetSectionString(section string) (r string, err error) {
-	nkey := "_section_string_" + section
-	if value, ok := j.cache.Get(nkey); ok {
-		return value.(string), nil
-	}
+	//nkey := "_section_string_" + section
+	//if value, ok := j.cache.Get(nkey); ok {
+	//return value.(string), nil
+	//}
 	val := j.data[section]
 	if val != nil {
 		buffer, err := json.Marshal(val)
@@ -319,9 +322,8 @@ func (j *JSONConf) GetSectionString(section string) (r string, err error) {
 			return "", err
 		}
 		r = j.TranslateAll(jsons.Escape(string(buffer)), false)
-		j.cache.Set(nkey, r)
+		//	j.cache.Set(nkey, r)
 		return r, nil
-
 	}
 	err = errors.New("not exist section:" + section)
 	return

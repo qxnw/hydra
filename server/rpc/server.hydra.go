@@ -11,6 +11,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
+	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -177,7 +178,23 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			tfParams.Set(k[1:], v)
 		})
 		tfParams.Set("method", c.Method())
-		tfForm := transform.NewMap(c.Req().GetArgs())
+		input := c.Req().GetArgs()
+		if raw, ok := input["__raw__"]; ok {
+			rawMap, err := jsons.Unmarshal([]byte(raw))
+			if err != nil {
+				c.Result = &StatusResult{Code: 500, Result: fmt.Errorf("输入参数__raw__必须是json：%v", err), Type: JsonResponse}
+				return
+			}
+			smap, err := types.ToStringMap(rawMap)
+			if err != nil {
+				c.Result = &StatusResult{Code: 500, Result: fmt.Errorf("输入参数__raw__有误：%v", err), Type: JsonResponse}
+				return
+			}
+			for k, v := range smap {
+				input[k] = v
+			}
+		}
+		tfForm := transform.NewMap(input)
 
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		body, _ := tfForm.Get("__body")
