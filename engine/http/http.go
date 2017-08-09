@@ -9,20 +9,19 @@ import (
 )
 
 type httpProxy struct {
-	domain          string
-	serverName      string
-	serverType      string
+	ctx             *engine.EngineContext
 	services        []string
 	encrypts        []string
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]func(*context.Context) (string, int, map[string]interface{}, error)
 }
 
 func newHTTPProxy() *httpProxy {
 	r := &httpProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
+	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, map[string]interface{}, error))
 	r.serviceHandlers["/http/handle"] = r.httpHandle
+	r.serviceHandlers["/http/redirect"] = r.httpRedirectHandle
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}
@@ -31,9 +30,7 @@ func newHTTPProxy() *httpProxy {
 }
 
 func (s *httpProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
+	s.ctx = ctx
 	return s.services, nil
 }
 func (s *httpProxy) Close() error {
@@ -49,12 +46,12 @@ func (s *httpProxy) Handle(svName string, mode string, service string, ctx *cont
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, t, err := s.serviceHandlers[service](ctx)
+	content, t, p, err := s.serviceHandlers[service](ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:http.%v", err)
 		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
 	}
-	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content}, nil
+	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content, Params: p}, nil
 }
 
 func (s *httpProxy) Has(shortName, fullName string) (err error) {

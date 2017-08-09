@@ -62,12 +62,15 @@ func TestCronServer2(t *testing.T) {
 }
 func TestCronServer3(t *testing.T) {
 	server := NewCronServer("", "", 60, time.Second)
-	p, c := server.getOffset(time.Now().Add(90 * time.Second))
-	ut.Expect(t, p, 30)
+	now := time.Now()
+	next := now.Add(90 * time.Second)
+	p, c := server.getOffset(now, next)
+	ut.Expect(t, p, 31)
 	ut.Expect(t, c, 1)
-
-	p, c = server.getOffset(time.Now().Add(300 * time.Second))
-	ut.Expect(t, p, 0)
+	now = time.Now()
+	next = now.Add(300 * time.Second)
+	p, c = server.getOffset(now, next)
+	ut.Expect(t, p, 1)
 	ut.Expect(t, c, 5)
 }
 

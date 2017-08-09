@@ -24,7 +24,7 @@ func TestCron2(t *testing.T) {
 	ut.Expect(t, err, nil)
 	now := time.Now()
 	next := s.Next(now)
-	p, c := server.getOffset(next)
+	p, c := server.getOffset(now, next)
 
 	ut.Expect(t, p, 0)
 	ut.Expect(t, c, 60)

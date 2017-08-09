@@ -25,7 +25,7 @@ import (
 
 //httpHandle get请求,input获取参数
 //body
-func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, err error) {
+func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, p map[string]interface{}, err error) {
 	setting, ok := ctx.GetArgs()["setting"]
 	if !ok {
 		err = fmt.Errorf("args配置错误，未指定setting参数的值:%v", ctx.GetArgs())
