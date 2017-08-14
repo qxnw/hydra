@@ -141,7 +141,7 @@ func (cd *ContextDB) GetFirstRow(tpl []string, input map[string]interface{}) (da
 	if len(result) > 0 {
 		return result[0], nil
 	}
-	return nil, ErrDataNotExist
+	return nil, ERR_DataNotExist
 }
 
 //GetDataRows 获取多行数据

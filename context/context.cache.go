@@ -5,12 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
+	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/memcache"
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -22,13 +21,13 @@ type ContextCache struct {
 }
 
 //ErrDataNotExist 数据不存在
-var ErrDataNotExist = errors.New("查询的数据不存在")
+var ERR_DataNotExist = errors.New("查询的数据不存在")
 
 //Reset 重置context
-func (cache *ContextCache) Reset(ctx *Context) (err error) {
-	cache.ctx = ctx
-	cache.db, cache.err = ctx.GetDB()
-	return cache.err
+func (cc *ContextCache) Reset(ctx *Context) (err error) {
+	cc.ctx = ctx
+	cc.db, cc.err = ctx.GetDB()
+	return cc.err
 }
 
 //NewContextCache 构建缓存操作对象
@@ -40,18 +39,18 @@ func NewContextCache(wx *Context, db *db.DB) *ContextCache {
 }
 
 //GetCache 获取缓存操作对象
-func (cache *ContextCache) GetCache(names ...string) (c *memcache.MemcacheClient, err error) {
+func (cc *ContextCache) GetCache(names ...string) (c cache.ICache, err error) {
 	sName := "cache"
 	if len(names) > 0 {
 		sName = names[0]
 	}
-	name, ok := cache.ctx.Input.Args[sName]
+	name, ok := cc.ctx.Input.Args[sName]
 	if !ok {
-		return nil, fmt.Errorf("未配置cache参数(%v)", cache.ctx)
+		return nil, fmt.Errorf("未配置cache参数(%v)", cc.ctx)
 	}
-	_, memCached, err := memCache.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
+	_, cached, err := memCache.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
 		name := input[0].(string)
-		conf, err := cache.ctx.Input.GetVarParam("cache", name)
+		conf, err := cc.ctx.Input.GetVarParam("cache", name)
 		if err != nil {
 			return nil, err
 		}
@@ -64,43 +63,43 @@ func (cache *ContextCache) GetCache(names ...string) (c *memcache.MemcacheClient
 			err = fmt.Errorf("cache[%s]配置文件错误，未包含server节点:%s", name, conf)
 			return nil, err
 		}
-		c, err = memcache.New(strings.Split(server.(string), ";"))
+		c, err = cache.NewCache(server.(string))
 		if err != nil {
 			return nil, err
 		}
 		return
 	}, name)
 	if err != nil {
-		err = fmt.Errorf("初始化memcached失败:%v", err)
+		err = fmt.Errorf("初始化cache失败:%v", err)
 		return
 	}
-	c = memCached.(*memcache.MemcacheClient)
+	c = cached.(cache.ICache)
 	return
 }
-func (cache *ContextCache) Set(key string, value string, expiresAt int) error {
-	client, err := cache.GetCache()
+func (cc *ContextCache) Set(key string, value string, expiresAt int) error {
+	client, err := cc.GetCache()
 	if err != nil {
 		return err
 	}
 	return client.Set(key, value, expiresAt)
 }
-func (cache *ContextCache) Delay(key string, expiresAt int) error {
-	client, err := cache.GetCache()
+func (cc *ContextCache) Delay(key string, expiresAt int) error {
+	client, err := cc.GetCache()
 	if err != nil {
 		return err
 	}
 	return client.Delay(key, expiresAt)
 }
 
-func (cache *ContextCache) Get(key string) (string, error) {
-	client, err := cache.GetCache()
+func (cc *ContextCache) Get(key string) (string, error) {
+	client, err := cc.GetCache()
 	if err != nil {
 		return "", err
 	}
 	return client.Get(key)
 }
-func (cache *ContextCache) Delete(key string) error {
-	client, err := cache.GetCache()
+func (cc *ContextCache) Delete(key string) error {
+	client, err := cc.GetCache()
 	if err != nil {
 		return err
 	}
@@ -112,16 +111,16 @@ func (cache *ContextCache) Delete(key string) error {
 }
 
 //GetJSON 从缓存中获取json字符串，缓存中不存在时从数据库中获取
-func (cache *ContextCache) GetJSON(tpl []string, input map[string]interface{}) (cvalue string, err error) {
-	err = cache.err
+func (cc *ContextCache) GetJSON(tpl []string, input map[string]interface{}) (cvalue string, err error) {
+	err = cc.err
 	if err != nil {
 		return
 	}
-	sql, key, expireAt, err := cache.getCacheSetting(tpl)
+	sql, key, expireAt, err := cc.getCacheSetting(tpl)
 	if err != nil {
 		return
 	}
-	client, err := cache.GetCache()
+	client, err := cc.GetCache()
 	if err != nil {
 		return
 	}
@@ -131,7 +130,7 @@ func (cache *ContextCache) GetJSON(tpl []string, input map[string]interface{}) (
 	if cvalue != "" {
 		return
 	}
-	data, _, _, err := cache.db.Query(sql, input)
+	data, _, _, err := cc.db.Query(sql, input)
 	if err != nil {
 		return
 	}
@@ -142,24 +141,24 @@ func (cache *ContextCache) GetJSON(tpl []string, input map[string]interface{}) (
 	cvalue = string(buffer)
 	errx := client.Set(key, cvalue, expireAt)
 	if errx != nil {
-		cache.ctx.Errorf("保存缓存数据异常：%v", errx)
+		cc.ctx.Errorf("保存缓存数据异常：%v", errx)
 	}
 	return
 }
 
 //GetFirstRow 从缓存中获取首行数据，缓存中不存在时从数据中获取并保存到缓存中，数据不存在时返回ErrDataNotExist错误
-func (cache *ContextCache) GetFirstRow(tpl []string, input map[string]interface{}) (data db.QueryRow, err error) {
-	result, _, _, err := cache.GetDataRows(tpl, input)
+func (cc *ContextCache) GetFirstRow(tpl []string, input map[string]interface{}) (data db.QueryRow, err error) {
+	result, _, _, err := cc.GetDataRows(tpl, input)
 	if err != nil {
 		return
 	}
 	if len(result) > 0 {
 		return result[0], nil
 	}
-	return nil, ErrDataNotExist
+	return nil, ERR_DataNotExist
 }
 
-func (cache *ContextCache) getCacheSetting(tpl []string) (sql string, key string, expireAt int, err error) {
+func (cc *ContextCache) getCacheSetting(tpl []string) (sql string, key string, expireAt int, err error) {
 	if len(tpl) < 3 {
 		err = fmt.Errorf("包含缓存信息的SQL模式配置有误，必须包含3个元素，SQL语句/缓存KEY/过期时间:%v", tpl)
 		return
@@ -179,17 +178,17 @@ func (cache *ContextCache) getCacheSetting(tpl []string) (sql string, key string
 }
 
 //GetDataRows 从缓存中获取数据集,缓存中不存在时从数据库中获取并保存到缓存中
-func (cache *ContextCache) GetDataRows(tpl []string, input map[string]interface{}) (data []db.QueryRow, query string, params []interface{}, err error) {
-	err = cache.err
+func (cc *ContextCache) GetDataRows(tpl []string, input map[string]interface{}) (data []db.QueryRow, query string, params []interface{}, err error) {
+	err = cc.err
 	if err != nil {
 		return
 	}
-	sql, key, expireAt, err := cache.getCacheSetting(tpl)
+	sql, key, expireAt, err := cc.getCacheSetting(tpl)
 	if err != nil {
 		return
 	}
 
-	client, err := cache.GetCache()
+	client, err := cc.GetCache()
 	if err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (cache *ContextCache) GetDataRows(tpl []string, input map[string]interface{
 		err = json.Unmarshal([]byte(dstr), &data)
 		return
 	}
-	data, query, params, err = cache.db.Query(sql, input)
+	data, query, params, err = cc.db.Query(sql, input)
 	if err != nil {
 		err = fmt.Errorf("从数据库中查询数据异常:%s,%v,err:%v", sql, input, err)
 		return
@@ -214,7 +213,7 @@ func (cache *ContextCache) GetDataRows(tpl []string, input map[string]interface{
 	}
 	errx := client.Set(key, string(cvalue), expireAt)
 	if errx != nil {
-		cache.ctx.Errorf("数据保存到缓存中异常:%s,%s,err:%v", key, string(cvalue), errx)
+		cc.ctx.Errorf("数据保存到缓存中异常:%s,%s,err:%v", key, string(cvalue), errx)
 	}
 	return
 }

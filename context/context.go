@@ -5,9 +5,9 @@ import (
 
 	"fmt"
 
+	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/memcache"
 	"github.com/qxnw/lib4go/transform"
 )
 
@@ -34,7 +34,6 @@ func (c *Context) SetInput(input transform.ITransformGetter, param transform.ITr
 	c.Input = &Input{Input: input, Params: param, Body: body, Args: args, Ext: ext}
 	if _, ok := c.Input.Ext["__test__"]; ok {
 		c.ILogger = &tLogger{}
-		return
 	}
 	c.ILogger, _ = c.getLogger()
 	c.DB.Reset(c)
@@ -51,7 +50,7 @@ func (c *Context) SetRPC(rpc RPCInvoker) {
 }
 
 //GetCache 获取缓存操作对象
-func (c *Context) GetCache(names ...string) (*memcache.MemcacheClient, error) {
+func (c *Context) GetCache(names ...string) (cache.ICache, error) {
 	return c.Cache.GetCache(names...)
 }
 
