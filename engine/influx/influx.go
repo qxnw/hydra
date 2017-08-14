@@ -7,7 +7,6 @@ import (
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/influxdb"
-	"github.com/qxnw/lib4go/types"
 )
 
 type influxProxy struct {
@@ -15,7 +14,7 @@ type influxProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]context.HandlerFunc
 	dbs             cmap.ConcurrentMap
 }
 
@@ -24,7 +23,7 @@ func newInfluxProxy() *influxProxy {
 		services: make([]string, 0, 4),
 		dbs:      cmap.New(2),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
+	r.serviceHandlers = make(map[string]context.HandlerFunc)
 	r.serviceHandlers["/influx/save"] = r.save
 	r.serviceHandlers["/influx/query"] = r.query
 	for k := range r.serviceHandlers {
@@ -59,12 +58,12 @@ func (s *influxProxy) Handle(svName string, mode string, service string, ctx *co
 		return
 	}
 
-	content, st, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:influxdb.%v", err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	return
 
 }
 

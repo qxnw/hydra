@@ -6,13 +6,12 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
-	"github.com/qxnw/lib4go/types"
 )
 
 type cacheProxy struct {
 	ctx             *engine.EngineContext
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]context.HandlerFunc
 	dbs             cmap.ConcurrentMap
 }
 
@@ -21,7 +20,7 @@ func newCacheProxy() *cacheProxy {
 		dbs:      cmap.New(2),
 		services: make([]string, 0, 4),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error))
+	r.serviceHandlers = make(map[string]context.HandlerFunc)
 	r.serviceHandlers["/cache/memcached/save"] = r.save
 	r.serviceHandlers["/cache/memcached/get"] = r.get
 	r.serviceHandlers["/cache/memcached/del"] = r.del
@@ -45,11 +44,12 @@ func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *con
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, st, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:cache.%v", err)
+		err = fmt.Errorf("engine:cache %s,%v", service, err)
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	return
 }
 
 func (s *cacheProxy) Has(shortName, fullName string) (err error) {

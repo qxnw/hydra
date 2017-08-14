@@ -22,12 +22,12 @@ type hydraCronServer struct {
 	server   *CronServer
 	conf     conf.Conf
 	registry server.IServiceRegistry
-	handler  context.Handler
+	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -185,7 +185,7 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 			return
 		}
 		//执行服务调用
-		ctx.Set(inputGetter, paramGetter, inputBody, margs, ext)
+		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
 		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
 		if response == nil {
 			response = &context.Response{}
@@ -270,7 +270,7 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraCronServer(c, r, conf)
 }
 

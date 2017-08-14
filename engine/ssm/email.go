@@ -24,23 +24,23 @@ type email struct {
 
 func (s *smsProxy) geEmailParams(ctx *context.Context) (mail *email, err error) {
 	mail = &email{mailtype: "Content-Type: text/plain; charset=UTF-8"}
-	receivers, err := ctx.GetInput().Get("receiver")
+	receivers, err := ctx.Input.Get("receiver")
 	if err != nil || receivers == "" {
 		err = fmt.Errorf("邮件接收人不能为空")
 		return
 	}
 	mail.receiver = strings.Split(receivers, ";")
-	mail.subject, err = ctx.GetInput().Get("subject")
+	mail.subject, err = ctx.Input.Get("subject")
 	if err != nil || mail.subject == "" {
 		err = fmt.Errorf("邮件标题不能为空")
 		return
 	}
-	mail.content, err = ctx.GetInput().Get("content")
+	mail.content, err = ctx.Input.Get("content")
 	if err != nil || mail.content == "" {
 		err = fmt.Errorf("邮件内容不能为空")
 		return
 	}
-	content, err := ctx.GetVarParamByArgsName("setting", "setting")
+	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return
 	}
@@ -76,7 +76,8 @@ func (s *smsProxy) geEmailParams(ctx *context.Context) (mail *email, err error) 
 
 }
 
-func (s *smsProxy) sendMail(ctx *context.Context) (r string, t int, err error) {
+func (s *smsProxy) sendMail(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	m, err := s.geEmailParams(ctx)
 	if err != nil {
 		return
@@ -85,7 +86,8 @@ func (s *smsProxy) sendMail(ctx *context.Context) (r string, t int, err error) {
 	if err != nil {
 		return
 	}
-	return "SUCCESS", 200, nil
+	response.Success()
+	return
 }
 
 func (s *smsProxy) send(m *email) error {

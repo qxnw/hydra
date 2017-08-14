@@ -7,26 +7,20 @@ import (
 
 	"sync"
 
-	"github.com/qxnw/goplugin"
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
-	"github.com/qxnw/lib4go/types"
 )
 
-var plugines map[string]goplugin.Worker
+var plugines map[string]context.Worker
 var mu sync.Mutex
 
 //go build -buildmode=plugin
 type goPluginWorker struct {
-	domain     string
-	serverName string
-	serverType string
+	ctx        *engine.EngineContext
 	scriptPath string
-	srvPlugins map[string]goplugin.Worker
+	srvPlugins map[string]context.Worker
 	services   cmap.ConcurrentMap
-	invoker    *rpc.Invoker
 	path       []string
 	isClose    bool
 }
@@ -34,18 +28,15 @@ type goPluginWorker struct {
 func newGoPluginWorker() *goPluginWorker {
 	return &goPluginWorker{
 		services:   cmap.New(2),
-		srvPlugins: make(map[string]goplugin.Worker),
+		srvPlugins: make(map[string]context.Worker),
 		path:       make([]string, 0, 2),
 	}
 }
 
 func (s *goPluginWorker) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
-	s.invoker = ctx.Invoker
-	s.path = append(s.path, fmt.Sprintf("./%s_%s.so", s.serverName, s.serverType))
-	s.path = append(s.path, fmt.Sprintf("./%s.so", s.serverName))
+	s.ctx = ctx
+	s.path = append(s.path, fmt.Sprintf("./%s_%s.so", ctx.ServerName, ctx.ServerType))
+	s.path = append(s.path, fmt.Sprintf("./%s.so", ctx.ServerName))
 	for _, p := range s.path {
 		rwrk, err := s.loadPlugin(p)
 		if err != nil {
@@ -83,9 +74,7 @@ func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx 
 	if !ok {
 		return &context.Response{Status: 404}, fmt.Errorf("engine:goplugin.未找到服务：%s", svName)
 	}
-	st, rs, pa, err := f.Handle(svName, mode, service, ctx, s.invoker)
-	st = types.DecodeInt(err != nil && (st == 0 || st == 200), true, 500, st)
-	return &context.Response{Status: st, Content: rs, Params: pa}, err
+	return f.Handle(svName, mode, service, ctx)
 }
 func (s *goPluginWorker) Has(shortName, fullName string) error {
 	if s.services.Count() == 0 {
@@ -106,6 +95,6 @@ func (s *goResolver) Resolve() engine.IWorker {
 }
 
 func init() {
-	plugines = make(map[string]goplugin.Worker)
+	plugines = make(map[string]context.Worker)
 	engine.Register("go", &goResolver{})
 }

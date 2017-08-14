@@ -13,10 +13,11 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
-func (s *collectProxy) httpCollect(ctx *context.Context) (r string, st int, err error) {
-	title := ctx.GetArgValue("title", "HTTP服务器")
-	msg := ctx.GetArgValue("msg", "HTTP服务器地址:@url请求响应码:@current")
-	uri, err := ctx.GetArgByName("url")
+func (s *collectProxy) httpCollect(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	title := ctx.Input.GetArgValue("title", "HTTP服务器")
+	msg := ctx.Input.GetArgValue("msg", "HTTP服务器地址:@url请求响应码:@current")
+	uri, err := ctx.Input.GetArgByName("url")
 	if err != nil {
 		return
 	}
@@ -33,12 +34,13 @@ func (s *collectProxy) httpCollect(ctx *context.Context) (r string, st int, err 
 	tf.Set("url", uri)
 	tf.Set("value", strconv.Itoa(value))
 	tf.Set("current", strconv.Itoa(t))
-	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
-	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
+	tf.Set("level", ctx.Input.GetArgValue("level", "1"))
+	tf.Set("group", ctx.Input.GetArgValue("group", "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	tf.Set("unq", tf.Translate("@url"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
-	st, err = s.checkAndSave(ctx, "http", tf, value)
+	st, err := s.checkAndSave(ctx, "http", tf, value)
+	response.Set(st, err)
 	return
 }

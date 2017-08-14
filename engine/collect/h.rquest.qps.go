@@ -7,27 +7,21 @@ import (
 	"github.com/qxnw/hydra/context"
 
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/types"
 )
 
-func (s *collectProxy) requestQPSCollect(tp string) func(ctx *context.Context) (r string, st int, err error) {
+func (s *collectProxy) requestQPSCollect(tp string) context.HandlerFunc {
 
-	return func(ctx *context.Context) (r string, st int, err error) {
-		title := ctx.GetArgValue("title", "每秒钟请求数")
-		msg := ctx.GetArgValue("msg", "@url在@span内请求:@current次")
+	return func(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+		response = context.GetResponse()
+		title := ctx.Input.GetArgValue("title", "每秒钟请求数")
+		msg := ctx.Input.GetArgValue("msg", "@url在@span内请求:@current次")
 
-		domain, err := ctx.GetArgByName("domain")
+		domain, err := ctx.Input.GetArgByName("domain")
 		if err != nil {
 			return
 		}
-		max := types.ToInt(ctx.GetArgValue("max", "0"), 0)
-		if err != nil {
-			return
-		}
-		min := types.ToInt(ctx.GetArgValue("min", "0"), 0)
-		if err != nil {
-			return
-		}
+		max := ctx.Input.GetArgInt("max", 0)
+		min := ctx.Input.GetArgInt("min", 0)
 		tf := transform.New()
 		tf.Set("domain", domain)
 		tf.Set("span", "5m")
@@ -38,7 +32,7 @@ func (s *collectProxy) requestQPSCollect(tp string) func(ctx *context.Context) (
 			return
 		}
 		if len(urls) == 0 {
-			st = 204
+			response.Failed(204)
 			return
 		}
 		for i, url := range urls {
@@ -49,16 +43,17 @@ func (s *collectProxy) requestQPSCollect(tp string) func(ctx *context.Context) (
 			}
 			tf.Set("url", url)
 			tf.Set("value", strconv.Itoa(value))
-			tf.Set("level", ctx.GetArgValue("level", "1"))
-			tf.Set("group", ctx.GetArgValue("group", "D"))
+			tf.Set("level", ctx.Input.GetArgValue("level", "1"))
+			tf.Set("group", ctx.Input.GetArgValue("group", "D"))
 			tf.Set("current", strconv.Itoa(val))
 			tf.Set("time", time.Now().Format("20060102150405"))
 			tf.Set("unq", tf.Translate("{@domain}_{@url}_QPS"))
 			tf.Set("title", tf.TranslateAll(title, true))
 			tf.Set("msg", tf.TranslateAll(msg, true))
-			st, err = s.checkAndSave(ctx, tp, tf, value)
+			st, err := s.checkAndSave(ctx, tp, tf, value)
 			if err != nil {
-				return
+				response.Set(st, err)
+				return response, err
 			}
 		}
 		return

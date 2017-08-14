@@ -5,7 +5,6 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/types"
 )
 
 type mockProxy struct {
@@ -13,14 +12,14 @@ type mockProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, int, map[string]interface{}, error)
+	serviceHandlers map[string]context.HandlerFunc
 }
 
 func newMockProxy() *mockProxy {
 	r := &mockProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, map[string]interface{}, error))
+	r.serviceHandlers = make(map[string]context.HandlerFunc)
 	r.serviceHandlers["/mock/raw/request"] = r.rawMockHandle
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -47,12 +46,12 @@ func (s *mockProxy) Handle(svName string, mode string, service string, ctx *cont
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, t, header, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:http.%v", err)
-		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content, Params: header}, nil
+	return
 
 }
 

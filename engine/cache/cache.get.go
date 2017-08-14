@@ -11,28 +11,29 @@ import (
 )
 
 func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) {
-	key, err = ctx.GetInput().Get("key")
+	key, err = ctx.Input.Get("key") //已包含key
 	if err == nil {
 		return
 	}
-	body, _ := ctx.GetBody()
-	if err != nil && !types.IsEmpty(body) {
-		inputMap := make(map[string]interface{})
-		inputMap, err = jsons.Unmarshal([]byte(body))
-		if err != nil {
-			err = fmt.Errorf("body不是有效的json数据，[%v](err:%v)", body, err)
-			return
-		}
-		msm, ok := inputMap["key"]
-		if !ok {
-			err = errors.New("body的内容中未包含key标签")
-			return
-		}
+	if types.IsEmpty(ctx.Input.Body) { //未传入body
+		err = fmt.Errorf("输入参数不包含key")
+		return
+	}
+	body := ctx.Input.Body //根据body 转换数据
+	inputMap := make(map[string]interface{})
+	inputMap, err = jsons.Unmarshal([]byte(body))
+	if err != nil {
+		err = fmt.Errorf("body不是有效的json数据，[%v](err:%v)", body, err)
+		return
+	}
+	msm, ok := inputMap["key"]
+	if !ok {
+		err = errors.New("body的内容中未包含key标签")
+		return
+	}
 
-		if key, ok = msm.(string); !ok {
-			err = fmt.Errorf("body的内容中key标签必须为字符串:(err:%v)", msm)
-			return
-		}
+	if key, ok = msm.(string); !ok {
+		err = fmt.Errorf("body的内容中key标签必须为字符串:(err:%v)", msm)
 		return
 	}
 	err = errors.New("form中未包含key标签")
@@ -40,19 +41,18 @@ func (s *cacheProxy) getGetParams(ctx *context.Context) (key string, err error) 
 
 }
 
-func (s *cacheProxy) get(ctx *context.Context) (r string, t int, err error) {
+func (s *cacheProxy) get(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	key, err := s.getGetParams(ctx)
 	if err != nil {
-		t = 406
+		response.Failed(406)
 		return
 	}
-	client, err := s.getMemcacheClient(ctx)
+	r, err := ctx.Cache.Get(key)
 	if err != nil {
+		response.Failed(410)
 		return
 	}
-	r, err = client.Get(key)
-	if err != nil {
-		t = 410
-	}
+	response.Success(r)
 	return
 }

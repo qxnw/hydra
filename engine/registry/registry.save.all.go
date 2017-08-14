@@ -11,36 +11,38 @@ import (
 )
 
 //saveAll 无需任何输入参数，直接备份当前域所在目录下的所有配置
-func (s *registryProxy) saveAll(ctx *context.Context) (r string, st int, err error) {
-	serverData, err := s.getChildrenNodes(fmt.Sprintf("%s/servers", s.domain))
+func (s *registryProxy) saveAll(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	serverData, err := s.getChildrenNodes(fmt.Sprintf("%s/servers", s.ctx.Domain))
 	if err != nil {
 		return
 	}
 
-	varData, err := s.getChildrenNodes(fmt.Sprintf("%s/var", s.domain))
+	varData, err := s.getChildrenNodes(fmt.Sprintf("%s/var", s.ctx.Domain))
 	if err != nil {
 		return
 	}
 	serverData = append(serverData, varData...)
 	savePath := make([]string, 0, len(serverData))
-	root := fmt.Sprintf("./bak/registry[%s]/%s/", strings.Replace(s.registryAddrs, "/", "-", -1), time.Now().Format("20060102150405"))
+	root := fmt.Sprintf("./bak/registry[%s]/%s/", strings.Replace(s.ctx.Registry, "/", "-", -1), time.Now().Format("20060102150405"))
 	for _, v := range serverData {
 		realPath := fmt.Sprintf("%s/%s.json", root, strings.Replace(v.path, "/", "-", -1))
 		f, err := file.CreateFile(realPath)
 		if err != nil {
-			return "", 500, err
+			return response, err
 		}
 		_, err = f.Write(v.value)
 		if err != nil {
-			return "", 500, err
+			return response, err
 		}
 		err = f.Close()
 		if err != nil {
-			return "", 500, err
+			return response, err
 		}
 		savePath = append(savePath, realPath)
 	}
-	return fmt.Sprintf("success.%d", len(savePath)), 200, nil
+	response.Success(fmt.Sprintf("success.%d", len(savePath)))
+	return
 }
 func (s *registryProxy) getChildrenNodes(p string) (r []kv, err error) {
 	r = make([]kv, 0, 2)

@@ -7,14 +7,15 @@ import (
 )
 
 //domainCopy 无需任何输入参数，直接备份当前域所在目录下的所有配置
-func (s *registryProxy) domainCopy(ctx *context.Context) (r string, st int, err error) {
-	domain, err := ctx.GetInput().Get("fromDomain")
+func (s *registryProxy) domainCopy(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	domain, err := ctx.Input.Get("fromDomain")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数fromDomain")
 		return
 	}
 
-	ndomain, err := ctx.GetInput().Get("toDomain")
+	ndomain, err := ctx.Input.Get("toDomain")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数toDomain")
 		return
@@ -43,6 +44,7 @@ func (s *registryProxy) domainCopy(ctx *context.Context) (r string, st int, err 
 			return
 		}
 	}
+	response.Success()
 	return
 }
 func (s *registryProxy) getCopyNodes(p string, ch string) (r []kv, err error) {

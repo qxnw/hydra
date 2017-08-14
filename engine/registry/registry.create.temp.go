@@ -6,8 +6,9 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, err error) {
-	path, err := ctx.GetInput().Get("path")
+func (s *registryProxy) createTempPath(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	path, err := ctx.Input.Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return
@@ -20,7 +21,7 @@ func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, 
 		err = fmt.Errorf("节点已经存在不能创建:%s", path)
 		return
 	}
-	value, err := ctx.GetInput().Get("value")
+	value, err := ctx.Input.Get("value")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数value")
 		return
@@ -29,6 +30,6 @@ func (s *registryProxy) createTempPath(ctx *context.Context) (r string, st int, 
 	if err != nil {
 		return
 	}
-	r = "SUCCESS"
+	response.Success()
 	return
 }

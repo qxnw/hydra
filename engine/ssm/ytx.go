@@ -38,13 +38,13 @@ type eSMS struct {
 
 func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 	sms = &eSMS{header: make(map[string]string)}
-	sms.mobile, err = ctx.GetInput().Get("mobile")
+	sms.mobile, err = ctx.Input.Get("mobile")
 	if err != nil || sms.mobile == "" {
 		err = fmt.Errorf("接收人手机号不能为空")
 		return
 	}
 
-	data, err := ctx.GetInput().Get("data")
+	data, err := ctx.Input.Get("data")
 	if err != nil || data == "" {
 		err = fmt.Errorf("短信内容(data)不能为空")
 		return
@@ -53,7 +53,7 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 	for _, v := range datas {
 		sms.data = fmt.Sprintf("%s<data>%s</data>", sms.data, v)
 	}
-	content, err := ctx.GetVarParamByArgsName("setting", "setting")
+	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return
 	}
@@ -109,16 +109,18 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 
 }
 
-func (s *smsProxy) ytxSend(ctx *context.Context) (r string, st int, err error) {
+func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	m, err := s.getYtxParams(ctx)
 	if err != nil {
 		return
 	}
 	client := http.NewHTTPClient()
-	r, st, err = client.Request("post", m.url, m.body, m.charset, m.header)
+	r, st, err := client.Request("post", m.url, m.body, m.charset, m.header)
 	if err != nil {
 		err = fmt.Errorf("%v(url:%s,body:%s,header:%s)", err, m.url, m.body, m.header)
 		return
 	}
+	response.SetContent(st, r)
 	return
 }

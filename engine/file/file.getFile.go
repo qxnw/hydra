@@ -1,10 +1,8 @@
 package file
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"path"
@@ -13,26 +11,19 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, t int, err error) {
-	name, err := ctx.GetInput().Get("name")
+func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	name, err = ctx.Input.Get("name")
 	if err != nil {
 		err = fmt.Errorf("输入参数input未传入name参数(err:%v)", err)
 		return
 	}
-	root, ok := ctx.GetArgs()["root"]
-	if !ok {
-		err = fmt.Errorf("输入参数args未配置root目录参数")
+	root, err := ctx.Input.GetArgByName("root")
+	if err != nil {
 		return
 	}
-
-	httpRequest, ok := ctx.GetExt()["__func_http_request_"]
-	if !ok {
-		err = errors.New("未找到__func_http_request_")
-		return
-	}
-	f, ok := httpRequest.(*http.Request)
-	if !ok {
-		err = errors.New("未找到__func_http_request_类型错误，不是*http.Request")
+	f, err := ctx.HTTP.GetHTTPRequest()
+	if err != nil {
 		return
 	}
 	uf, _, err := f.FormFile(name)
@@ -51,32 +42,25 @@ func (s *fileProxy) saveFileFromHTTPRequest(ctx *context.Context) (r string, t i
 	defer nf.Close()
 	_, err = io.Copy(nf, uf)
 	if err != nil {
-		return "", 500, err
+		response.Failed(500)
+		return
 	}
-
-	return name, 200, nil
+	response.Success(name)
+	return
 }
 
-func (s *fileProxy) saveFileFromHTTPRequest2(ctx *context.Context) (r string, t int, err error) {
-	name, err := ctx.GetInput().Get("name")
+func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	name, err = ctx.Input.Get("name")
 	if err != nil {
-		err = fmt.Errorf("输入参数input未传入name参数(err:%v)", err)
 		return
 	}
-	root, ok := ctx.GetArgs()["root"]
-	if !ok {
-		err = fmt.Errorf("输入参数args未配置root目录参数")
+	root, err := ctx.Input.GetArgByName("root")
+	if err != nil {
 		return
 	}
-
-	httpRequest, ok := ctx.GetExt()["__func_http_request_"]
-	if !ok {
-		err = errors.New("未找到__func_http_request_")
-		return
-	}
-	f, ok := httpRequest.(*http.Request)
-	if !ok {
-		err = errors.New("未找到__func_http_request_类型错误，不是*http.Request")
+	f, err := ctx.HTTP.GetHTTPRequest()
+	if err != nil {
 		return
 	}
 	uf, _, err := f.FormFile(name)
@@ -95,8 +79,9 @@ func (s *fileProxy) saveFileFromHTTPRequest2(ctx *context.Context) (r string, t 
 	defer nf.Close()
 	_, err = io.Copy(nf, uf)
 	if err != nil {
-		return "", 500, err
+		response.Failed(500)
+		return
 	}
-
-	return name, 200, nil
+	response.Success(name)
+	return
 }

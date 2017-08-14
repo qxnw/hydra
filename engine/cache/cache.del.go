@@ -1,24 +1,18 @@
 package cache
 
-import (
-	"fmt"
+import "github.com/qxnw/hydra/context"
 
-	"github.com/qxnw/hydra/context"
-)
-
-func (s *cacheProxy) del(ctx *context.Context) (r string, t int, err error) {
+//Handle(name string, mode string, service string, ctx *Context) (*Response, error)
+func (s *cacheProxy) del(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	key, err := s.getGetParams(ctx)
 	if err != nil {
 		return
 	}
-	client, err := s.getMemcacheClient(ctx)
+	err = ctx.Cache.Delete(key)
 	if err != nil {
 		return
 	}
-	err = client.Delete(key)
-	if err != nil {
-		err = fmt.Errorf("delete错误(err:%v)", err)
-	}
-	r = "SUCCESS"
+	response.Success()
 	return
 }

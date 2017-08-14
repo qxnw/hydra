@@ -10,31 +10,28 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *reportProxy) sqlQueryHandle(ctx *context.Context) (r string, st int, err error) {
-	sql, err := ctx.GetVarParamByArgsName("sql", "sql")
+func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {
 		err = fmt.Errorf("var.sql参数未配置:%v", err)
 		return
 	}
-	influxDB, err := s.getInfluxClient(ctx)
+	influxDB, err := ctx.Influxdb.GetClient()
 	if err != nil {
 		return
 	}
 
-	err = ctx.CheckArgs("measurement", "tags", "fields")
+	err = ctx.Input.CheckArgs("measurement", "tags", "fields")
 	if err != nil {
 		return
 	}
 
-	measurement := ctx.GetArgValue("measurement")
-	tagNames := strings.Split(ctx.GetArgValue("tags"), ",")
-	filedNames := strings.Split(ctx.GetArgValue("fields"), ",")
-	sdb, err := s.getDB(ctx)
-	if err != nil {
-		err = fmt.Errorf("args数据库db配置有错误:%v", err)
-		return
-	}
-	data, _, _, err := sdb.Query(sql, map[string]interface{}{})
+	measurement := ctx.Input.GetArgValue("measurement")
+	tagNames := strings.Split(ctx.Input.GetArgValue("tags"), ",")
+	filedNames := strings.Split(ctx.Input.GetArgValue("fields"), ",")
+
+	data, err := ctx.DB.GetDataRows([]string{sql}, map[string]interface{}{})
 	if err != nil {
 		err = fmt.Errorf("数据查询出错:sql:%v,err:%v", sql, err)
 		return
@@ -57,7 +54,7 @@ func (s *reportProxy) sqlQueryHandle(ctx *context.Context) (r string, st int, er
 			f, err := strconv.ParseFloat(row.GetString(v), 64)
 			if err != nil {
 				err = fmt.Errorf("字段%s不是有效的float类型段", v)
-				return "", 500, err
+				return response, err
 			}
 			fields[v] = f
 		}

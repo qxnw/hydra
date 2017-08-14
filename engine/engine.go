@@ -21,22 +21,20 @@ var (
 type IWorker interface {
 	Has(shortName, fullName string) error
 	Start(ctx *EngineContext) ([]string, error)
-	Close() error
-	context.Handler
+	context.EngineHandler
 }
 
 //IEngine 执行引擎
 type IEngine interface {
 	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, logger *logger.Logger, extEngines ...string) ([]string, error)
-	Handle(name string, mode string, service string, c *context.Context) (*context.Response, error)
+	context.EngineHandler
 	Register(name string, p IWorker)
-	Close() error
 }
 type EngineContext struct {
 	Domain     string
 	ServerName string
 	ServerType string
-	Invoker    *rpc.Invoker
+	RPC        *rpc.Invoker
 	Registry   string
 	Logger     *logger.Logger
 }
@@ -49,7 +47,7 @@ type standardEngine struct {
 	plugins    map[string]IWorker
 	domain     string
 	serverName string
-	invoker    *rpc.Invoker
+	RPC        *rpc.Invoker
 	logger     *logger.Logger
 }
 
@@ -68,7 +66,7 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 	e.domain = domain
 	e.serverName = serverName
 	e.logger = logger
-	e.invoker = rpc.NewInvoker(domain, serverName, rpcRegistryAddrss)
+	e.RPC = rpc.NewInvoker(domain, serverName, rpcRegistryAddrss)
 	//根据解析器生成引擎
 	for k, v := range resolvers {
 		hasExist := false
@@ -87,7 +85,7 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 	engineContext := &EngineContext{Domain: domain,
 		ServerName: serverName,
 		ServerType: serverType,
-		Invoker:    e.invoker,
+		RPC:        e.RPC,
 		Registry:   rpcRegistryAddrss,
 		Logger:     logger,
 	}
@@ -104,14 +102,15 @@ func (e *standardEngine) Close() error {
 	for _, p := range e.plugins {
 		p.Close()
 	}
-	if e.invoker != nil {
-		e.invoker.Close()
+	if e.RPC != nil {
+		e.RPC.Close()
 	}
 	return nil
 }
 
 //处理引擎
 func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
+	c.SetRPC(e.RPC)
 	sName, fName := e.getServiceName(service)
 	if mode != "*" {
 		worker, ok := e.plugins[mode]
@@ -122,6 +121,7 @@ func (e *standardEngine) Handle(name string, mode string, service string, c *con
 		if err != nil {
 			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s中未找到服务:%s(err:%v)", mode, fName, err)
 		}
+
 		return worker.Handle(sName, mode, fName, c)
 	}
 	for d, worker := range e.plugins {
@@ -132,7 +132,6 @@ func (e *standardEngine) Handle(name string, mode string, service string, c *con
 		if err != nil {
 			continue
 		}
-
 		return worker.Handle(sName, mode, fName, c)
 	}
 	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", sName)

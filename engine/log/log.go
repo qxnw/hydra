@@ -5,7 +5,6 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/types"
 )
 
 type logProxy struct {
@@ -13,14 +12,14 @@ type logProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]func(*context.Context) (string, int, map[string]interface{}, error)
+	serviceHandlers map[string]context.HandlerFunc
 }
 
 func newLogProxy() *logProxy {
 	r := &logProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, map[string]interface{}, error))
+	r.serviceHandlers = make(map[string]context.HandlerFunc)
 	r.serviceHandlers["/log/error"] = r.logFileErrorHandle
 	r.serviceHandlers["/log/info"] = r.logFileInfoHandle
 	for k := range r.serviceHandlers {
@@ -48,13 +47,11 @@ func (s *logProxy) Handle(svName string, mode string, service string, ctx *conte
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, t, header, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:log.%v", err)
-		return &context.Response{Status: types.DecodeInt(t, 0, 500)}, err
 	}
-	return &context.Response{Status: types.DecodeInt(t, 0, 200), Content: content, Params: header}, nil
-
+	return
 }
 
 func (s *logProxy) Has(shortName, fullName string) (err error) {

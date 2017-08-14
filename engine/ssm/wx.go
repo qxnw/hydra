@@ -6,8 +6,6 @@ import (
 
 	"encoding/json"
 
-	"github.com/qxnw/goplugin"
-	"github.com/qxnw/goplugin/errorCode"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/net/http"
@@ -31,7 +29,7 @@ func (s *smsProxy) checkInputField(input transform.ITransformGetter, fields ...s
 	return nil
 }
 func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err error) {
-	content, err := ctx.GetVarParamByArgsName("setting", "setting")
+	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return
@@ -43,13 +41,9 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 	}
 	return
 }
-func (s *smsProxy) wxSend(ctx *context.Context) (r string, t int, err error) {
-	context, err := goplugin.GetContext(ctx, s.ctx.Invoker)
-	if err != nil {
-		t = errorCode.SERVER_ERROR
-		return
-	}
-	content, err := ctx.GetVarParamByArgsName("setting", "setting")
+func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return
@@ -69,27 +63,29 @@ func (s *smsProxy) wxSend(ctx *context.Context) (r string, t int, err error) {
 	if err = s.checkMustField(setting, "service"); err != nil {
 		return
 	}
-	if err = s.checkInputField(ctx.GetInput(), "openid"); err != nil {
+	if err = ctx.Input.CheckInput("openId"); err != nil {
 		return
 	}
 	raw, err := setting.GetSectionString(setting.String("alarm", "alarm"))
 	if err != nil {
-		err = fmt.Errorf("notify配置文件未配置:%s节点", context.GetString("alarm", "alarm"))
+		err = fmt.Errorf("notify配置文件未配置:%s节点", ctx.Input.GetString("alarm", "alarm"))
 		return
 	}
-	ctx.GetInput().Each(func(k, v string) {
+
+	ctx.Input.Input.Each(func(k, v string) {
 		setting.Set(k, v)
 	})
-	service := setting.String("service")
+	service = setting.String("service")
 	if err != nil {
 		return
 	}
-	t, r, _, err = context.RPC.Request(service, map[string]string{
+	err = response.SetAll(ctx.RPC.Request(service, map[string]string{
 		"__raw__": setting.Translate(raw),
-	}, true)
+	}, true))
 	return
 }
-func (s *smsProxy) wxSend1(ctx *context.Context) (r string, t int, err error) {
+func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return
@@ -97,19 +93,20 @@ func (s *smsProxy) wxSend1(ctx *context.Context) (r string, t int, err error) {
 	if err = s.checkMustField(setting, "host", "appId", "templateId", "data"); err != nil {
 		return
 	}
-	if err = s.checkInputField(ctx.GetInput(), "openId"); err != nil {
+	if err = ctx.Input.CheckInput("openId"); err != nil {
 		return
 	}
-	ctx.GetInput().Each(func(k, v string) {
+	ctx.Input.Input.Each(func(k, v string) {
 		setting.Set(k, v)
 	})
 	u, err := url.Parse(setting.String("host"))
 	if err != nil {
 		err = fmt.Errorf("wx.host配置错误 %s. err=%v", setting.String("host"), err)
-		return "", 500, err
+		response.Failed(500)
+		return response, err
 	}
 	values := u.Query()
-	unionID, _ := ctx.GetInput().Get("openId")
+	unionID, _ := ctx.Input.Get("openId")
 	data, err := setting.GetSectionString("data")
 	if err != nil {
 		return
@@ -124,16 +121,20 @@ func (s *smsProxy) wxSend1(ctx *context.Context) (r string, t int, err error) {
 	content, status, err := client.Get(u.String())
 	if err != nil {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
-		return "", 500, err
+		response.Failed(500)
+		return
 	}
+	response.SetContent(status, content)
 	if status != 200 {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, setting.String("host"))
-		return "", status, err
+		response.Failed(status)
+		return
 	}
-	return content, status, err
+	return
 }
 
-func (s *smsProxy) wxSend0(ctx *context.Context) (r string, t int, err error) {
+func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return
@@ -141,19 +142,20 @@ func (s *smsProxy) wxSend0(ctx *context.Context) (r string, t int, err error) {
 	if err = s.checkMustField(setting, "host", "appId", "templateId", "data"); err != nil {
 		return
 	}
-	if err = s.checkInputField(ctx.GetInput(), "openId"); err != nil {
+	if err = ctx.Input.CheckInput("openId"); err != nil {
 		return
 	}
-	ctx.GetInput().Each(func(k, v string) {
+	ctx.Input.Input.Each(func(k, v string) {
 		setting.Set(k, v)
 	})
 	u, err := url.Parse(setting.String("host"))
 	if err != nil {
 		err = fmt.Errorf("wx.host配置错误 %s. err=%v", setting.String("host"), err)
-		return "", 500, err
+		response.Failed(500)
+		return response, err
 	}
 	values := u.Query()
-	unionID, _ := ctx.GetInput().Get("openId")
+	unionID, _ := ctx.Input.Get("openId")
 	data, err := setting.GetSectionString("data")
 	if err != nil {
 		return
@@ -170,11 +172,12 @@ func (s *smsProxy) wxSend0(ctx *context.Context) (r string, t int, err error) {
 	content, status, err := client.Get(urlParams)
 	if err != nil {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
-		return "", 500, err
+		return
 	}
+	response.SetContent(status, content)
 	if status != 200 {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, setting.String("host"))
-		return "", status, err
+		return
 	}
-	return content, status, err
+	return
 }

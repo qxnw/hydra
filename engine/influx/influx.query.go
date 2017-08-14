@@ -10,8 +10,8 @@ import (
 )
 
 func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err error) {
-	body, _ := ctx.GetBody()
-	sql, err = ctx.GetInput().Get("q")
+	body := ctx.Input.Body
+	sql, err = ctx.Input.Get("q")
 	if err != nil && !types.IsEmpty(body) {
 		sql = body
 		if !strings.HasPrefix(sql, "select") && !strings.HasPrefix(sql, "show") {
@@ -31,20 +31,22 @@ func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err erro
 	return sql, nil
 }
 
-func (s *influxProxy) query(ctx *context.Context) (r string, t int, err error) {
+func (s *influxProxy) query(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	sql, err := s.getQueryParams(ctx)
 	if err != nil {
 		return
 	}
-	client, err := s.getInfluxClient(ctx)
+	client, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}
 
-	r, err = client.Query(sql)
+	r, err := client.Query(sql)
 	if err != nil {
 		err = fmt.Errorf("sql执行出错:%s，(err:%v)", sql, err)
 		return
 	}
+	response.Success(r)
 	return
 }

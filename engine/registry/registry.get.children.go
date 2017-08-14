@@ -13,8 +13,9 @@ type kv struct {
 	value []byte
 }
 
-func (s *registryProxy) getChildren(ctx *context.Context) (r string, st int, err error) {
-	p, err := ctx.GetInput().Get("path")
+func (s *registryProxy) getChildren(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	p, err := ctx.Input.Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")
 		return
@@ -30,6 +31,6 @@ func (s *registryProxy) getChildren(ctx *context.Context) (r string, st int, err
 	if err != nil {
 		return
 	}
-	r = string(buff)
+	response.Success(string(buff))
 	return
 }

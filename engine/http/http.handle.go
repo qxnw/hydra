@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"sort"
@@ -25,15 +24,10 @@ import (
 
 //httpHandle get请求,input获取参数
 //body
-func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, p map[string]interface{}, err error) {
-	setting, ok := ctx.GetArgs()["setting"]
-	if !ok {
-		err = fmt.Errorf("args配置错误，未指定setting参数的值:%v", ctx.GetArgs())
-		return
-	}
-	content, err := s.getVarParam(ctx, setting)
+func (s *httpProxy) httpHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
-		err = fmt.Errorf("args配置错误，args.setting配置的节点:%s获取失败(err:%v)", setting, err)
 		return
 	}
 	config, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
@@ -42,12 +36,12 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, p map[str
 	}
 	hostURL, err := config.Get("url") //获取当前请求的URL
 	if err != nil || hostURL == "" {
-		err = fmt.Errorf("args.seting(%s) http 模块配置错误，未指定url参数:%v(err:%v)", setting, content, err)
+		err = fmt.Errorf("args.seting(%s) http 模块配置错误，未指定url参数(err:%v)", content, err)
 		return
 	}
 	u, err := url.Parse(hostURL)
 	if err != nil {
-		err = fmt.Errorf("args.seting(%s) http 模块配置错误，url参数(%s)配置错误:%v(err:%v)", setting, hostURL, content, err)
+		err = fmt.Errorf("args.seting(%s) http 模块配置错误，url参数(%s)配置错误(err:%v)", hostURL, content, err)
 		return
 	}
 	url := u.String()
@@ -68,17 +62,18 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, p map[str
 		return
 	}
 
-	paraTransform := transform.NewGetter(ctx.GetParams())
-	paraTransform.Append(ctx.GetInput())
+	paraTransform := transform.NewGetter(ctx.Input.Params)
+	paraTransform.Append(ctx.Input.Input)
 	values, raw, err := s.GetData(u.Query(), input, paraTransform)
 	if err != nil {
 		return
 	}
 	requestData := values.Encode()
 	client := http.NewHTTPClient()
-	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.GetExt()["hydra_sid"])
+	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.Input.Ext["hydra_sid"])
 	hc, t, err := client.Request(method, url+"?"+requestData, "", charset, header)
 	if err != nil {
+		response.Failed(t)
 		return
 	}
 	result := make(map[string]interface{})
@@ -95,7 +90,7 @@ func (s *httpProxy) httpHandle(ctx *context.Context) (r string, t int, p map[str
 	if err != nil {
 		return
 	}
-	r = string(buff)
+	response.Success(string(buff))
 	return
 }
 func (s *httpProxy) GetData(u url.Values, data conf.Conf, trs *transform.Transform) (ua url.Values, rawStr string, err error) {
@@ -185,14 +180,4 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf, trs *transform.Transfo
 		}
 	}
 	return u, rawStr, nil
-}
-func (s *httpProxy) getVarParam(ctx *context.Context, name string) (string, error) {
-	funcVar := ctx.GetExt()["__func_var_get_"]
-	if funcVar == nil {
-		return "", errors.New("未找到__func_var_get_")
-	}
-	if f, ok := funcVar.(func(c string, n string) (string, error)); ok {
-		return f("setting", name)
-	}
-	return "", errors.New("未找到__func_var_get_传入类型错误")
 }

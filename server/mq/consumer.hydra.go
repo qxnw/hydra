@@ -23,12 +23,12 @@ type hydraMQConsumer struct {
 	server   *MQConsumer
 	registry server.IServiceRegistry
 	conf     conf.Conf
-	handler  context.Handler
+	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建mq consumer服务器
-func newHydraMQConsumer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
+func newHydraMQConsumer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -169,7 +169,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		}
 
 		//执行服务调用
-		ctx.Set(input, params, body, margs, ext)
+		ctx.SetInput(input, params, body, margs, ext)
 		response, err := w.handler.Handle(task.queue, mode, service, ctx)
 		if response == nil {
 			response = &context.Response{}
@@ -253,7 +253,7 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraMQConsumer(c, r, conf)
 }
 

@@ -11,10 +11,11 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
-func (s *collectProxy) tcpCollect(ctx *context.Context) (r string, st int, err error) {
-	title := ctx.GetArgValue("title", "TCP服务器")
-	msg := ctx.GetArgValue("msg", "TCP服务器地址:@url")
-	host, err := ctx.GetArgByName("host")
+func (s *collectProxy) tcpCollect(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	title := ctx.Input.GetArgValue("title", "TCP服务器")
+	msg := ctx.Input.GetArgValue("msg", "TCP服务器地址:@url")
+	host, err := ctx.Input.GetArgByName("host")
 	if err != nil {
 		return
 	}
@@ -27,12 +28,13 @@ func (s *collectProxy) tcpCollect(ctx *context.Context) (r string, st int, err e
 	tf.Set("host", host)
 	tf.Set("url", host)
 	tf.Set("value", strconv.Itoa(result))
-	tf.Set("level", types.GetMapValue("level", ctx.GetArgs(), "1"))
-	tf.Set("group", types.GetMapValue("group", ctx.GetArgs(), "D"))
+	tf.Set("level", ctx.Input.GetArgValue("level", "1"))
+	tf.Set("group", ctx.Input.GetArgValue("group", "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
-	st, err = s.checkAndSave(ctx, "tcp", tf, result)
+	st, err := s.checkAndSave(ctx, "tcp", tf, result)
+	response.Set(st, err)
 	return
 }

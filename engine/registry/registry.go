@@ -3,29 +3,23 @@ package registry
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/lib4go/types"
 )
 
 type registryProxy struct {
-	domain          string
-	serverName      string
-	serverType      string
+	ctx             *engine.EngineContext
 	services        []string
-	invoker         *rpc.Invoker
 	registry        registry.Registry
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
-	registryAddrs   string
+	serviceHandlers map[string]context.HandlerFunc
 }
 
 func newRegistryProxy() *registryProxy {
 	r := &registryProxy{
 		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 8)
+	r.serviceHandlers = make(map[string]context.HandlerFunc, 8)
 	r.serviceHandlers["/registry/save/all"] = r.saveAll
 	r.serviceHandlers["/registry/get/value"] = r.getValue
 	r.serviceHandlers["/registry/get/children"] = r.getChildren
@@ -41,13 +35,8 @@ func newRegistryProxy() *registryProxy {
 }
 
 func (s *registryProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
-	s.invoker = ctx.Invoker
-	s.registryAddrs = ctx.Registry
+	s.ctx = ctx
 	s.registry, err = registry.NewRegistryWithAddress(ctx.Registry, ctx.Logger)
-	services = s.services
 	return
 
 }
@@ -58,12 +47,12 @@ func (s *registryProxy) Handle(svName string, mode string, service string, ctx *
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, st, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:registry %v", err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	return
 }
 func (s *registryProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

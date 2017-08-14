@@ -6,7 +6,6 @@ import (
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/types"
 )
 
 type reportProxy struct {
@@ -16,13 +15,13 @@ type reportProxy struct {
 	services        []string
 	invoker         *rpc.Invoker
 	ctx             *engine.EngineContext
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]context.HandlerFunc
 }
 
 func newReportProxy() *reportProxy {
 	p := &reportProxy{
 		services:        make([]string, 0, 4),
-		serviceHandlers: make(map[string]func(*context.Context) (string, int, error)),
+		serviceHandlers: make(map[string]context.HandlerFunc),
 	}
 	p.serviceHandlers["/report/sql/query"] = p.sqlQueryHandle
 	for k := range p.serviceHandlers {
@@ -45,11 +44,14 @@ func (s *reportProxy) Close() error {
 //从args参数中获取:mail
 //ytx配置文件内容：见ytx.go
 func (s *reportProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
-	content, st, err := s.serviceHandlers[service](ctx)
-	if err != nil {
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:report.%v", err)
+	if err = s.Has(service, service); err != nil {
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
+	if err != nil {
+		err = fmt.Errorf("engine:report.%v", err)
+	}
+	return
 }
 func (s *reportProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

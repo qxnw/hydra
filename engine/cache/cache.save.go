@@ -13,9 +13,10 @@ import (
 )
 
 func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value string, expiresAt int, err error) {
-	body, _ := ctx.GetBody()
-	key, err = ctx.GetInput().Get("key")
-	if err != nil && !types.IsEmpty(body) {
+
+	key, err1 := ctx.Input.Get("key")
+	body := ctx.Input.Body
+	if err1 != nil && !types.IsEmpty(body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(body))
 		if err != nil {
@@ -54,42 +55,34 @@ func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value stri
 		value = string(buf)
 		return key, value, expiresAt, nil
 	}
-	key, err = ctx.GetInput().Get("key")
-	if err != nil {
-		err = errors.New("form中未包含key标签")
+	if err1 != nil {
+		err = err1
 		return
 	}
 
-	value, err = ctx.GetInput().Get("value")
+	value, err = ctx.Input.Get("value")
 	if err != nil {
 		err = errors.New("form中未包含value标签")
 		return
 	}
-	expires, err := ctx.GetInput().Get("expiresAt")
+	expiresAt, err = ctx.Input.GetInt("expiresAt")
 	if err != nil {
-		expires = "0"
-	}
-	expiresAt, err = strconv.Atoi(expires)
-	if err != nil {
-		err = fmt.Errorf("form的内容中expiresAt标签不是有效的数字:(err:%v)", err)
-		return "", "", 0, err
+		expiresAt = 0
 	}
 	return
 }
 
-func (s *cacheProxy) save(ctx *context.Context) (r string, t int, err error) {
+func (s *cacheProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	key, value, expiresAt, err := s.getSaveParams(ctx)
 	if err != nil {
 		return
 	}
-	client, err := s.getMemcacheClient(ctx)
+	err = ctx.Cache.Set(key, value, expiresAt)
 	if err != nil {
+		err = fmt.Errorf("cache.set错误(err:%v)", err)
 		return
 	}
-	err = client.Set(key, value, expiresAt)
-	if err != nil {
-		err = fmt.Errorf("set错误(err:%v)", err)
-	}
-	r = "SUCCESS"
+	response.Success()
 	return
 }

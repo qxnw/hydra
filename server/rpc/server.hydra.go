@@ -23,12 +23,12 @@ type hydraRPCServer struct {
 	server   *RPCServer
 	registry server.IServiceRegistry
 	conf     conf.Conf
-	handler  context.Handler
+	handler  context.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建RPC服务器
-func newHydraRPCServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
@@ -213,7 +213,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		ctx.Set(tfForm.Data, tfParams.Data, body, margs, ext)
+		ctx.SetInput(tfForm.Data, tfParams.Data, body, margs, ext)
 
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
@@ -313,7 +313,7 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraRPCServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraRPCServer(c, r, conf)
 }
 

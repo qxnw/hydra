@@ -60,7 +60,7 @@ func Register(name string, resolver RegistryResolver) {
 }
 
 //NewRegistry 创建注册中心
-func NewRegistry(name string, servers []string, log *logger.Logger) (r Registry, err error) {
+func NewRegistry(name string, servers []string, log logger.ILogger) (r Registry, err error) {
 	resolver, ok := registryResolvers[name]
 	if !ok {
 		return nil, fmt.Errorf("registry: unknown adapter name %q (forgotten import?)", name)
@@ -76,7 +76,7 @@ func NewRegistry(name string, servers []string, log *logger.Logger) (r Registry,
 }
 
 //NewRegistryWithAddress 根据协议地址创建注册中心
-func NewRegistryWithAddress(address string, log *logger.Logger) (r Registry, err error) {
+func NewRegistryWithAddress(address string, log logger.ILogger) (r Registry, err error) {
 	proto, addrss, err := ResolveAddress(address)
 	if err != nil {
 		return nil, err

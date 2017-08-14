@@ -5,7 +5,6 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/types"
 )
 
 type fileProxy struct {
@@ -14,14 +13,14 @@ type fileProxy struct {
 	serverType string
 	services   []string
 
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]context.HandlerFunc
 }
 
 func newFileProxy() *fileProxy {
 	r := &fileProxy{
 		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 1)
+	r.serviceHandlers = make(map[string]context.HandlerFunc, 1)
 	r.serviceHandlers["/file/upload"] = r.saveFileFromHTTPRequest
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -44,12 +43,12 @@ func (s *fileProxy) Handle(svName string, mode string, service string, ctx *cont
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, st, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
 		err = fmt.Errorf("engine:file %v", err)
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, err
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	return
 }
 func (s *fileProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {

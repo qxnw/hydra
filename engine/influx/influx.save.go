@@ -11,10 +11,10 @@ import (
 )
 
 func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, tags map[string]string, fields map[string]interface{}, err error) {
-	body, _ := ctx.GetBody()
+	body := ctx.Input.Body
 	tags = make(map[string]string)
 	fields = make(map[string]interface{})
-	measurement, err = ctx.GetInput().Get("measurement")
+	measurement, err = ctx.Input.Get("measurement")
 	if err != nil && !types.IsEmpty(body) {
 		inputMap := make(map[string]interface{})
 		inputMap, err = jsons.Unmarshal([]byte(body))
@@ -66,12 +66,12 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 		return
 	}
 
-	tagStr, err := ctx.GetInput().Get("tags")
+	tagStr, err := ctx.Input.Get("tags")
 	if err != nil {
 		err = errors.New("form中未包含tags标签")
 		return
 	}
-	fieldStr, err := ctx.GetInput().Get("fields")
+	fieldStr, err := ctx.Input.Get("fields")
 	if err != nil {
 		err = errors.New("form中未包含fields标签")
 		return
@@ -96,19 +96,21 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	return
 }
 
-func (s *influxProxy) save(ctx *context.Context) (r string, st int, err error) {
+func (s *influxProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
 	measurement, t, f, err := s.getSaveParams(ctx)
 	if err != nil {
 		return
 	}
-	client, err := s.getInfluxClient(ctx)
+	client, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}
 	err = client.Send(measurement, t, f)
 	if err != nil {
 		err = fmt.Errorf("save(err:%v)", err)
+		return
 	}
-	r = "SUCCESS"
+	response.Success()
 	return
 }

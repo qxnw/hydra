@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
@@ -14,18 +13,15 @@ import (
 )
 
 type collectProxy struct {
-	domain          string
-	serverName      string
-	serverType      string
+	ctx             *engine.EngineContext
 	services        []string
 	registryAddrs   string
-	rpc             *rpc.Invoker
 	registry        registry.Registry
 	queryMap        map[string]string
 	reportMap       map[string]string
 	srvQueryMap     map[string]string
 	reportSQL       string
-	serviceHandlers map[string]func(*context.Context) (string, int, error)
+	serviceHandlers map[string]context.HandlerFunc
 	collector       map[string]func(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (string, error)
 }
 
@@ -38,7 +34,7 @@ func newCollectProxy() *collectProxy {
 	r.srvQueryMap = make(map[string]string)
 	r.collector = make(map[string]func(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (string, error))
 	r.init()
-	r.serviceHandlers = make(map[string]func(*context.Context) (string, int, error), 8)
+	r.serviceHandlers = make(map[string]context.HandlerFunc, 8)
 	r.serviceHandlers["/collect/api/server/response"] = r.responseCollect("api_server_reponse")
 	r.serviceHandlers["/collect/web/server/response"] = r.responseCollect("web_server_reponse")
 	r.serviceHandlers["/collect/rpc/server/response"] = r.responseCollect("rpc_server_reponse")
@@ -67,12 +63,9 @@ func newCollectProxy() *collectProxy {
 }
 
 func (s *collectProxy) Start(ctx *engine.EngineContext) (services []string, err error) {
-	s.domain = ctx.Domain
-	s.serverName = ctx.ServerName
-	s.serverType = ctx.ServerType
+	s.ctx = ctx
 	services = s.services
 	s.registryAddrs = ctx.Registry
-	s.rpc = ctx.Invoker
 	s.registry, err = registry.NewRegistryWithAddress(ctx.Registry, ctx.Logger)
 	return
 
@@ -84,11 +77,12 @@ func (s *collectProxy) Handle(svName string, mode string, service string, ctx *c
 	if err = s.Has(service, service); err != nil {
 		return
 	}
-	content, st, err := s.serviceHandlers[service](ctx)
+	r, err = s.serviceHandlers[service](svName, mode, service, ctx)
 	if err != nil {
-		return &context.Response{Status: types.DecodeInt(st, 0, 500)}, fmt.Errorf("engine:collect %s,%v", service, err)
+		err = fmt.Errorf("engine:collect %s,%v", service, err)
+		return
 	}
-	return &context.Response{Status: types.DecodeInt(st, 0, 200), Content: content}, nil
+	return
 }
 func (s *collectProxy) Has(shortName, fullName string) (err error) {
 	if _, ok := s.serviceHandlers[shortName]; ok {
@@ -99,7 +93,7 @@ func (s *collectProxy) Has(shortName, fullName string) (err error) {
 
 func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *transform.Transform, t int) (status int, err error) {
 	status = 204
-	db, err := s.getInfluxClient(ctx, "influxdb")
+	db, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}

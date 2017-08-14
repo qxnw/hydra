@@ -24,52 +24,56 @@ type userInfo struct {
 	OpenID string `json:"wx_openId"`
 }
 
-func (s *collectProxy) notifySend(ctx *context.Context) (r string, st int, err error) {
-	settingData, err := ctx.GetVarParamByArgsName("setting", "setting")
+func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
-		err = fmt.Errorf("setting.%s未配置:err:%v", ctx.GetArgs()["setting"], err)
 		return
 	}
 	settingObj := &setting{}
 	err = json.Unmarshal([]byte(settingData), settingObj)
 	if err != nil {
-		err = fmt.Errorf("setting.%s配置文件有错:err:%v", ctx.GetArgs()["setting"], err)
+		err = fmt.Errorf("setting.setting配置文件有错:err:%v", err)
 		return
 	}
 
-	influxdb, err := s.getInfluxClient(ctx, "influxdb")
+	influxdb, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}
 	tf := transform.New()
-	tf.Set("time", ctx.GetArgValue("time", "1m"))
+	tf.Set("time", ctx.Input.GetArgValue("time", "1m"))
 	data, err := influxdb.QueryMaps(tf.Translate(s.reportSQL))
 	if err != nil {
 		err = fmt.Errorf("从influxdb中查询报警数据失败%s:err:%v", tf.Translate(s.reportSQL), err)
 		return
 	}
 	if len(data) == 0 || len(data[0]) == 0 {
-		return "NONEED", 204, nil
+		response.SetContent(204, "NONEED")
+		return response, nil
 	}
 
 	for _, rows := range data {
 		for _, item := range rows {
 			alarm, title, content, happendTime, group, remark, err := s.getMessage(item)
 			if err != nil {
-				return "", 500, err
+				response.Failed(500)
+				return response, nil
 			}
 			groups := strings.Split(group, ",")
 			for _, u := range settingObj.Users {
 				if s.checkNeedSend(groups, u.Group) {
-					st, err = s.sendWXNotify(alarm, u.OpenID, settingObj.WxNotify, title, content, happendTime, remark)
+					st, err := s.sendWXNotify(ctx, alarm, u.OpenID, settingObj.WxNotify, title, content, happendTime, remark)
 					if err != nil {
-						return "", st, err
+						response.Set(st, err)
+						return response, err
 					}
 				}
 			}
 		}
 	}
-	return "SUCCESS", 200, nil
+	response.Success()
+	return
 }
 func (s *collectProxy) checkNeedSend(dataGroups []string, ugroup string) bool {
 	if ugroup == "" {
@@ -115,12 +119,9 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 	return
 
 }
-func (s *collectProxy) sendWXNotify(alarm bool, openID string, service string, title string, content string, time string, remark string) (status int, err error) {
-	tp := "alarm"
-	if !alarm {
-		tp = "normal"
-	}
-	status, _, _, err = s.rpc.Request(service, map[string]string{
+func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, openID string, service string, title string, content string, time string, remark string) (status int, err error) {
+	tp := types.DecodeString(alarm, true, "alarm", "normal")
+	status, _, _, err = ctx.RPC.Request(service, map[string]string{
 		"openid":  openID,
 		"title":   title,
 		"time":    time,

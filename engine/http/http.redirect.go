@@ -1,24 +1,15 @@
 package http
 
-import (
-	"github.com/qxnw/hydra/context"
+import "github.com/qxnw/hydra/context"
 
-	"github.com/qxnw/goplugin"
-)
-
-func (s *httpProxy) httpRedirectHandle(ctx *context.Context) (r string, t int, param map[string]interface{}, err error) {
-	context, err := goplugin.GetContext(ctx, s.ctx.Invoker)
+func (s *httpProxy) httpRedirectHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
+	response = context.GetResponse()
+	err = ctx.Input.CheckArgs("url")
 	if err != nil {
 		return
 	}
-	err = context.CheckArgs("url")
-	if err != nil {
-		return
-	}
-	code := context.GetArgsValue("status", "302")
-	param = make(map[string]interface{})
-	param["Status"] = code
-	param["Location"] = context.GetArgsValue("url")
+	code := ctx.Input.GetArgInt("status", 302)
+	response.Redirect(code, ctx.Input.GetArgValue("url"))
 	return
 
 }

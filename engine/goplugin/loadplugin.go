@@ -5,11 +5,11 @@ import (
 	"os"
 	"plugin"
 
-	"github.com/qxnw/goplugin"
+	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/file"
 )
 
-func (s *goPluginWorker) loadPlugin(p string) (r goplugin.Worker, err error) {
+func (s *goPluginWorker) loadPlugin(p string) (r context.Worker, err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	path, err := file.GetAbs(p)
@@ -31,7 +31,7 @@ func (s *goPluginWorker) loadPlugin(p string) (r goplugin.Worker, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("未找到函数GetWorker:%s,err:%v", path, err)
 	}
-	wkr, ok := work.(func() goplugin.Worker)
+	wkr, ok := work.(func() context.Worker)
 	if !ok {
 		return nil, fmt.Errorf("GetWorker函数必须为 func() PluginWorker 类型:%s", path)
 	}
