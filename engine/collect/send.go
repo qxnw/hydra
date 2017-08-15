@@ -57,7 +57,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 		for _, item := range rows {
 			alarm, title, content, happendTime, group, remark, err := s.getMessage(item)
 			if err != nil {
-				response.Failed(500)
+				response.SetStatus(500)
 				return response, nil
 			}
 			groups := strings.Split(group, ",")
@@ -65,7 +65,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 				if s.checkNeedSend(groups, u.Group) {
 					st, err := s.sendWXNotify(ctx, alarm, u.OpenID, settingObj.WxNotify, title, content, happendTime, remark)
 					if err != nil {
-						response.Set(st, err)
+						response.SetError(st, err)
 						return response, err
 					}
 				}

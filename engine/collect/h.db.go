@@ -26,7 +26,7 @@ func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *
 		return
 	}
 	if data == nil {
-		response.Failed(204)
+		response.SetStatus(204)
 		return
 	}
 	value, err := strconv.Atoi(fmt.Sprintf("%v", data))
@@ -51,6 +51,6 @@ func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
 	st, err := s.checkAndSave(ctx, "db", tf, result)
-	response.Set(st, err)
+	response.SetError(st, err)
 	return
 }

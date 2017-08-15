@@ -21,13 +21,13 @@ var (
 type IWorker interface {
 	Has(shortName, fullName string) error
 	Start(ctx *EngineContext) ([]string, error)
-	context.EngineHandler
+	context.Handler
 }
 
 //IEngine 执行引擎
 type IEngine interface {
 	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, logger *logger.Logger, extEngines ...string) ([]string, error)
-	context.EngineHandler
+	context.Handler
 	Register(name string, p IWorker)
 }
 type EngineContext struct {

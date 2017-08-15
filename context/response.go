@@ -25,10 +25,12 @@ func (r *Response) Success(v ...interface{}) *Response {
 	}
 	r.Content = "SUCCESS"
 	return r
-
 }
-func (r *Response) Failed(status int) *Response {
-	r.Status = status
+
+//Redirect 设置页面转跳
+func (r *Response) Redirect(code int, url string) *Response {
+	r.Params["Status"] = code
+	r.Params["Location"] = url
 	return r
 }
 func (r *Response) AddParams(key string, v interface{}) *Response {
@@ -40,7 +42,11 @@ func (r *Response) SetContent(status int, content interface{}) *Response {
 	r.Content = content
 	return r
 }
-func (r *Response) Set(status int, err error) *Response {
+func (r *Response) SetStatus(status int) *Response {
+	r.Status = types.DecodeInt(status, 0, 200, status)
+	return r
+}
+func (r *Response) SetError(status int, err error) *Response {
 	if err != nil {
 		r.Status = types.DecodeInt(status, 0, 500, status)
 		return r
@@ -48,22 +54,15 @@ func (r *Response) Set(status int, err error) *Response {
 	r.Status = types.DecodeInt(status, 0, 200, status)
 	return r
 }
-
-//Redirect 设置页面转跳
-func (r *Response) Redirect(code int, url string) *Response {
-	r.Params["Status"] = code
-	r.Params["Location"] = url
-	return r
-}
-func (r *Response) SetHeader(name string, value string) *Response {
-	r.Params[name] = value
-	return r
-}
-func (r *Response) SetAll(s int, rr interface{}, p map[string]string, err error) error {
+func (r *Response) Set(s int, rr interface{}, p map[string]string, err error) error {
 	r.Status = s
 	r.Content = rr
 	for k, v := range p {
 		r.Params[k] = v
 	}
 	return err
+}
+func (r *Response) SetHeader(name string, value string) *Response {
+	r.Params[name] = value
+	return r
 }

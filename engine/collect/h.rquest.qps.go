@@ -32,7 +32,7 @@ func (s *collectProxy) requestQPSCollect(tp string) context.HandlerFunc {
 			return
 		}
 		if len(urls) == 0 {
-			response.Failed(204)
+			response.SetStatus(204)
 			return
 		}
 		for i, url := range urls {
@@ -52,7 +52,7 @@ func (s *collectProxy) requestQPSCollect(tp string) context.HandlerFunc {
 			tf.Set("msg", tf.TranslateAll(msg, true))
 			st, err := s.checkAndSave(ctx, tp, tf, value)
 			if err != nil {
-				response.Set(st, err)
+				response.SetError(st, err)
 				return response, err
 			}
 		}

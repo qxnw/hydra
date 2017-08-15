@@ -25,12 +25,12 @@ type hydraWebServer struct {
 	server   *WebServer
 	conf     conf.Conf
 	registry server.IServiceRegistry
-	handler  context.EngineHandler
+	handler  context.Handler
 	mu       sync.Mutex
 }
 
 //newHydraAPIServer 创建web服务器
-func newHydraWebServer(handler context.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
@@ -369,7 +369,7 @@ func (w *hydraWebServer) Shutdown() {
 type webServerAdapter struct {
 }
 
-func (h *webServerAdapter) Resolve(c context.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *webServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraWebServer(c, r, conf)
 }
 

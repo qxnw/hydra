@@ -42,7 +42,7 @@ func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service st
 	defer nf.Close()
 	_, err = io.Copy(nf, uf)
 	if err != nil {
-		response.Failed(500)
+		response.SetStatus(500)
 		return
 	}
 	response.Success(name)
@@ -79,7 +79,7 @@ func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service s
 	defer nf.Close()
 	_, err = io.Copy(nf, uf)
 	if err != nil {
-		response.Failed(500)
+		response.SetStatus(500)
 		return
 	}
 	response.Success(name)

@@ -25,7 +25,7 @@ type RPCInvoker interface {
 
 type Worker interface {
 	GetServices() []string
-	EngineHandler
+	Handler
 }
 
 type HandlerFunc func(name string, mode string, service string, c *Context) (*Response, error)
@@ -35,25 +35,25 @@ func (h HandlerFunc) Handle(name string, mode string, service string, c *Context
 }
 
 //Handler context handler
-type EngineHandler interface {
+type Handler interface {
 	Handle(name string, mode string, service string, c *Context) (*Response, error)
 	Close() error
 }
 type Registry struct {
-	ServiceHandlers map[string]EngineHandler
+	ServiceHandlers map[string]Handler
 	Services        []string
 }
 
 //NewRegistry 构建插件的注册中心
 func NewRegistry() *Registry {
 	r := &Registry{}
-	r.ServiceHandlers = make(map[string]EngineHandler)
+	r.ServiceHandlers = make(map[string]Handler)
 	r.Services = make([]string, 0, 16)
 	return r
 }
 
 //Register 注册处理程序
-func (r *Registry) Register(name string, handler EngineHandler) {
+func (r *Registry) Register(name string, handler Handler) {
 	if _, ok := r.ServiceHandlers[name]; ok {
 		panic("Register called twice for adapter " + name)
 	}

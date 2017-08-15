@@ -37,6 +37,6 @@ func (s *collectProxy) cpuCollect(name string, mode string, service string, ctx 
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
 	st, err := s.checkAndSave(ctx, "cpu", tf, value)
-	response.Set(st, err)
+	response.SetError(st, err)
 	return
 }

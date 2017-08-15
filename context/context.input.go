@@ -18,6 +18,16 @@ type Input struct {
 	Body   string
 }
 
+func (w *Input) Check(checker map[string][]string) (int, error) {
+	if err := w.CheckInput(checker["input"]...); err != nil {
+		return ERR_NOT_ACCEPTABLE, err
+	}
+	if err := w.CheckArgs(checker["args"]...); err != nil {
+		return ERR_NOT_EXTENDED, err
+	}
+	return 0, nil
+}
+
 //CheckInput 检查输入参数
 func (w *Input) CheckInput(names ...string) error {
 	for _, v := range names {
@@ -39,11 +49,14 @@ func (w *Input) CheckArgs(names ...string) error {
 	}
 	return nil
 }
-func (w *Input) Has(name string) bool {
-	if _, err := w.Input.Get(name); err == nil {
-		return true
+func (w *Input) Has(names ...string) error {
+	for _, name := range names {
+		if _, err := w.Input.Get(name); err != nil {
+			return fmt.Errorf("不包含:%s", name)
+		}
 	}
-	return false
+
+	return nil
 }
 func (w *Input) Get(name string) (string, error) {
 	return w.Input.Get(name)
@@ -52,10 +65,13 @@ func (w *Input) Get(name string) (string, error) {
 //GetString 从input获取字符串数据
 func (w *Input) GetString(name string, p ...string) string {
 	t, err := w.Input.Get(name)
-	if err != nil && len(p) > 0 {
+	if err == nil {
+		return t
+	}
+	if len(p) > 0 {
 		return p[0]
 	}
-	return t
+	return ""
 }
 
 //GetInt 从input中获取int数字

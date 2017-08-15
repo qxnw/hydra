@@ -49,7 +49,7 @@ func (s *registryProxy) updateValue(name string, mode string, service string, ct
 	}
 	if ov != int32(v) {
 		err = fmt.Errorf("更新数据的版本错误，已发现最新版本:%d", ov)
-		response.Failed(409)
+		response.SetStatus(409)
 	}
 	return
 }

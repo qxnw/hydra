@@ -38,7 +38,7 @@ type IHydraServer interface {
 
 //IServerAdapter 服务解析器
 type IServerAdapter interface {
-	Resolve(c context.EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
+	Resolve(c context.Handler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
 }
 
 var serverResolvers = make(map[string]IServerAdapter)
@@ -52,7 +52,7 @@ func Register(name string, resolver IServerAdapter) {
 }
 
 //NewServer 根据适配器名称生成服务
-func NewServer(adapter string, c context.EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error) {
+func NewServer(adapter string, c context.Handler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error) {
 	if resolver, ok := serverResolvers[adapter]; ok {
 		return resolver.Resolve(c, r, conf)
 	}

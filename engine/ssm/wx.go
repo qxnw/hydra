@@ -79,7 +79,7 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	if err != nil {
 		return
 	}
-	err = response.SetAll(ctx.RPC.Request(service, map[string]string{
+	err = response.Set(ctx.RPC.Request(service, map[string]string{
 		"__raw__": setting.Translate(raw),
 	}, true))
 	return
@@ -102,7 +102,7 @@ func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *contex
 	u, err := url.Parse(setting.String("host"))
 	if err != nil {
 		err = fmt.Errorf("wx.host配置错误 %s. err=%v", setting.String("host"), err)
-		response.Failed(500)
+		response.SetStatus(500)
 		return response, err
 	}
 	values := u.Query()
@@ -121,13 +121,13 @@ func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *contex
 	content, status, err := client.Get(u.String())
 	if err != nil {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
-		response.Failed(500)
+		response.SetStatus(500)
 		return
 	}
 	response.SetContent(status, content)
 	if status != 200 {
 		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, setting.String("host"))
-		response.Failed(status)
+		response.SetStatus(status)
 		return
 	}
 	return
@@ -151,7 +151,7 @@ func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *contex
 	u, err := url.Parse(setting.String("host"))
 	if err != nil {
 		err = fmt.Errorf("wx.host配置错误 %s. err=%v", setting.String("host"), err)
-		response.Failed(500)
+		response.SetStatus(500)
 		return response, err
 	}
 	values := u.Query()

@@ -73,7 +73,7 @@ func (s *httpProxy) httpHandle(name string, mode string, service string, ctx *co
 	header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.Input.Ext["hydra_sid"])
 	hc, t, err := client.Request(method, url+"?"+requestData, "", charset, header)
 	if err != nil {
-		response.Failed(t)
+		response.SetStatus(t)
 		return
 	}
 	result := make(map[string]interface{})
