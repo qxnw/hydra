@@ -13,8 +13,8 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
-func (s *collectProxy) httpCollect(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *collectProxy) httpCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	title := ctx.Input.GetArgValue("title", "HTTP服务器")
 	msg := ctx.Input.GetArgValue("msg", "HTTP服务器地址:@url请求响应码:@current")
 	uri, err := ctx.Input.GetArgByName("url")

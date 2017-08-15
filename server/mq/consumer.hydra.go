@@ -13,7 +13,6 @@ import (
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -172,23 +171,20 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		ctx.SetInput(input, params, body, margs, ext)
 		response, err := w.handler.Handle(task.queue, mode, service, ctx)
 		if response == nil {
-			response = &context.Response{}
+			response = context.GetStandardResponse()
 		}
 		defer func() {
 			if err != nil {
 				task.Errorf("mq.response.error: %v", task.err)
 			}
 		}()
-		if err != nil || (response.Status >= 500 && response.Status < 600) {
-			task.err = fmt.Errorf("mq.server.handler.error:%s,%v,%v", task.queue, response.Content, err)
-			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
-			task.statusCode = response.Status
-			response.Content = task.err.Error()
+		if err != nil {
+			task.err = fmt.Errorf("mq.server.handler.error:%s,%v,%v", task.queue, response.GetContent(), err)
+			task.statusCode = response.GetStatus(task.err)
 			return task.err
 		}
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		task.statusCode = response.Status
-		task.Result = response.Content
+		task.statusCode = response.GetStatus(nil)
+		task.Result = response.GetContent()
 		return nil
 	}
 }

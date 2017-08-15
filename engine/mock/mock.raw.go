@@ -8,8 +8,8 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("args配置错误，args.setting配置的节点获取失败(err:%v)", err)

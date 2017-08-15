@@ -12,14 +12,14 @@ type logProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 }
 
 func newLogProxy() *logProxy {
 	r := &logProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc)
 	r.serviceHandlers["/log/error"] = r.logFileErrorHandle
 	r.serviceHandlers["/log/info"] = r.logFileInfoHandle
 	for k := range r.serviceHandlers {
@@ -43,7 +43,7 @@ func (s *logProxy) Close() error {
 //从args参数中获取 mail
 //配置文件格式:{"smtp":"smtp.exmail.qq.com:25", "sender":"yanglei@100bm.cn","password":"12333"}
 
-func (s *logProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *logProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

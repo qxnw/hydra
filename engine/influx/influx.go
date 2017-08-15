@@ -14,7 +14,7 @@ type influxProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 	dbs             cmap.ConcurrentMap
 }
 
@@ -23,7 +23,7 @@ func newInfluxProxy() *influxProxy {
 		services: make([]string, 0, 4),
 		dbs:      cmap.New(2),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc)
 	r.serviceHandlers["/influx/save"] = r.save
 	r.serviceHandlers["/influx/query"] = r.query
 	for k := range r.serviceHandlers {
@@ -53,7 +53,7 @@ func (s *influxProxy) Close() error {
 //从args中获取db参数
 //influx配置：{"host":"http://192.168.0.185:8086","dataBase":"hydra","userName":"hydra","password":"123456"}
 
-func (s *influxProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *influxProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

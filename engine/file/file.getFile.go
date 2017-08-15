@@ -11,8 +11,8 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {
 		err = fmt.Errorf("输入参数input未传入name参数(err:%v)", err)
@@ -49,8 +49,8 @@ func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service st
 	return
 }
 
-func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {
 		return

@@ -12,14 +12,14 @@ type mockProxy struct {
 	serverName      string
 	serverType      string
 	services        []string
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 }
 
 func newMockProxy() *mockProxy {
 	r := &mockProxy{
 		services: make([]string, 0, 1),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc)
 	r.serviceHandlers["/mock/raw/request"] = r.rawMockHandle
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -42,7 +42,7 @@ func (s *mockProxy) Close() error {
 //从args参数中获取 mail
 //配置文件格式:{"smtp":"smtp.exmail.qq.com:25", "sender":"yanglei@100bm.cn","password":"12333"}
 
-func (s *mockProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *mockProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

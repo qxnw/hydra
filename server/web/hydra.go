@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"sync"
@@ -16,7 +15,6 @@ import (
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -227,50 +225,26 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, c.ServiceName, ctx)
 		if response == nil {
-			response = &context.Response{}
+			response = context.GetStandardResponse()
 		}
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		c.Result = response
 		defer func() {
 			if err != nil {
 				c.Errorf("web.response.error: %v", err)
 			}
 		}()
+		//处理头信息
+		for k, v := range response.GetHeaders() {
+			c.Header().Set(k, v)
+		}
 		if err != nil {
 			c.Result = err
-		}
-
-		//处理头信息
-		for k, v := range response.Params {
-			if !strings.HasPrefix(k, "__") && v != nil && k != "Status" {
-				switch v.(type) {
-				case []string:
-					list := v.([]string)
-					for _, i := range list {
-						c.Header().Set(k, i)
-					}
-				default:
-					c.Header().Set(k, types.GetString(v))
-				}
-			}
-		}
-		if location, ok := response.Params["Location"]; ok {
-			if status, ok := response.Params["Status"]; ok {
-				s, err := strconv.Atoi(types.GetString(status))
-				if err == nil {
-					response.Status = s
-				}
-			}
-			if !response.IsRedirect() {
-				response.Status = 302
-			}
-			if url, ok := location.(string); ok {
-				c.Redirect(url, response.Status)
-				return
-			}
 			return
 		}
-
+		if response.IsRedirect() {
+			c.Redirect(response.GetParams()["Location"].(string), response.GetStatus(nil))
+			return
+		}
+		c.Result = response
 	}
 }
 

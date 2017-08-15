@@ -19,7 +19,7 @@ type contextHandler struct {
 	services chan string
 }
 
-func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, method string, s string, c *context.Context) (r context.Response, err error) {
 	select {
 	case h.services <- s:
 	default:

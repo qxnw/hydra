@@ -7,8 +7,8 @@ import (
 )
 
 //domainCopy 无需任何输入参数，直接备份当前域所在目录下的所有配置
-func (s *registryProxy) domainCopy(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *registryProxy) domainCopy(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	domain, err := ctx.Input.Get("fromDomain")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数fromDomain")

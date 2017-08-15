@@ -218,7 +218,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
 		if response == nil {
-			response = &context.Response{}
+			response = context.GetStandardResponse()
 		}
 		defer func() {
 			if err != nil {
@@ -227,29 +227,20 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		}()
 
 		//处理输入content-type
-		var responseType = JsonResponse
-		if tp, ok := response.Params["Content-Type"].(string); ok {
-			if strings.Contains(tp, "xml") {
-				responseType = XmlResponse
-			} else if strings.Contains(tp, "plain") {
-				responseType = AutoResponse
-			}
-		}
+		var responseType = response.GetContentType()
 
 		//处理错误err,500+
-		if err != nil || (response.Status >= 500 && response.Status < 600) {
+		if err != nil {
 			err = fmt.Errorf("rpc.server.handler.error:%v", err)
-			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: types.DecodeInt(response.Status, 0, 500, response.Status), Result: fmt.Sprintf("%v %v", response.Content, err), Type: responseType}
+				c.Result = &StatusResult{Code: response.GetStatus(err), Result: fmt.Sprintf("%v %v", response.GetContent(), err), Type: responseType}
 				return
 			}
-			response.Content = types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content)
-			c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
+			content := types.DecodeString(response.GetContent(), "", "Internal Server Error(工作引擎发生异常)", response.GetContent())
+			c.Result = &StatusResult{Code: response.GetStatus(err), Result: content, Type: responseType}
 			return
 		}
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
+		c.Result = &StatusResult{Code: response.GetStatus(nil), Result: response.GetContent(), Type: responseType}
 	}
 }
 

@@ -26,7 +26,7 @@ type contextHandler struct {
 	version int32
 }
 
-func (h contextHandler) Handle(name string, mode string, s string, c *context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, mode string, s string, c *context.Context) (r context.Response, err error) {
 	h.notify <- &contextData{service: s, args: c.Input.Args}
 	return &context.Response{Content: "success"}, nil
 }

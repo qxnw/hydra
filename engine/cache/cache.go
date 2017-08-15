@@ -11,7 +11,7 @@ import (
 type cacheProxy struct {
 	ctx             *engine.EngineContext
 	services        []string
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 	dbs             cmap.ConcurrentMap
 }
 
@@ -20,7 +20,7 @@ func newCacheProxy() *cacheProxy {
 		dbs:      cmap.New(2),
 		services: make([]string, 0, 4),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc)
 	r.serviceHandlers["/cache/memcached/save"] = r.save
 	r.serviceHandlers["/cache/memcached/get"] = r.get
 	r.serviceHandlers["/cache/memcached/del"] = r.del
@@ -40,7 +40,7 @@ func (s *cacheProxy) Start(ctx *engine.EngineContext) (services []string, err er
 //从input参数中获取 key,value,expiresAt
 //从args参数中获取 cache
 //memcache.cache配置文件格式：{"server":"192.168.0.166:11212"}
-func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *cacheProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

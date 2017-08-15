@@ -12,14 +12,14 @@ type registryProxy struct {
 	ctx             *engine.EngineContext
 	services        []string
 	registry        registry.Registry
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 }
 
 func newRegistryProxy() *registryProxy {
 	r := &registryProxy{
 		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc, 8)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc, 8)
 	r.serviceHandlers["/registry/save/all"] = r.saveAll
 	r.serviceHandlers["/registry/get/value"] = r.getValue
 	r.serviceHandlers["/registry/get/children"] = r.getChildren
@@ -43,7 +43,7 @@ func (s *registryProxy) Start(ctx *engine.EngineContext) (services []string, err
 func (s *registryProxy) Close() error {
 	return nil
 }
-func (s *registryProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *registryProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

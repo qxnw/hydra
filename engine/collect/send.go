@@ -24,8 +24,8 @@ type userInfo struct {
 	OpenID string `json:"wx_openId"`
 }
 
-func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return

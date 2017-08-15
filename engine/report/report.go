@@ -15,13 +15,13 @@ type reportProxy struct {
 	services        []string
 	invoker         *rpc.Invoker
 	ctx             *engine.EngineContext
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 }
 
 func newReportProxy() *reportProxy {
 	p := &reportProxy{
 		services:        make([]string, 0, 4),
-		serviceHandlers: make(map[string]context.HandlerFunc),
+		serviceHandlers: make(map[string]context.SHandlerFunc),
 	}
 	p.serviceHandlers["/report/sql/query"] = p.sqlQueryHandle
 	for k := range p.serviceHandlers {
@@ -43,7 +43,7 @@ func (s *reportProxy) Close() error {
 //从input参数中获取: mobile,data
 //从args参数中获取:mail
 //ytx配置文件内容：见ytx.go
-func (s *reportProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *reportProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

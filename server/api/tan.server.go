@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"sync"
@@ -215,7 +214,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
 		if response == nil {
-			response = &context.Response{}
+			response = context.GetStandardResponse()
 		}
 		defer func() {
 			if err != nil {
@@ -224,7 +223,8 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		}()
 
 		//处理头信息
-		for k, v := range response.Params {
+
+		for k, v := range response.GetParams() {
 			if !strings.HasPrefix(k, "__") && v != nil && k != "Status" {
 				switch v.(type) {
 				case []string:
@@ -239,50 +239,27 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		}
 
 		//处理输入content-type
-		var responseType = JsonResponse
-		if tp, ok := response.Params["Content-Type"].(string); ok {
-			if strings.Contains(tp, "xml") {
-				responseType = XmlResponse
-			} else if strings.Contains(tp, "plain") {
-				responseType = AutoResponse
-			}
-		}
+		var responseType = response.GetContentType()
 
-		//处理错误err,500+
-		if err != nil || (response.Status >= 500 && response.Status < 600) {
+		//处理错误err,5xx
+		if err != nil {
 			err = fmt.Errorf("api.server.handler.error:%v", err)
-			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: response.Status, Result: fmt.Sprintf("%v %v", response.Content, err), Type: responseType}
+				c.Result = &StatusResult{Code: response.GetStatus(err), Result: fmt.Sprintf("%v %v", response.GetContent(), err), Type: responseType}
 				return
 			}
-			response.Content = types.DecodeString(response.Content, "", "Internal Server Error(工作引擎发生异常)", response.Content)
-			c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
+			content := types.DecodeString(response.GetContent(), "", "Internal Server Error(工作引擎发生异常)", response.GetContent())
+			c.Result = &StatusResult{Code: response.GetStatus(err), Result: content, Type: responseType}
 			return
 		}
 
-		//处理跳转302,303
-		if location, ok := response.Params["Location"]; ok {
-			if status, ok := response.Params["Status"]; ok {
-				s, err := strconv.Atoi(status.(string))
-				if err == nil {
-					response.Status = s
-				}
-			}
-			if !response.IsRedirect() {
-				response.Status = 302
-			}
-			if url, ok := location.(string); ok {
-				c.Redirect(url, response.Status)
-				return
-			}
-			c.Result = &StatusResult{Code: 500, Result: fmt.Sprintf("返回的URL不正确:%v", location), Type: responseType}
-			return
+		//处理跳转3xx
+		if response.IsRedirect() {
+			c.Redirect(response.GetParams()["Location"].(string), response.GetStatus(nil))
 		}
 
-		//处理400+,200+
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		c.Result = &StatusResult{Code: response.Status, Result: response.Content, Type: responseType}
+		//处理4xx,2xx
+		c.Result = &StatusResult{Code: response.GetStatus(nil), Result: response.GetContent(), Type: responseType}
 	}
 }
 

@@ -28,15 +28,27 @@ type Worker interface {
 	Handler
 }
 
-type HandlerFunc func(name string, mode string, service string, c *Context) (*Response, error)
+type HandlerFunc func(name string, mode string, service string, c *Context) (Response, error)
 
-func (h HandlerFunc) Handle(name string, mode string, service string, c *Context) (*Response, error) {
+func (h HandlerFunc) Handle(name string, mode string, service string, c *Context) (Response, error) {
+	return h(name, mode, service, c)
+}
+
+type SHandlerFunc func(name string, mode string, service string, c *Context) (*StandardReponse, error)
+
+func (h SHandlerFunc) Handle(name string, mode string, service string, c *Context) (*StandardReponse, error) {
+	return h(name, mode, service, c)
+}
+
+type WHandlerFunc func(name string, mode string, service string, c *Context) (*WebReponse, error)
+
+func (h WHandlerFunc) Handle(name string, mode string, service string, c *Context) (*WebReponse, error) {
 	return h(name, mode, service, c)
 }
 
 //Handler context handler
 type Handler interface {
-	Handle(name string, mode string, service string, c *Context) (*Response, error)
+	Handle(name string, mode string, service string, c *Context) (Response, error)
 	Close() error
 }
 type Registry struct {

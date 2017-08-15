@@ -109,8 +109,8 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 
 }
 
-func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	m, err := s.getYtxParams(ctx)
 	if err != nil {
 		return

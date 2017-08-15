@@ -10,8 +10,8 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {
 		err = fmt.Errorf("var.sql参数未配置:%v", err)

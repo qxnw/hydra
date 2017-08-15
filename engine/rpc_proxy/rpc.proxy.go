@@ -5,7 +5,6 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
-	"github.com/qxnw/lib4go/types"
 )
 
 type rpcProxy struct {
@@ -27,7 +26,7 @@ func (s *rpcProxy) Start(ctx *engine.EngineContext) (services []string, err erro
 func (s *rpcProxy) Close() error {
 	return nil
 }
-func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	input := make(map[string]string)
 	ctx.Input.Input.Each(func(k string, v string) {
 		input[k] = v
@@ -36,7 +35,9 @@ func (s *rpcProxy) Handle(svName string, mode string, service string, ctx *conte
 	if err != nil {
 		err = fmt.Errorf("engine:rpc_proxy.%v,status：%v,%v", err, status, result)
 	}
-	return &context.Response{Status: status, Content: result, Params: types.GetIMap(params)}, err
+	response := context.GetStandardResponse()
+	response.Set(status, result, params, err)
+	return response, err
 }
 func (s *rpcProxy) Has(shortName, fullName string) (err error) {
 	_, err = s.ctx.RPC.GetClient(fullName)

@@ -66,13 +66,16 @@ func (s *goPluginWorker) Close() error {
 }
 
 //Handle 从bin目录下获取当前应用匹配的动态库，并返射加载服务
-func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *goPluginWorker) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
+	response := context.GetStandardResponse()
 	if s.isClose {
-		return &context.Response{Status: 520}, fmt.Errorf("engine:goplugin.服务已关闭：%s", svName)
+		response.SetStatus(520)
+		return response, fmt.Errorf("engine:goplugin.服务已关闭：%s", svName)
 	}
 	f, ok := s.srvPlugins[svName]
 	if !ok {
-		return &context.Response{Status: 404}, fmt.Errorf("engine:goplugin.未找到服务：%s", svName)
+		response.SetStatus(404)
+		return response, fmt.Errorf("engine:goplugin.未找到服务：%s", svName)
 	}
 	return f.Handle(svName, mode, service, ctx)
 }

@@ -41,8 +41,8 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 	}
 	return
 }
-func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
@@ -84,8 +84,8 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	}, true))
 	return
 }
-func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return
@@ -133,8 +133,8 @@ func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *contex
 	return
 }
 
-func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return

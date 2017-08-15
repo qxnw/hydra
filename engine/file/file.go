@@ -13,14 +13,14 @@ type fileProxy struct {
 	serverType string
 	services   []string
 
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 }
 
 func newFileProxy() *fileProxy {
 	r := &fileProxy{
 		services: make([]string, 0, 8),
 	}
-	r.serviceHandlers = make(map[string]context.HandlerFunc, 1)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc, 1)
 	r.serviceHandlers["/file/upload"] = r.saveFileFromHTTPRequest
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
@@ -39,7 +39,7 @@ func (s *fileProxy) Start(ctx *engine.EngineContext) (services []string, err err
 func (s *fileProxy) Close() error {
 	return nil
 }
-func (s *fileProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *fileProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}

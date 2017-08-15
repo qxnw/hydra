@@ -12,8 +12,8 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) diskCollect(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *collectProxy) diskCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgValue("title", "服务器disk使用率")
 	msg := ctx.Input.GetArgValue("msg", "@host服务器disk使用率:@current")
 	maxValue, err := ctx.Input.GetArgFloat64Value("max")

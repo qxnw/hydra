@@ -10,8 +10,8 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgValue("title", "数据库监控服务")
 	msg := ctx.Input.GetArgValue("msg", "数据库服务:@host当前值:@current")
 	sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")

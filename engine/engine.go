@@ -109,17 +109,21 @@ func (e *standardEngine) Close() error {
 }
 
 //处理引擎
-func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (*context.Response, error) {
+func (e *standardEngine) Handle(name string, mode string, service string, c *context.Context) (context.Response, error) {
 	c.SetRPC(e.RPC)
 	sName, fName := e.getServiceName(service)
+	response := context.GetStandardResponse()
 	if mode != "*" {
 		worker, ok := e.plugins[mode]
 		if !ok {
-			return &context.Response{Status: 404}, fmt.Errorf("engine:未找到执行引擎:%s", mode)
+
+			response.SetStatus(404)
+			return response, fmt.Errorf("engine:未找到执行引擎:%s", mode)
 		}
 		err := worker.Has(sName, fName)
 		if err != nil {
-			return &context.Response{Status: 404}, fmt.Errorf("engine:在引擎%s中未找到服务:%s(err:%v)", mode, fName, err)
+			response.SetStatus(404)
+			return response, fmt.Errorf("engine:在引擎%s中未找到服务:%s(err:%v)", mode, fName, err)
 		}
 
 		return worker.Handle(sName, mode, fName, c)
@@ -134,7 +138,8 @@ func (e *standardEngine) Handle(name string, mode string, service string, c *con
 		}
 		return worker.Handle(sName, mode, fName, c)
 	}
-	return &context.Response{Status: 404}, fmt.Errorf("engine:未找到服务:%s", sName)
+	response.SetStatus(404)
+	return response, fmt.Errorf("engine:未找到服务:%s", sName)
 
 }
 func (e *standardEngine) getServiceName(name string) (sortName, fullName string) {

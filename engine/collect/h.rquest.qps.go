@@ -9,10 +9,10 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) requestQPSCollect(tp string) context.HandlerFunc {
+func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-		response = context.GetResponse()
+	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+		response =context.GetStandardResponse()
 		title := ctx.Input.GetArgValue("title", "每秒钟请求数")
 		msg := ctx.Input.GetArgValue("msg", "@url在@span内请求:@current次")
 

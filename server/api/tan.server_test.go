@@ -20,7 +20,7 @@ type contextHandler struct {
 	services chan string
 }
 
-func (h contextHandler) Handle(name string, mode string, service string, c *context.Context) (r *context.Response, err error) {
+func (h contextHandler) Handle(name string, mode string, service string, c *context.Context) (r context.Response, err error) {
 	select {
 	case h.services <- service:
 	default:
@@ -162,7 +162,7 @@ type contextNotifyHandler struct {
 	service string
 }
 
-func (h *contextNotifyHandler) Handle(name string, mode string, service string, c *context.Context) (r *context.Response, err error) {
+func (h *contextNotifyHandler) Handle(name string, mode string, service string, c *context.Context) (r context.Response, err error) {
 	h.name = name
 	h.mode = mode
 	h.service = service

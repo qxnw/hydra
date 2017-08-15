@@ -27,8 +27,8 @@ func (s *cacheProxy) getSaveParams(ctx *context.Context) (key string, value stri
 	return
 }
 
-func (s *cacheProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *cacheProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response = context.GetStandardResponse()
 	key, value, expiresAt, err := s.getSaveParams(ctx)
 	if err != nil {
 		return

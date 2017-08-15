@@ -12,8 +12,16 @@ func TestGet1(t *testing.T) {
 	ctx := context.NewTContext(nil)
 	//	ctx.Input.Input.Set("key", "12333")
 	key, err := proxy.getInputKey(ctx)
-	ut.Expect(t, err, nil)
+	ut.Refute(t, err, nil)
 	ut.Expect(t, key, "")
+}
+func TestGet2(t *testing.T) {
+	proxy := &cacheProxy{}
+	ctx := context.NewTContext(nil)
+	ctx.Input.Input.Set("key", "12333")
+	key, err := proxy.getInputKey(ctx)
+	ut.Expect(t, err, nil)
+	ut.Expect(t, key, ctx.Input.GetString("key"))
 }
 
 var cache = &context.TCache{Value: "1234"}

@@ -9,10 +9,10 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) responseCollect(tp string) context.HandlerFunc {
+func (s *collectProxy) responseCollect(tp string) context.SHandlerFunc {
 
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-		response = context.GetResponse()
+	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+		response = context.GetStandardResponse()
 		title := ctx.Input.GetArgValue("title", "请求响应码")
 		msg := ctx.Input.GetArgValue("msg", "@url请求响应码:@code在@span内出现:@current次")
 

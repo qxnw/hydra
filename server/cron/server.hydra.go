@@ -12,7 +12,6 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 	"github.com/zkfy/cron"
 )
@@ -188,23 +187,20 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
 		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
 		if response == nil {
-			response = &context.Response{}
+			response = context.GetStandardResponse()
 		}
 		defer func() {
 			if err != nil {
 				task.Errorf("cron.response.error: %v", task.err)
 			}
 		}()
-		if err != nil || (response.Status >= 500 && response.Status < 600) {
-			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.Content, err)
-			response.Status = types.DecodeInt(response.Status, 0, 500, response.Status)
-			task.statusCode = response.Status
-			response.Content = task.err.Error()
+		if err != nil {
+			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.GetContent(), err)
+			task.statusCode = response.GetStatus(task.err)
 			return task.err
 		}
-		response.Status = types.DecodeInt(response.Status, 0, 200, response.Status)
-		task.Result = response.Content
-		task.statusCode = response.Status
+		task.Result = response.GetContent()
+		task.statusCode = response.GetStatus(nil)
 		return nil
 	}
 }

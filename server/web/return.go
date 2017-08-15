@@ -8,9 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"net/http"
 	"reflect"
-	"strings"
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/api"
@@ -59,11 +57,11 @@ func (w *WebServer) Return() api.HandlerFunc {
 				ctx.Errorf("web.response.error: %v", err)
 			}
 		case *context.Response:
-			response := ctx.Result.(*context.Response)
+			response := ctx.Result.(context.Response)
 			if response.IsRedirect() {
 				return
 			}
-			view, ok := response.Params["__view"]
+			view, ok := response.GetParams()["__view"]
 			if ok && view == "NONE" {
 				write(ctx, response)
 				return
@@ -75,7 +73,7 @@ func (w *WebServer) Return() api.HandlerFunc {
 				view = ctx.ServiceName
 			}
 			viewPath := fmt.Sprintf("%s%s%s", w.viewRoot, view, w.viewExt)
-			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, response.Content)
+			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, response.GetContent())
 			if err != nil {
 				ctx.Errorf("web.response.error: %v", err)
 			}
@@ -87,18 +85,8 @@ func (w *WebServer) Return() api.HandlerFunc {
 	}
 }
 
-func write(ctx *api.Context, response *context.Response) {
-	rt := api.JsonResponse
-	if tp, ok := response.Params["Content-Type"].(string); ok {
-		if strings.Contains(tp, "xml") {
-			rt = api.XmlResponse
-		} else if strings.Contains(tp, "json") {
-			rt = api.JsonResponse
-		} else {
-			rt = api.AutoResponse
-		}
-	}
-
+func write(ctx *api.Context, response context.Response) {
+	rt := response.GetContentType()
 	result := ctx.Result
 	if rt == api.JsonResponse {
 		encoder := json.NewEncoder(ctx)
@@ -108,36 +96,21 @@ func write(ctx *api.Context, response *context.Response) {
 
 		switch res := result.(type) {
 		case error:
-			if response.Status == 0 {
-				response.Status = http.StatusInternalServerError
-			}
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(res))
 			encoder.Encode(map[string]string{
 				"err": res.Error(),
 			})
 		case string:
-			if response.Status == 0 {
-				response.Status = http.StatusOK
-			}
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			ctx.WriteString(res)
 		case json.RawMessage:
-			if response.Status == 0 {
-				response.Status = http.StatusOK
-			}
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			encoder.Encode(res)
 		case []byte:
-			if response.Status == 0 {
-				response.Status = http.StatusOK
-			}
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			ctx.Write(res)
 		default:
-			if response.Status == 0 {
-				response.Status = http.StatusOK
-			}
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			if result == nil {
 				return
 			}
@@ -158,18 +131,18 @@ func write(ctx *api.Context, response *context.Response) {
 		}
 		switch res := result.(type) {
 		case error:
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(res))
 			encoder.Encode(XmlError{
 				Content: res.Error(),
 			})
 		case string:
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			ctx.WriteString(res)
 		case []byte:
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			ctx.Write(res)
 		default:
-			ctx.WriteHeader(response.Status)
+			ctx.WriteHeader(response.GetStatus(nil))
 			if result == nil {
 				return
 			}
@@ -189,16 +162,16 @@ func write(ctx *api.Context, response *context.Response) {
 	switch res := result.(type) {
 	case error:
 		ctx.HandleError()
-		ctx.WriteHeader(response.Status)
+		ctx.WriteHeader(response.GetStatus(res))
 		ctx.WriteString(fmt.Sprintf("%v", res))
 	case []byte:
-		ctx.WriteHeader(response.Status)
+		ctx.WriteHeader(response.GetStatus(nil))
 		ctx.Write(res)
 	case string:
-		ctx.WriteHeader(response.Status)
+		ctx.WriteHeader(response.GetStatus(nil))
 		ctx.WriteString(res)
 	default:
-		ctx.WriteHeader(response.Status)
+		ctx.WriteHeader(response.GetStatus(nil))
 		if result == nil {
 			return
 		}

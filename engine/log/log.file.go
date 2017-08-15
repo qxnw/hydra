@@ -7,8 +7,8 @@ import (
 	"github.com/qxnw/lib4go/logger"
 )
 
-func (s *logProxy) logFileInfoHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *logProxy) logFileInfoHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	if ctx.Input.Body == "" {
 		err = fmt.Errorf("未设置日志内容")
 		return
@@ -25,8 +25,8 @@ func (s *logProxy) logFileInfoHandle(name string, mode string, service string, c
 	lg.Info(ctx.Input.Body)
 	return
 }
-func (s *logProxy) logFileErrorHandle(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *logProxy) logFileErrorHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	if ctx.Input.Body == "" {
 		err = fmt.Errorf("未设置日志内容")
 		return

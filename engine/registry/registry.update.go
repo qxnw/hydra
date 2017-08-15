@@ -8,8 +8,8 @@ import (
 )
 
 //根据path,value,version更新指定节点的值
-func (s *registryProxy) updateValue(name string, mode string, service string, ctx *context.Context) (response *context.Response, err error) {
-	response = context.GetResponse()
+func (s *registryProxy) updateValue(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	response =context.GetStandardResponse()
 	path, err := ctx.Input.Get("path")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数path")

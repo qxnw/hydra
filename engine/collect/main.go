@@ -21,7 +21,7 @@ type collectProxy struct {
 	reportMap       map[string]string
 	srvQueryMap     map[string]string
 	reportSQL       string
-	serviceHandlers map[string]context.HandlerFunc
+	serviceHandlers map[string]context.SHandlerFunc
 	collector       map[string]func(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (string, error)
 }
 
@@ -34,7 +34,7 @@ func newCollectProxy() *collectProxy {
 	r.srvQueryMap = make(map[string]string)
 	r.collector = make(map[string]func(ctx *context.Context, param []interface{}, db *influxdb.InfluxClient) (string, error))
 	r.init()
-	r.serviceHandlers = make(map[string]context.HandlerFunc, 8)
+	r.serviceHandlers = make(map[string]context.SHandlerFunc, 8)
 	r.serviceHandlers["/collect/api/server/response"] = r.responseCollect("api_server_reponse")
 	r.serviceHandlers["/collect/web/server/response"] = r.responseCollect("web_server_reponse")
 	r.serviceHandlers["/collect/rpc/server/response"] = r.responseCollect("rpc_server_reponse")
@@ -73,7 +73,7 @@ func (s *collectProxy) Start(ctx *engine.EngineContext) (services []string, err 
 func (s *collectProxy) Close() error {
 	return nil
 }
-func (s *collectProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r *context.Response, err error) {
+func (s *collectProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return
 	}
