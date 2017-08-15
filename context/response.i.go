@@ -24,7 +24,7 @@ func (r *ObjectReponse) Success(v ...interface{}) *ObjectReponse {
 	r.Content = "SUCCESS"
 	return r
 }
-func (r *ObjectReponse) SetContent(status int, content string) *ObjectReponse {
+func (r *ObjectReponse) SetContent(status int, content interface{}) *ObjectReponse {
 	r.Status = types.DecodeInt(status, 0, 200, status)
 	r.Content = content
 	return r
