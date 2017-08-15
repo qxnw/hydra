@@ -104,7 +104,7 @@ func (r *Registry) Handle(name string, mode string, service string, c *Context) 
 	response.SetStatus(404)
 	h, ok := r.Handlers[service]
 	if !ok {
-		return response, fmt.Errorf("未找到:%s", service)
+		return response, fmt.Errorf("未找到服务:%s", service)
 	}
 	switch handler := h.(type) {
 	case MapHandler:
@@ -118,6 +118,6 @@ func (r *Registry) Handle(name string, mode string, service string, c *Context) 
 	case Handler:
 		return handler.Handle(name, mode, service, c)
 	default:
-		return response, fmt.Errorf("未找到:%s", service)
+		return response, fmt.Errorf("未找到服务:%s", service)
 	}
 }
