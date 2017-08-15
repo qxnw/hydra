@@ -3,6 +3,8 @@ package context
 import (
 	"time"
 
+	"fmt"
+
 	"github.com/qxnw/lib4go/rpc"
 	"github.com/qxnw/lib4go/transform"
 )
@@ -51,24 +53,71 @@ type Handler interface {
 	Handle(name string, mode string, service string, c *Context) (Response, error)
 	Close() error
 }
+type MapHandler interface {
+	Handle(name string, mode string, service string, c *Context) (*MapResponse, error)
+	Close() error
+}
+type StandardHandler interface {
+	Handle(name string, mode string, service string, c *Context) (*StandardReponse, error)
+	Close() error
+}
+type ObjectHandler interface {
+	Handle(name string, mode string, service string, c *Context) (*ObjectReponse, error)
+	Close() error
+}
+type WebHandler interface {
+	Handle(name string, mode string, service string, c *Context) (*WebReponse, error)
+	Close() error
+}
+
 type Registry struct {
-	ServiceHandlers map[string]Handler
-	Services        []string
+	Handlers map[string]interface{}
+	Services []string
 }
 
 //NewRegistry 构建插件的注册中心
 func NewRegistry() *Registry {
 	r := &Registry{}
-	r.ServiceHandlers = make(map[string]Handler)
+	r.Handlers = make(map[string]interface{})
 	r.Services = make([]string, 0, 16)
 	return r
 }
 
 //Register 注册处理程序
-func (r *Registry) Register(name string, handler Handler) {
-	if _, ok := r.ServiceHandlers[name]; ok {
-		panic("Register called twice for adapter " + name)
+func (r *Registry) Register(name string, h interface{}) {
+	for _, v := range r.Services {
+		if v == name {
+			panic(fmt.Sprintf("多次注册服务:%s", name))
+		}
 	}
-	r.ServiceHandlers[name] = handler
-	r.Services = append(r.Services, name)
+	switch handler := h.(type) {
+	case MapHandler, StandardHandler, WebHandler, ObjectHandler, Handler:
+		r.Handlers[name] = handler
+		r.Services = append(r.Services, name)
+	default:
+		panic(fmt.Sprintf("服务必须为Handler,MapHandler,StandardHandler,ObjectHandler,WebHandler:%s", name))
+	}
+}
+
+func (r *Registry) Handle(name string, mode string, service string, c *Context) (Response, error) {
+	response := GetStandardResponse()
+	response.SetStatus(404)
+	h, ok := r.Handlers[service]
+	if !ok {
+		return response, fmt.Errorf("未找到:%s", service)
+	}
+	switch handler := h.(type) {
+	case MapHandler:
+		return handler.Handle(name, mode, service, c)
+	case StandardHandler:
+		return handler.Handle(name, mode, service, c)
+	case WebHandler:
+		return handler.Handle(name, mode, service, c)
+	case ObjectHandler:
+		return handler.Handle(name, mode, service, c)
+	case Handler:
+		return handler.Handle(name, mode, service, c)
+	default:
+		return response, fmt.Errorf("未找到:%s", service)
+	}
 }
