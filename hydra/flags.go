@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/net"
@@ -22,7 +21,6 @@ type HFlags struct {
 	tag                    string
 	mask                   string
 	trace                  string
-	IsDebug                bool
 	crossRegistry          string
 	rpcLogger              bool
 	currentRegistryAddress []string
@@ -52,10 +50,10 @@ func (h *HFlags) CheckFlags(i ...int) (err error) {
 	if len(i) > 0 {
 		index = i[0]
 	}
+	server.IsDebug = true
 	if len(os.Args) < index {
 		return errors.New("未指定域名称")
 	}
-	server.IsDebug = engine.IsDebug
 	h.Domain = os.Args[index]
 	if h.currentRegistry == "" {
 		h.runMode = modeStandalone
@@ -99,7 +97,7 @@ func (h *HFlags) ToArgs() []string {
 	if h.mask != "" {
 		args = append(args, "-i", h.mask)
 	}
-	if h.IsDebug {
+	if server.IsDebug {
 		args = append(args, "-d")
 	}
 	if h.crossRegistry != "" {

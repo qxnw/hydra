@@ -18,6 +18,7 @@ type IResult interface {
 
 type StatusResult struct {
 	Code   int
+	Params map[string]interface{}
 	Result interface{}
 	Type   int
 }
@@ -91,6 +92,7 @@ func Return() HandlerFunc {
 			statusCode = res.Code
 			result = res.Result
 			rt = res.Type
+			ctx.Writer.Params = res.Params
 		}
 
 		if rt == JsonResponse {

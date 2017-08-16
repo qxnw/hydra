@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/qxnw/hydra/server/rpc/pb"
+	"github.com/qxnw/lib4go/types"
 )
 
 type process struct {
@@ -42,6 +43,7 @@ func (r *process) Request(context context.Context, request *pb.RequestContext) (
 	p = &pb.ResponseContext{}
 	p.Status = int32(ctx.Writer.Code)
 	p.Result = string(ctx.Writer.Buffer.Bytes())
+	p.Params, _ = types.ToStringMap(ctx.Writer.Params)
 	ctx.Writer.Reset()
 	return
 }

@@ -11,7 +11,13 @@ func GetStandardResponse() *StandardReponse {
 	return &StandardReponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
 }
 
-func (r *StandardReponse) GetContent() interface{} {
+func (r *StandardReponse) GetContent(errs ...error) interface{} {
+	if r.Content != "" {
+		return r.Content
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
 	return r.Content
 }
 

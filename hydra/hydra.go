@@ -62,7 +62,6 @@ func (h *Hydra) Start() (err error) {
 		h.Error(err)
 		return
 	}
-	server.IsDebug = h.IsDebug
 	if !server.IsDebug {
 		logger.AddWriteThread(49) //非调试模式时设置日志写协程数为50个
 	}
@@ -177,7 +176,7 @@ LOOP:
 
 //获取服务器名称
 func (h *Hydra) getServerName(cnf conf.Conf) string {
-	return fmt.Sprintf("%s_%s", cnf.String("name"), cnf.String("type"))
+	return fmt.Sprintf("%s(%s)", cnf.String("name"), cnf.String("type"))
 }
 
 //添加新服务器

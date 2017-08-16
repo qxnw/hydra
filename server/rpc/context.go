@@ -27,7 +27,8 @@ type Handler interface {
 	Handle(*Context)
 }
 type Writer struct {
-	Code int
+	Params map[string]interface{}
+	Code   int
 	*bytes.Buffer
 	isWritten bool
 }
@@ -167,7 +168,7 @@ func (ctx *Context) execute() {
 			ctx.Result = ret[0].Interface()
 		} else if len(ret) == 2 {
 			if code, ok := ret[0].Interface().(int); ok {
-				ctx.Result = &StatusResult{code, ret[1].Interface(), JsonResponse}
+				ctx.Result = &StatusResult{Code: code, Result: ret[1].Interface(), Type: JsonResponse}
 			}
 		}
 		// not route matched

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
-	"github.com/qxnw/lib4go/types"
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -223,43 +223,29 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		}()
 
 		//处理头信息
-
-		for k, v := range response.GetParams() {
-			if !strings.HasPrefix(k, "__") && v != nil && k != "Status" {
-				switch v.(type) {
-				case []string:
-					list := v.([]string)
-					for _, i := range list {
-						c.Header().Set(k, i)
-					}
-				default:
-					c.Header().Set(k, types.GetString(v))
-				}
-			}
+		for k, v := range response.GetHeaders() {
+			c.Header().Set(k, v)
 		}
-
-		//处理输入content-type
-		var responseType = response.GetContentType()
 
 		//处理错误err,5xx
 		if err != nil {
 			err = fmt.Errorf("api.server.handler.error:%v", err)
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: response.GetStatus(err), Result: fmt.Sprintf("%v %v", response.GetContent(), err), Type: responseType}
+				c.Result = &StatusResult{Code: response.GetStatus(err), Result: response.GetContent(err), Type: response.GetContentType()}
 				return
 			}
-			content := types.DecodeString(response.GetContent(), "", "Internal Server Error(工作引擎发生异常)", response.GetContent())
-			c.Result = &StatusResult{Code: response.GetStatus(err), Result: content, Type: responseType}
+			err = errors.New("Internal Server Error(工作引擎发生异常)")
+			c.Result = &StatusResult{Code: response.GetStatus(err), Result: err, Type: response.GetContentType()}
 			return
 		}
 
 		//处理跳转3xx
-		if response.IsRedirect() {
-			c.Redirect(response.GetParams()["Location"].(string), response.GetStatus(nil))
+		if url, ok := response.IsRedirect(); ok {
+			c.Redirect(url, response.GetStatus())
 		}
 
 		//处理4xx,2xx
-		c.Result = &StatusResult{Code: response.GetStatus(nil), Result: response.GetContent(), Type: responseType}
+		c.Result = &StatusResult{Code: response.GetStatus(), Result: response.GetContent(), Type: response.GetContentType()}
 	}
 }
 

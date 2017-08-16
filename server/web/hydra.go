@@ -240,8 +240,8 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			c.Result = err
 			return
 		}
-		if response.IsRedirect() {
-			c.Redirect(response.GetParams()["Location"].(string), response.GetStatus(nil))
+		if url, ok := response.IsRedirect(); ok {
+			c.Redirect(url, response.GetStatus())
 			return
 		}
 		c.Result = response

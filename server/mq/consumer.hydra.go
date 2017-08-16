@@ -181,9 +181,10 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		if err != nil {
 			task.err = fmt.Errorf("mq.server.handler.error:%s,%v,%v", task.queue, response.GetContent(), err)
 			task.statusCode = response.GetStatus(task.err)
+			task.Result = response.GetContent(task.err)
 			return task.err
 		}
-		task.statusCode = response.GetStatus(nil)
+		task.statusCode = response.GetStatus()
 		task.Result = response.GetContent()
 		return nil
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 //IsDebug 当前服务器是处于调试模式
-var IsDebug = false
+//var IsDebug = false
 
 var (
 	METHOD_NAME = []string{"request", "query", "delete", "update", "insert", "create", "get", "post", "put", "delete", "main"}
@@ -171,4 +171,10 @@ func Register(name string, p IWorkerResolver) {
 		panic("engine: Register called twice for adapter " + name)
 	}
 	resolvers[name] = p
+}
+
+//Has 是否包含指定的引擎
+func Has(name string) bool {
+	_, ok := resolvers[name]
+	return ok
 }

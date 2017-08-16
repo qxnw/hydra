@@ -55,10 +55,13 @@ func (w *WebServer) Return() api.HandlerFunc {
 			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
 			if err != nil {
 				ctx.Errorf("web.response.error: %v", err)
+				ctx.WriteHeader(500)
+				ctx.Write([]byte(ctx.Result.(error).Error()))
+				return
 			}
 		case *context.Response:
 			response := ctx.Result.(context.Response)
-			if response.IsRedirect() {
+			if _, ok := response.IsRedirect(); ok {
 				return
 			}
 			view, ok := response.GetParams()["__view"]
@@ -101,16 +104,16 @@ func write(ctx *api.Context, response context.Response) {
 				"err": res.Error(),
 			})
 		case string:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			ctx.WriteString(res)
 		case json.RawMessage:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			encoder.Encode(res)
 		case []byte:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			ctx.Write(res)
 		default:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			if result == nil {
 				return
 			}
@@ -136,13 +139,13 @@ func write(ctx *api.Context, response context.Response) {
 				Content: res.Error(),
 			})
 		case string:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			ctx.WriteString(res)
 		case []byte:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			ctx.Write(res)
 		default:
-			ctx.WriteHeader(response.GetStatus(nil))
+			ctx.WriteHeader(response.GetStatus())
 			if result == nil {
 				return
 			}
@@ -165,13 +168,13 @@ func write(ctx *api.Context, response context.Response) {
 		ctx.WriteHeader(response.GetStatus(res))
 		ctx.WriteString(fmt.Sprintf("%v", res))
 	case []byte:
-		ctx.WriteHeader(response.GetStatus(nil))
+		ctx.WriteHeader(response.GetStatus())
 		ctx.Write(res)
 	case string:
-		ctx.WriteHeader(response.GetStatus(nil))
+		ctx.WriteHeader(response.GetStatus())
 		ctx.WriteString(res)
 	default:
-		ctx.WriteHeader(response.GetStatus(nil))
+		ctx.WriteHeader(response.GetStatus())
 		if result == nil {
 			return
 		}

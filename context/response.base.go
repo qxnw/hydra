@@ -8,10 +8,10 @@ import (
 
 //Response 响应
 type Response interface {
-	GetContent() interface{}
-	GetStatus(error) int
+	GetContent(...error) interface{}
+	GetStatus(...error) int
 	GetParams() map[string]interface{}
-	IsRedirect() bool
+	IsRedirect() (string, bool)
 	GetContentType() int
 	GetHeaders() map[string]string
 }
@@ -22,19 +22,19 @@ type baseResponse struct {
 }
 
 //IsRedirect 是否是URL转跳
-func (r *baseResponse) IsRedirect() bool {
+func (r *baseResponse) IsRedirect() (string, bool) {
 	location, ok := r.Params["Location"]
 	if !ok {
-		return false
+		return "", false
 	}
-	_, ok = location.(string)
+	url, ok := location.(string)
 	if !ok {
-		return false
+		return url, false
 	}
-	return r.Status == 301 || r.Status == 302 || r.Status == 303 || r.Status == 307 || r.Status == 309
+	return "", r.Status == 301 || r.Status == 302 || r.Status == 303 || r.Status == 307 || r.Status == 309
 }
-func (r *baseResponse) GetStatus(err error) int {
-	if err != nil {
+func (r *baseResponse) GetStatus(err ...error) int {
+	if len(err) > 0 {
 		return types.DecodeInt(r.Status, 0, 500, r.Status)
 	}
 	return types.DecodeInt(r.Status, 0, 200, r.Status)

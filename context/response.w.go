@@ -15,7 +15,13 @@ func (r *WebReponse) Redirect(code int, url string) *WebReponse {
 	r.Params["Location"] = url
 	return r
 }
-func (r *WebReponse) GetContent() interface{} {
+func (r *WebReponse) GetContent(errs ...error) interface{} {
+	if r.Content != nil {
+		return r.Content
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
 	return r.Content
 }
 func (r *WebReponse) Success(v ...string) *WebReponse {

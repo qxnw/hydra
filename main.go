@@ -9,14 +9,14 @@ import (
 	_ "github.com/qxnw/hydra/engine/cache"
 	_ "github.com/qxnw/hydra/engine/collect"
 	_ "github.com/qxnw/hydra/engine/file"
-	_ "github.com/qxnw/hydra/engine/goplugin"
 	_ "github.com/qxnw/hydra/engine/http"
 	_ "github.com/qxnw/hydra/engine/influx"
 	_ "github.com/qxnw/hydra/engine/log"
 	_ "github.com/qxnw/hydra/engine/mock"
+	_ "github.com/qxnw/hydra/engine/plugin"
 	_ "github.com/qxnw/hydra/engine/registry"
 	_ "github.com/qxnw/hydra/engine/report"
-	_ "github.com/qxnw/hydra/engine/rpc_proxy"
+	_ "github.com/qxnw/hydra/engine/rpc"
 	_ "github.com/qxnw/hydra/engine/ssm"
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/hydra/server/api"
@@ -26,6 +26,7 @@ import (
 	_ "github.com/qxnw/hydra/server/web"
 	_ "github.com/qxnw/lib4go/cache/memcache"
 	_ "github.com/qxnw/lib4go/mq/stomp"
+	_ "github.com/qxnw/lib4go/mq/xmq"
 )
 
 func main() {

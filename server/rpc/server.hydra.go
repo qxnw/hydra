@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -226,21 +227,18 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			}
 		}()
 
-		//处理输入content-type
-		var responseType = response.GetContentType()
-
-		//处理错误err,500+
+		//处理错误err,5xx
 		if err != nil {
 			err = fmt.Errorf("rpc.server.handler.error:%v", err)
 			if server.IsDebug {
-				c.Result = &StatusResult{Code: response.GetStatus(err), Result: fmt.Sprintf("%v %v", response.GetContent(), err), Type: responseType}
+				c.Result = &StatusResult{Code: response.GetStatus(err), Result: response.GetContent(err), Type: response.GetContentType()}
 				return
 			}
-			content := types.DecodeString(response.GetContent(), "", "Internal Server Error(工作引擎发生异常)", response.GetContent())
-			c.Result = &StatusResult{Code: response.GetStatus(err), Result: content, Type: responseType}
+			err = errors.New("Internal Server Error(工作引擎发生异常)")
+			c.Result = &StatusResult{Code: response.GetStatus(err), Result: err, Type: response.GetContentType()}
 			return
 		}
-		c.Result = &StatusResult{Code: response.GetStatus(nil), Result: response.GetContent(), Type: responseType}
+		c.Result = &StatusResult{Code: response.GetStatus(), Result: response.GetContent(), Params: response.GetParams(), Type: response.GetContentType()}
 	}
 }
 

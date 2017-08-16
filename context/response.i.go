@@ -11,7 +11,13 @@ func GetObjectReponse() *ObjectReponse {
 	return &ObjectReponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
 }
 
-func (r *ObjectReponse) GetContent() interface{} {
+func (r *ObjectReponse) GetContent(errs ...error) interface{} {
+	if r.Content != nil {
+		return r.Content
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
 	return r.Content
 }
 
@@ -21,7 +27,6 @@ func (r *ObjectReponse) Success(v ...interface{}) *ObjectReponse {
 		r.Content = v[0]
 		return r
 	}
-	r.Content = "SUCCESS"
 	return r
 }
 func (r *ObjectReponse) SetContent(status int, content interface{}) *ObjectReponse {

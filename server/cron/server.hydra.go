@@ -197,10 +197,11 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 		if err != nil {
 			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.GetContent(), err)
 			task.statusCode = response.GetStatus(task.err)
+			task.Result = response.GetContent()
 			return task.err
 		}
 		task.Result = response.GetContent()
-		task.statusCode = response.GetStatus(nil)
+		task.statusCode = response.GetStatus()
 		return nil
 	}
 }

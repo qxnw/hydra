@@ -8,9 +8,16 @@ type MapResponse struct {
 }
 
 func GetMapResponse() *MapResponse {
-	return &MapResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+	return &MapResponse{
+		baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
 }
-func (r *MapResponse) GetContent() interface{} {
+func (r *MapResponse) GetContent(errs ...error) interface{} {
+	if len(r.Content) > 0 {
+		return r.Content
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
 	return r.Content
 }
 

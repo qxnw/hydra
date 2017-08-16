@@ -121,9 +121,6 @@ func APIReturn() HandlerFunc {
 					"err": res.Error(),
 				})
 			case error:
-				if statusCode == 0 {
-					statusCode = http.StatusInternalServerError
-				}
 				ctx.WriteHeader(statusCode)
 				encoder.Encode(map[string]string{
 					"err": res.Error(),
@@ -220,9 +217,6 @@ func APIReturn() HandlerFunc {
 		switch res := result.(type) {
 		case AbortError, error:
 			ctx.HandleError()
-			if statusCode == 0 {
-				statusCode = http.StatusInternalServerError
-			}
 			ctx.WriteHeader(statusCode)
 			ctx.WriteString(fmt.Sprintf("%v", res))
 		case []byte:
