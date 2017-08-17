@@ -31,7 +31,8 @@ func (r *baseResponse) IsRedirect() (string, bool) {
 	if !ok {
 		return url, false
 	}
-	return "", r.Status == 301 || r.Status == 302 || r.Status == 303 || r.Status == 307 || r.Status == 309
+	status := r.Params["Status"]
+	return url, status == 301 || status == 302 || status == 303 || status == 307 || status == 309
 }
 func (r *baseResponse) GetStatus(err ...error) int {
 	if len(err) > 0 {

@@ -27,6 +27,7 @@ func GetWebResponse(ctx *Context) *WebResponse {
 func (r *WebResponse) Redirect(code int, url string) *WebResponse {
 	r.Params["Status"] = code
 	r.Params["Location"] = url
+	r.Status = code
 	return r
 }
 func (r *WebResponse) GetContent(errs ...error) interface{} {

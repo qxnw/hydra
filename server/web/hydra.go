@@ -227,6 +227,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		if response == nil {
 			response = context.GetStandardResponse()
 		}
+		c.Result = response
 		defer func() {
 			if err != nil {
 				c.Errorf("web.response.error: %v", err)
@@ -234,6 +235,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}()
 		//处理头信息
 		for k, v := range response.GetHeaders() {
+			fmt.Println("header:", k, v)
 			c.Header().Set(k, v)
 		}
 		if err != nil {
@@ -244,7 +246,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			c.Redirect(url, response.GetStatus())
 			return
 		}
-		c.Result = response
+
 	}
 }
 
