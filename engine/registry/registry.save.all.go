@@ -11,7 +11,7 @@ import (
 )
 
 //saveAll 无需任何输入参数，直接备份当前域所在目录下的所有配置
-func (s *registryProxy) saveAll(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *registryProxy) saveAll(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	serverData, err := s.getChildrenNodes(fmt.Sprintf("%s/servers", s.ctx.Domain))
 	if err != nil {

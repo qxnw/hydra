@@ -96,7 +96,7 @@ func (s *influxProxy) getSaveParams(ctx *context.Context) (measurement string, t
 	return
 }
 
-func (s *influxProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *influxProxy) save(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	measurement, t, f, err := s.getSaveParams(ctx)
 	if err != nil {

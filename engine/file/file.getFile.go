@@ -11,7 +11,7 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {
@@ -49,7 +49,7 @@ func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service st
 	return
 }
 
-func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {

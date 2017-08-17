@@ -41,7 +41,7 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 	}
 	return
 }
-func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
@@ -84,7 +84,7 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	}, true))
 	return
 }
-func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *contex
 	return
 }
 
-func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {

@@ -28,7 +28,7 @@ func (s *cacheProxy) getInputKey(ctx *context.Context) (key string, err error) {
 	return
 }
 
-func (s *cacheProxy) get(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *cacheProxy) get(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	key, err := s.getInputKey(ctx)
 	if err != nil {

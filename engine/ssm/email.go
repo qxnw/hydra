@@ -76,7 +76,7 @@ func (s *smsProxy) geEmailParams(ctx *context.Context) (mail *email, err error) 
 
 }
 
-func (s *smsProxy) sendMail(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *smsProxy) sendMail(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	m, err := s.geEmailParams(ctx)
 	if err != nil {

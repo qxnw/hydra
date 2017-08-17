@@ -13,7 +13,7 @@ type kv struct {
 	value []byte
 }
 
-func (s *registryProxy) getChildren(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *registryProxy) getChildren(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	p, err := ctx.Input.Get("path")
 	if err != nil {

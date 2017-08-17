@@ -31,7 +31,7 @@ func (s *influxProxy) getQueryParams(ctx *context.Context) (sql string, err erro
 	return sql, nil
 }
 
-func (s *influxProxy) query(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *influxProxy) query(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	sql, err := s.getQueryParams(ctx)
 	if err != nil {

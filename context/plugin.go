@@ -36,15 +36,15 @@ func (h HandlerFunc) Handle(name string, mode string, service string, c *Context
 	return h(name, mode, service, c)
 }
 
-type SHandlerFunc func(name string, mode string, service string, c *Context) (*StandardReponse, error)
+type SHandlerFunc func(name string, mode string, service string, c *Context) (*StandardResponse, error)
 
-func (h SHandlerFunc) Handle(name string, mode string, service string, c *Context) (*StandardReponse, error) {
+func (h SHandlerFunc) Handle(name string, mode string, service string, c *Context) (*StandardResponse, error) {
 	return h(name, mode, service, c)
 }
 
-type WHandlerFunc func(name string, mode string, service string, c *Context) (*WebReponse, error)
+type WHandlerFunc func(name string, mode string, service string, c *Context) (*WebResponse, error)
 
-func (h WHandlerFunc) Handle(name string, mode string, service string, c *Context) (*WebReponse, error) {
+func (h WHandlerFunc) Handle(name string, mode string, service string, c *Context) (*WebResponse, error) {
 	return h(name, mode, service, c)
 }
 
@@ -58,15 +58,15 @@ type MapHandler interface {
 	Close() error
 }
 type StandardHandler interface {
-	Handle(name string, mode string, service string, c *Context) (*StandardReponse, error)
+	Handle(name string, mode string, service string, c *Context) (*StandardResponse, error)
 	Close() error
 }
 type ObjectHandler interface {
-	Handle(name string, mode string, service string, c *Context) (*ObjectReponse, error)
+	Handle(name string, mode string, service string, c *Context) (*ObjectResponse, error)
 	Close() error
 }
 type WebHandler interface {
-	Handle(name string, mode string, service string, c *Context) (*WebReponse, error)
+	Handle(name string, mode string, service string, c *Context) (*WebResponse, error)
 	Close() error
 }
 

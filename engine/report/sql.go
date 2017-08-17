@@ -10,7 +10,7 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {

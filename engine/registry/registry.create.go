@@ -6,7 +6,7 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func (s *registryProxy) createPath(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *registryProxy) createPath(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	path, err := ctx.Input.Get("path")
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) cpuCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *collectProxy) cpuCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgValue("title", "服务器CPU负载")
 	msg := ctx.Input.GetArgValue("msg", "@host服务器CPU负载:@current")

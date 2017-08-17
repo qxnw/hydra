@@ -8,7 +8,7 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {

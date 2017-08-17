@@ -11,7 +11,7 @@ import (
 
 func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response =context.GetStandardResponse()
 		title := ctx.Input.GetArgValue("title", "每秒钟请求数")
 		msg := ctx.Input.GetArgValue("msg", "@url在@span内请求:@current次")

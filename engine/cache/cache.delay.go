@@ -29,7 +29,7 @@ func (s *cacheProxy) getKeyExpiresAt(ctx *context.Context) (key string, expiresA
 	return key, expiresAt, nil
 }
 
-func (s *cacheProxy) delay(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *cacheProxy) delay(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	key, expiresAt, err := s.getKeyExpiresAt(ctx)
 	if err != nil {

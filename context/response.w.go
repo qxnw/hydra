@@ -1,21 +1,21 @@
 package context
 
-type WebReponse struct {
+type WebResponse struct {
 	Content interface{}
 	*baseResponse
 }
 
-func GetWebResponse() *WebReponse {
-	return &WebReponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+func GetWebResponse() *WebResponse {
+	return &WebResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
 }
 
 //Redirect 设置页面转跳
-func (r *WebReponse) Redirect(code int, url string) *WebReponse {
+func (r *WebResponse) Redirect(code int, url string) *WebResponse {
 	r.Params["Status"] = code
 	r.Params["Location"] = url
 	return r
 }
-func (r *WebReponse) GetContent(errs ...error) interface{} {
+func (r *WebResponse) GetContent(errs ...error) interface{} {
 	if r.Content != nil {
 		return r.Content
 	}
@@ -24,7 +24,7 @@ func (r *WebReponse) GetContent(errs ...error) interface{} {
 	}
 	return r.Content
 }
-func (r *WebReponse) Success(v ...string) *WebReponse {
+func (r *WebResponse) Success(v ...string) *WebResponse {
 	r.Status = 200
 	if len(v) > 0 {
 		r.Content = v[0]

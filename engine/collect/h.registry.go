@@ -9,7 +9,7 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
-func (s *collectProxy) registryCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardReponse, err error) {
+func (s *collectProxy) registryCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
 	title := ctx.Input.GetArgValue("title", "注册中心服务")
 	msg := ctx.Input.GetArgValue("msg", "注册中心服务:@url当前数量:@current")
