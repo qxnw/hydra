@@ -3,6 +3,7 @@ package rpc
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"sync"
@@ -218,7 +219,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 
 		//执行服务调用
 		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
-		if response == nil {
+		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		defer func() {

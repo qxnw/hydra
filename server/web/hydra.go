@@ -8,6 +8,8 @@ import (
 
 	"strings"
 
+	"reflect"
+
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
@@ -224,7 +226,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, c.ServiceName, ctx)
-		if response == nil {
+		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		c.Result = response
@@ -235,7 +237,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}()
 		//处理头信息
 		for k, v := range response.GetHeaders() {
-			fmt.Println("header:", k, v)
 			c.Header().Set(k, v)
 		}
 		if err != nil {

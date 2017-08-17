@@ -2,6 +2,7 @@ package cron
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -186,7 +187,7 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 		//执行服务调用
 		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
 		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
-		if response == nil {
+		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		defer func() {

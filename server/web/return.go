@@ -59,7 +59,7 @@ func (w *WebServer) Return() api.HandlerFunc {
 				ctx.Write([]byte(ctx.Result.(error).Error()))
 				return
 			}
-		case *context.Response:
+		case context.Response:
 			response := ctx.Result.(context.Response)
 			if _, ok := response.IsRedirect(); ok {
 				return
@@ -81,8 +81,6 @@ func (w *WebServer) Return() api.HandlerFunc {
 				ctx.Errorf("web.response.error: %v", err)
 			}
 		default:
-			ctx.WriteHeader(505)
-			ctx.Write([]byte("系统错误"))
 		}
 
 	}

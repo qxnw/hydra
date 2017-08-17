@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"sync"
@@ -213,7 +214,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		ctx.SetInput(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Handle(name, mode, rservice, ctx)
-		if response == nil {
+		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		defer func() {
