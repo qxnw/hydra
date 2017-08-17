@@ -25,7 +25,7 @@ import (
 //httpHandle get请求,input获取参数
 //body
 func (s *httpProxy) httpHandle(name string, mode string, service string, ctx *context.Context) (response *context.WebResponse, err error) {
-	response = context.GetWebResponse()
+	response = context.GetWebResponse(ctx)
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return
