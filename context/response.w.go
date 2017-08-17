@@ -187,7 +187,10 @@ func (r *WebResponse) SetSession(sid string) error {
 
 //SetCookie 设置cookie
 func (c *WebResponse) SetCookie(name string, value string, timeout int, domain string) {
-	list := c.Params["Set-Cookie"].([]string)
+	list := make([]string, 0, 2)
+	if v, ok := c.Params["Set-Cookie"]; ok {
+		list = v.([]string)
+	}
 	list = append(list, c.getSetCookie(name, value, timeout, domain))
 	c.Params["Set-Cookie"] = list
 }
