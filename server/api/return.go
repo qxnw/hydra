@@ -95,7 +95,7 @@ func APIReturn() HandlerFunc {
 					if strings.Contains(v, ctx.req.Host) {
 						hosts := strings.Split(v, ",")
 						for _, h := range hosts {
-							if strings.Contains(h, ctx.req.Host) {
+							if strings.Contains(h, ctx.req.Host) && strings.Contains(h, ctx.req.Proto) {
 								ctx.Header().Set(k, v)
 								continue
 							}
