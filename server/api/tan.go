@@ -40,6 +40,7 @@ type HTTPServer struct {
 	Running              bool
 	Headers              map[string]string
 	xsrf                 *XSRF
+	baseAuthSecret       string
 	onlyAllowAjaxRequest bool
 }
 
