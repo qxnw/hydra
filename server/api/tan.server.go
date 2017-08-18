@@ -326,6 +326,7 @@ func (w *hydraAPIServer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+
 }
 
 //Shutdown 关闭服务器
