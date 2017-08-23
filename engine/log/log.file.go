@@ -8,7 +8,7 @@ import (
 )
 
 func (s *logProxy) logFileInfoHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	if ctx.Input.Body == "" {
 		err = fmt.Errorf("未设置日志内容")
 		return
@@ -26,7 +26,7 @@ func (s *logProxy) logFileInfoHandle(name string, mode string, service string, c
 	return
 }
 func (s *logProxy) logFileErrorHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	if ctx.Input.Body == "" {
 		err = fmt.Errorf("未设置日志内容")
 		return

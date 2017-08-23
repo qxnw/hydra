@@ -131,10 +131,11 @@ func (c *WebResponse) MakeXSRFToken(xsrfSecret string) string {
 	token := xsrf.CreateXSRFToken(xsrfSecret, t)
 	return token
 }
-func (r *WebResponse) AuthorizeLogin(code string, authLoginName string) (sid string, err error) {
+func (r *WebResponse) AuthorizeLogin(appid string, code string, authLoginName string) (sid string, err error) {
 	status, result, _, err := r.ctx.RPC.Request(authLoginName, map[string]string{
-		"state": utility.GetGUID(),
-		"code":  code,
+		"app_id": appid,
+		"state":  utility.GetGUID(),
+		"code":   code,
 	}, true)
 	if err != nil || status != 200 {
 		return "", fmt.Errorf("处理用户授权信息失败:%s,%s,%d:%v", authLoginName, code, status, err)
@@ -151,12 +152,12 @@ func (r *WebResponse) AuthorizeLogin(code string, authLoginName string) (sid str
 }
 
 //FetchUserSession 用微信code换取session
-func (r *WebResponse) Login(authLoginName string) (err error) {
+func (r *WebResponse) Login(appid string, authLoginName string) (err error) {
 	if err = r.ctx.Input.CheckInput("code"); err != nil {
 		err = fmt.Errorf("微信授权返回code为空")
 		return
 	}
-	sid, err := r.AuthorizeLogin(r.ctx.Input.GetString("code"), authLoginName)
+	sid, err := r.AuthorizeLogin(appid, r.ctx.Input.GetString("code"), authLoginName)
 	if err != nil || sid == "" {
 		err = fmt.Errorf("获取用户session错误:sid:%s,err:%v", sid, err)
 		return
