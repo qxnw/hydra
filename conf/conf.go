@@ -14,12 +14,13 @@ type Conf interface {
 	Strings(key string, def ...[]string) []string //get string slice
 	Int(key string, def ...int) (int, error)
 	Bool(key string, def ...bool) (bool, error)
+	GetData() map[string]interface{}
 	GetSection(section string) (Conf, error)
 	GetIMap(section string) (map[string]interface{}, error)
 	GetSMap(section string) (map[string]string, error)
 	GetRawNodeWithValue(value string, enableCache ...bool) (r []byte, err error)
 	GetNodeWithSectionValue(sectionValue string, enableCache ...bool) (r Conf, err error)
-	GetNodeWithSectionName(sectionName string, enableCache ...bool) (Conf, error)
+	GetNodeWithSectionName(sectionName string, defValue ...string) (Conf, error)
 	GetSections(section string) (cs []Conf, err error)
 	GetSectionString(section string) (r string, err error)
 	GetArray(key string) (r []interface{}, err error)

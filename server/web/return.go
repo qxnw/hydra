@@ -69,9 +69,7 @@ func (w *WebServer) Return() api.HandlerFunc {
 				write(ctx, response)
 				return
 			}
-			if len(ctx.Header().Get("Content-Type")) <= 0 {
-				ctx.Header().Set("Content-Type", "text/html; charset=UTF-8")
-			}
+			ctx.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			if view == nil || view.(string) == "" {
 				view = ctx.ServiceName
 			}

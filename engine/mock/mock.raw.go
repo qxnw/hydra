@@ -9,7 +9,7 @@ import (
 )
 
 func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("args配置错误，args.setting配置的节点获取失败(err:%v)", err)
@@ -29,7 +29,7 @@ func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx 
 		return
 	}
 
-	mapHeader, err := conf.NewJSONConfWithJson(headerContent, 0, nil, nil)
+	mapHeader, err := conf.NewJSONConfWithJson(headerContent, 0, nil)
 	if err != nil {
 		return
 	}

@@ -73,96 +73,54 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置路由
-	routers, err := conf.GetNodeWithSectionName("router")
-	if err != nil {
-		return fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	routers, err := server.GetRouters(w.conf, conf, "request", SupportMethods)
+	if err != nil && err != server.ERR_NO_CHANGED {
+		err = fmt.Errorf("路由配置有误:%v", err)
+		return err
 	}
-	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
-		baseArgs := routers.String("args")
-		rts, err := routers.GetSections("routers")
-		if err != nil {
-			return fmt.Errorf("routers未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		routers := make([]*rpcRouter, 0, len(rts))
-		for _, c := range rts {
-			name := c.String("name")
-			action := strings.Split(strings.ToUpper(c.String("action", "request")), ",")
-			args := c.String("args")
-			mode := c.String("mode", "*")
-			service := c.String("service")
-			if name == "" || service == "" {
-				return fmt.Errorf("router配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
-			}
-			for _, v := range action {
-				exist := false
-				for _, e := range SupportMethods {
-					if v == e {
-						exist = true
-						break
-					}
-				}
-				if !exist {
-					return fmt.Errorf("router配置错误:method:%v不支持,只支持:%v", action, SupportMethods)
-				}
-			}
-			routers = append(routers, &rpcRouter{
-				Method:      action,
-				Path:        name,
-				Handler:     w.handle(name, mode, service, baseArgs+"&"+args),
+	if err == nil {
+		apiRouters := make([]*rpcRouter, 0, len(routers))
+		for _, router := range routers {
+			apiRouters = append(apiRouters, &rpcRouter{
+				Method:      router.Action,
+				Path:        router.Name,
+				Handler:     w.handle(router.Name, router.Mode, router.Service, router.Args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
-		w.server.SetRouters(routers...)
-	}
-
-	//设置metric服务器监控状态
-	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSectionName("metric")
-		if err != nil {
-			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-			host := metric.String("host")
-			dataBase := metric.String("dataBase")
-			userName := metric.String("userName")
-			password := metric.String("password")
-			if host == "" || dataBase == "" {
-				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-			}
-			if !strings.Contains(host, "://") {
-				host = "http://" + host
-			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
-		}
-	} else {
-		w.server.StopInfluxMetric()
+		w.server.SetRouters(apiRouters...)
 	}
 
 	//设置限流规则
-	if conf.Has("limiter") {
-		limiter, err := conf.GetNodeWithSectionName("limiter")
-		if err != nil {
-			return fmt.Errorf("limiter未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	limiters, err := server.GetLimiters(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		err = fmt.Errorf("limiter配置有误:%v", err)
+		return err
+	}
+	if err == nil {
+		limitMap := map[string]int{}
+		for _, limiter := range limiters {
+			limitMap[limiter.Name] = limiter.Value
 		}
-		if r, err := w.conf.GetNodeWithSectionName("limiter"); err != nil || r.GetVersion() != limiter.GetVersion() {
-			lmts, err := limiter.GetSections("QPS")
-			if err != nil {
-				return fmt.Errorf("QPS未配置或配置有误:%s(%+v)", conf.String("name"), err)
-			}
-			limiters := map[string]int{}
-			for _, v := range lmts {
-				name := v.String("name")
-				lm, err := v.Int("value")
-				if err != nil {
-					return fmt.Errorf("limiter配置错误:[%s]qos.value:[%s]值必须为数字（err:%v）", name, v.String("value"), err)
-				}
-				limiters[name] = lm
-			}
-			w.server.UpdateLimiter(limiters)
+		if len(limitMap) > 0 {
+			w.server.Infof("%s(%s):启用limiter", conf.String("name"), conf.String("type"))
 		}
-	} else {
-		w.server.UpdateLimiter(make(map[string]int))
+		w.server.UpdateLimiter(limitMap)
 	}
 
+	//设置metric服务器监控数据
+	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.StopInfluxMetric()
+	}
+	if err == server.ERR_NOT_SETTING || !enable {
+		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.StopInfluxMetric()
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
+	}
 	//设置基本参数
 	w.conf = conf
 	return nil
@@ -278,12 +236,12 @@ func (w *hydraRPCServer) needRestart(conf conf.Conf) (bool, error) {
 	if w.conf.String("address") != conf.String("address") {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSectionName("router")
+	routers, err := conf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
-		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
+		return false, fmt.Errorf("router未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router", "#@path/router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil

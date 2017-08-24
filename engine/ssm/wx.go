@@ -34,7 +34,7 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
 		return
 	}
-	settings, err = conf.NewJSONConfWithJson(content, 0, nil, nil)
+	settings, err = conf.NewJSONConfWithJson(content, 0, nil)
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return
@@ -42,7 +42,7 @@ func (s *smsProxy) getwxSendarams(ctx *context.Context) (settings conf.Conf, err
 	return
 }
 func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		err = fmt.Errorf("Args参数的属性setting节点未找到:%v", err)
@@ -54,7 +54,7 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 		return
 	}
 
-	setting, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
+	setting, err := conf.NewJSONConfWithJson(content, 0, nil)
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return
@@ -85,7 +85,7 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	return
 }
 func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return
@@ -134,7 +134,7 @@ func (s *smsProxy) wxSend1(name string, mode string, service string, ctx *contex
 }
 
 func (s *smsProxy) wxSend0(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	setting, err := s.getwxSendarams(ctx)
 	if err != nil {
 		return

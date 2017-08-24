@@ -41,8 +41,8 @@ func Version() string {
 }
 
 type serverOption struct {
-	ip           string
-	logger       *logger.Logger
+	ip string
+	*logger.Logger
 	extHandlers  []Handler
 	metric       *InfluxMetric
 	limiter      *Limiter
@@ -58,14 +58,14 @@ type Option func(*serverOption)
 //WithLogger 设置日志记录组件
 func WithLogger(logger *logger.Logger) Option {
 	return func(o *serverOption) {
-		o.logger = logger
+		o.Logger = logger
 	}
 }
 
 //WithInfluxMetric 设置基于influxdb的系统监控组件
 func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
 	return func(o *serverOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.logger)
+		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.Logger)
 	}
 }
 
@@ -116,8 +116,8 @@ func NewRPCServer(domain string, name string, opts ...Option) *RPCServer {
 	for _, opt := range opts {
 		opt(s.serverOption)
 	}
-	if s.logger == nil {
-		s.logger = logger.GetSession(name, logger.CreateSession())
+	if s.Logger == nil {
+		s.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 
 	s.Use(Logging(),
@@ -154,7 +154,7 @@ func (s *RPCServer) Run(address string) (err error) {
 //Start 启动RPC服务器
 func (s *RPCServer) Start(address string) (err error) {
 	addr := s.getAddress(address)
-	s.logger.Info("Listening on " + addr)
+	s.Info("Listening on " + addr)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return
@@ -183,14 +183,9 @@ func (s *RPCServer) Close() {
 	s.running = false
 	s.unRegisterService()
 	if s.server != nil {
-		s.logger.Infof("rpc: Server closed(%s)", s.serverName)
+		s.Infof("rpc: Server closed(%s)", s.serverName)
 		s.server.GracefulStop()
 	}
-}
-
-//Logger 获取日志组件
-func (s *RPCServer) Logger() logger.ILogger {
-	return s.logger
 }
 
 //UpdateLimiter 更新限流规则
@@ -202,9 +197,9 @@ func (s *RPCServer) UpdateLimiter(limit map[string]int) {
 
 //SetInfluxMetric 重置metric
 func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) error {
-	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.logger)
+	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.Logger)
 	if err != nil {
-		s.logger.Error(err)
+		s.Error(err)
 	}
 	return err
 }

@@ -198,7 +198,7 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 //服务器配置变化
 func (h *Hydra) changeServer(cnf conf.Conf) error {
 	name := h.getServerName(cnf)
-	h.Logger.Warnf("配置发生变化:%s", name)
+	h.Logger.Warnf("%s:配置发生变化", name)
 	srv, ok := h.servers[name]
 	if !ok {
 		return errServerIsNotExist
@@ -211,9 +211,11 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 
 	err := srv.Notify(cnf)
 	if err != nil || srv.GetStatus() == server.ST_STOP {
+		err = fmt.Errorf("server启动失败:%s:%v", name, err)
 		h.deleteServer(cnf)
 		srv.Shutdown()
 	}
+
 	return err
 }
 

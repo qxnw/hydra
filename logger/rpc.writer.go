@@ -51,7 +51,7 @@ func newRPCWriter(domain string, address string, logger *logger.Logger) (r *rpcW
 	if err != nil {
 		return nil, err
 	}
-	loggerConf, err := conf.NewJSONConfWithJson(string(buff), 0, nil, nil)
+	loggerConf, err := conf.NewJSONConfWithJson(string(buff), 0, nil)
 	if err != nil {
 		err = fmt.Errorf("rpc日志配置错误:%s,%v", string(buff), err)
 		return

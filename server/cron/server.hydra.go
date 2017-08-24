@@ -67,61 +67,35 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
-	//设置任务
-	routers, err := conf.GetNodeWithSectionName("task")
-	if err != nil {
-		return fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	//设置cron任务
+	tasks, err := server.GetTasks(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED {
+		err = fmt.Errorf("task配置有误:%v", err)
+		return err
 	}
-	if r, err := w.conf.GetNodeWithSectionName("task"); err != nil || r.GetVersion() != routers.GetVersion() {
-		baseArgs := routers.String("args")
-		rts, err := routers.GetSections("tasks")
-		if err != nil {
-			return fmt.Errorf("tasks未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		tasks := make([]*Task, 0, len(rts))
-		for _, c := range rts {
-			name := c.String("name")
-			service := c.String("service")
-			input := c.String("input")
-			body := c.String("body")
-			args := c.String("args")
-			mode := c.String("mode", "*")
-			cronStr := c.String("cron")
-			if name == "" || service == "" || cronStr == "" {
-				return fmt.Errorf("task配置错误:name,service,cron不能为空（name:%s，service:%s,cron:%s）", name, service, cronStr)
-			}
-
-			s, err := cron.ParseStandard(cronStr)
-			if err != nil {
-				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), cronStr, err)
-			}
-			tasks = append(tasks, NewTask(name, s, w.handle(service, mode, input, body, baseArgs+"&"+args), service))
-		}
+	if err == nil {
 		for _, task := range tasks {
-			w.server.Add(task)
+			s, err := cron.ParseStandard(task.Cron)
+			if err != nil {
+				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), task.Cron, err)
+			}
+			tk := NewTask(task.Name, s, w.handle(task.Service, task.Mode, task.Input, task.Body, task.Args), task.Service)
+			w.server.Add(tk)
 		}
 	}
-	//设置metric上报监控数据
-	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSectionName("metric")
-		if err != nil {
-			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-			host := metric.String("host")
-			dataBase := metric.String("dataBase")
-			userName := metric.String("userName")
-			password := metric.String("password")
-			if host == "" || dataBase == "" {
-				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-			}
-			if !strings.Contains(host, "://") {
-				host = "http://" + host
-			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
-		}
-	} else {
+	//设置metric服务器监控数据
+	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
+	}
+	if err == server.ERR_NOT_SETTING || !enable {
+		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.StopInfluxMetric()
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 
 	//设置基本参数
@@ -241,12 +215,12 @@ func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSectionName("task")
+	routers, err := conf.GetNodeWithSectionName("task", "#@path/task")
 	if err != nil {
 		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSectionName("task"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("task", "#@path/task"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil

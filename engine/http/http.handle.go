@@ -30,7 +30,7 @@ func (s *httpProxy) httpHandle(name string, mode string, service string, ctx *co
 	if err != nil {
 		return
 	}
-	config, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
+	config, err := conf.NewJSONConfWithJson(content, 0, nil)
 	if err != nil {
 		return
 	}
@@ -58,7 +58,7 @@ func (s *httpProxy) httpHandle(name string, mode string, service string, ctx *co
 
 	input, err := config.GetSection("data") //获取data标签，可以为空
 	if err != nil {
-		input = conf.NewJSONConfWithHandle(make(map[string]interface{}), 0, nil, nil)
+		input = conf.NewJSONConfWithHandle(make(map[string]interface{}), 0, nil)
 		return
 	}
 

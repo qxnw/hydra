@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"sync"
 
@@ -75,56 +74,33 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
 	//设置监控的对列
-	routers, err := conf.GetNodeWithSectionName("queue")
-	if err != nil {
-		return fmt.Errorf("queue未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
+	queues, err := server.GetQueues(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED {
+		err = fmt.Errorf("queue配置有误:%v", err)
+		return err
 	}
-	if r, err := w.conf.GetNodeWithSectionName("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
-		baseArgs := routers.String("args")
-		rts, err := routers.GetSections("queues")
-		if err != nil {
-			return fmt.Errorf("queues未配置或配置有误:%s(err:%+v)", conf.String("name"), err)
-		}
-		queues := make([]task, 0, len(rts))
-		for _, c := range rts {
-			queue := c.String("name")
-			service := c.String("service")
-			mode := c.String("mode", "*")
-			args := c.String("args")
-			if queue == "" || service == "" {
-				return fmt.Errorf("queue配置错误:name,service不能为空（name:%s，service:%s）", queue, service)
-			}
-			queues = append(queues, task{name: queue, service: service, args: baseArgs + "&" + args, mode: mode})
-		}
-		for _, task := range queues {
-			err := w.server.Use(task.name, w.handle(task.service, task.mode, "", task.args))
+	if err == nil {
+		for _, queue := range queues {
+			err := w.server.Use(queue.Name, w.handle(queue.Service, queue.Mode, "", queue.Args))
 			if err != nil {
 				return err
 			}
 		}
-
 	}
-	//设置metric监控数据
-	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSectionName("metric")
-		if err != nil {
-			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-			host := metric.String("host")
-			dataBase := metric.String("dataBase")
-			userName := metric.String("userName")
-			password := metric.String("password")
-			if host == "" || dataBase == "" {
-				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-			}
-			if !strings.Contains(host, "://") {
-				host = "http://" + host
-			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, 60*time.Second)
-		}
-	} else {
+
+	//设置metric服务器监控数据
+	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
+	}
+	if err == server.ERR_NOT_SETTING || enable {
+		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.StopInfluxMetric()
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 	//更新配置
 	w.conf = conf

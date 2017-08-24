@@ -1,7 +1,9 @@
 package rpc
 
-import "github.com/qxnw/lib4go/metrics"
-import "github.com/qxnw/lib4go/concurrent/cmap"
+import (
+	"github.com/qxnw/lib4go/concurrent/cmap"
+	"github.com/qxnw/lib4go/metrics"
+)
 
 //Limiter 流量限制组件
 type Limiter struct {
@@ -32,9 +34,9 @@ func (m *Limiter) Handle(ctx *Context) {
 	if count, ok := m.data.Get("*"); ok {
 		limiterName := metrics.MakeName(ctx.server.serverName+".limiter", metrics.METER, "service", "*")
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
-		if meter.Rate1() > count.(float64) {
+		if meter.Rate1()*60 > count.(float64) {
 			ctx.ServiceTooManyRequests()
-			ctx.Errorf("service:%s 超过总限流规则QPS %.0f/s", service, count)
+			ctx.Errorf("超过%s限流规则:%.0fr/m", service, count)
 			return
 		}
 		meter.Mark(1)
@@ -42,9 +44,9 @@ func (m *Limiter) Handle(ctx *Context) {
 	if count, ok := m.data.Get(service); ok {
 		limiterName := metrics.MakeName(ctx.server.serverName+".limiter", metrics.METER, "service", service)
 		meter := metrics.GetOrRegisterMeter(limiterName, metrics.DefaultRegistry)
-		if meter.Rate1() > count.(float64) {
+		if meter.Rate1()*60 > count.(float64) {
 			ctx.ServiceTooManyRequests()
-			ctx.Errorf("service:%s 超过服务限流规则QPS %.0f/s", service, count)
+			ctx.Errorf("超过%s限流规则:%.0fr/m", service, count)
 			return
 		}
 		meter.Mark(1)

@@ -12,6 +12,7 @@ import (
 )
 
 type StaticOptions struct {
+	Enable     bool
 	RootPath   string
 	Prefix     string
 	Exclude    []string
@@ -21,11 +22,12 @@ type StaticOptions struct {
 //Static 静态文件处理插件
 func Static(opts ...StaticOptions) HandlerFunc {
 	return func(ctx *Context) {
-		if ctx.Req().Method != "GET" && ctx.Req().Method != "HEAD" {
+		opt := prepareStaticOptions(opts)
+		if !opt.Enable || (ctx.Req().Method != "GET" && ctx.Req().Method != "HEAD") {
 			ctx.Next()
 			return
 		}
-		opt := prepareStaticOptions(opts)
+
 		var rPath = ctx.Req().URL.Path
 		//处理特殊文件
 		if rPath == "/favicon.ico" || rPath == "/robots.txt" {

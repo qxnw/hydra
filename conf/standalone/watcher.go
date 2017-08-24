@@ -282,7 +282,7 @@ func (w *jsonConfWatcher) getConf(path string) (cf conf.Conf, err error) {
 	}
 	c["domain"] = w.domain
 
-	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), w.getConf, w.getValue)
+	jcf := conf.NewJSONConfWithHandle(c, int32(f.ModTime().Unix()), nil) //8.24 colin 不再支持单机模式
 
 	if cc, ok := w.cacheAddress.Get(path); ok {
 		v := cc.(*watcherPath)

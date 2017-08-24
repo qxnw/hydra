@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
 type StatusResult struct {
@@ -70,12 +69,10 @@ func APIReturn() HandlerFunc {
 		}
 
 		ctx.Next()
-
 		// if no route match or has been write, then return
 		if action == nil || ctx.Written() {
 			return
 		}
-
 		// if there is no return value or return nil
 		if isNil(ctx.Result) {
 			// then we return blank page
@@ -89,22 +86,7 @@ func APIReturn() HandlerFunc {
 			result = res.Result
 			rt = res.Type
 		}
-		if len(ctx.Server.Headers) > 0 {
-			for k, v := range ctx.Server.Headers {
-				if k == "Access-Control-Allow-Origin" {
-					if strings.Contains(v, ctx.req.Host) {
-						hosts := strings.Split(v, ",")
-						for _, h := range hosts {
-							if strings.Contains(h, ctx.req.Host) && strings.Contains(h, ctx.req.Proto) {
-								ctx.Header().Set(k, v)
-								continue
-							}
-						}
-					}
-				}
-				ctx.Header().Set(k, v)
-			}
-		}
+
 		if rt == JsonResponse {
 			encoder := json.NewEncoder(ctx)
 			if len(ctx.Header().Get("Content-Type")) <= 0 {

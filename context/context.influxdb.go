@@ -27,7 +27,7 @@ func (s *ContextInfluxdb) GetClient(name ...string) (*influxdb.InfluxClient, err
 		return nil, err
 	}
 	_, client, err := influxdbCache.SetIfAbsentCb(content, func(i ...interface{}) (interface{}, error) {
-		cnf, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
+		cnf, err := conf.NewJSONConfWithJson(content, 0, nil)
 		if err != nil {
 			return nil, fmt.Errorf("args配置错误无法解析:%s(err:%v)", content, err)
 		}

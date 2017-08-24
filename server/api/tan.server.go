@@ -65,107 +65,82 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 	if strings.EqualFold(conf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("服务器配置为:%s", conf.String("status"))
 	}
+
 	//设置路由
-	routers, err := conf.GetNodeWithSectionName("router")
-	if err != nil {
-		return fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
+	routers, err := server.GetRouters(w.conf, conf, "get", SupportMethods)
+	if err != nil && err != server.ERR_NO_CHANGED {
+		err = fmt.Errorf("路由配置有误:%v", err)
+		return err
 	}
-	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
-		baseArgs := routers.String("args")
-		rts, err := routers.GetSections("routers")
-		if err != nil || len(rts) == 0 {
-			return fmt.Errorf("routers路由未配置或配置有误:%s(len:%d,err:%+v)", conf.String("name"), len(rts), err)
-		}
-		apiRouters := make([]*WebRouter, 0, len(rts))
-		for _, c := range rts {
-			name := c.String("name")
-			service := c.String("service")
-			actions := strings.Split(strings.ToUpper(c.String("action", "get,post")), ",")
-			mode := c.String("mode", "*")
-			args := c.String("args")
-			if name == "" || service == "" {
-				return fmt.Errorf("路由配置错误:service 和 name不能为空（name:%s，service:%s）", name, service)
-			}
-			for _, v := range actions {
-				exist := false
-				for _, e := range SupportMethods {
-					if v == e {
-						exist = true
-						break
-					}
-				}
-				if !exist {
-					return fmt.Errorf("路由配置错误:action:%v不支持,只支持:%v", actions, SupportMethods)
-				}
-			}
+	if err == nil {
+		apiRouters := make([]*WebRouter, 0, len(routers))
+		for _, router := range routers {
 			apiRouters = append(apiRouters, &WebRouter{
-				Method:      actions,
-				Path:        name,
-				Handler:     w.handle(name, mode, service, baseArgs+"&"+args),
+				Method:      router.Action,
+				Path:        router.Name,
+				Handler:     w.handle(router.Name, router.Mode, router.Service, router.Args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
 		w.server.SetRouters(apiRouters...)
-		//设置通用头信息
-		headers, err := routers.GetIMap("headers")
-		if err == nil {
-			nheader := make(map[string]string)
-			for k, v := range headers {
-				nheader[k] = fmt.Sprint(v)
-			}
-			w.server.SetHeader(nheader)
-		}
-		//设置静态文件路由
-		staticConf, err := routers.GetSection("static")
-		if err == nil {
-			w.server.Infof("%s:启用静态文件", conf.String("name"))
-			prefix := staticConf.String("prefix")
-			dir := staticConf.String("dir")
-			showDir := staticConf.String("showDir") == "true"
-			exts := staticConf.Strings("exts")
-			if dir == "" {
-				return fmt.Errorf("static配置错误：%s,dir,exts不能为空(%s)", conf.String("name"), dir)
-			}
-			w.server.SetStatic(prefix, dir, showDir, exts)
-		}
-		//设置xsrf参数，并启用xsrf校验
-		xsrf, err := routers.GetSection("xsrf")
-		if err == nil {
-			w.server.Infof("%s:启用xsrf校验", conf.String("name"))
-			key := xsrf.String("key")
-			secret := xsrf.String("secret")
-			if key == "" || secret == "" {
-				return fmt.Errorf("xsrf配置错误：key,secret不能为空(%s,%s,%s)", conf.String("name"), key, secret)
-			}
-			w.server.SetXSRF(key, secret)
-		}
-		allowAjax := routers.String("onlyAllowAjaxRequest", "false") == "true"
-		if allowAjax {
-			w.server.Infof("%s:启用ajax调用限制", conf.String("name"))
-		}
-		w.server.OnlyAllowAjaxRequest(allowAjax)
 	}
 
+	//设置通用头信息
+	headers, err := server.GetHeaders(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == nil || err == server.ERR_NOT_SETTING {
+		w.server.Infof("%s(%s):http头配置:%d", conf.String("name"), conf.String("type"), len(headers))
+		w.server.SetHeader(headers)
+	}
+
+	//设置静态文件路由
+	enable, prefix, dir, showDir, exts, err := server.GetStatic(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !enable {
+		w.server.Infof("%s(%s):静态文件未配置:%v,%v", conf.String("name"), conf.String("type"), err, enable)
+		w.server.SetStatic(false, prefix, dir, showDir, exts)
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用静态文件", conf.String("name"), conf.String("type"))
+		w.server.SetStatic(true, prefix, dir, showDir, exts)
+	}
+
+	//设置xsrf参数，并启用xsrf校验
+	enable, key, secret, err := server.GetXSRF(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !enable {
+		w.server.SetXSRF(false, key, secret)
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.SetXSRF(true, key, secret)
+	}
+
+	//设置OnlyAllowAjaxRequest
+	enable = server.GetOnlyAllowAjaxRequest(conf)
+	if enable {
+		w.server.Infof("%s(%s):启用ajax调用限制", conf.String("name"), conf.String("type"))
+	}
+	w.server.OnlyAllowAjaxRequest(enable)
+
 	//设置metric服务器监控数据
-	if conf.Has("metric") {
-		metric, err := conf.GetNodeWithSectionName("metric")
-		if err != nil {
-			return fmt.Errorf("metric未配置或配置有误:%s(%+v)", conf.String("name"), err)
-		}
-		if r, err := w.conf.GetNodeWithSectionName("metric"); err != nil || r.GetVersion() != metric.GetVersion() {
-			host := metric.String("host")
-			dataBase := metric.String("dataBase")
-			userName := metric.String("userName")
-			password := metric.String("password")
-			if host == "" || dataBase == "" {
-				return fmt.Errorf("metric配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-			}
-			if !strings.Contains(host, "://") {
-				host = "http://" + host
-			}
-			w.server.SetInfluxMetric(host, dataBase, userName, password, time.Second*60)
-		}
-	} else {
+	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
+	}
+	if err == server.ERR_NOT_SETTING || !enable {
+		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.StopInfluxMetric()
+	}
+	if err == nil && enable {
+		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 
 	//设置其它参数
@@ -186,7 +161,6 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		ext["__func_http_request_"] = c.Req()
 		ext["__func_http_response_"] = c.ResponseWriter
 		ext["__func_body_get_"] = func(ch string) (string, error) {
-			fmt.Println("api.server:func_body_get")
 			return encoding.Convert(c.BodyBuffer, ch)
 		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
@@ -291,6 +265,7 @@ func (w *hydraAPIServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
+		w.server.Infof("%s(%s):配置未变化", conf.String("name"), conf.String("type"))
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -317,12 +292,12 @@ func (w *hydraAPIServer) needRestart(conf conf.Conf) (bool, error) {
 		return true, nil
 	}
 
-	routers, err := conf.GetNodeWithSectionName("router")
+	routers, err := conf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
 		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSectionName("router"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := w.conf.GetNodeWithSectionName("router", "#@path/router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil

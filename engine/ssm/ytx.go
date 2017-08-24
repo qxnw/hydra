@@ -58,7 +58,7 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 		return
 	}
 
-	form, err := conf.NewJSONConfWithJson(content, 0, nil, nil)
+	form, err := conf.NewJSONConfWithJson(content, 0, nil)
 	if err != nil {
 		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
 		return
@@ -110,7 +110,7 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 }
 
 func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	m, err := s.getYtxParams(ctx)
 	if err != nil {
 		return

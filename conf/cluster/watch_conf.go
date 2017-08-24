@@ -142,7 +142,7 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	for k, v := range w.args {
 		c[k] = v
 	}
-	jconf := conf.NewJSONConfWithHandle(c, version, w.getValue, w.getValue2)
+	jconf := conf.NewJSONConfWithHandle(c, version, w.registry)
 	jconf.Set("name", w.serverName)
 	jconf.Set("domain", w.domain)
 	jconf.Set("path", w.confPath)
@@ -153,6 +153,8 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	jconf.Content = string(content)
 	return jconf, nil
 }
+
+/*
 func (w *watchConf) getValue2(path string) (buf []byte, err error) {
 	buf, _, err = w.registry.GetValue(path)
 	if err != nil {
@@ -166,7 +168,7 @@ func (w *watchConf) getValue(path string) (r conf.Conf, err error) {
 		return
 	}
 	return w.getConf(buf, version)
-}
+}*/
 
 func (w *watchConf) Close() {
 	w.mu.Lock()

@@ -3,6 +3,7 @@ package api
 import "github.com/qxnw/lib4go/security/xsrf"
 
 type XSRF struct {
+	Enable bool
 	Key    string
 	Secret string
 }
@@ -35,11 +36,13 @@ func (ctx *Context) CheckXSRFToken(key string, secret string) bool {
 
 func XSRFFilter() HandlerFunc {
 	return func(ctx *Context) {
-		if ctx.Server.xsrf != nil && !ctx.CheckXSRFToken(ctx.Server.xsrf.Key, ctx.Server.xsrf.Secret) {
-			ctx.WriteHeader(403)
-			ctx.Result = &StatusResult{Code: 403}
+		if ctx.Server.xsrf == nil || !ctx.Server.xsrf.Enable || ctx.CheckXSRFToken(ctx.Server.xsrf.Key, ctx.Server.xsrf.Secret) {
+			ctx.Next()
 			return
 		}
-		ctx.Next()
+		ctx.WriteHeader(403)
+		ctx.Result = &StatusResult{Code: 403}
+		return
+
 	}
 }

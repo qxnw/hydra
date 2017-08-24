@@ -148,8 +148,8 @@ func (t *HTTPServer) SetRouters(routers ...*WebRouter) {
 }
 
 //SetXSRF 设置XSRF参数，并启用XSRF校验
-func (t *HTTPServer) SetXSRF(key string, secret string) {
-	t.xsrf = &XSRF{Key: key, Secret: secret}
+func (t *HTTPServer) SetXSRF(enable bool, key string, secret string) {
+	t.xsrf = &XSRF{Enable: enable, Key: key, Secret: secret}
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
@@ -228,7 +228,9 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 		Compresses([]string{}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
-		Static(StaticOptions{Prefix: ""}))
+		WriteHeader(),
+		Static(StaticOptions{Prefix: ""}),
+	)
 	handlers = append(handlers, t.webServerOption.handlers...)
 	//构建缓存
 	t.ctxPool.New = func() interface{} {
@@ -246,11 +248,11 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 }
 
 //SetStatic 设置静态文件路由
-func (t *HTTPServer) SetStatic(prefix string, dir string, listDir bool, exts []string) {
-	t.handlers[7] = Static(StaticOptions{
-		Prefix:   prefix,
-		RootPath: dir,
-		//	ListDir:    listDir,
+func (t *HTTPServer) SetStatic(enable bool, prefix string, dir string, listDir bool, exts []string) {
+	t.handlers[8] = Static(StaticOptions{
+		Enable:     enable,
+		Prefix:     prefix,
+		RootPath:   dir,
 		FilterExts: exts,
 	})
 }
