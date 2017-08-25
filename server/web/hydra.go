@@ -109,20 +109,6 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetStatic(true, prefix, dir, showDir, exts)
 	}
 
-	//设置xsrf参数，并启用xsrf校验
-	enable, key, secret, err := server.GetXSRF(w.conf, conf)
-	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		return err
-	}
-	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Infof("%s(%s):未启用xsrf校验", conf.String("name"), conf.String("type"))
-		w.server.SetXSRF(false, key, secret)
-	}
-	if err == nil && enable {
-		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
-		w.server.SetXSRF(true, key, secret)
-	}
-
 	//设置view配置
 	views, err := server.GetViews(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {

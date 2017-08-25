@@ -38,6 +38,7 @@ type Context struct {
 	matched     bool
 	stage       byte
 	formed      bool
+	jwtStorage  interface{}
 	action      interface{}
 	Result      interface{}
 	ServiceName string

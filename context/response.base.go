@@ -51,6 +51,12 @@ func (r *baseResponse) SetParams(key string, v interface{}) {
 func (r *baseResponse) SetStatus(status int) {
 	r.Status = types.DecodeInt(status, 0, 200, status)
 }
+func (r *baseResponse) SetJWTBody(data interface{}) {
+	r.Params["__jwt_"] = data
+}
+func (r *baseResponse) GetJWT() interface{} {
+	return r.Params["__jwt_"]
+}
 
 func (r *baseResponse) SetError(status int, err error) {
 	if err != nil {

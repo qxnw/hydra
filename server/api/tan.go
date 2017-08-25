@@ -39,7 +39,8 @@ type HTTPServer struct {
 	*webServerOption
 	Running              bool
 	Headers              map[string]string
-	xsrf                 *XSRF
+	xsrf                 *Auth
+	jwt                  *Auth
 	baseAuthSecret       string
 	onlyAllowAjaxRequest bool
 }
@@ -147,9 +148,20 @@ func (t *HTTPServer) SetRouters(routers ...*WebRouter) {
 	}
 }
 
-//SetXSRF 设置XSRF参数，并启用XSRF校验
-func (t *HTTPServer) SetXSRF(enable bool, key string, secret string) {
-	t.xsrf = &XSRF{Enable: enable, Key: key, Secret: secret}
+//SetXSRF 设置XSRF安全认证参数
+// Name     string
+// 	ExpireAt int64
+// 	Mode     string
+// 	Secret   string
+// 	Exclude  []string
+// 	Enable   bool
+func (t *HTTPServer) SetXSRF(enable bool, name string, secret string, exclude []string, expireAt int64) {
+	t.xsrf = &Auth{Enable: enable, Name: name, Secret: secret, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetJWT 设置jwt安全认证参数
+func (t *HTTPServer) SetJWT(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	t.jwt = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.
@@ -228,6 +240,7 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 		Compresses([]string{}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
+		JWTFilter(),
 		WriteHeader(),
 		Static(StaticOptions{Prefix: ""}),
 	)
@@ -249,7 +262,7 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 
 //SetStatic 设置静态文件路由
 func (t *HTTPServer) SetStatic(enable bool, prefix string, dir string, listDir bool, exts []string) {
-	t.handlers[8] = Static(StaticOptions{
+	t.handlers[9] = Static(StaticOptions{
 		Enable:     enable,
 		Prefix:     prefix,
 		RootPath:   dir,

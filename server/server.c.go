@@ -100,6 +100,43 @@ func GetXSRF(oconf conf.Conf, nconf conf.Conf) (enable bool, key, secret string,
 	return
 }
 
+//GetAuth 获取安全认证配置参数
+func GetAuth(oconf conf.Conf, nconf conf.Conf, name string) (a *Auth, err error) {
+	a = &Auth{}
+	auth, err := nconf.GetNodeWithSectionName("auth", "#@path/auth")
+	if err != nil {
+		if !nconf.Has("#@path/auth") {
+			err = ERR_NOT_SETTING
+			return
+		}
+		err = fmt.Errorf("auth配置有误:%+v", err)
+		return a, err
+	}
+	if r, err := oconf.GetNodeWithSectionName("auth", "#@path/auth"); err != nil || r.GetVersion() != auth.GetVersion() {
+		if !auth.Has(name) {
+			err = ERR_NOT_SETTING
+			return a, err
+		}
+		xsrf, err := auth.GetSection(name)
+		if err != nil {
+			return a, err
+		}
+		nm := xsrf.String("name")
+		mode := xsrf.String("mode", "HS512")
+		secret := xsrf.String("secret")
+		exclude := xsrf.Strings("exclude")
+		expireAt, _ := xsrf.Int("expireAt", 0)
+		enable, _ := xsrf.Bool("enable", true)
+		if name == "" || secret == "" {
+			err = fmt.Errorf("%s配置错误：name,secret不能为空(%s,%s)", name, nm, secret)
+			return a, err
+		}
+		return &Auth{Name: nm, Mode: mode, Secret: secret, Exclude: exclude, ExpireAt: int64(expireAt), Enable: enable}, nil
+	}
+	err = ERR_NO_CHANGED
+	return
+}
+
 //GetOnlyAllowAjaxRequest 获取是否只允许ajax调用
 func GetOnlyAllowAjaxRequest(nconf conf.Conf) bool {
 	return nconf.String("onlyAllowAjaxRequest", "false") == "true"
@@ -329,6 +366,14 @@ func GetViews(oconf conf.Conf, nconf conf.Conf) (rrts *View, err error) {
 	return
 }
 
+type Auth struct {
+	Name     string
+	ExpireAt int64
+	Mode     string
+	Secret   string
+	Exclude  []string
+	Enable   bool
+}
 type Router struct {
 	Name    string
 	Action  []string

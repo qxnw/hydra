@@ -25,7 +25,7 @@ type userInfo struct {
 }
 
 func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
 	if err != nil {
 		return

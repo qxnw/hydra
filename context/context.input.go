@@ -74,6 +74,11 @@ func (w *Input) GetString(name string, p ...string) string {
 	return ""
 }
 
+//GetJWTBody 获取jwt存储数据
+func (w *Input) GetJWTBody() interface{} {
+	return w.Ext["__jwt_"]
+}
+
 //GetInt 从input中获取int数字
 func (w *Input) GetInt(name string) (int, error) {
 	value, err := w.Get(name)
