@@ -28,6 +28,15 @@ func (w *Input) Check(checker map[string][]string) (int, error) {
 	return 0, nil
 }
 
+//CheckAPISign 指定secret, 所有参数(除sign)组成键值对并排序，前后组合secret并生成md5签名，并判断与传入的sign是否相等
+func (w *Input) CheckAPISign(secret string) Error {
+	if f, ok := w.Ext["__checkAPIAuth__"].(func(string) Error); ok {
+		return f(secret)
+	}
+	return NewError(ERR_NOT_EXTENDED, "不支持APIAuth")
+
+}
+
 //CheckInput 检查输入参数
 func (w *Input) CheckInput(names ...string) error {
 	for _, v := range names {

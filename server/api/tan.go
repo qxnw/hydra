@@ -41,7 +41,8 @@ type HTTPServer struct {
 	Headers              map[string]string
 	xsrf                 *Auth
 	jwt                  *Auth
-	baseAuthSecret       string
+	basic                *Auth
+	api                  *Auth
 	onlyAllowAjaxRequest bool
 }
 
@@ -162,6 +163,16 @@ func (t *HTTPServer) SetXSRF(enable bool, name string, secret string, exclude []
 //SetJWT 设置jwt安全认证参数
 func (t *HTTPServer) SetJWT(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
 	t.jwt = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetBasic 设置basic安全认证参数
+func (t *HTTPServer) SetBasic(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	t.basic = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetAPI 设置api安全认证参数
+func (t *HTTPServer) SetAPI(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	t.api = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 8000 by default.

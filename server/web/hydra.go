@@ -124,6 +124,45 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetDelims(views.Left, views.Right)
 	}
 
+	//设置xsrf安全认证参数
+	xsrf, err := server.GetAuth(w.conf, conf, "xsrf")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !xsrf.Enable {
+		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
+	}
+	if err == nil && xsrf.Enable {
+		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
+	}
+
+	//设置jwt安全认证参数
+	jwt, err := server.GetAuth(w.conf, conf, "jwt")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !jwt.Enable {
+		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
+	}
+	if err == nil && jwt.Enable {
+		w.server.Infof("%s(%s):启用jwt校验", conf.String("name"), conf.String("type"))
+		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
+	}
+
+	//设置basic安全认证参数
+	basic, err := server.GetAuth(w.conf, conf, "basic")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !basic.Enable {
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+	if err == nil && basic.Enable {
+		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
@@ -154,6 +193,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		ext := make(map[string]interface{})
 		ext["hydra_sid"] = c.GetSessionID()
+		ext["__jwt_"] = c.GetJWTStorage()
 		ext["__func_http_request_"] = c.Req()
 		ext["__func_http_response_"] = c.ResponseWriter
 		ext["__func_body_get_"] = func(ch string) (string, error) {
@@ -197,6 +237,9 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		for k, v := range response.GetHeaders() {
 			c.Header().Set(k, v)
 		}
+		//设置jwt.token
+		c.SetJwtToken(response.GetParams()["__jwt_"])
+
 		if err != nil {
 			c.Result = err
 			return

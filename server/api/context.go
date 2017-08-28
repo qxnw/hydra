@@ -65,7 +65,9 @@ func (ctx *Context) reset(req *http.Request, resp ResponseWriter) {
 func (ctx *Context) HandleError() {
 	ctx.Server.ErrHandler.Handle(ctx)
 }
-
+func (ctx *Context) GetJWTStorage() interface{} {
+	return ctx.jwtStorage
+}
 func (ctx *Context) Req() *http.Request {
 	return ctx.req
 }

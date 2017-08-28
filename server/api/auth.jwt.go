@@ -1,7 +1,12 @@
 package api
 
-import "github.com/qxnw/lib4go/security/jwt"
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/security/jwt"
+)
 
 //JWTFilter jwt
 func JWTFilter() HandlerFunc {
@@ -21,7 +26,8 @@ func JWTFilter() HandlerFunc {
 		}
 
 		//不需要校验的URL自动跳过
-		url := ctx.Req().RequestURI
+		url := ctx.Req().URL.Path
+		fmt.Println("url:", url)
 		for _, u := range jwtAuth.Exclude {
 			if u == url {
 				ctx.Next()
@@ -30,14 +36,14 @@ func JWTFilter() HandlerFunc {
 		}
 
 		//jwt.token错误，返回错误码
-		ctx.WriteHeader(403)
-		ctx.Result = &StatusResult{Code: 403, Result: err}
+		ctx.WriteHeader(err.Code())
+		ctx.Result = &StatusResult{Code: err.Code(), Result: err}
 		ctx.Error(err)
 		return
 
 	}
 }
-func (ctx *Context) setJwtToken(data interface{}) {
+func (ctx *Context) SetJwtToken(data interface{}) {
 	if data == nil {
 		return
 	}
@@ -53,10 +59,17 @@ func (ctx *Context) setJwtToken(data interface{}) {
 }
 
 // CheckJWT 检查jwk参数是否合法
-func (ctx *Context) checkJWT(name string, secret string) (data interface{}, err error) {
+func (ctx *Context) checkJWT(name string, secret string) (data interface{}, err context.Error) {
 	token := ctx.getToken(name)
 	if token == "" {
-		return "", fmt.Errorf("%s未传入jwt.token", name)
+		return nil, context.NewError(403, fmt.Errorf("%s未传入jwt.token", name))
 	}
-	return jwt.Decrypt(token, ctx.Server.jwt.Secret)
+	data, er := jwt.Decrypt(token, ctx.Server.jwt.Secret)
+	if er != nil {
+		if strings.Contains(er.Error(), "Token is expired") {
+			return nil, context.NewError(401, er)
+		}
+		return data, context.NewError(403, er)
+	}
+	return data, nil
 }

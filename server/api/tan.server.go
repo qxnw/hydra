@@ -134,6 +134,32 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 
+	//设置basic安全认证参数,公共secret进行签名
+	basic, err := server.GetAuth(w.conf, conf, "basic")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !basic.Enable {
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+	if err == nil && basic.Enable {
+		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+
+	//设置api安全认证参数，独立secret进行签名
+	api, err := server.GetAuth(w.conf, conf, "api")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !api.Enable {
+		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
+	}
+	if err == nil && api.Enable {
+		w.server.Infof("%s(%s):启用api校验", conf.String("name"), conf.String("type"))
+		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
+	}
+
 	//设置OnlyAllowAjaxRequest
 	enable = server.GetOnlyAllowAjaxRequest(conf)
 	if enable {
@@ -172,6 +198,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		ext := make(map[string]interface{})
 		ext["hydra_sid"] = c.GetSessionID()
 		ext["__jwt_"] = c.jwtStorage
+		ext["__checkAPIAuth__"] = c.checkAPIAuth
 		ext["__func_http_request_"] = c.Req()
 		ext["__func_http_response_"] = c.ResponseWriter
 		ext["__func_body_get_"] = func(ch string) (string, error) {
@@ -216,7 +243,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 			c.Header().Set(k, v)
 		}
 		//设置jwt.token
-		c.setJwtToken(response.GetParams()["__jwt_"])
+		c.SetJwtToken(response.GetParams()["__jwt_"])
 
 		//处理错误err,5xx
 		if err != nil {

@@ -54,7 +54,7 @@ func (r *baseResponse) SetStatus(status int) {
 func (r *baseResponse) SetJWTBody(data interface{}) {
 	r.Params["__jwt_"] = data
 }
-func (r *baseResponse) GetJWT() interface{} {
+func (r *baseResponse) GetJWTBody() interface{} {
 	return r.Params["__jwt_"]
 }
 

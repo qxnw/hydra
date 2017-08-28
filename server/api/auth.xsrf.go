@@ -13,9 +13,22 @@ type Auth struct {
 
 func XSRFFilter() HandlerFunc {
 	return func(ctx *Context) {
-		if ctx.Server.xsrf == nil || !ctx.Server.xsrf.Enable || ctx.CheckXSRFToken(ctx.Server.xsrf.Name, ctx.Server.xsrf.Secret) {
+		xsrfAuth := ctx.Server.xsrf
+		if xsrfAuth == nil || !xsrfAuth.Enable {
 			ctx.Next()
 			return
+		}
+		if ctx.CheckXSRFToken(xsrfAuth.Name, xsrfAuth.Secret) {
+			ctx.Next()
+			return
+		}
+		//不需要校验的URL自动跳过
+		url := ctx.Req().URL.Path
+		for _, u := range xsrfAuth.Exclude {
+			if u == url {
+				ctx.Next()
+				return
+			}
 		}
 		ctx.WriteHeader(403)
 		ctx.Result = &StatusResult{Code: 403}
