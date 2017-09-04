@@ -150,12 +150,6 @@ func (t *HTTPServer) SetRouters(routers ...*WebRouter) {
 }
 
 //SetXSRF 设置XSRF安全认证参数
-// Name     string
-// 	ExpireAt int64
-// 	Mode     string
-// 	Secret   string
-// 	Exclude  []string
-// 	Enable   bool
 func (t *HTTPServer) SetXSRF(enable bool, name string, secret string, exclude []string, expireAt int64) {
 	t.xsrf = &Auth{Enable: enable, Name: name, Secret: secret, Exclude: exclude, ExpireAt: expireAt}
 }
@@ -289,7 +283,6 @@ func (t *HTTPServer) Shutdown(timeout time.Duration) {
 		xt, _ := ctx.WithTimeout(ctx.Background(), timeout)
 		t.server.Shutdown(xt)
 	}
-
 }
 
 //GetAddress 获取当前服务地址

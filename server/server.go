@@ -3,6 +3,8 @@ package server
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/registry"
+
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 )
@@ -21,16 +23,17 @@ var (
 )
 
 type IServiceRegistry interface {
-	RegisterTempNode(serviceName string, endPointName string, data string) (string, error)
+	registry.Registry
+	RegisterService(serviceName string, endPointName string, data string) (string, error)
 	RegisterSeqNode(path string, data string) (string, error)
 	Unregister(path string) error
-	Close() error
 }
 
 //IHydraServer 服务器接口，可通过单个变量和配置文件方式设置服务器启用参数
 type IHydraServer interface {
 	Notify(conf.Conf) error
 	GetAddress() string
+	GetServices() []string
 	GetStatus() string
 	Start() error
 	Shutdown()
@@ -38,7 +41,11 @@ type IHydraServer interface {
 
 //IServerAdapter 服务解析器
 type IServerAdapter interface {
-	Resolve(c context.Handler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
+	Resolve(c EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
+}
+type EngineHandler interface {
+	context.Handler
+	GetService() []string
 }
 
 var serverResolvers = make(map[string]IServerAdapter)
@@ -52,7 +59,7 @@ func Register(name string, resolver IServerAdapter) {
 }
 
 //NewServer 根据适配器名称生成服务
-func NewServer(adapter string, c context.Handler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error) {
+func NewServer(adapter string, c EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error) {
 	if resolver, ok := serverResolvers[adapter]; ok {
 		return resolver.Resolve(c, r, conf)
 	}

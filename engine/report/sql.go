@@ -27,9 +27,9 @@ func (s *reportProxy) sqlQueryHandle(name string, mode string, service string, c
 		return
 	}
 
-	measurement := ctx.Input.GetArgValue("measurement")
-	tagNames := strings.Split(ctx.Input.GetArgValue("tags"), ",")
-	filedNames := strings.Split(ctx.Input.GetArgValue("fields"), ",")
+	measurement := ctx.Input.GetArgsValue("measurement")
+	tagNames := strings.Split(ctx.Input.GetArgsValue("tags"), ",")
+	filedNames := strings.Split(ctx.Input.GetArgsValue("fields"), ",")
 
 	data, err := ctx.DB.GetDataRows([]string{sql}, map[string]interface{}{})
 	if err != nil {

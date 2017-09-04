@@ -11,13 +11,13 @@ import (
 
 func (s *collectProxy) registryCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
-	title := ctx.Input.GetArgValue("title", "注册中心服务")
-	msg := ctx.Input.GetArgValue("msg", "注册中心服务:@url当前数量:@current")
-	path, err := ctx.Input.GetArgByName("path")
+	title := ctx.Input.GetArgsValue("title", "注册中心服务")
+	msg := ctx.Input.GetArgsValue("msg", "注册中心服务:@url当前数量:@current")
+	path, err := ctx.Input.GetArgsByName("path")
 	if err != nil {
 		return
 	}
-	minValue, err := ctx.Input.GetArgIntValue("min")
+	minValue, err := ctx.Input.GetArgsIntValue("min")
 	if err != nil {
 		return
 	}
@@ -34,8 +34,8 @@ func (s *collectProxy) registryCollect(name string, mode string, service string,
 	tf.Set("url", path)
 	tf.Set("value", strconv.Itoa(value))
 	tf.Set("current", strconv.Itoa(len(data)))
-	tf.Set("level", ctx.Input.GetArgValue("level", "1"))
-	tf.Set("group", ctx.Input.GetArgValue("group", "D"))
+	tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
+	tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))

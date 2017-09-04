@@ -22,19 +22,19 @@ type hydraCronServer struct {
 	server   *CronServer
 	conf     conf.Conf
 	registry server.IServiceRegistry
-	handler  context.Handler
+	handler  server.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
 			60,
 			time.Second,
-			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
 	err = h.setConf(cnf)
@@ -233,6 +233,9 @@ func (w *hydraCronServer) GetStatus() string {
 	}
 	return server.ST_STOP
 }
+func (w *hydraCronServer) GetServices() []string {
+	return w.handler.GetService()
+}
 
 //Shutdown 关闭服务
 func (w *hydraCronServer) Shutdown() {
@@ -242,7 +245,7 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraCronServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraCronServer(c, r, conf)
 }
 

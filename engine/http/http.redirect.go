@@ -8,8 +8,8 @@ func (s *httpProxy) httpRedirectHandle(name string, mode string, service string,
 	if err != nil {
 		return
 	}
-	code := ctx.Input.GetArgInt("status", 302)
-	response.Redirect(code, ctx.Input.GetArgValue("url"))
+	code := ctx.Input.GetArgsInt("status", 302)
+	response.Redirect(code, ctx.Input.GetArgsValue("url"))
 	return
 
 }

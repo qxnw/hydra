@@ -13,7 +13,7 @@ func (s *logProxy) logFileInfoHandle(name string, mode string, service string, c
 		err = fmt.Errorf("未设置日志内容")
 		return
 	}
-	name, err = ctx.Input.GetArgByName("name")
+	name, err = ctx.Input.GetArgsByName("name")
 	if err != nil {
 		return
 	}
@@ -31,7 +31,7 @@ func (s *logProxy) logFileErrorHandle(name string, mode string, service string, 
 		err = fmt.Errorf("未设置日志内容")
 		return
 	}
-	name, err = ctx.Input.GetArgByName("name")
+	name, err = ctx.Input.GetArgsByName("name")
 	if err != nil {
 		return
 	}

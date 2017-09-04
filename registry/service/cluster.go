@@ -12,8 +12,8 @@ import (
 )
 
 type clusterServiceRegister struct {
-	done          bool
-	registry      registry.Registry
+	done bool
+	registry.Registry
 	crossRegistry registry.Registry
 
 	serverName            string
@@ -31,7 +31,7 @@ type clusterServiceRegister struct {
 //newCluster 创建基于注册中心的服务注册组件
 func newCluster(domain string, serverName string, r registry.Registry, cross registry.Registry) (w *clusterServiceRegister) {
 	w = &clusterServiceRegister{
-		registry:              r,
+		Registry:              r,
 		crossRegistry:         cross,
 		domain:                domain,
 		serverName:            serverName,
@@ -48,31 +48,32 @@ func newCluster(domain string, serverName string, r registry.Registry, cross reg
 }
 
 //Register 服务注册
-func (w *clusterServiceRegister) RegisterTempNode(serviceName string, endPointName string, data string) (r string, err error) {
-	path := fmt.Sprintf("/%s/services/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
+func (w *clusterServiceRegister) RegisterService(serviceName string, endPointName string, data string) (r string, err error) {
+	path := fmt.Sprintf("/%s/services/rpc/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
 	w.crossRegister(path, data)
 	w.Unregister(path)
-	err = w.registry.CreateTempNode(path, data)
+	err = w.Registry.CreateTempNode(path, data)
 	if err != nil {
 		err = fmt.Errorf("service.registry.failed:%s(err:%v)", path, err)
 		return
 	}
-	if b, err := w.registry.Exists(path); !b || err != nil {
+	if b, err := w.Registry.Exists(path); !b || err != nil {
 		err = fmt.Errorf("service.registry.failed:节点不存在%s(err:%v)", path, err)
 		return "", err
 	}
 	w.localTmpServices[path] = data
 	return path, err
 }
+
 func (w *clusterServiceRegister) RegisterSeqNode(path string, data string) (r string, err error) {
 	path = path + "_"
 	w.crossSeqRegister(path, data)
-	r, err = w.registry.CreateSeqNode(path, data)
+	r, err = w.Registry.CreateSeqNode(path, data)
 	if err != nil {
 		err = fmt.Errorf("service.registry.failed:%s(err:%v)", path, err)
 		return
 	}
-	if b, err := w.registry.Exists(r); !b || err != nil {
+	if b, err := w.Registry.Exists(r); !b || err != nil {
 		err = fmt.Errorf("service.registry.failed:节点不存在%s(err:%v)", r, err)
 		return "", err
 	}
@@ -85,7 +86,7 @@ func (w *clusterServiceRegister) RegisterSeqNode(path string, data string) (r st
 func (w *clusterServiceRegister) Unregister(path string) error {
 	//local.seq
 	if r, ok := w.localRalationService[path]; ok {
-		err := w.registry.Delete(path)
+		err := w.Registry.Delete(path)
 		if err != nil {
 			return err
 		}
@@ -95,7 +96,7 @@ func (w *clusterServiceRegister) Unregister(path string) error {
 		return nil
 	}
 	//local.temp
-	err := w.registry.Delete(path)
+	err := w.Registry.Delete(path)
 	if err != nil {
 		return err
 	}
@@ -140,7 +141,7 @@ LOOP:
 		case <-time.After(time.Second * 10): //每隔10秒检查一次节点，有节点不存在时调用全部检查创建
 			needCreate := false
 			for k := range w.localTmpServices {
-				if b, err := w.registry.Exists(k); !b && err == nil {
+				if b, err := w.Registry.Exists(k); !b && err == nil {
 					needCreate = true
 					break
 				}
@@ -155,20 +156,20 @@ LOOP:
 	}
 }
 func (w *clusterServiceRegister) checkAndCreate() {
-	if w.registry == nil {
+	if w.Registry == nil {
 		return
 	}
 	for k, v := range w.localTmpServices {
-		if b, err := w.registry.Exists(k); err == nil && !b {
-			err := w.registry.CreateTempNode(k, v)
+		if b, err := w.Registry.Exists(k); err == nil && !b {
+			err := w.Registry.CreateTempNode(k, v)
 			if err != nil {
 				goto END
 			}
 		}
 	}
 	for k, v := range w.localRalationService {
-		if b, err := w.registry.Exists(k); err == nil && !b {
-			r, err := w.registry.CreateSeqNode(v, w.localSeqServices[v])
+		if b, err := w.Registry.Exists(k); err == nil && !b {
+			r, err := w.Registry.CreateSeqNode(v, w.localSeqServices[v])
 			if err != nil {
 				goto END
 			}
@@ -203,7 +204,7 @@ END:
 //Close 关闭所有监控项
 func (w *clusterServiceRegister) Close() error {
 	close(w.closer)
-	w.registry.Close()
+	w.Registry.Close()
 	return nil
 }
 

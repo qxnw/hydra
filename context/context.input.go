@@ -149,25 +149,25 @@ func (w *Input) GetVarParam(tpName string, name string) (string, error) {
 	return f(tpName, name)
 }
 
-//GetArgValue 获取arg.value值
-func (w *Input) GetArgValue(name string, d ...string) string {
-	v, _ := w.GetArgByName(name)
+//GetArgsValue 获取arg.value值
+func (w *Input) GetArgsValue(name string, d ...string) string {
+	v, _ := w.GetArgsByName(name)
 	if v == "" && len(d) > 0 {
 		return d[0]
 	}
 	return v
 }
 
-//GetArgByName 获取arg的参数
-func (w *Input) GetArgByName(name string) (string, error) {
+//GetArgsByName 获取arg的参数
+func (w *Input) GetArgsByName(name string) (string, error) {
 	db, ok := w.Args[name]
 	if db == "" || !ok {
 		return "", fmt.Errorf("args配置错误，缺少:%s参数:%v", name, w.Args)
 	}
 	return db, nil
 }
-func (w *Input) GetArgInt(name string, v ...int) int {
-	r, err := w.GetArgIntValue(name)
+func (w *Input) GetArgsInt(name string, v ...int) int {
+	r, err := w.GetArgsIntValue(name)
 	if err == nil {
 		return r
 	}
@@ -177,9 +177,9 @@ func (w *Input) GetArgInt(name string, v ...int) int {
 	return 0
 }
 
-//GetArgIntValue 从args中获取int数字
-func (w *Input) GetArgIntValue(name string) (int, error) {
-	value, err := w.GetArgByName(name)
+//GetArgsIntValue 从args中获取int数字
+func (w *Input) GetArgsIntValue(name string) (int, error) {
+	value, err := w.GetArgsByName(name)
 	if err != nil {
 		return 0, err
 	}
@@ -191,9 +191,9 @@ func (w *Input) GetArgIntValue(name string) (int, error) {
 	return v, nil
 }
 
-//GetArgFloat64Value 从args中获取float64数字
-func (w *Input) GetArgFloat64Value(name string) (float64, error) {
-	value, err := w.GetArgByName(name)
+//GetArgsFloat64Value 从args中获取float64数字
+func (w *Input) GetArgsFloat64Value(name string) (float64, error) {
+	value, err := w.GetArgsByName(name)
 	if err != nil {
 		return 0, err
 	}
@@ -207,7 +207,7 @@ func (w *Input) GetArgFloat64Value(name string) (float64, error) {
 
 //GetVarParamByArgsName 根据args参数名获取var参数的值
 func (w *Input) GetVarParamByArgsName(tpName string, argsName string) (string, error) {
-	name, err := w.GetArgByName(argsName)
+	name, err := w.GetArgsByName(argsName)
 	if err != nil {
 		return "", err
 	}

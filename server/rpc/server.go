@@ -32,7 +32,14 @@ type RPCServer struct {
 	port        int
 	clusterPath string
 	Router
-	mu sync.RWMutex
+	mu               sync.RWMutex
+	apiRouters       []*rpcRouter
+	localRRCServices []string
+	remoteRPCService []string
+	xsrf             *Auth
+	jwt              *Auth
+	basic            *Auth
+	api              *Auth
 }
 
 //Version 获取当前版本号
@@ -106,10 +113,9 @@ func WithPlugins(handlers ...Handler) Option {
 }
 
 //NewRPCServer 初始化
-func NewRPCServer(domain string, name string, opts ...Option) *RPCServer {
-	s := &RPCServer{domain: domain, serverName: name, Router: NewRouter()}
+func NewRPCServer(domain string, name string, services []string, opts ...Option) *RPCServer {
+	s := &RPCServer{domain: domain, serverName: name, Router: NewRouter(), localRRCServices: services}
 	s.serverOption = &serverOption{metric: NewInfluxMetric(), limiter: NewLimiter(map[string]int{})}
-
 	s.process = newProcess(s)
 	s.ErrHandler = Errors()
 
@@ -161,19 +167,19 @@ func (s *RPCServer) Start(address string) (err error) {
 	}
 	s.server = grpc.NewServer()
 	pb.RegisterRPCServer(s.server, s.process)
-	s.running = true
+
 	startChan := make(chan error, 1)
 	go func() {
 		err = s.server.Serve(lis)
-		s.running = false
 		startChan <- err
 	}()
 	select {
-	case <-time.After(time.Millisecond * 500):
-		return nil
+	case <-time.After(time.Second * 2):
+		s.running = true
+		err = s.registerService()
+		return err
 	case err := <-startChan:
 		s.running = false
-		s.registerService()
 		return err
 	}
 }
@@ -209,6 +215,30 @@ func (s *RPCServer) StopInfluxMetric() {
 	s.metric.Stop()
 }
 
+//SetXSRF 设置XSRF安全认证参数
+func (s *RPCServer) SetXSRF(enable bool, name string, secret string, exclude []string, expireAt int64) {
+	name = fmt.Sprintf("__%s__", name)
+	s.xsrf = &Auth{Enable: enable, Name: name, Secret: secret, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetJWT 设置jwt安全认证参数
+func (s *RPCServer) SetJWT(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	name = fmt.Sprintf("__%s__", name)
+	s.jwt = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetBasic 设置basic安全认证参数
+func (s *RPCServer) SetBasic(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	name = fmt.Sprintf("__%s__", name)
+	s.basic = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
+}
+
+//SetAPI 设置api安全认证参数
+func (s *RPCServer) SetAPI(enable bool, name string, mode string, secret string, exclude []string, expireAt int64) {
+	name = fmt.Sprintf("__%s__", name)
+	s.api = &Auth{Enable: enable, Name: name, Secret: secret, Mode: mode, Exclude: exclude, ExpireAt: expireAt}
+}
+
 //SetName 设置组件的server name
 func (s *RPCServer) SetName(name string) {
 	s.serverName = name
@@ -219,6 +249,7 @@ func (s *RPCServer) SetRouters(routers ...*rpcRouter) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Router = NewRouter()
+	s.apiRouters = routers
 	for _, v := range routers {
 		s.Route(v.Method, v.Path, v.Handler, v.Middlewares...)
 	}
@@ -229,25 +260,6 @@ func (s *RPCServer) Request(service string, c interface{}, middlewares ...Handle
 	s.Route([]string{"REQUEST"}, service, c, middlewares...)
 }
 
-//Query 设置Query路由
-func (s *RPCServer) Query(service string, c interface{}, middlewares ...Handler) {
-	s.Route([]string{"QUERY"}, service, c, middlewares...)
-}
-
-//Insert 设置Insert路由
-func (s *RPCServer) Insert(service string, c interface{}, middlewares ...Handler) {
-	s.Route([]string{"INSERT"}, service, c, middlewares...)
-}
-
-//Delete 设置Delete路由
-func (s *RPCServer) Delete(service string, c interface{}, middlewares ...Handler) {
-	s.Route([]string{"DELETE"}, service, c, middlewares...)
-}
-
-//Update 设置Update路由
-func (s *RPCServer) Update(service string, c interface{}, middlewares ...Handler) {
-	s.Route([]string{"UPDATE"}, service, c, middlewares...)
-}
 func (s *RPCServer) getAddress(args ...interface{}) string {
 	var host string
 	var port int

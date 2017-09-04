@@ -203,7 +203,7 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 	if !ok {
 		return errServerIsNotExist
 	}
-	if srv.EngineHasChange(cnf.String("extModes")) {
+	if srv.EngineHasChange(cnf.String("engines")) {
 		h.deleteServer(cnf)
 		srv.Shutdown()
 		return errServerIsNotExist
@@ -214,8 +214,28 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 		err = fmt.Errorf("server启动失败:%s:%v", name, err)
 		h.deleteServer(cnf)
 		srv.Shutdown()
+		return err
 	}
-
+	services := srv.server.GetServices()
+	if len(services) != len(srv.localServices) {
+		h.Logger.Infof("%s:服务发生变化,已发布:%d", name, len(services))
+		srv.localServices = services
+		return nil
+	}
+	for _, v := range services {
+		e := false
+		for _, k := range srv.localServices {
+			e = v == k
+			if e {
+				break
+			}
+		}
+		if !e {
+			h.Logger.Infof("%s:服务发生变化,已发布:%d", name, len(services))
+			srv.localServices = services
+			break
+		}
+	}
 	return err
 }
 

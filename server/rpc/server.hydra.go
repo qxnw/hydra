@@ -25,16 +25,17 @@ type hydraRPCServer struct {
 	server   *RPCServer
 	registry server.IServiceRegistry
 	conf     conf.Conf
-	handler  context.Handler
+	handler  server.EngineHandler
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建RPC服务器
-func newHydraRPCServer(handler context.Handler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
+			handler.GetService(),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
@@ -47,6 +48,7 @@ func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
+		w.handler.GetService(),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()
@@ -58,7 +60,6 @@ func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	if err != nil {
 		return
 	}
-	time.Sleep(time.Second)
 	return
 }
 
@@ -84,6 +85,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			apiRouters = append(apiRouters, &rpcRouter{
 				Method:      router.Action,
 				Path:        router.Name,
+				service:     router.Service,
 				Handler:     w.handle(router.Name, router.Mode, router.Service, router.Args),
 				Middlewares: make([]Handler, 0, 0)})
 		}
@@ -105,6 +107,58 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			w.server.Infof("%s(%s):启用limiter", conf.String("name"), conf.String("type"))
 		}
 		w.server.UpdateLimiter(limitMap)
+	}
+
+	//设置xsrf安全认证参数
+	xsrf, err := server.GetAuth(w.conf, conf, "xsrf")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !xsrf.Enable {
+		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
+	}
+	if err == nil && xsrf.Enable {
+		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
+	}
+
+	//设置jwt安全认证参数
+	jwt, err := server.GetAuth(w.conf, conf, "jwt")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !jwt.Enable {
+		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
+	}
+	if err == nil && jwt.Enable {
+		w.server.Infof("%s(%s):启用jwt校验", conf.String("name"), conf.String("type"))
+		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
+	}
+
+	//设置basic安全认证参数,公共secret进行签名
+	basic, err := server.GetAuth(w.conf, conf, "basic")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !basic.Enable {
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+	if err == nil && basic.Enable {
+		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
+	}
+
+	//设置api安全认证参数，独立secret进行签名
+	api, err := server.GetAuth(w.conf, conf, "api")
+	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
+		return err
+	}
+	if err == server.ERR_NOT_SETTING || !api.Enable {
+		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
+	}
+	if err == nil && api.Enable {
+		w.server.Infof("%s(%s):启用api校验", conf.String("name"), conf.String("type"))
+		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
 	}
 
 	//设置metric服务器监控数据
@@ -209,6 +263,7 @@ func (w *hydraRPCServer) GetAddress() string {
 //Start 启用服务
 func (w *hydraRPCServer) Start() (err error) {
 	return w.server.Start(w.conf.String("address", ":9899"))
+
 }
 
 //接口服务变更通知
@@ -252,6 +307,9 @@ func (w *hydraRPCServer) GetStatus() string {
 	}
 	return server.ST_STOP
 }
+func (w *hydraRPCServer) GetServices() []string {
+	return w.server.remoteRPCService
+}
 
 //Shutdown 关闭服务
 func (w *hydraRPCServer) Shutdown() {
@@ -261,7 +319,7 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c context.Handler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
+func (h *hydraRPCServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
 	return newHydraRPCServer(c, r, conf)
 }
 

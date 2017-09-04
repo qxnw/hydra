@@ -19,7 +19,7 @@ func (s *mockProxy) rawMockHandle(name string, mode string, service string, ctx 
 	paraTransform.Append(ctx.Input.Input)
 	response.SetHeader("Content-Type", "text/plain")
 	response.SetContent(200, paraTransform.Translate(content))
-	header := ctx.Input.GetArgValue("header")
+	header := ctx.Input.GetArgsValue("header")
 	if header == "" {
 		return
 	}

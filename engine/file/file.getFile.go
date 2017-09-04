@@ -12,13 +12,13 @@ import (
 )
 
 func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {
 		err = fmt.Errorf("输入参数input未传入name参数(err:%v)", err)
 		return
 	}
-	root, err := ctx.Input.GetArgByName("root")
+	root, err := ctx.Input.GetArgsByName("root")
 	if err != nil {
 		return
 	}
@@ -50,12 +50,12 @@ func (s *fileProxy) saveFileFromHTTPRequest(name string, mode string, service st
 }
 
 func (s *fileProxy) saveFileFromHTTPRequest2(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	name, err = ctx.Input.Get("name")
 	if err != nil {
 		return
 	}
-	root, err := ctx.Input.GetArgByName("root")
+	root, err := ctx.Input.GetArgsByName("root")
 	if err != nil {
 		return
 	}

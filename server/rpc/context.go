@@ -37,18 +37,19 @@ type Context struct {
 	server *RPCServer
 	*logger.Logger
 
-	idx      int
-	Writer   *Writer
-	context  context.Context
-	request  *pb.RequestContext
-	route    *Route
-	params   hydra.Params
-	callArgs []reflect.Value
-	matched  bool
-	method   string
-	stage    byte
-	action   interface{}
-	Result   interface{}
+	idx        int
+	Writer     *Writer
+	context    context.Context
+	request    *pb.RequestContext
+	route      *Route
+	params     hydra.Params
+	callArgs   []reflect.Value
+	matched    bool
+	method     string
+	stage      byte
+	action     interface{}
+	Result     interface{}
+	jwtStorage interface{}
 }
 
 func (ctx *Context) reset(method string, context context.Context, request *pb.RequestContext) {

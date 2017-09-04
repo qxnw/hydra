@@ -11,34 +11,34 @@ import (
 )
 
 type standaloneServiceRegister struct {
-	done       bool
-	registry   registry.Checker
+	done bool
+	registry.Registry
 	serverName string
 	domain     string
 }
 
 //newClusterServiceRegister 创建zookeeper配置文件监控器
-func newStandaloneServiceRegister(domain string, serverName string, r registry.Checker) (w *standaloneServiceRegister) {
+func newStandaloneServiceRegister(domain string, serverName string, r registry.Registry) (w *standaloneServiceRegister) {
 	return &standaloneServiceRegister{
-		registry:   r,
+		Registry:   r,
 		domain:     domain,
 		serverName: serverName,
 	}
 }
 
 //Register 服务注册
-func (w *standaloneServiceRegister) RegisterTempNode(serviceName string, endPointName string, data string) (string, error) {
-	path := fmt.Sprintf("/%s/services/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
-	return path, w.registry.CreateFile(path, data)
+func (w *standaloneServiceRegister) RegisterService(serviceName string, endPointName string, data string) (string, error) {
+	path := fmt.Sprintf("/%s/services/rpc/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
+	return path, w.Registry.CreateTempNode(path, data)
 }
 func (w *standaloneServiceRegister) RegisterSeqNode(path string, data string) (string, error) {
 	rp := path + "_" + utility.GetGUID()
-	return rp, w.registry.CreateFile(rp, data)
+	return rp, w.Registry.CreateTempNode(rp, data)
 }
 
 //UnRegister 取消服务注册
 func (w *standaloneServiceRegister) Unregister(path string) error {
-	return w.registry.Delete(path)
+	return w.Registry.Delete(path)
 }
 
 //Close 关闭所有监控项
@@ -52,7 +52,8 @@ type standaloneResolver struct {
 
 //Resolve 从服务器获取数据
 func (j *standaloneResolver) Resolve(adapter string, domain string, serverName string, log *logger.Logger, servers []string, cross []string) (c IService, err error) {
-	r, err := registry.NewChecker()
+
+	r, err := registry.NewLocalRegistry()
 	if err != nil {
 		return
 	}

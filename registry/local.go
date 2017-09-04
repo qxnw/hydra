@@ -10,20 +10,20 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
-type standaloneRegistry struct {
+type StandaloneRegistry struct {
 	chilren map[string]time.Time
 	files   map[string]string
 	checker Checker
 	done    bool
 }
 
-func (l *standaloneRegistry) SetChecker(c Checker) {
+func (l *StandaloneRegistry) SetChecker(c Checker) {
 	l.checker = c
 }
-func (l *standaloneRegistry) Exists(path string) (bool, error) {
+func (l *StandaloneRegistry) Exists(path string) (bool, error) {
 	return l.checker.Exists(path), nil
 }
-func (l *standaloneRegistry) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
+func (l *StandaloneRegistry) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
 	data = make(chan registry.ChildrenWatcher, 1)
 	go func() {
 	START:
@@ -54,10 +54,10 @@ func (l *standaloneRegistry) WatchChildren(path string) (data chan registry.Chil
 
 	return data, nil
 }
-func (l *standaloneRegistry) Update(path string, data string, version int32) (err error) {
+func (l *StandaloneRegistry) Update(path string, data string, version int32) (err error) {
 	return l.checker.WriteFile(path, data)
 }
-func (l *standaloneRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
+func (l *StandaloneRegistry) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
 	data = make(chan registry.ValueWatcher, 1)
 	go func() {
 	START:
@@ -87,7 +87,7 @@ func (l *standaloneRegistry) WatchValue(path string) (data chan registry.ValueWa
 
 	return data, nil
 }
-func (l *standaloneRegistry) GetChildren(path string) (data []string, version int32, err error) {
+func (l *StandaloneRegistry) GetChildren(path string) (data []string, version int32, err error) {
 	data, err = l.checker.ReadDir(path)
 	if err != nil {
 		return
@@ -100,7 +100,7 @@ func (l *standaloneRegistry) GetChildren(path string) (data []string, version in
 	return
 
 }
-func (l *standaloneRegistry) GetValue(path string) (data []byte, version int32, err error) {
+func (l *StandaloneRegistry) GetValue(path string) (data []byte, version int32, err error) {
 	data, err = l.checker.ReadAll(path)
 	if err != nil {
 		return
@@ -112,37 +112,38 @@ func (l *standaloneRegistry) GetValue(path string) (data []byte, version int32, 
 	version = int32(modify.Unix())
 	return
 }
-func (l *standaloneRegistry) CreatePersistentNode(path string, data string) (err error) {
+func (l *StandaloneRegistry) CreatePersistentNode(path string, data string) (err error) {
 	return l.checker.CreateFile(path, data)
 }
-func (l *standaloneRegistry) CreateTempNode(path string, data string) (err error) {
+func (l *StandaloneRegistry) CreateTempNode(path string, data string) (err error) {
 	l.files[path] = path
 	return l.checker.CreateFile(path, data)
 }
-func (l *standaloneRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
+func (l *StandaloneRegistry) CreateSeqNode(path string, data string) (rpath string, err error) {
 	rpath = fmt.Sprintf("%s_%s", path, utility.GetGUID())
 	l.files[rpath] = rpath
 	return rpath, l.checker.CreateFile(rpath, data)
 }
-func (l *standaloneRegistry) Delete(path string) error {
+func (l *StandaloneRegistry) Delete(path string) error {
 	delete(l.files, path)
 	return l.checker.Delete(path)
 }
-func (l *standaloneRegistry) Close() {
+func (l *StandaloneRegistry) Close() error {
 	for _, f := range l.files {
 		l.Delete(f)
 	}
+	return nil
 }
-func newLocalRegistry() (r *standaloneRegistry, err error) {
-	r = &standaloneRegistry{
+func NewLocalRegistry() (r *StandaloneRegistry, err error) {
+	r = &StandaloneRegistry{
 		files:   make(map[string]string),
 		chilren: make(map[string]time.Time),
 	}
 	r.checker, err = NewChecker()
 	return
 }
-func newLocalRegistryWithChcker(c Checker) (r *standaloneRegistry, err error) {
-	r = &standaloneRegistry{
+func newLocalRegistryWithChcker(c Checker) (r *StandaloneRegistry, err error) {
+	r = &StandaloneRegistry{
 		files:   make(map[string]string),
 		checker: c,
 		chilren: make(map[string]time.Time),
@@ -188,7 +189,7 @@ type localRegistryResolver struct {
 }
 
 func (z *localRegistryResolver) Resolve(servers []string, log *logger.Logger) (Registry, error) {
-	return newLocalRegistry()
+	return NewLocalRegistry()
 }
 
 func init() {

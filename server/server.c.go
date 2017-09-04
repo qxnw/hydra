@@ -127,10 +127,6 @@ func GetAuth(oconf conf.Conf, nconf conf.Conf, name string) (a *Auth, err error)
 		exclude := xsrf.Strings("exclude")
 		expireAt, _ := xsrf.Int("expireAt", 0)
 		enable, _ := xsrf.Bool("enable", true)
-		if name == "" || secret == "" {
-			err = fmt.Errorf("%s配置错误：name,secret不能为空(%s,%s)", name, nm, secret)
-			return a, err
-		}
 		return &Auth{Name: nm, Mode: mode, Secret: secret, Exclude: exclude, ExpireAt: int64(expireAt), Enable: enable}, nil
 	}
 	err = ERR_NO_CHANGED
@@ -188,7 +184,7 @@ func GetRouters(oconf conf.Conf, nconf conf.Conf, defAction string, supportMetho
 			name := c.String("name")
 			service := c.String("service")
 			actions := strings.Split(strings.ToUpper(c.String("action", defAction)), ",")
-			mode := c.String("mode", "go")
+			mode := c.String("engine", "*")
 			args := c.String("args")
 			if name == "" || service == "" {
 				return nil, fmt.Errorf("service 和 name不能为空（name:%s，service:%s）", name, service)
@@ -240,7 +236,7 @@ func GetTasks(oconf conf.Conf, nconf conf.Conf) (rrts []*Task, err error) {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
-			mode := c.String("mode", "go")
+			mode := c.String("engine", "*")
 			args := c.String("args")
 			input := c.String("input")
 			body := c.String("body")
@@ -285,7 +281,7 @@ func GetQueues(oconf conf.Conf, nconf conf.Conf) (rrts []*Queue, err error) {
 		for _, c := range rts {
 			name := c.String("name")
 			service := c.String("service")
-			mode := c.String("mode", "go")
+			mode := c.String("engine", "*")
 			args := c.String("args")
 			if name == "" || service == "" {
 				return nil, fmt.Errorf("name 和 service不能为空（name:%s，service:%s）", name, service)

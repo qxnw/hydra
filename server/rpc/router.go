@@ -16,6 +16,7 @@ type rpcRouter struct {
 	Method      []string
 	Path        string
 	Handler     interface{}
+	service     string
 	Middlewares []Handler
 	params      map[string]string
 }
@@ -34,10 +35,6 @@ const (
 var (
 	SupportMethods = []string{
 		"REQUEST",
-		"QUERY",
-		"UPDATE",
-		"INSERT",
-		"DELETE",
 	}
 
 	PoolSize = 10

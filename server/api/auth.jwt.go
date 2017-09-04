@@ -27,7 +27,6 @@ func JWTFilter() HandlerFunc {
 
 		//不需要校验的URL自动跳过
 		url := ctx.Req().URL.Path
-		fmt.Println("url:", url)
 		for _, u := range jwtAuth.Exclude {
 			if u == url {
 				ctx.Next()

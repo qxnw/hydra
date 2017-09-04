@@ -42,7 +42,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 		return
 	}
 	tf := transform.New()
-	tf.Set("time", ctx.Input.GetArgValue("time", "1m"))
+	tf.Set("time", ctx.Input.GetArgsValue("time", "1m"))
 	data, err := influxdb.QueryMaps(tf.Translate(s.reportSQL))
 	if err != nil {
 		err = fmt.Errorf("从influxdb中查询报警数据失败%s:err:%v", tf.Translate(s.reportSQL), err)

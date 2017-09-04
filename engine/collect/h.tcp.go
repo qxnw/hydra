@@ -13,9 +13,9 @@ import (
 
 func (s *collectProxy) tcpCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
-	title := ctx.Input.GetArgValue("title", "TCP服务器")
-	msg := ctx.Input.GetArgValue("msg", "TCP服务器地址:@url")
-	host, err := ctx.Input.GetArgByName("host")
+	title := ctx.Input.GetArgsValue("title", "TCP服务器")
+	msg := ctx.Input.GetArgsValue("msg", "TCP服务器地址:@url")
+	host, err := ctx.Input.GetArgsByName("host")
 	if err != nil {
 		return
 	}
@@ -28,8 +28,8 @@ func (s *collectProxy) tcpCollect(name string, mode string, service string, ctx 
 	tf.Set("host", host)
 	tf.Set("url", host)
 	tf.Set("value", strconv.Itoa(result))
-	tf.Set("level", ctx.Input.GetArgValue("level", "1"))
-	tf.Set("group", ctx.Input.GetArgValue("group", "D"))
+	tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
+	tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))

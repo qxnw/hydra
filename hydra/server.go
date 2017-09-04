@@ -29,7 +29,7 @@ type Server struct {
 	runMode                 string
 	engine                  engine.IEngine
 	server                  server.IHydraServer
-	extModes                string
+	engines                 string
 	engineNames             []string
 	serviceRegistry         service.IService
 	crurrentRegistryAddress []string
@@ -50,7 +50,6 @@ func NewHydraServer(domain string, runMode string, registry string, crurrentRegi
 		domain:                  domain,
 		runMode:                 runMode,
 		registry:                registry,
-		remoteServices:          make([]string, 0, 16),
 		localServices:           make([]string, 0, 16),
 		crurrentRegistryAddress: crurrentRegistryAddress,
 		crossRegistryAddress:    crossRegistryAddress,
@@ -67,16 +66,15 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 		return fmt.Errorf("server未启动:%s(%s) 配置为:%s", cnf.String("name"), h.serverType, cnf.String("status"))
 	}
 
-	h.extModes = cnf.String("extModes")
-	h.engineNames = cnf.Strings("extModes", []string{})
+	h.engines = cnf.String("engines")
+	h.engineNames = cnf.Strings("engines", []string{})
 	h.engineNames = append(h.engineNames, []string{"go", "rpc"}...)
 	h.serviceRegistry, err = service.NewRegister(h.runMode, h.domain, h.serverName, h.logger, h.crurrentRegistryAddress, h.crossRegistryAddress)
 	if err != nil {
 		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", h.serverType, h.domain, err)
 	}
-
 	// 启动执行引擎
-	h.localServices, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
+	_, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:%v)", h.domain, h.serverName, h.serverType, err)
 	}
@@ -95,17 +93,7 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	}
 	h.address = h.server.GetAddress()
 	h.runTime = time.Now()
-
-	//注册服务列表
-	if strings.EqualFold(h.serverType, server.SRV_TP_RPC) {
-		for _, v := range h.localServices {
-			path, err := h.serviceRegistry.RegisterTempNode(v, strings.Replace(h.server.GetAddress(), "//", "", -1), h.server.GetAddress())
-			if err != nil {
-				return err
-			}
-			h.remoteServices = append(h.remoteServices, path)
-		}
-	}
+	h.localServices = h.server.GetServices()
 	return nil
 }
 
@@ -121,16 +109,11 @@ func (h *Server) GetStatus() string {
 
 //EngineHasChange 引擎配置发生变化
 func (h *Server) EngineHasChange(p string) bool {
-	return p != h.extModes
+	return p != h.engines
 }
 
 //Shutdown 关闭服务器
 func (h *Server) Shutdown() {
-	if h.serviceRegistry != nil {
-		for _, v := range h.remoteServices {
-			h.serviceRegistry.Unregister(v)
-		}
-	}
 	h.engine.Close()
 	h.server.Shutdown()
 }

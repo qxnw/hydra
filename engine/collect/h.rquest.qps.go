@@ -13,15 +13,15 @@ func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response =context.GetStandardResponse()
-		title := ctx.Input.GetArgValue("title", "每秒钟请求数")
-		msg := ctx.Input.GetArgValue("msg", "@url在@span内请求:@current次")
+		title := ctx.Input.GetArgsValue("title", "每秒钟请求数")
+		msg := ctx.Input.GetArgsValue("msg", "@url在@span内请求:@current次")
 
-		domain, err := ctx.Input.GetArgByName("domain")
+		domain, err := ctx.Input.GetArgsByName("domain")
 		if err != nil {
 			return
 		}
-		max := ctx.Input.GetArgInt("max", 0)
-		min := ctx.Input.GetArgInt("min", 0)
+		max := ctx.Input.GetArgsInt("max", 0)
+		min := ctx.Input.GetArgsInt("min", 0)
 		tf := transform.New()
 		tf.Set("domain", domain)
 		tf.Set("span", "5m")
@@ -43,8 +43,8 @@ func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 			}
 			tf.Set("url", url)
 			tf.Set("value", strconv.Itoa(value))
-			tf.Set("level", ctx.Input.GetArgValue("level", "1"))
-			tf.Set("group", ctx.Input.GetArgValue("group", "D"))
+			tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
+			tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
 			tf.Set("current", strconv.Itoa(val))
 			tf.Set("time", time.Now().Format("20060102150405"))
 			tf.Set("unq", tf.Translate("{@domain}_{@url}_QPS"))

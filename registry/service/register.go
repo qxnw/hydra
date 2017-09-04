@@ -3,15 +3,17 @@ package service
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/registry"
+
 	"github.com/qxnw/lib4go/logger"
 )
 
 //IService 服务注册组件
 type IService interface {
-	RegisterTempNode(serviceName string, endPointName string, data string) (string, error)
+	registry.Registry
+	RegisterService(serviceName string, endPointName string, data string) (string, error)
 	RegisterSeqNode(path string, data string) (string, error)
 	Unregister(path string) error
-	Close() error
 }
 
 //IServiceResolver 定义配置文件转换方法

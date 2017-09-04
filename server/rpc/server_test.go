@@ -1,14 +1,6 @@
 package rpc
 
-import (
-	"context"
-	"net/http"
-	"reflect"
-	"testing"
-
-	"github.com/qxnw/hydra/server/rpc/pb"
-)
-
+/*
 func TestServer1(t *testing.T) {
 	srv := NewRPCServer("rpc")
 	srv.Request("/:name/:request", func(c *Context) string {
@@ -73,3 +65,4 @@ func refute(t *testing.T, a interface{}, b interface{}) {
 		t.Errorf("Did not expect %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
 	}
 }
+*/

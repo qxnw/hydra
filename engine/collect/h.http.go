@@ -15,9 +15,9 @@ import (
 
 func (s *collectProxy) httpCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response =context.GetStandardResponse()
-	title := ctx.Input.GetArgValue("title", "HTTP服务器")
-	msg := ctx.Input.GetArgValue("msg", "HTTP服务器地址:@url请求响应码:@current")
-	uri, err := ctx.Input.GetArgByName("url")
+	title := ctx.Input.GetArgsValue("title", "HTTP服务器")
+	msg := ctx.Input.GetArgsValue("msg", "HTTP服务器地址:@url请求响应码:@current")
+	uri, err := ctx.Input.GetArgsByName("url")
 	if err != nil {
 		return
 	}
@@ -34,8 +34,8 @@ func (s *collectProxy) httpCollect(name string, mode string, service string, ctx
 	tf.Set("url", uri)
 	tf.Set("value", strconv.Itoa(value))
 	tf.Set("current", strconv.Itoa(t))
-	tf.Set("level", ctx.Input.GetArgValue("level", "1"))
-	tf.Set("group", ctx.Input.GetArgValue("group", "D"))
+	tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
+	tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
 	tf.Set("time", time.Now().Format("20060102150405"))
 	tf.Set("unq", tf.Translate("@url"))
 	tf.Set("title", tf.Translate(title))

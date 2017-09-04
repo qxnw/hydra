@@ -28,6 +28,7 @@ type IWorker interface {
 type IEngine interface {
 	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, logger *logger.Logger, extEngines ...string) ([]string, error)
 	context.Handler
+	GetService() []string
 	Register(name string, p IWorker)
 }
 type EngineContext struct {
@@ -47,6 +48,7 @@ type standardEngine struct {
 	plugins    map[string]IWorker
 	domain     string
 	serverName string
+	services   []string
 	RPC        *rpc.Invoker
 	logger     *logger.Logger
 }
@@ -58,11 +60,14 @@ func NewStandardEngine() IEngine {
 	}
 	return e
 }
+func (e *standardEngine) GetService() []string {
+	return e.services
+}
 
 //启动引擎
 func (e *standardEngine) Start(domain string, serverName string, serverType string, rpcRegistryAddrss string, logger *logger.Logger, extEngines ...string) (services []string, err error) {
 
-	services = make([]string, 0, 8)
+	e.services = make([]string, 0, 8)
 	e.domain = domain
 	e.serverName = serverName
 	e.logger = logger
@@ -94,9 +99,9 @@ func (e *standardEngine) Start(domain string, serverName string, serverType stri
 		if err != nil {
 			return nil, err
 		}
-		services = append(services, srvs...)
+		e.services = append(e.services, srvs...)
 	}
-	return services, nil
+	return e.services, nil
 }
 func (e *standardEngine) Close() error {
 	for _, p := range e.plugins {
@@ -173,8 +178,11 @@ func Register(name string, p IWorkerResolver) {
 	resolvers[name] = p
 }
 
-//Has 是否包含指定的引擎
-func Has(name string) bool {
-	_, ok := resolvers[name]
-	return ok
+//GetEngines 是否包含指定的引擎
+func GetEngines() []string {
+	engines := make([]string, 0, 8)
+	for k := range resolvers {
+		engines = append(engines, k)
+	}
+	return engines
 }
