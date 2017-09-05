@@ -49,7 +49,7 @@ func newCluster(domain string, serverName string, r registry.Registry, cross reg
 
 //Register 服务注册
 func (w *clusterServiceRegister) RegisterService(serviceName string, endPointName string, data string) (r string, err error) {
-	path := fmt.Sprintf("/%s/services/rpc/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
+	path := fmt.Sprintf("/%s/services/%s/%s/providers/%s", strings.Trim(w.domain, "/"), w.serverName, strings.Trim(serviceName, "/"), endPointName)
 	w.crossRegister(path, data)
 	w.Unregister(path)
 	err = w.Registry.CreateTempNode(path, data)

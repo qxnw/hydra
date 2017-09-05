@@ -66,9 +66,9 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	if err = ctx.Input.CheckInput("openId"); err != nil {
 		return
 	}
-	raw, err := setting.GetSectionString(setting.String("alarm", "alarm"))
+	raw, err := setting.GetSectionString(ctx.Input.GetArgsValue("alarm", "alarm"))
 	if err != nil {
-		err = fmt.Errorf("notify配置文件未配置:%s节点", ctx.Input.GetString("alarm", "alarm"))
+		err = fmt.Errorf("notify配置文件未配置:%s节点,%v", ctx.Input.GetString("alarm", "alarm"), err)
 		return
 	}
 
