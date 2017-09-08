@@ -10,7 +10,7 @@ func WriteHeader() HandlerFunc {
 					if strings.Contains(v, ctx.req.Host) {
 						hosts := strings.Split(v, ",")
 						for _, h := range hosts {
-							if strings.Contains(h, ctx.req.Host) && strings.Contains(h, ctx.req.Proto) {
+							if strings.Contains(h, ctx.req.Host) {
 								ctx.Header().Set(k, v)
 								continue
 							}
