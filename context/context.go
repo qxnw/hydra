@@ -85,6 +85,11 @@ func init() {
 
 //Close 回收context
 func (c *Context) Close() {
+	c.Input.Args = nil
+	c.Input.Body = ""
+	c.Input.Ext = nil
+	c.Input.Input = nil
+	c.Input.Params = nil
 	c.Input = &Input{}
 	contextPool.Put(c)
 }
