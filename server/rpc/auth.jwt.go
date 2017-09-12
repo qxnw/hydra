@@ -57,7 +57,7 @@ func (ctx *Context) SetJwtToken(data interface{}) {
 	if ctx.Writer.Params == nil {
 		ctx.Writer.Params = make(map[string]interface{})
 	}
-	ctx.Writer.Params[jwtAuth.Name] = jwtToken
+	ctx.Writer.Params["__jwt_"] = jwtToken
 }
 
 // CheckJWT 检查jwk参数是否合法

@@ -14,6 +14,7 @@ type Response interface {
 	IsRedirect() (string, bool)
 	GetContentType() int
 	GetHeaders() map[string]string
+	Close()
 }
 
 type baseResponse struct {

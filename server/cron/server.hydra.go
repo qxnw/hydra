@@ -165,6 +165,7 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 			response = context.GetStandardResponse()
 		}
 		defer func() {
+			response.Close()
 			if err != nil {
 				task.Errorf("cron.response.error: %v", task.err)
 			}

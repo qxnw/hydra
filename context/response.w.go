@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/qxnw/lib4go/encoding/base64"
@@ -13,6 +14,16 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
+var webResponsePool *sync.Pool
+
+func init() {
+	webResponsePool = &sync.Pool{
+		New: func() interface{} {
+			return &WebResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+		},
+	}
+}
+
 type WebResponse struct {
 	Content interface{}
 	ctx     *Context
@@ -20,7 +31,9 @@ type WebResponse struct {
 }
 
 func GetWebResponse(ctx *Context) *WebResponse {
-	return &WebResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}, ctx: ctx}
+	response := webResponsePool.Get().(*WebResponse)
+	response.ctx = ctx
+	return response
 }
 
 //Redirect 设置页面转跳
@@ -239,4 +252,9 @@ func (r *WebResponse) Set(s int, rr interface{}, p map[string]string, err error)
 	}
 	r.Content = rr
 	return err
+}
+func (r *WebResponse) Close() {
+	r.Content = nil
+	r.Params = nil
+	webResponsePool.Put(r)
 }

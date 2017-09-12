@@ -235,6 +235,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			response = context.GetStandardResponse()
 		}
 		defer func() {
+			response.Close()
 			if err != nil {
 				c.Errorf("rpc.response.error: %v", err)
 			}

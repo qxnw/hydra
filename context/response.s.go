@@ -1,6 +1,20 @@
 package context
 
-import "github.com/qxnw/lib4go/types"
+import (
+	"sync"
+
+	"github.com/qxnw/lib4go/types"
+)
+
+var standradResponsePool *sync.Pool
+
+func init() {
+	standradResponsePool = &sync.Pool{
+		New: func() interface{} {
+			return &StandardResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+		},
+	}
+}
 
 type StandardResponse struct {
 	Content string
@@ -8,7 +22,7 @@ type StandardResponse struct {
 }
 
 func GetStandardResponse() *StandardResponse {
-	return &StandardResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+	return standradResponsePool.Get().(*StandardResponse)
 }
 
 func (r *StandardResponse) GetContent(errs ...error) interface{} {
@@ -46,4 +60,9 @@ func (r *StandardResponse) Set(s int, rr string, p map[string]string, err error)
 	}
 	r.Content = rr
 	return err
+}
+func (r *StandardResponse) Close() {
+	r.Content = ""
+	r.Params = nil
+	standradResponsePool.Put(r)
 }

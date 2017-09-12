@@ -1,6 +1,20 @@
 package context
 
-import "github.com/qxnw/lib4go/types"
+import (
+	"sync"
+
+	"github.com/qxnw/lib4go/types"
+)
+
+var objectResponsePool *sync.Pool
+
+func init() {
+	objectResponsePool = &sync.Pool{
+		New: func() interface{} {
+			return &ObjectResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+		},
+	}
+}
 
 type ObjectResponse struct {
 	Content interface{}
@@ -8,7 +22,7 @@ type ObjectResponse struct {
 }
 
 func GetObjectResponse() *ObjectResponse {
-	return &ObjectResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
+	return objectResponsePool.Get().(*ObjectResponse)
 }
 
 func (r *ObjectResponse) GetContent(errs ...error) interface{} {
@@ -33,4 +47,9 @@ func (r *ObjectResponse) SetContent(status int, content interface{}) *ObjectResp
 	r.Status = types.DecodeInt(status, 0, 200, status)
 	r.Content = content
 	return r
+}
+func (r *ObjectResponse) Close() {
+	r.Content = nil
+	r.Params = nil
+	objectResponsePool.Put(r)
 }

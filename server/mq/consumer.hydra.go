@@ -151,6 +151,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 			response = context.GetStandardResponse()
 		}
 		defer func() {
+			response.Close()
 			if err != nil {
 				task.Errorf("mq.response.error: %v", task.err)
 			}

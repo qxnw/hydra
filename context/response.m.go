@@ -1,6 +1,21 @@
 package context
 
-import "github.com/qxnw/lib4go/types"
+import (
+	"sync"
+
+	"github.com/qxnw/lib4go/types"
+)
+
+var mapResponsePool *sync.Pool
+
+func init() {
+	mapResponsePool = &sync.Pool{
+		New: func() interface{} {
+			return &MapResponse{
+				baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
+		},
+	}
+}
 
 type MapResponse struct {
 	Content map[string]interface{}
@@ -8,8 +23,7 @@ type MapResponse struct {
 }
 
 func GetMapResponse() *MapResponse {
-	return &MapResponse{
-		baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
+	return mapResponsePool.Get().(*MapResponse)
 }
 func (r *MapResponse) GetContent(errs ...error) interface{} {
 	if len(r.Content) > 0 {
@@ -46,4 +60,9 @@ func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string,
 	}
 	r.Content = rr
 	return err
+}
+func (r *MapResponse) Close() {
+	r.Content = nil
+	r.Params = nil
+	mapResponsePool.Put(r)
 }
