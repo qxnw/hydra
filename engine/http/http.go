@@ -11,6 +11,7 @@ type httpProxy struct {
 	ctx             *engine.EngineContext
 	services        []string
 	encrypts        []string
+	names           []string
 	serviceHandlers map[string]context.WHandlerFunc
 }
 
@@ -18,7 +19,9 @@ func newHTTPProxy() *httpProxy {
 	r := &httpProxy{
 		services: make([]string, 0, 1),
 	}
+	r.names = []string{"jwt"}
 	r.serviceHandlers = make(map[string]context.WHandlerFunc)
+	r.serviceHandlers["/http/request"] = r.httpRequest
 	r.serviceHandlers["/http/handle"] = r.httpHandle
 	r.serviceHandlers["/http/redirect"] = r.httpRedirectHandle
 	for k := range r.serviceHandlers {

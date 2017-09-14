@@ -66,13 +66,14 @@ func (m *InfluxMetric) execute(task *Context) {
 //Handle 业务处理
 func (m *InfluxMetric) Handle(ctx *Context) {
 	processName := metrics.MakeName("mq.consumer.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
-	timerName := metrics.MakeName("mq.consumer.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
+	//timerName := metrics.MakeName("mq.consumer.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
 	requestName := metrics.MakeName("mq.consumer.process", metrics.QPS, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "queue", ctx.queue)
 	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
-	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
+	//metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
+	m.execute(ctx)
 	process.Dec(1)
 
 	responseName := metrics.MakeName("mq.consumer.response", metrics.METER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server",

@@ -68,13 +68,14 @@ func (m *InfluxMetric) execute(context *Context) {
 func (m *InfluxMetric) Handle(ctx *Context) {
 	service := ctx.Req().Service
 	processName := metrics.MakeName("rpc.server.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
-	timerName := metrics.MakeName("rpc.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
+	//timerName := metrics.MakeName("rpc.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
 	requestName := metrics.MakeName("rpc.server.request", metrics.QPS, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "service", service)
 	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	process := metrics.GetOrRegisterCounter(processName, m.currentRegistry)
 	process.Inc(1)
-	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
+	//metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
+	m.execute(ctx)
 	process.Dec(1)
 	responseName := metrics.MakeName("rpc.server.response", metrics.METER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server",
 		ctx.server.ip, "service", service, "status", fmt.Sprintf("%d", ctx.GetStatusCode()))
