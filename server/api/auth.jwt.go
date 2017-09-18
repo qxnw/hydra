@@ -43,11 +43,13 @@ func JWTFilter() HandlerFunc {
 	}
 }
 func (ctx *Context) SetJwtToken(data interface{}) {
-	if data == nil {
+	if data == nil || ctx.Server.jwt == nil || !ctx.Server.jwt.Enable {
 		return
 	}
-	ctx.jwtStorage = data
 	jwtAuth := ctx.Server.jwt
+	ctx.Info("jwt:", jwtAuth, jwtAuth.Secret, jwtAuth.Mode)
+	ctx.jwtStorage = data
+
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, ctx.jwtStorage, jwtAuth.ExpireAt)
 	if err != nil {
 		ctx.WriteHeader(500)

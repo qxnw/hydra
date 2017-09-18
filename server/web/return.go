@@ -54,13 +54,14 @@ func (w *WebServer) Return() api.HandlerFunc {
 			viewPath := fmt.Sprintf("%s/%s%s", w.viewRoot, w.errorView, w.viewExt)
 			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
 			if err != nil {
-				ctx.Errorf("web.response.error: %v", err)
+				ctx.Errorf("web.response.error: %v(err:%v)", err, ctx.Result)
 				ctx.WriteHeader(500)
 				ctx.Write([]byte(ctx.Result.(error).Error()))
 				return
 			}
 		case context.Response:
 			response := ctx.Result.(context.Response)
+			defer response.Close()
 			if _, ok := response.IsRedirect(); ok {
 				return
 			}
@@ -78,7 +79,9 @@ func (w *WebServer) Return() api.HandlerFunc {
 			if err != nil {
 				ctx.Errorf("web.response.error: %v", err)
 			}
+
 		default:
+
 		}
 
 	}

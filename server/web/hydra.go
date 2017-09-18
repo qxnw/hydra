@@ -229,7 +229,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		}
 		c.Result = response
 		defer func() {
-			response.Close()
 			if err != nil {
 				c.Errorf("web.response.error: %v", err)
 			}
