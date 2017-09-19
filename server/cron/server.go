@@ -68,7 +68,6 @@ type CronServer struct {
 	once        sync.Once
 	slots       []cmap.ConcurrentMap
 	isMaster    bool
-	clusterName string
 	clusterPath string
 	handlers    []Handler
 	mu          sync.Mutex
@@ -96,10 +95,7 @@ func NewCronServer(domain string, name string, length int, span time.Duration, o
 }
 func (w *CronServer) handle(task *cronTask) {
 	if w.isMaster { //只有当前job是master时执行任务
-		w.Debug("当前cron是master")
 		task.task.Invoke()
-	} else {
-		w.Debug("当前cron是slaver")
 	}
 	_, _, err := w.Add(task.task)
 	if err != nil {
@@ -144,7 +140,7 @@ func (w *CronServer) Add(task ITask) (offset int, round int, err error) {
 	ctask := &cronTask{task: task, round: round}
 	ctask.task.Reset(w, logger.GetSession(task.GetName(), logger.CreateSession()))
 	if !w.done {
-		w.Logger.Debugf("任务(%s)添加到时间列表round:%d,offset:%d,index:%d,%v/%v", task.GetName(), round, offset, w.index, now, nextTime)
+		//w.Logger.Debugf("任务(%s)添加到时间列表round:%d,offset:%d,index:%d,%v/%v", task.GetName(), round, offset, w.index, now, nextTime)
 		w.slots[offset].Set(utility.GetGUID(), ctask)
 		atomic.AddInt32(&w.taskCount, 1)
 	}

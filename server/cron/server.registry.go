@@ -1,6 +1,12 @@
 package cron
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/qxnw/lib4go/types"
+)
 
 func (s *CronServer) registryServer() (err error) {
 	if s.registry == nil {
@@ -19,8 +25,8 @@ func (s *CronServer) watchServerChange(path string) error {
 	if err != nil {
 		return err
 	}
-	s.isMaster = len(cldrs) == 0 || (len(cldrs) > 0 && cldrs[0] == s.clusterName)
-	s.Debug("cron.node.changed:", s.isMaster, cldrs)
+	s.isMaster = s.isMasterCron(cldrs)
+	s.Debugf("当前%s(cron)是%s", s.serverName, types.DecodeString(s.isMaster, true, "master", "slave"))
 	children, err := s.registry.WatchChildren(s.registryRoot)
 	if err != nil {
 		return err
@@ -32,8 +38,11 @@ func (s *CronServer) watchServerChange(path string) error {
 				return
 			case cldWatcher := <-children:
 				cldrs, _ = cldWatcher.GetValue()
-				s.isMaster = len(cldrs) == 0 || (len(cldrs) > 0 && cldrs[0] == s.clusterName)
-				s.Debug("cron.node.changed:", s.isMaster, cldrs)
+				master := s.isMasterCron(cldrs)
+				if master != s.isMaster {
+					s.Debugf("当前%s(cron)是%s", s.serverName, types.DecodeString(master, true, "master", "slave"))
+				}
+				s.isMaster = master
 			}
 		}
 	}()
@@ -43,4 +52,8 @@ func (s *CronServer) unregistryServer() {
 	if s.registry != nil && s.clusterPath != "" {
 		s.registry.Unregister(s.clusterPath)
 	}
+}
+func (s *CronServer) isMasterCron(cldrs []string) bool {
+	sort.Strings(cldrs)
+	return strings.HasSuffix(s.clusterPath, cldrs[0])
 }
