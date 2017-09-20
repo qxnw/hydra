@@ -50,6 +50,6 @@ func (r *ObjectResponse) SetContent(status int, content interface{}) *ObjectResp
 }
 func (r *ObjectResponse) Close() {
 	r.Content = nil
-	r.Params = nil
+	r.Params = make(map[string]interface{})
 	objectResponsePool.Put(r)
 }

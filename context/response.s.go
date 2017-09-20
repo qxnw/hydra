@@ -63,6 +63,6 @@ func (r *StandardResponse) Set(s int, rr string, p map[string]string, err error)
 }
 func (r *StandardResponse) Close() {
 	r.Content = ""
-	r.Params = nil
+	r.Params = make(map[string]interface{})
 	standradResponsePool.Put(r)
 }

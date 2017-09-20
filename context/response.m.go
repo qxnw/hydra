@@ -63,6 +63,6 @@ func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string,
 }
 func (r *MapResponse) Close() {
 	r.Content = nil
-	r.Params = nil
+	r.Params = make(map[string]interface{})
 	mapResponsePool.Put(r)
 }

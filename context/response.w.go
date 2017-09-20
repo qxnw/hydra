@@ -255,6 +255,6 @@ func (r *WebResponse) Set(s int, rr interface{}, p map[string]string, err error)
 }
 func (r *WebResponse) Close() {
 	r.Content = nil
-	r.Params = nil
+	r.Params = make(map[string]interface{})
 	webResponsePool.Put(r)
 }
