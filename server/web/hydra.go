@@ -241,7 +241,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		c.SetJwtToken(response.GetParams()["__jwt_"])
 
 		if err != nil {
-			c.Result = err
+			c.Result = api.Abort(response.GetStatus(err), err.Error())
 			return
 		}
 		if url, ok := response.IsRedirect(); ok {

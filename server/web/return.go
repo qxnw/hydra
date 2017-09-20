@@ -50,13 +50,14 @@ func (w *WebServer) Return() api.HandlerFunc {
 			}
 		}
 		switch ctx.Result.(type) {
-		case error:
+		case api.AbortError:
+			response := ctx.Result.(api.AbortError)
 			viewPath := fmt.Sprintf("%s/%s%s", w.viewRoot, w.errorView, w.viewExt)
 			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
 			if err != nil {
 				ctx.Errorf("web.response.error: %v(err:%v)", err, ctx.Result)
-				ctx.WriteHeader(500)
-				ctx.Write([]byte(ctx.Result.(error).Error()))
+				ctx.WriteHeader(response.Code())
+				ctx.Write([]byte(response.Error()))
 				return
 			}
 		case context.Response:

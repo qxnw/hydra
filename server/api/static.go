@@ -23,7 +23,7 @@ type StaticOptions struct {
 func Static(opts ...StaticOptions) HandlerFunc {
 	return func(ctx *Context) {
 		opt := prepareStaticOptions(opts)
-		if !opt.Enable || (ctx.Req().Method != "GET" && ctx.Req().Method != "HEAD") {
+		if ctx.Req().Method != "GET" && ctx.Req().Method != "HEAD" {
 			ctx.Next()
 			return
 		}
@@ -32,15 +32,20 @@ func Static(opts ...StaticOptions) HandlerFunc {
 		//处理特殊文件
 		if rPath == "/favicon.ico" || rPath == "/robots.txt" {
 			file := path.Join(".", rPath)
-			if fi, _ := os.Stat(file); fi != nil {
-				err := ctx.ServeFile(file)
-				if err != nil {
-					ctx.Result = InternalServerError(err.Error())
-					ctx.HandleError()
-				}
+			fi, err := os.Stat(file)
+			if os.IsNotExist(err) {
+				ctx.WriteHeader(404)
+				ctx.Write([]byte("文件不存在"))
 				return
 			}
-			ctx.Next()
+			if fi != nil {
+				err = ctx.ServeFile(file)
+			}
+			if err != nil {
+				ctx.WriteHeader(500)
+				ctx.Write([]byte(err.Error()))
+				return
+			}
 			return
 		}
 
