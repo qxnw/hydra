@@ -49,7 +49,14 @@ func (r *StandardResponse) SetContent(status int, content string) *StandardRespo
 	r.Content = content
 	return r
 }
-
+func (r *StandardResponse) SetError(status int, err error) {
+	if err != nil {
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Content = err.Error()
+		return
+	}
+	r.Status = types.DecodeInt(status, 0, 200, status)
+}
 func (r *StandardResponse) Set(s int, rr string, p map[string]string, err error) error {
 	r.Status = s
 	if r.Status == 0 {

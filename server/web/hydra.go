@@ -227,23 +227,27 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
-		c.Result = response
 		defer func() {
 			if err != nil {
 				c.Errorf("web.response.error: %v", err)
 			}
 		}()
+		if err != nil {
+			response.SetError(response.GetStatus(err), err)
+		}
+
 		//处理头信息
 		for k, v := range response.GetHeaders() {
 			c.Header().Set(k, v)
 		}
+
 		//设置jwt.token
 		c.SetJwtToken(response.GetParams()["__jwt_"])
-
+		c.Result = &webResult{Response: response, Error: err}
 		if err != nil {
-			c.Result = api.Abort(response.GetStatus(err), err.Error())
 			return
 		}
+
 		if url, ok := response.IsRedirect(); ok {
 			c.Redirect(url, response.GetStatus())
 			return

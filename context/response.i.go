@@ -53,3 +53,11 @@ func (r *ObjectResponse) Close() {
 	r.Params = make(map[string]interface{})
 	objectResponsePool.Put(r)
 }
+func (r *ObjectResponse) SetError(status int, err error) {
+	if err != nil {
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Content = err
+		return
+	}
+	r.Status = types.DecodeInt(status, 0, 200, status)
+}

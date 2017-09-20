@@ -33,14 +33,10 @@ func (w *WebServer) Return() api.HandlerFunc {
 		action := ctx.Action()
 		ctx.Next()
 
-		// if no route match or has been write, then return
 		if action == nil || ctx.Written() {
 			return
 		}
-
-		// if there is no return value or return nil
 		if isNil(ctx.Result) {
-			// then we return blank page
 			ctx.Result = ""
 		}
 
@@ -49,28 +45,18 @@ func (w *WebServer) Return() api.HandlerFunc {
 				ctx.Header().Set(k, v)
 			}
 		}
-		switch ctx.Result.(type) {
-		case api.AbortError:
-			response := ctx.Result.(api.AbortError)
-			viewPath := fmt.Sprintf("%s/%s%s", w.viewRoot, w.errorView, w.viewExt)
-			err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
-			if err == nil {
-				return
-			}
-			ctx.WriteHeader(response.Code())
-			ctx.Write([]byte(response.Error()))
+		result := ctx.Result.(*webResult)
+		response := result.Response
+		defer response.Close()
+		if _, ok := response.IsRedirect(); ok {
 			return
-		case context.Response:
-			response := ctx.Result.(context.Response)
-			defer response.Close()
-			if _, ok := response.IsRedirect(); ok {
-				return
-			}
-			view, ok := response.GetParams()["__view"]
-			if ok && view == "NONE" {
-				write(ctx, response)
-				return
-			}
+		}
+		view, ok := response.GetParams()["__view"]
+		if ok && view == "NONE" {
+			write(ctx, response, result.Error)
+			return
+		}
+		if result.Error == nil {
 			ctx.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			if view == nil || view.(string) == "" {
 				view = ctx.ServiceName
@@ -80,17 +66,23 @@ func (w *WebServer) Return() api.HandlerFunc {
 			if err != nil {
 				ctx.Errorf("web.response.error: %v", err)
 			}
-
-		default:
-
+			return
 		}
 
+		viewPath := fmt.Sprintf("%s/%s%s", w.viewRoot, w.errorView, w.viewExt)
+		err := w.viewTmpl.Execute(ctx.ResponseWriter, viewPath, ctx.Result)
+		if err == nil {
+			return
+		}
+		ctx.WriteHeader(response.GetStatus(err))
+		ctx.Write([]byte(err.Error()))
+		return
 	}
 }
 
-func write(ctx *api.Context, response context.Response) {
+func write(ctx *api.Context, response context.Response, err error) {
 	rt := response.GetContentType()
-	result := response.GetContent()
+	result := response.GetContent(err)
 	if rt == api.JsonResponse {
 		encoder := json.NewEncoder(ctx)
 		if len(ctx.Header().Get("Content-Type")) <= 0 {

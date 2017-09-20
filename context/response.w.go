@@ -242,6 +242,14 @@ func (c *WebResponse) IsLogin() (err error) {
 func (c *WebResponse) GetSession() string {
 	return c.ctx.HTTP.GetCookieString("sid")
 }
+func (r *WebResponse) SetError(status int, err error) {
+	if err != nil {
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Content = err
+		return
+	}
+	r.Status = types.DecodeInt(status, 0, 200, status)
+}
 func (r *WebResponse) Set(s int, rr interface{}, p map[string]string, err error) error {
 	r.Status = s
 	if r.Status == 0 {

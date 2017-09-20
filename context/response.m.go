@@ -34,7 +34,13 @@ func (r *MapResponse) GetContent(errs ...error) interface{} {
 	}
 	return r.Content
 }
-
+func (r *MapResponse) SetError(status int, err error) {
+	if err != nil {
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		return
+	}
+	r.Status = types.DecodeInt(status, 0, 200, status)
+}
 func (r *MapResponse) Success(v ...map[string]interface{}) *MapResponse {
 	r.Status = 200
 	if len(v) > 0 {

@@ -14,6 +14,7 @@ type Response interface {
 	IsRedirect() (string, bool)
 	GetContentType() int
 	GetHeaders() map[string]string
+	SetError(status int, err error)
 	Close()
 }
 
@@ -57,14 +58,6 @@ func (r *baseResponse) SetJWTBody(data interface{}) {
 }
 func (r *baseResponse) GetJWTBody() interface{} {
 	return r.Params["__jwt_"]
-}
-
-func (r *baseResponse) SetError(status int, err error) {
-	if err != nil {
-		r.Status = types.DecodeInt(status, 0, 500, status)
-		return
-	}
-	r.Status = types.DecodeInt(status, 0, 200, status)
 }
 
 func (r *baseResponse) SetHeader(name string, value string) {
