@@ -56,7 +56,7 @@ func (ctx *Context) SetJwtToken(data interface{}) {
 		ctx.Result = &StatusResult{Code: 500, Result: fmt.Errorf("jwt配置出错：%v", err)}
 		return
 	}
-	ctx.Header().Set("Set-Cookie", fmt.Sprintf("%s=%s", jwtAuth.Name, jwtToken))
+	ctx.Header().Set("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", jwtAuth.Name, jwtToken))
 }
 
 // CheckJWT 检查jwk参数是否合法
