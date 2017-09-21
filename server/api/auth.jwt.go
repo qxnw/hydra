@@ -47,7 +47,6 @@ func (ctx *Context) SetJwtToken(data interface{}) {
 		return
 	}
 	jwtAuth := ctx.Server.jwt
-	ctx.Info("jwt:", jwtAuth, jwtAuth.Secret, jwtAuth.Mode)
 	ctx.jwtStorage = data
 
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, ctx.jwtStorage, jwtAuth.ExpireAt)
