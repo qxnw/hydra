@@ -130,6 +130,7 @@ func NewRPCServer(domain string, name string, services []string, opts ...Option)
 		Recovery(false),
 		s.metric,
 		s.limiter,
+		JWTFilter(),
 		Return(),
 		Param(),
 		Contexts())

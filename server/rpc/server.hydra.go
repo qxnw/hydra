@@ -213,7 +213,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		rArgs := tfForm.Translate(tfParams.Translate(args))
 		body, _ := tfForm.Get("__body")
 		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}
-
+		ext["__jwt_"] = c.jwtStorage
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
 			if err != nil {
