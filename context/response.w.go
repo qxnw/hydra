@@ -222,7 +222,12 @@ func (c *WebResponse) getSetCookie(name string, value string, timeout interface{
 	}
 	switch {
 	case maxAge > 0:
-		fmt.Fprintf(&b, "; Expires=%s; Max-Age=%d;path=/;domain=%s", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(time.RFC1123), maxAge, domain)
+		if len(domain) > 0 {
+			fmt.Fprintf(&b, "; Expires=%s; Max-Age=%d;path=/;domain=%s", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(time.RFC1123), maxAge, domain)
+			return b.String()
+		}
+		fmt.Fprintf(&b, "; Expires=%s; Max-Age=%d;path=/", time.Now().Add(time.Duration(maxAge)*time.Second).UTC().Format(time.RFC1123), maxAge)
+
 	case maxAge < 0:
 		fmt.Fprintf(&b, "; Max-Age=0")
 	}
