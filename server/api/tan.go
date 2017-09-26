@@ -243,11 +243,11 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 		t.webServerOption.host,
 		t.webServerOption.metric,
 		Compresses([]string{}),
+		WriteHeader(),
+		Static(StaticOptions{Prefix: ""}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
 		JWTFilter(),
-		WriteHeader(),
-		Static(StaticOptions{Prefix: ""}),
 	)
 	handlers = append(handlers, t.webServerOption.handlers...)
 	//构建缓存
@@ -267,7 +267,7 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 
 //SetStatic 设置静态文件路由
 func (t *HTTPServer) SetStatic(enable bool, prefix string, dir string, listDir bool, exts []string) {
-	t.handlers[9] = Static(StaticOptions{
+	t.handlers[6] = Static(StaticOptions{
 		Enable:     enable,
 		Prefix:     prefix,
 		RootPath:   dir,
