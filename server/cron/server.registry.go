@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/qxnw/lib4go/types"
 )
@@ -43,6 +44,16 @@ func (s *CronServer) watchServerChange(path string) error {
 					s.Debugf("当前%s(cron)是%s", s.serverName, types.DecodeString(master, true, "master", "slave"))
 				}
 				s.isMaster = master
+			LOOP:
+				children, err = s.registry.WatchChildren(s.registryRoot)
+				if err != nil {
+					s.Errorf("监控服务节点发生错误:err:%v", err)
+					if !s.running {
+						return
+					}
+					time.Sleep(time.Second)
+					goto LOOP
+				}
 			}
 		}
 	}()
@@ -54,6 +65,14 @@ func (s *CronServer) unregistryServer() {
 	}
 }
 func (s *CronServer) isMasterCron(cldrs []string) bool {
-	sort.Strings(cldrs)
-	return strings.HasSuffix(s.clusterPath, cldrs[0])
+	ncldrs := make([]string, 0, len(cldrs))
+	for _, v := range cldrs {
+		args := strings.SplitN(v, "_", 2)
+		ncldrs = append(ncldrs, args[1])
+	}
+	if len(ncldrs) == 0 {
+		return false
+	}
+	sort.Strings(ncldrs)
+	return strings.HasSuffix(s.clusterPath, ncldrs[0])
 }
