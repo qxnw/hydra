@@ -66,14 +66,13 @@ func (m *InfluxMetric) execute(task *Task) {
 func (m *InfluxMetric) Handle(ctx *Task) {
 
 	conterName := metrics.MakeName("cron.server.process", metrics.WORKING, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
-	//timerName := metrics.MakeName("cron.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
+	timerName := metrics.MakeName("cron.server.process", metrics.TIMER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
 	requestName := metrics.MakeName("cron.server.process", metrics.QPS, "domain", ctx.server.domain, "name", ctx.server.serverName, "server", ctx.server.ip, "task", ctx.taskName)
 	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	process := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	process.Inc(1)
-	//metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
-	m.execute(ctx)
+	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	process.Dec(1)
 
 	responseName := metrics.MakeName("cron.server.response", metrics.METER, "domain", ctx.server.domain, "name", ctx.server.serverName, "server",

@@ -74,17 +74,16 @@ func (m *InfluxMetric) execute(context *Context) {
 
 func (m *InfluxMetric) Handle(ctx *Context) {
 	url := ctx.Req().URL.Path
-	client := ctx.IP()
-	conterName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.WORKING, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "client", client, "url", url) //堵塞计数
-	//timerName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.TIMER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "client", client, "url", url)    //堵塞计数
+	//client := ctx.IP()
+	conterName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.WORKING, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "url", url) //堵塞计数
+	timerName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.TIMER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "url", url)    //堵塞计数
 	requestName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.QPS, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
-		"client", client, "url", url) //请求数
+		"url", url) //请求数
 	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
 
 	counter := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	counter.Inc(1)
-	//metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
-	m.execute(ctx)
+	metrics.GetOrRegisterTimer(timerName, m.currentRegistry).Time(func() { m.execute(ctx) })
 	counter.Dec(1)
 
 	if !ctx.Written() {
@@ -96,7 +95,7 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 
 	statusCode := ctx.Status()
 	responseName := metrics.MakeName(ctx.Server.typeName+".server.response", metrics.METER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
-		"client", client, "url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
+		"url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 
 }
