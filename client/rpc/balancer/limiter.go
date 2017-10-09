@@ -34,7 +34,7 @@ func (m *Limiter) Check(ip string) bool {
 	if count, ok := m.settings.Get("*"); ok {
 		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService)
 		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
-		if meter.M1() >= count.(int64) {
+		if meter.M1() >= count.(int32) {
 			return false
 		}
 		meter.Mark(1)
@@ -42,7 +42,7 @@ func (m *Limiter) Check(ip string) bool {
 	if count, ok := m.settings.Get(m.currentService); ok {
 		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService, "ip", ip)
 		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
-		if meter.M1() >= count.(int64) {
+		if meter.M1() >= count.(int32) {
 			return false
 		}
 		meter.Mark(1)
