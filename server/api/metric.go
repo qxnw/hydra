@@ -79,7 +79,7 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	timerName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.TIMER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip, "url", url)    //堵塞计数
 	requestName := metrics.MakeName(ctx.Server.typeName+".server.request", metrics.QPS, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
 		"url", url) //请求数
-	metrics.GetOrRegisterRps(requestName, m.currentRegistry).Mark(1)
+	metrics.GetOrRegisterQPS(requestName, m.currentRegistry).Mark(1)
 
 	counter := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
 	counter.Inc(1)

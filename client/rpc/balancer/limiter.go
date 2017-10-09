@@ -33,7 +33,7 @@ func (m *Limiter) Update(lt map[string]int) {
 func (m *Limiter) Check(ip string) bool {
 	if count, ok := m.settings.Get("*"); ok {
 		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService)
-		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
+		meter := metrics.GetOrRegisterQPS(limiterName, m.metricRegistry)
 		if meter.M1() >= count.(int32) {
 			return false
 		}
@@ -41,7 +41,7 @@ func (m *Limiter) Check(ip string) bool {
 	}
 	if count, ok := m.settings.Get(m.currentService); ok {
 		limiterName := metrics.MakeName(".limiter", metrics.QPS, "service", m.currentService, "ip", ip)
-		meter := metrics.GetOrRegisterRps(limiterName, m.metricRegistry)
+		meter := metrics.GetOrRegisterQPS(limiterName, m.metricRegistry)
 		if meter.M1() >= count.(int32) {
 			return false
 		}
