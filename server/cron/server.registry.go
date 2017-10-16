@@ -68,7 +68,7 @@ func (s *CronServer) isMasterCron(cldrs []string) bool {
 	ncldrs := make([]string, 0, len(cldrs))
 	for _, v := range cldrs {
 		args := strings.SplitN(v, "_", 2)
-		ncldrs = append(ncldrs, args[1])
+		ncldrs = append(ncldrs, args[len(args)-1])
 	}
 	if len(ncldrs) == 0 {
 		return false

@@ -235,7 +235,6 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 		if err != nil {
 			response.SetError(response.GetStatus(err), err)
 		}
-
 		//处理头信息
 		for k, v := range response.GetHeaders() {
 			c.Header().Set(k, v)
@@ -243,7 +242,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 
 		//设置jwt.token
 		c.SetJwtToken(response.GetParams()["__jwt_"])
-		c.Result = &webResult{Response: response, Error: err}
+		c.Result = &webResult{Response: response, Error: err, Mode: mode}
 		if err != nil {
 			return
 		}
