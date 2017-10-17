@@ -54,6 +54,7 @@ func (w *WebServer) Return() api.HandlerFunc {
 		}
 		view, ok := response.GetParams()["__view"]
 		if (ok && view == "NONE") || strings.ToUpper(result.Mode) != "GO" {
+			ctx.Info("web.engine:", result.Mode)
 			write(ctx, response, result.Error)
 			return
 		}
