@@ -9,7 +9,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server/api"
@@ -53,9 +52,7 @@ func (w *WebServer) Return() api.HandlerFunc {
 			return
 		}
 		view, ok := response.GetParams()["__view"]
-		ctx.Info("web.engine:", result.Mode)
-		if (ok && view == "NONE") || strings.ToUpper(result.Mode) != "GO" {
-
+		if ok && view == "NONE" {
 			write(ctx, response, result.Error)
 			return
 		}

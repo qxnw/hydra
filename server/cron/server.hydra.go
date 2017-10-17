@@ -235,7 +235,7 @@ func (w *hydraCronServer) GetStatus() string {
 	return server.ST_STOP
 }
 func (w *hydraCronServer) GetServices() []string {
-	return w.handler.GetService()
+	return w.handler.GetServices()
 }
 
 //Shutdown 关闭服务

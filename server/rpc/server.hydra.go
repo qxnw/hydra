@@ -35,7 +35,7 @@ func newHydraRPCServer(handler server.EngineHandler, r server.IServiceRegistry, 
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
 		server: NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
-			handler.GetService(),
+			handler.GetServices(),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
@@ -48,7 +48,7 @@ func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.server = NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
-		w.handler.GetService(),
+		w.handler.GetServices(),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	w.conf = conf.NewJSONConfWithEmpty()

@@ -11,8 +11,10 @@ var mapResponsePool *sync.Pool
 func init() {
 	mapResponsePool = &sync.Pool{
 		New: func() interface{} {
-			return &MapResponse{
+			r := &MapResponse{
 				baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
+			r.Params["__view"] = "NONE"
+			return r
 		},
 	}
 }
@@ -70,5 +72,6 @@ func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string,
 func (r *MapResponse) Close() {
 	r.Content = nil
 	r.Params = make(map[string]interface{})
+	r.Params["__view"] = "NONE"
 	mapResponsePool.Put(r)
 }

@@ -45,7 +45,7 @@ type IServerAdapter interface {
 }
 type EngineHandler interface {
 	context.Handler
-	GetService() []string
+	GetServices() []string
 }
 
 var serverResolvers = make(map[string]IServerAdapter)

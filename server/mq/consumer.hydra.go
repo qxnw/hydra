@@ -220,7 +220,7 @@ func (w *hydraMQConsumer) GetStatus() string {
 	return server.ST_STOP
 }
 func (w *hydraMQConsumer) GetServices() []string {
-	return w.handler.GetService()
+	return w.handler.GetServices()
 }
 
 //Shutdown 关闭服务

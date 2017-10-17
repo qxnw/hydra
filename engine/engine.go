@@ -28,7 +28,7 @@ type IWorker interface {
 type IEngine interface {
 	Start(domain string, serverName string, serverType string, rpcRegistryAddress string, logger *logger.Logger, extEngines ...string) ([]string, error)
 	context.Handler
-	GetService() []string
+	GetServices() []string
 	Register(name string, p IWorker)
 }
 type EngineContext struct {
@@ -60,7 +60,7 @@ func NewStandardEngine() IEngine {
 	}
 	return e
 }
-func (e *standardEngine) GetService() []string {
+func (e *standardEngine) GetServices() []string {
 	return e.services
 }
 

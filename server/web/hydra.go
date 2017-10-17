@@ -268,7 +268,7 @@ func (w *hydraWebServer) GetStatus() string {
 	return server.ST_STOP
 }
 func (w *hydraWebServer) GetServices() []string {
-	return w.handler.GetService()
+	return w.handler.GetServices()
 }
 
 //Start 启用服务
