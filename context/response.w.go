@@ -116,7 +116,7 @@ func (r *WebResponse) RedirectToWXAuth(wxAuthURL, appid, notifyURL string) error
 	if err != nil {
 		return err
 	}
-	r.SetCookie("_pre_url", request.Proto+request.RequestURI, 0, host)
+	r.SetCookie("_pre_url", request.RequestURI, 0, host)
 	url, err := r.GetAuthURL(wxAuthURL, appid, notifyURL)
 	if err != nil {
 		return err

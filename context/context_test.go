@@ -20,7 +20,7 @@ type context struct {
 
 //InputArgs 上下文输入参数
 type inputArgs struct {
-	Input  transform.ITransformGetter "input"`
+	Input  transform.ITransformGetter `json:"input"`
 	Body   string                     `json:"body"`
 	Params transform.ITransformGetter `json:"params"`
 	Args   map[string]string          `json:"args"`
