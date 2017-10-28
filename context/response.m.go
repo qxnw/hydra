@@ -70,7 +70,7 @@ func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string,
 	return err
 }
 func (r *MapResponse) Close() {
-	r.Content = nil
+	r.Content = make(map[string]interface{})
 	r.Params = make(map[string]interface{})
 	r.Params["__view"] = "NONE"
 	mapResponsePool.Put(r)
