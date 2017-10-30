@@ -33,11 +33,11 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 	settingObj := &setting{}
 	err = json.Unmarshal([]byte(settingData), settingObj)
 	if err != nil {
-		err = fmt.Errorf("setting.setting配置文件有错:err:%v", err)
+		err = fmt.Errorf("args.setting配置文件有错:err:%v", err)
 		return
 	}
-
-	influxdb, err := ctx.Influxdb.GetClient("influxdb")
+	alarmName := ctx.Input.GetArgsValue("alarm", "alarm")
+	influxdb, err := ctx.Influxdb.GetClient(alarmName)
 	if err != nil {
 		return
 	}

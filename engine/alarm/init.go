@@ -51,7 +51,7 @@ func (r *collectProxy) init() {
 
 	r.srvQueryMap["cron_server_reponse"] = `select m5 *300 as t from "cron.server.response.meter"  where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "task" fill(0) limit 1`
 	r.queryMap["cron_server_reponse"] = `select value from alarm_records where "type"='cron_server_reponse' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
-	r.reportMap["cron_server_reponse"] = "alarm_records,type=cron_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg  value=@value"
+	r.reportMap["cron_server_reponse"] = "alarm_records,type=cron_server_reponse,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
 
 	//服务器并发数
 	r.srvQueryMap["api_server_qps"] = `select m5 as t from "api.server.request.qps"  where "domain" = '@domain' and "time" > now() - 5m group by "url" fill(0) limit 1`
