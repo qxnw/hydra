@@ -7,3 +7,6 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
 
 
 ## hydra执行过程
+
+
+![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/flow.png?raw=true)
