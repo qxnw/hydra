@@ -2,6 +2,7 @@ package alarm
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/qxnw/hydra/context"
@@ -10,6 +11,7 @@ import (
 	"github.com/qxnw/lib4go/influxdb"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
+	"github.com/qxnw/lib4go/utility"
 )
 
 type collectProxy struct {
@@ -126,7 +128,34 @@ func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *trans
 			}
 		}
 	}
-	err = db.SendLineProto(tf.TranslateAll(s.reportMap[mode], true))
+
+	//err = db.SendLineProto(tf.TranslateAll(s.reportMap[mode], true))
+	//if err != nil {
+	//return 500, err
+	//}
+	//return 200, nil
+	return s.save2Influxdb(s.reportMap[mode], tf, db)
+}
+func (s *collectProxy) save2Influxdb(sql string, tf *transform.Transform, db *influxdb.InfluxClient) (int, error) {
+	sqls := strings.Split(sql, " ")
+	measurement := sqls[0]
+	tagsMap, err := utility.GetMapWithQuery(strings.Replace(sqls[1], ",", "&", -1))
+	if err != nil {
+		return 500, err
+	}
+	filedsMap, err := utility.GetMapWithQuery(strings.Replace(sqls[2], ",", "&", -1))
+	if err != nil {
+		return 500, err
+	}
+	tags := make(map[string]string)
+	for k, v := range tagsMap {
+		tags[k] = tf.TranslateAll(v, true)
+	}
+	files := make(map[string]interface{})
+	for k, v := range filedsMap {
+		files[k] = tf.TranslateAll(v, true)
+	}
+	err = db.Send(measurement, tags, files)
 	if err != nil {
 		return 500, err
 	}

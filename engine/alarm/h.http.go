@@ -14,7 +14,7 @@ import (
 )
 
 func (s *collectProxy) httpCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "HTTP服务器")
 	msg := ctx.Input.GetArgsValue("msg", "HTTP服务器地址:@url请求响应码:@current")
 	uri, err := ctx.Input.GetArgsByName("url")

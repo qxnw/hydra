@@ -97,5 +97,4 @@ func (m *InfluxMetric) Handle(ctx *Context) {
 	responseName := metrics.MakeName(ctx.Server.typeName+".server.response", metrics.METER, "domain", ctx.Server.domain, "name", ctx.Server.serverName, "server", ctx.Server.ip,
 		"url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
 	metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
-
 }
