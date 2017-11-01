@@ -100,7 +100,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		return err
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Infof("%s(%s):静态文件未配置:%v,%v", conf.String("name"), conf.String("type"), err, enable)
+		w.server.Infof("%s(%s):未配置静态文件", conf.String("name"), conf.String("type"))
 		w.server.SetStatic(false, prefix, dir, showDir, exts)
 	}
 	if err == nil && enable {
