@@ -21,10 +21,29 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
       
 2. [服务器概述](https://github.com/qxnw/hydra/blob/master/quickstart/7.server.intro.md)
       * 接口服务器
+          + 路由配置
+          + 安全选项
+          + 静态文件
+          + metric 
+          + 通用头配置
       * web服务器
+          + 路由配置
+          + views配置
+          + 安全选项
+          + 静态文件
+          + metric 
+          + 通用头配置
       * rpc服务器
+          + 路由配置
+          + 安全选项
+          + 限流配置
+          + metric
       * job consumer
-      * 定时任务
+          + 队列配置
+          + metric
+      * 定时服务
+          + 任务配置
+          + metric
 3. 日志组件
 4. Context
       * 输入参数
