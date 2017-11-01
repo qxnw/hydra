@@ -19,7 +19,7 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
       * [gaea工具简介](https://github.com/qxnw/hydra/blob/master/quickstart/3.install_gaea.md)
        * [创建第一个项目](https://github.com/qxnw/hydra/blob/master/quickstart/6.first_project.md)
       
-2. [服务器概述](https://github.com/qxnw/hydra/blob/master/quickstart/7.server.intro.md)
+2. [服务器管理](https://github.com/qxnw/hydra/blob/master/quickstart/7.server.intro.md)
       * 接口服务器
           + 路由配置
           + 安全选项
