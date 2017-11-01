@@ -12,6 +12,7 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
 * 简单高效: 只需实现1个接口，简单配置即可运行。开发效率高。使用go原生服务器为基础进行扩展，可支持高并发
 
 [hydra安装](https://github.com/qxnw/hydra/blob/master/quickstart/2_install.md)
+
 [gaea工具安装](https://github.com/qxnw/hydra/blob/master/quickstart/3.intro_gaea.md)
 
 
