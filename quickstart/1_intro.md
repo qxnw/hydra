@@ -10,6 +10,7 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
 * 内置引擎: 资源(http,tcp,registry,cpu,memory,disk,db,net)状态检测(monitor)与报警(alarm),文件上传，mock,缓存，短信发送,微信消息推送，RPC服务代理等，通过简单配置即可实现如报警监控，动态图表，文件上传服务器，消息发送服务器，接口mock测试等
 * 服务治理: 使用themis管理服务器配置如：安全认证，负载均衡，流量控制，灰度发布等
 * 简单高效: 只需实现1个接口，简单配置即可运行。开发效率高。使用go原生服务器为基础进行扩展，可支持高并发
+* 混合服务：同一个hydra可运行多个服务器，支持的服务器有:http接口服务，web服务，RPC服务，mq consumer,自动任务5种服务器
 
 [hydra安装](https://github.com/qxnw/hydra/blob/master/quickstart/2_install.md)
 
