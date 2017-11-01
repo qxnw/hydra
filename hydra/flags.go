@@ -55,6 +55,9 @@ func (h *HFlags) CheckFlags(i ...int) (err error) {
 		return errors.New("未指定域名称")
 	}
 	h.Domain = os.Args[index]
+	if !strings.HasPrefix(h.Domain, "/") {
+		h.Domain = "/" + h.Domain
+	}
 	if h.currentRegistry == "" {
 		h.runMode = modeStandalone
 		h.currentRegistryAddress = []string{"localhost"}
