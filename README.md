@@ -13,6 +13,18 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
 * 简单高效: 只需实现1个接口，简单配置即可运行。开发效率高。使用go原生服务器为基础进行扩展，可支持高并发
 * 混合服务：同一个hydra可运行多个服务器，支持的服务器有:http接口服务器，web服务器，RPC服务器，mq consumer,定时任务5种服务器
 
+
+
+## hydra架构图
+
+![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/hydra.png?raw=true)
+
+
+## hydra启动过程
+
+
+![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/flow.png?raw=true)
+
 ## 文档目录
 1. 快速入门
       * [hydra安装](https://github.com/qxnw/hydra/blob/master/quickstart/2_install.md)
@@ -52,13 +64,3 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
       * RPC请求
 5. Response
      
-
-## hydra架构图
-
-![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/hydra.png?raw=true)
-
-
-## hydra启动过程
-
-
-![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/flow.png?raw=true)
