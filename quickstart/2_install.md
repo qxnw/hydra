@@ -16,9 +16,9 @@ go get -u github.com/qxnw/hydra
 
 | 外部组件        | 必须安装           | 说明  |
 | ------------- |:-------------:| -----|
-|注册中心    | 是 |必须安装，用于管理服务器配置，目前只支持zookeeper|
+|注册中心    | 是 |必须安装，用于管理服务器配置，目前只支持zookeeper [查看](https://github.com/qxnw/hydra/blob/master/quickstart/2_install.md)|
 |themis|否|建议安装，服务器配置提供图形化界面方便操作|
-|gaea|否|建议安装，创建或管理hydra项目，可提高开发效率|
+|gaea|否|建议安装，创建或管理hydra项目，可提高开发效率[查看](https://github.com/qxnw/hydra/blob/master/quickstart/3.intro_gaea.md)|
 |oci|否|开发基于oracle数据库功能时安装|
 |influxdb    | 否|   需要收集服务器监控数据时安装 |
 |stomp mq |否| 开发mq consumer时安装 |
