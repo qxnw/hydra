@@ -2,8 +2,15 @@
 
 hydra源码的下载和安装可使用go get命令，由于hydra使用了较多的外部源码,此过程可能消耗较长时间
 
+* 初次安装hydra
 ```
 go get github.com/qxnw/hydra
+```
+
+* 更新hydra
+
+```
+go get -u github.com/qxnw/hydra
 ```
 ## hydra相关组件介绍
 
