@@ -1,49 +1,30 @@
-# hydra 
-通用服务框架，实现一个框架集成多个服务器如：http server,rpc server,mq consumer,job server等,并提供一致的业务监控，日志存储，服务注册与发现，负载均衡，限流，限量，自动更新等统一治理可通过go或lua编写业务代码，框架集成:缓存服务，数据库服务，邮件服务，短信服务，监控服务,健康状态检查服务,RPC代理,MOCK等基础服务引擎简单配置即可挂载到任意服务器
+# 快速入门
+hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务，定时任务，消息消费(MQ Consumer)的微服务应用框架，你只需要关注你所提供的服务自身，使用注册中心简单的配置并通过hydra启动起来即可对外提供服务。
+
 
   hydra特点
-* 部署简单: 本地零配置，启动后自动从配置中心拉取服务器配置; 每个hydra实例可启动多个服务器.可通过配置中心添加,启动或停止服务器
-* 业务扩展: 业务代码可通过lua,go快速开发，只需关注业务本身，简单配置便可运行于任何服务器
-* 智能监控: 自动监控QPS, 服务执行时长，执行结果，内存，CPU，服务运行状态并自动上报到influxdb
-* 统一日志: 可统一输出到kafka或本地文件，对请求加入sid,可根据sid查询到该业务的多个服务器执行日志
-* 集成引擎: 集成缓存服务，数据库服务，邮件服务，短信服务，RPC代理,Http代理，MOCK等简单配置即可使用
-* 服务治理: 通过zookeeper注册与发现服务，多种负载均衡，流量控制，灰度发布等
-* 简单高效: http api以tango，rpc以grpc,cron以timewheel为基础进行开发，逻辑简单可应付大流量场景
+* 部署简单: 打包hydra和业务动态库，复制到服务器通过命令启动起来即可; 
+* 本地零配置: 只需指定注册中心地址和平台名称，启动后自动从注册中心拉取平台配置，配置变更后自动更新服务器，必要时自动优雅重启服务器; 
+* 扩展简单: 业务代码通过go插件编写，实现1个接口生成动态库即可。开发者只需关注所提供的服务本身，开发的服务可作为http接口，Web应用，RPC服务，消息处理，定时任务等运行
+* 智能监控: 自动统计QPS, 服务执行时长，执行结果，机器的CPU，内存等并自动上报到influxdb，通过grafana配置后即可看到动态图表
+* 统一日志:请求自动生成UUID,跨服务器请求时也自动传入UUID,通过UUID可查询到同一请求的所有执行日志; 并集成RPC日志，系统自动将日志上传到RPC服务器，通过elasticsearch存储，使用themis即可查看日志内容
+* 内置引擎: 资源(http,tcp,registry,cpu,memory,disk,db,net)状态检测(monitor)与报警(alarm),文件上传，mock,缓存，短信发送,微信消息推送，RPC服务代理等，通过简单配置即可实现如报警监控，动态图表，文件上传服务器，消息发送服务器，接口mock测试等
+* 服务治理: 使用themis管理服务器配置如：安全认证，负载均衡，流量控制，灰度发布等
+* 简单高效: 只需实现1个接口，简单配置即可运行。开发效率高。使用go原生服务器为基础进行扩展，可支持高并发
+* 混合服务：同一个hydra可运行多个服务器，支持的服务器有:http接口服务器，web服务器，RPC服务器，mq consumer,定时任务5种服务器
 
- # 服务器介绍
-   
-#### http api server
-* 支持RESTful,适合以http接口作为服务的场景，将go,lua或集成服务，配置到http路由配置中即可供外部调用
-* 服务器监控地址，路由变化后自动重启，不影响业务。非关健配置变更无需重启服务直接更新
-* 只需简单配置可作为RPC服务转换为HTTP服务直接调用
-* 固定返回结果的请求配置为mock模式用于测试打桩
- 
+[hydra安装](https://github.com/qxnw/hydra/blob/master/quickstart/2_install.md)
 
- 
-#### rpc server 
-* 基于grpc实现
-* 多种负载均衡轮询，权重，本地优先等
-* 支持同步，异步，并行调用,支持快速失败，支持限流请求
- 
-
-
-#### mq consumer
-* 可监控多个queue消息，收到消息后可通过任意引擎执行
-* 自动重连mq server无需重启服务器
+[gaea工具简介](https://github.com/qxnw/hydra/blob/master/quickstart/3.install_gaea.md)
 
 
 
-#### cron server
-* 基于timewheel算法，可支持任意多的job
-* 可配置固定参数发起http请求，RPC等任意服务请求
-* 支持cron表达式，可配置任意执行时间
-* 支持集群部署，每次只有一台机器执行
+## hydra架构图
+
+![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/hydra.png?raw=true)
 
 
+## hydra启动过程
 
 
-## 下载 安装
-
-    go get github.com/qxnw/hydra
-
-
+![架构图](https://github.com/qxnw/hydra/blob/master/quickstart/flow.png?raw=true)
