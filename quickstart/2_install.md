@@ -15,7 +15,7 @@ go get github.com/qxnw/hydra
 |oci|否|开发基于oracle数据库功能时安装|
 |influxdb    | 否|   需要收集服务器监控数据时安装 |
 |stomp mq |否| 开发mq consumer时安装 |
-|elasticsearch|否|需要使用RPC统一日志收集功能时安装|
+|elasticsearch|否|需要使用统一日志收集功能时安装|
 |memcached|否|需要使用memcached功能时安装|
 |redis|否|需要使用redis功能时安装|
 
