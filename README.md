@@ -50,7 +50,7 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
           + 安全选项
           + 限流配置
           + metric
-      * job consumer
+      * mq consumer
           + 队列配置
           + metric
       * 定时服务
