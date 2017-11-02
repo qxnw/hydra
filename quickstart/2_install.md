@@ -12,7 +12,7 @@ go get github.com/qxnw/hydra
 ```
 go get -u github.com/qxnw/hydra
 ```
-## hydra相关组件介绍
+## hydra依赖的外部组件介绍
 
 | 外部组件        | 必须安装           | 说明  |
 | ------------- |:-------------:| -----|
