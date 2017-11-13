@@ -72,7 +72,11 @@ func NewRegistry(name string, servers []string, log logger.ILogger) (r Registry,
 		log := input[2].(*logger.Logger)
 		return rsvr.Resolve(srvs, log)
 	}, resolver, servers, log)
-	return value.(Registry), err
+	if err != nil {
+		return
+	}
+	r = value.(Registry)
+	return
 }
 
 //NewRegistryWithAddress 根据协议地址创建注册中心
