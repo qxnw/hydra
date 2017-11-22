@@ -59,19 +59,59 @@ func getReporter(ctx *context.Context, influxName string, lg *logger.Logger) (re
 	return client.(metrics.IReporter), nil
 }
 
-func updateStatus(ctx *context.Context, influxName string, serverName string, tagName string, value float64) error {
+func updateStatus(ctx *context.Context, influxName string, tagName string, value float64, params ...string) error {
 	_, err := getReporter(ctx, influxName, log)
 	if err != nil {
 		return err
 	}
-	gaugeName := metrics.MakeName(tagName, metrics.GAUGEFLOAST64, "server", serverName) //堵塞计数
+	gaugeName := metrics.MakeName(tagName, metrics.GAUGE, params...) //堵塞计数
 	metrics.GetOrRegisterGaugeFloat64(gaugeName, currentRegistry).Update(value)
 	return nil
 }
-
-func updateCPUStatus(ctx *context.Context, influxName string, serverName string, value float64) error {
-	return updateStatus(ctx, influxName, serverName, "monitor.cpu.status", value)
+func updateStatusInt64(ctx *context.Context, influxName string, tagName string, value int64, params ...string) error {
+	_, err := getReporter(ctx, influxName, log)
+	if err != nil {
+		return err
+	}
+	gaugeName := metrics.MakeName(tagName, metrics.GAUGE, params...) //堵塞计数
+	metrics.GetOrRegisterGauge(gaugeName, currentRegistry).Update(value)
+	return nil
 }
-func updateMemStatus(ctx *context.Context, influxName string, serverName string, value float64) error {
-	return updateStatus(ctx, influxName, serverName, "monitor.mem.status", value)
+
+func updateCPUStatus(ctx *context.Context, influxName string, value float64, params ...string) error {
+	return updateStatus(ctx, influxName, "monitor.cpu.status", value, params...)
+}
+func updateMemStatus(ctx *context.Context, influxName string, value float64, params ...string) error {
+	return updateStatus(ctx, influxName, "monitor.mem.status", value, params...)
+}
+func updateDiskStatus(ctx *context.Context, influxName string, value float64, params ...string) error {
+	return updateStatus(ctx, influxName, "monitor.disk.status", value, params...)
+}
+func updateHTTPStatus(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.http.status", value, params...)
+}
+func updateTCPStatus(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.tcp.status", value, params...)
+}
+func updateRegistryStatus(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.registry.status", value, params...)
+}
+func updateDBStatus(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.db.status", value, params...)
+}
+
+func updateNetRecvStatus(ctx *context.Context, influxName string, value uint64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.net.recv", int64(value), params...)
+}
+func updateNetSentStatus(ctx *context.Context, influxName string, value uint64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.net.sent", int64(value), params...)
+}
+func updateNetConnectCountStatus(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.net.conn", value, params...)
+}
+func updateNginxErrorCount(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.nginx.error", value, params...)
+}
+func updateNginxQPSCount(ctx *context.Context, influxName string, value int64, params ...string) error {
+	return updateStatusInt64(ctx, influxName, "monitor.nginx.qps", value, params...)
 }

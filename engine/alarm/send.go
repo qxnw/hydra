@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/engine/ssm"
 
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -26,7 +27,7 @@ type userInfo struct {
 
 func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
-	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
+	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "notify_setting")
 	if err != nil {
 		return
 	}
@@ -36,8 +37,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 		err = fmt.Errorf("args.setting配置文件有错:err:%v", err)
 		return
 	}
-	alarmName := ctx.Input.GetArgsValue("alarm", "alarm")
-	influxdb, err := ctx.Influxdb.GetClient(alarmName)
+	influxdb, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}
@@ -121,13 +121,17 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 }
 func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, openID string, service string, title string, content string, time string, remark string) (status int, err error) {
 	tp := types.DecodeString(alarm, true, "alarm", "normal")
-	status, _, _, err = ctx.RPC.Request(service, map[string]string{
-		"openid":  openID,
+	setting, err := ctx.Input.GetVarParamByArgsName("setting", "wx_setting")
+	if err != nil {
+		return
+	}
+	_, status, err = ssm.WXSend(setting, map[string]string{
+		"open_id": openID,
 		"title":   title,
 		"time":    time,
-		"content": content,
+		"message": content,
 		"remark":  remark,
-		"alarm":   tp,
-	}, false)
+		"type":    tp,
+	})
 	return
 }

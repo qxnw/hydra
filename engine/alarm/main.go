@@ -56,6 +56,10 @@ func newCollectProxy() *collectProxy {
 	r.serviceHandlers["/alarm/collect/cpu/used"] = r.cpuCollect
 	r.serviceHandlers["/alarm/collect/mem/used"] = r.memCollect
 	r.serviceHandlers["/alarm/collect/disk/used"] = r.diskCollect
+	r.serviceHandlers["/alarm/collect/net/conn"] = r.netConnectCountCollect
+	r.serviceHandlers["/alarm/collect/nginx/error"] = r.nginxErrorCountCollect
+	r.serviceHandlers["/alarm/collect/nginx/qps"] = r.nginxQPSCountCollect
+
 	r.serviceHandlers["/alarm/notify/send"] = r.notifySend
 
 	for k := range r.serviceHandlers {
@@ -134,7 +138,8 @@ func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *trans
 	//return 500, err
 	//}
 	//return 200, nil
-	return s.save2Influxdb(s.reportMap[mode], tf, db)
+	sql := s.reportMap[mode]
+	return s.save2Influxdb(sql, tf, db)
 }
 func (s *collectProxy) save2Influxdb(sql string, tf *transform.Transform, db *influxdb.InfluxClient) (int, error) {
 	sqls := strings.Split(sql, " ")
@@ -151,11 +156,15 @@ func (s *collectProxy) save2Influxdb(sql string, tf *transform.Transform, db *in
 	for k, v := range tagsMap {
 		tags[k] = tf.TranslateAll(v, true)
 	}
-	files := make(map[string]interface{})
+	fileds := make(map[string]interface{})
 	for k, v := range filedsMap {
-		files[k] = tf.TranslateAll(v, true)
+		fileds[k] = tf.TranslateAll(v, true)
 	}
-	err = db.Send(measurement, tags, files)
+	if len(tags) == 0 || len(fileds) == 0 {
+		err = fmt.Errorf("tags 或 fileds的个数不能为0")
+		return 500, err
+	}
+	err = db.Send(measurement, tags, fileds)
 	if err != nil {
 		return 500, err
 	}

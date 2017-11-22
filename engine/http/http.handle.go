@@ -173,7 +173,7 @@ func (s *httpProxy) GetData(u url.Values, data conf.Conf, trs *transform.Transfo
 			if !data.Has("_key") {
 				return u, "", fmt.Errorf("des密钥不能为空")
 			}
-			if sign, err = des.Encrypt(data.String("sign"), data.String("_key")); err != nil {
+			if sign, err = des.Encrypt(data.String("sign"), data.String("_key"), "ecb/pkcs5"); err != nil {
 				return u, "", err
 			}
 			u.Add("sign", sign)

@@ -10,7 +10,7 @@ func (s *monitorProxy) memCollect(name string, mode string, service string, ctx 
 	response = context.GetStandardResponse()
 	memoryInfo := memory.GetInfo()
 	ip := net.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateMemStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), ip, memoryInfo.UsedPercent)
+	err = updateMemStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), memoryInfo.UsedPercent, "server", ip)
 	response.SetError(0, err)
 	return
 }

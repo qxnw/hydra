@@ -13,7 +13,7 @@ import (
 )
 
 func (s *collectProxy) memCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "服务器memory使用率")
 	msg := ctx.Input.GetArgsValue("msg", "@host服务器memory使用率:@current")
 	maxValue, err := ctx.Input.GetArgsFloat64Value("max")

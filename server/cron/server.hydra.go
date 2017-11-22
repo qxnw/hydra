@@ -34,7 +34,7 @@ func newHydraCronServer(handler server.EngineHandler, r server.IServiceRegistry,
 		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
 			60,
 			time.Second,
-			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
+			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
 	}
 	err = h.setConf(cnf)

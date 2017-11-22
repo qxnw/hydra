@@ -10,7 +10,7 @@ func (s *monitorProxy) cpuCollect(name string, mode string, service string, ctx 
 	response = context.GetStandardResponse()
 	cpuInfo := cpu.GetInfo()
 	ip := net.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateCPUStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), ip, cpuInfo.UsedPercent)
+	err = updateCPUStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), cpuInfo.UsedPercent, "server", ip)
 	response.SetError(0, err)
 	return
 }

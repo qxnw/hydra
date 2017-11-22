@@ -5,12 +5,14 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/hydra/registry"
 )
 
 type monitorProxy struct {
 	ctx             *engine.EngineContext
 	services        []string
 	registryAddrs   string
+	registry        registry.Registry
 	serviceHandlers map[string]context.SHandlerFunc
 }
 
@@ -20,7 +22,17 @@ func newMonitorProxy() *monitorProxy {
 	}
 	r.serviceHandlers = make(map[string]context.SHandlerFunc)
 	r.serviceHandlers["/monitor/collect/cpu/used"] = r.cpuCollect
-	r.serviceHandlers["/monitor/collect/mem/used"] = r.cpuCollect
+	r.serviceHandlers["/monitor/collect/mem/used"] = r.memCollect
+	r.serviceHandlers["/monitor/collect/disk/used"] = r.diskCollect
+	r.serviceHandlers["/monitor/collect/net/status"] = r.netCollect
+	r.serviceHandlers["/monitor/collect/net/conn"] = r.netConnectCollect
+	r.serviceHandlers["/monitor/collect/http/status"] = r.httpCollect
+	r.serviceHandlers["/monitor/collect/tcp/status"] = r.tcpCollect
+	r.serviceHandlers["/monitor/collect/registry/count"] = r.registryCollect
+	r.serviceHandlers["/monitor/collect/sql/query"] = r.dbCollect
+	r.serviceHandlers["/monitor/nginx/error/count"] = r.nginxErrorCollect
+	r.serviceHandlers["/monitor/nginx/qps/count"] = r.nginxQPSCollect
+
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}
@@ -31,6 +43,7 @@ func (s *monitorProxy) Start(ctx *engine.EngineContext) (services []string, err 
 	s.ctx = ctx
 	services = s.services
 	s.registryAddrs = ctx.Registry
+	s.registry, err = registry.NewRegistryWithAddress(ctx.Registry, ctx.Logger)
 	return
 
 }
