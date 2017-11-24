@@ -51,6 +51,7 @@ func (s *collectProxy) getNginxErrorCount() (m int, tm string, err error) {
 	cmds := []*exec.Cmd{cmd1, cmd2, cmd3}
 	count, err := pipes.Run(cmds)
 	if err != nil {
+		err = fmt.Errorf("命令执行失败:%v-%s", err, tm)
 		return
 	}
 
