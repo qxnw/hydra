@@ -46,7 +46,7 @@ func (s *collectProxy) nginxQPSCountCollect(name string, mode string, service st
 func (s *collectProxy) getNginxQPSCount() (m int, tm string, err error) {
 	tm = time.Now().Add(-1 * time.Minute).Format("15:04")
 	cmd1 := exec.Command("cat", "/usr/local/nginx/logs/access.log")
-	cmd2 := exec.Command("grep", fmt.Sprintf("%s:", tm))
+	cmd2 := exec.Command("grep", fmt.Sprintf(`"%s:"`, tm))
 	cmd3 := exec.Command("wc", "-l")
 	cmds := []*exec.Cmd{cmd1, cmd2, cmd3}
 	count, err := pipes.Run(cmds)
