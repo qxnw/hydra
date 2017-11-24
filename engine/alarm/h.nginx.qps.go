@@ -15,7 +15,7 @@ import (
 func (s *collectProxy) nginxQPSCountCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "nginx QPS")
-	msg := ctx.Input.GetArgsValue("msg", "nginx QPS:@current(@ct)")
+	msg := ctx.Input.GetArgsValue("msg", "@host服务器 nginx每秒请求数:@current(@ct)")
 	maxValue, err := ctx.Input.GetArgsIntValue("max")
 	if err != nil {
 		return

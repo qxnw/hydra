@@ -99,7 +99,7 @@ func (s *collectProxy) Has(shortName, fullName string) (err error) {
 
 func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *transform.Transform, t int) (status int, err error) {
 	status = 204
-	db, err := ctx.Influxdb.GetClient("alarm")
+	db, err := ctx.Influxdb.GetClient("influxdb")
 	if err != nil {
 		return
 	}

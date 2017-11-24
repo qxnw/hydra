@@ -15,7 +15,7 @@ import (
 func (s *collectProxy) nginxErrorCountCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "nginx错误数")
-	msg := ctx.Input.GetArgsValue("msg", "nginx错误数:@current(@ct)")
+	msg := ctx.Input.GetArgsValue("msg", "@host服务器nginx错误数:@current(@ct)")
 	maxValue, err := ctx.Input.GetArgsIntValue("max")
 	if err != nil {
 		return
