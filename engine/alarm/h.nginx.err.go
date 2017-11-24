@@ -46,7 +46,7 @@ func (s *collectProxy) nginxErrorCountCollect(name string, mode string, service 
 func (s *collectProxy) getNginxErrorCount() (m int, tm string, err error) {
 	tm = time.Now().Add(-1 * time.Minute).Format("15:04")
 	cmd1 := exec.Command("cat", "/usr/local/nginx/logs/error.log")
-	cmd2 := exec.Command("grep", fmt.Sprintf("%s:", tm))
+	cmd2 := exec.Command("grep", fmt.Sprintf(`"%s:"`, tm))
 	cmd3 := exec.Command("wc", "-l")
 	cmds := []*exec.Cmd{cmd1, cmd2, cmd3}
 	count, err := pipes.Run(cmds)
@@ -54,7 +54,11 @@ func (s *collectProxy) getNginxErrorCount() (m int, tm string, err error) {
 		return
 	}
 
-	v, _ := strconv.Atoi(count)
+	v, err := strconv.Atoi(count)
+	if err != nil {
+		err = fmt.Errorf("%v:%s", err, count)
+		return
+	}
 	m = v / 60
 	return
 }
