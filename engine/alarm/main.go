@@ -72,6 +72,7 @@ func (s *collectProxy) Start(ctx *engine.EngineContext) (services []string, err 
 	s.ctx = ctx
 	services = s.services
 	s.registryAddrs = ctx.Registry
+
 	s.registry, err = registry.NewRegistryWithAddress(ctx.Registry, ctx.Logger)
 	return
 
