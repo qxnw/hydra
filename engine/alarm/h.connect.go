@@ -51,8 +51,8 @@ func (s *collectProxy) getNetConnectCount() (v int, err error) {
 	if err != nil {
 		return
 	}
-	v, _ = strconv.Atoi(count)
-	return v, nil
+	v, err = strconv.Atoi(count)
+	return
 }
 func (s *collectProxy) getMaxOpenFiles() (v int, err error) {
 	cmd1 := exec.Command("ulimit ", "-n")
