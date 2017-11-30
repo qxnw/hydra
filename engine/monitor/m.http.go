@@ -25,7 +25,7 @@ func (s *monitorProxy) httpCollect(name string, mode string, service string, ctx
 	_, t, err := client.Get(uri)
 	value := types.DecodeInt(t, 200, 0, 1)
 	ip := net.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateHTTPStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), int64(value), "server", ip, "url", uri)
+	err = updateHTTPStatus(ctx, int64(value), "server", ip, "url", uri)
 	response.SetError(0, err)
 	return
 }

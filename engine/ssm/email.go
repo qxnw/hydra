@@ -40,7 +40,7 @@ func (s *smsProxy) geEmailParams(ctx *context.Context) (mail *email, err error) 
 		err = fmt.Errorf("邮件内容不能为空")
 		return
 	}
-	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
+	content, err := ctx.Input.GetVarParamByArgsName("ssm", "email")
 	if err != nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (s *smsProxy) geEmailParams(ctx *context.Context) (mail *email, err error) 
 }
 
 func (s *smsProxy) sendMail(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	m, err := s.geEmailParams(ctx)
 	if err != nil {
 		return

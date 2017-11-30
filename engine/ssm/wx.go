@@ -27,11 +27,11 @@ func checkInputField(input transform.ITransformGetter, fields ...string) error {
 	return nil
 }
 
-//WXSend 发送微信消息
-func WXSend(content string, param map[string]string) (r string, status int, err error) {
-	setting, err := conf.NewJSONConfWithJson(content, 0, nil)
+//SendWXM 发送微信消息
+func SendWXM(ssetting string, param map[string]string) (r string, status int, err error) {
+	setting, err := conf.NewJSONConfWithJson(ssetting, 0, nil)
 	if err != nil {
-		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", content, err)
+		err = fmt.Errorf("setting[%s]配置错误，无法解析(err:%v)", ssetting, err)
 		return
 	}
 	for k, v := range param {
@@ -63,11 +63,11 @@ func WXSend(content string, param map[string]string) (r string, status int, err 
 	urlParams := u.String()
 	r, status, err = client.Get(urlParams)
 	if err != nil {
-		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, content, setting.String("host"), err)
+		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s,err:%v)", status, ssetting, setting.String("host"), err)
 		return
 	}
 	if status != 200 {
-		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, content, setting.String("host"))
+		err = fmt.Errorf("请求返回错误:status:%d,%s(host:%s)", status, ssetting, setting.String("host"))
 		return
 	}
 	return
@@ -75,7 +75,7 @@ func WXSend(content string, param map[string]string) (r string, status int, err 
 
 func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
-	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
+	content, err := ctx.Input.GetVarParamByArgsName("ssm", "wx")
 	if err != nil {
 		return
 	}
@@ -86,7 +86,7 @@ func (s *smsProxy) wxSend(name string, mode string, service string, ctx *context
 	ctx.Input.Input.Each(func(k, v string) {
 		input[k] = v
 	})
-	r, status, err := WXSend(content, input)
+	r, status, err := SendWXM(content, input)
 	if err != nil {
 		response.SetError(status, err)
 		return response, err

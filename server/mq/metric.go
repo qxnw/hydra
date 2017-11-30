@@ -3,7 +3,6 @@ package mq
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/logger"
@@ -16,7 +15,7 @@ type reporter struct {
 	Database string
 	username string
 	password string
-	timeSpan time.Duration
+	cron     string
 	done     bool
 }
 type InfluxMetric struct {
@@ -40,7 +39,7 @@ func (m *InfluxMetric) Stop() {
 		m.reporter.influxdb.Close()
 	}
 }
-func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, timeSpan time.Duration, lg *logger.Logger) (err error) {
+func (m *InfluxMetric) RestartReport(host string, dataBase string, userName string, password string, cron string, lg *logger.Logger) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.reporter != nil && m.reporter.influxdb != nil {
@@ -50,8 +49,8 @@ func (m *InfluxMetric) RestartReport(host string, dataBase string, userName stri
 	if m.logger == nil {
 		m.logger = logger.GetSession("mq.metric", logger.CreateSession())
 	}
-	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, timeSpan: timeSpan}
-	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, timeSpan, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password, m.logger)
+	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, cron: cron}
+	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry, cron, m.reporter.Host, m.reporter.Database, m.reporter.username, m.reporter.password, m.logger)
 	if err != nil {
 		return
 	}

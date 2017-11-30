@@ -21,7 +21,7 @@ func (s *monitorProxy) tcpCollect(name string, mode string, service string, ctx 
 	}
 	value := types.DecodeInt(err, nil, 0, 1)
 	ip := xnet.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateTCPStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), int64(value), "server", ip, "host", host)
+	err = updateTCPStatus(ctx, int64(value), "server", ip, "host", host)
 	response.SetError(0, err)
 	return
 }

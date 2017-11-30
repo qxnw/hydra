@@ -58,7 +58,7 @@ func newCollectProxy() *collectProxy {
 	r.serviceHandlers["/alarm/collect/disk/used"] = r.diskCollect
 	r.serviceHandlers["/alarm/collect/net/conn"] = r.netConnectCountCollect
 	r.serviceHandlers["/alarm/collect/nginx/error"] = r.nginxErrorCountCollect
-	r.serviceHandlers["/alarm/collect/nginx/qps"] = r.nginxQPSCountCollect
+	r.serviceHandlers["/alarm/collect/nginx/access"] = r.nginxAccessCountCollect
 
 	r.serviceHandlers["/alarm/notify/send"] = r.notifySend
 

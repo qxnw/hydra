@@ -3,7 +3,6 @@ package mq
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/logger"
@@ -95,8 +94,8 @@ func (s *MQConsumer) Run() error {
 }
 
 //SetInfluxMetric 重置metric
-func (s *MQConsumer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.Logger)
+func (s *MQConsumer) SetInfluxMetric(host string, dataBase string, userName string, password string, cron string) {
+	s.metric.RestartReport(host, dataBase, userName, password, cron, s.Logger)
 }
 
 //SetName 设置组件的server name

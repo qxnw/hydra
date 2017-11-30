@@ -17,12 +17,12 @@ func (s *monitorProxy) netCollect(name string, mode string, service string, ctx 
 	}
 	ip := xnet.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
 	for _, ni := range netInfo {
-		err = updateNetRecvStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), ni.BytesRecv, "server", ip, "name", ni.Name)
+		err = updateNetRecvStatus(ctx, ni.BytesRecv, "server", ip, "name", ni.Name)
 		if err != nil {
 			response.SetError(0, err)
 			return
 		}
-		err = updateNetSentStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), ni.BytesSent, "server", ip, "name", ni.Name)
+		err = updateNetSentStatus(ctx, ni.BytesSent, "server", ip, "name", ni.Name)
 		if err != nil {
 			response.SetError(0, err)
 			return

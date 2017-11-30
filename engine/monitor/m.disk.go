@@ -10,7 +10,7 @@ func (s *monitorProxy) diskCollect(name string, mode string, service string, ctx
 	response = context.GetStandardResponse()
 	diskInfo := disk.GetInfo()
 	ip := net.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateDiskStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), diskInfo.UsedPercent, "server", ip)
+	err = updateDiskStatus(ctx, diskInfo.UsedPercent, "server", ip)
 	response.SetError(0, err)
 	return
 }

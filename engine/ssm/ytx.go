@@ -36,26 +36,11 @@ type eSMS struct {
 	header  map[string]string
 }
 
-func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
+func getYtxParams(mobile, data, content string) (sms *eSMS, err error) {
 	sms = &eSMS{header: make(map[string]string)}
-	sms.mobile, err = ctx.Input.Get("mobile")
-	if err != nil || sms.mobile == "" {
-		err = fmt.Errorf("接收人手机号不能为空")
-		return
-	}
-
-	data, err := ctx.Input.Get("data")
-	if err != nil || data == "" {
-		err = fmt.Errorf("短信内容(data)不能为空")
-		return
-	}
 	datas := strings.Split(data, ";")
 	for _, v := range datas {
 		sms.data = fmt.Sprintf("%s<data>%s</data>", sms.data, v)
-	}
-	content, err := ctx.Input.GetVarParamByArgsName("setting", "setting")
-	if err != nil {
-		return
 	}
 
 	form, err := conf.NewJSONConfWithJson(content, 0, nil)
@@ -67,12 +52,12 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 	form.Set("data", sms.data)
 	form.Set("timestamp", time.Now().Format("20060102150405"))
 
-	sign := form.String("sign")
-	if sign == "" || strings.Contains(sign, "@") {
-		err = fmt.Errorf("args.setting配置错误，sign配置错误(sign:%s)(%s)", sign, content)
+	raw := form.String("raw")
+	if raw == "" || strings.Contains(raw, "@") {
+		err = fmt.Errorf("args.setting配置错误，raw配置错误(raw:%s)(%s)", raw, content)
 		return
 	}
-	form.Set("sign", strings.ToUpper(md5.Encrypt(sign)))
+	form.Set("sign", strings.ToUpper(md5.Encrypt(raw)))
 
 	sms.url = form.String("url")
 	if sms.url == "" || strings.Contains(sms.url, "@") {
@@ -90,13 +75,13 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 		return
 	}
 	form.Set("auth", base64.Encode(auth))
-	header := form.String("header")
-	if header == "" || strings.Contains(header, "@") {
-		err = fmt.Errorf("args.setting配置错误，header配置错误(header:%s)(%s)", header, content)
+	headers, err := form.GetArray("header")
+	if err != nil {
+		err = fmt.Errorf("配置文件中未包含header参数")
 		return
 	}
-	headers := strings.Split(header, "\r\n")
-	for _, v := range headers {
+	for _, header := range headers {
+		v := header.(string)
 		hs := strings.SplitN(v, ":", 2)
 		if len(hs) != 2 {
 			err = fmt.Errorf("args.setting配置错误，header配置错误,不是有效的键值对(header:%s)", header)
@@ -109,16 +94,46 @@ func (s *smsProxy) getYtxParams(ctx *context.Context) (sms *eSMS, err error) {
 
 }
 
-func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response = context.GetStandardResponse()
-	m, err := s.getYtxParams(ctx)
+//SendSMS 发送短消息
+func SendSMS(mobile, data, setting string) (st int, r string, err error) {
+	if mobile == "" {
+		err = fmt.Errorf("接收人手机号不能为空")
+		return
+	}
+	if data == "" {
+		err = fmt.Errorf("短信内容(data)不能为空")
+		return
+	}
+	if setting == "" {
+		err = fmt.Errorf("配置内容不能为空")
+		return
+	}
+	m, err := getYtxParams(mobile, data, setting)
 	if err != nil {
 		return
 	}
 	client := http.NewHTTPClient()
-	r, st, err := client.Request("post", m.url, m.body, m.charset, m.header)
+	r, st, err = client.Request("post", m.url, m.body, m.charset, m.header)
 	if err != nil {
 		err = fmt.Errorf("%v(url:%s,body:%s,header:%s)", err, m.url, m.body, m.header)
+		return
+	}
+	return
+}
+func (s *smsProxy) ytxSend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+	response = context.GetStandardResponse()
+	if err = ctx.Input.CheckInput("mobile", "data"); err != nil {
+		response.SetStatus(501)
+		return
+	}
+	content, err := ctx.Input.GetVarParamByArgsName("ssm", "ssm")
+	if err != nil {
+		response.SetStatus(501)
+		return
+	}
+	st, r, err := SendSMS(ctx.Input.GetString("mobile"), ctx.Input.GetString("data"), content)
+	if err != nil {
+		response.SetStatus(501)
 		return
 	}
 	response.SetContent(st, r)

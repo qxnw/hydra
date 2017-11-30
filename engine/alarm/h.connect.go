@@ -1,7 +1,6 @@
 package alarm
 
 import (
-	"os/exec"
 	"strconv"
 	"time"
 
@@ -43,24 +42,18 @@ func (s *collectProxy) netConnectCountCollect(name string, mode string, service 
 }
 
 func (s *collectProxy) getNetConnectCount() (v int, err error) {
-	cmd1 := exec.Command("netstat", "-an")
-	cmd2 := exec.Command("grep", "tcp")
-	cmd3 := exec.Command("wc", "-l")
-	cmds := []*exec.Cmd{cmd1, cmd2, cmd3}
-	count, err := pipes.Run(cmds)
-	if err != nil {
-		return
-	}
-	v, err = strconv.Atoi(count)
-	return
-}
-func (s *collectProxy) getMaxOpenFiles() (v int, err error) {
-	cmd1 := exec.Command("ulimit ", "-n")
-	cmds := []*exec.Cmd{cmd1}
-	count, err := pipes.Run(cmds)
+	count, err := pipes.BashRun(`netstat -an|grep tcp|wc -l`)
 	if err != nil {
 		return
 	}
 	v, _ = strconv.Atoi(count)
-	return v, nil
+	return
+}
+func (s *collectProxy) getMaxOpenFiles() (v int, err error) {
+	count, err := pipes.BashRun("ulimit -n")
+	if err != nil {
+		return
+	}
+	v, _ = strconv.Atoi(count)
+	return
 }

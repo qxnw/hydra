@@ -32,7 +32,7 @@ func (s *monitorProxy) dbCollect(name string, mode string, service string, ctx *
 		return
 	}
 	ip := xnet.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateDBStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), int64(value), "server", ip, "name", sqlNames[len(sqlNames)-1])
+	err = updateDBStatus(ctx, int64(value), "server", ip, "name", sqlNames[len(sqlNames)-1])
 	response.SetError(0, err)
 	return
 }

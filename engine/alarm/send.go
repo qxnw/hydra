@@ -13,21 +13,24 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
+type notity struct {
+	WxGroup  []string `json:"wx"`
+	SmsBroup []string `json:"sms"`
+}
 type setting struct {
-	WxNotify string     `json:"wx"`
-	SMS      string     `json:"sms"`
-	Users    []userInfo `json:"users"`
+	Notify notity     `json:"wx"`
+	Users  []userInfo `json:"users"`
 }
 type userInfo struct {
-	Name   string `json:"name"`
-	Group  string `json:"group"`
-	Mobile string `json:"mobile"`
-	OpenID string `json:"wx_openId"`
+	Name   string   `json:"name"`
+	Group  []string `json:"group"`
+	Mobile string   `json:"mobile"`
+	OpenID string   `json:"wx_openId"`
 }
 
 func (s *collectProxy) notifySend(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
-	settingData, err := ctx.Input.GetVarParamByArgsName("setting", "notify_setting")
+	settingData, err := ctx.Input.GetVarParamByArgsName("alarm", "notify_setting")
 	if err != nil {
 		return
 	}
@@ -60,14 +63,11 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 				response.SetStatus(500)
 				return response, nil
 			}
-			groups := strings.Split(group, ",")
 			for _, u := range settingObj.Users {
-				if s.checkNeedSend(groups, u.Group) {
-					st, err := s.sendWXNotify(ctx, alarm, u.OpenID, settingObj.WxNotify, title, content, happendTime, remark)
-					if err != nil {
-						response.SetError(st, err)
-						return response, err
-					}
+				st, err := s.Notify(ctx, group, alarm, settingObj.Notify, u, title, content, happendTime, remark)
+				if err != nil {
+					response.SetError(st, err)
+					return response, err
 				}
 			}
 		}
@@ -75,12 +75,25 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 	response.Success()
 	return
 }
-func (s *collectProxy) checkNeedSend(dataGroups []string, ugroup string) bool {
-	if ugroup == "" {
-		return true
+func (s *collectProxy) Notify(ctx *context.Context, group string, alarm bool, notify notity, u userInfo, title string, content string, time string, remark string) (st int, err error) {
+	dataGroup := strings.Split(group, ",")
+	if !s.checkNeedSend(dataGroup, u.Group) {
+		return 204, nil
 	}
-	ugroups := strings.Split(ugroup, ",")
-	for _, v := range dataGroups {
+	if s.checkNeedSend(notify.WxGroup, u.Group) {
+		st, err = s.sendWXNotify(ctx, alarm, u, title, content, time, remark)
+	}
+	if s.checkNeedSend(notify.SmsBroup, u.Group) {
+		st, err = s.sendSMSNotify(ctx, alarm, u, title, content, time, remark)
+	}
+	return
+}
+
+func (s *collectProxy) checkNeedSend(dgroup []string, ugroups []string) bool {
+	if dgroup == nil {
+		return false
+	}
+	for _, v := range dgroup {
 		for _, k := range ugroups {
 			if v == k {
 				return true
@@ -119,19 +132,29 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 	return
 
 }
-func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, openID string, service string, title string, content string, time string, remark string) (status int, err error) {
+func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, u userInfo, title string, content string, time string, remark string) (status int, err error) {
 	tp := types.DecodeString(alarm, true, "alarm", "normal")
-	setting, err := ctx.Input.GetVarParamByArgsName("setting", "wx_setting")
+	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "wx_setting")
 	if err != nil {
+		err = fmt.Errorf("未找到微信消息推送的相关配置:%v", err)
 		return
 	}
-	_, status, err = ssm.WXSend(setting, map[string]string{
-		"open_id": openID,
+	_, status, err = ssm.SendWXM(setting, map[string]string{
+		"open_id": u.OpenID,
 		"title":   title,
 		"time":    time,
 		"message": content,
 		"remark":  remark,
 		"type":    tp,
 	})
+	return
+}
+func (s *collectProxy) sendSMSNotify(ctx *context.Context, alarm bool, u userInfo, title string, content string, time string, remark string) (status int, err error) {
+	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "sms_setting")
+	if err != nil {
+		err = fmt.Errorf("未找到短信发送配置:%v", err)
+		return
+	}
+	status, _, err = ssm.SendSMS(u.Mobile, fmt.Sprintf("%s;%s;%s;%s", title, content, time, remark), setting)
 	return
 }

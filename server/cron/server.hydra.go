@@ -79,10 +79,11 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if err != nil {
 				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), task.Cron, err)
 			}
-			tk := NewTask(task.Name, s, w.handle(task.Service, task.Mode, task.Input, task.Body, task.Args), task.Service)
+			tk := NewTask(task.Name, s, w.handle(task.Service, task.Mode, task.Input, task.Body, task.Cron, task.Args), task.Service)
 			w.server.Add(tk)
 		}
 	}
+
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
@@ -97,7 +98,8 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
-
+	w.server.cluster = conf.String("cluster", "master-slave")
+	w.server.Infof("%s(%s)启动模式:%s", conf.String("name"), conf.String("type"), w.server.cluster)
 	//设置基本参数
 	w.conf = conf
 	return nil
@@ -105,7 +107,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 执行引擎操作
-func (w *hydraCronServer) handle(service, mode, input, body, args string) func(task *Task) error {
+func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) func(task *Task) error {
 	return func(task *Task) (err error) {
 		//处理输入参数
 		ctx := context.GetContext()
@@ -150,6 +152,7 @@ func (w *hydraCronServer) handle(service, mode, input, body, args string) func(t
 			}
 			return string(cnf), nil
 		}
+		ext["__cron_"] = cron
 		margs, err := utility.GetMapWithQuery(args)
 		if err != nil {
 			task.statusCode = 500
@@ -214,6 +217,9 @@ func (w *hydraCronServer) Notify(conf conf.Conf) error {
 //needRestart 检查是否需要重启
 func (w *hydraCronServer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("status"), w.conf.String("status")) {
+		return true, nil
+	}
+	if conf.String("cluster") != w.conf.String("cluster") {
 		return true, nil
 	}
 	routers, err := conf.GetNodeWithSectionName("task", "#@path/task")

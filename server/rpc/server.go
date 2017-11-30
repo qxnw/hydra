@@ -70,9 +70,9 @@ func WithLogger(logger *logger.Logger) Option {
 }
 
 //WithInfluxMetric 设置基于influxdb的系统监控组件
-func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
+func WithInfluxMetric(host string, dataBase string, userName string, password string, cron string) Option {
 	return func(o *serverOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.Logger)
+		o.metric.RestartReport(host, dataBase, userName, password, cron, o.Logger)
 	}
 }
 
@@ -203,8 +203,8 @@ func (s *RPCServer) UpdateLimiter(limit map[string]int) {
 }
 
 //SetInfluxMetric 重置metric
-func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) error {
-	err := s.metric.RestartReport(host, dataBase, userName, password, timeSpan, s.Logger)
+func (s *RPCServer) SetInfluxMetric(host string, dataBase string, userName string, password string, cron string) error {
+	err := s.metric.RestartReport(host, dataBase, userName, password, cron, s.Logger)
 	if err != nil {
 		s.Error(err)
 	}

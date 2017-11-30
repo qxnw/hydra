@@ -65,6 +65,9 @@ func (s *CronServer) unregistryServer() {
 	}
 }
 func (s *CronServer) isMasterCron(cldrs []string) bool {
+	if strings.ToUpper(s.cluster) == "P2P" {
+		return true
+	}
 	ncldrs := make([]string, 0, len(cldrs))
 	for _, v := range cldrs {
 		args := strings.SplitN(v, "_", 2)

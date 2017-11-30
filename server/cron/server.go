@@ -71,6 +71,7 @@ type CronServer struct {
 	clusterPath string
 	handlers    []Handler
 	mu          sync.Mutex
+	cluster     string
 	taskCount   int32
 	running     bool
 	*cronOption
@@ -188,14 +189,13 @@ func (w *CronServer) execute() {
 	current := w.slots[w.index]
 	current.RemoveIterCb(func(k string, value interface{}) bool {
 		task := value.(*cronTask)
-		if task.round == 0 {
+		task.round--
+		task.executed++
+		if task.round <= 0 {
 			atomic.AddInt32(&w.taskCount, -1)
 			go w.handle(task)
 			return true
 		}
-
-		task.round--
-		task.executed++
 		w.Logger.Debugf("%s,round:%d,index:%d", task.task.GetName(), task.round, w.index)
 		return false
 	})
@@ -215,8 +215,8 @@ START:
 }
 
 //SetInfluxMetric 重置metric
-func (w *CronServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	w.metric.RestartReport(host, dataBase, userName, password, timeSpan, w.Logger)
+func (w *CronServer) SetInfluxMetric(host string, dataBase string, userName string, password string, cron string) {
+	w.metric.RestartReport(host, dataBase, userName, password, cron, w.Logger)
 }
 
 //StopInfluxMetric stop metric

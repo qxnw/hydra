@@ -31,7 +31,7 @@ func newMonitorProxy() *monitorProxy {
 	r.serviceHandlers["/monitor/collect/registry/count"] = r.registryCollect
 	r.serviceHandlers["/monitor/collect/sql/query"] = r.dbCollect
 	r.serviceHandlers["/monitor/nginx/error/count"] = r.nginxErrorCollect
-	r.serviceHandlers["/monitor/nginx/qps/count"] = r.nginxQPSCollect
+	r.serviceHandlers["/monitor/nginx/access/count"] = r.nginxAccessCollect
 
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)

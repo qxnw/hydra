@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/qxnw/hydra/conf"
 )
@@ -13,7 +12,7 @@ var ERR_NOT_SETTING = errors.New("未配置")
 var ERR_NO_CHANGED = errors.New("配置未变化")
 
 //GetMetric 获取metric配置
-func GetMetric(oconf conf.Conf, nconf conf.Conf) (enable bool, host string, dataBase string, userName string, password string, span time.Duration, err error) {
+func GetMetric(oconf conf.Conf, nconf conf.Conf) (enable bool, host string, dataBase string, userName string, password string, cron string, err error) {
 	//设置metric服务器监控数据
 	metric, err := nconf.GetNodeWithSectionName("metric", "#@path/metric")
 	if err != nil {
@@ -22,7 +21,7 @@ func GetMetric(oconf conf.Conf, nconf conf.Conf) (enable bool, host string, data
 			return
 		}
 		err = fmt.Errorf("metric未配置或配置有误:%+v", err)
-		return false, "", "", "", "", 0, err
+		return false, "", "", "", "", "", err
 	}
 	enable = true
 	if r, err := oconf.GetNodeWithSectionName("metric", "#@path/metric"); err != nil || r.GetVersion() != metric.GetVersion() {
@@ -30,15 +29,16 @@ func GetMetric(oconf conf.Conf, nconf conf.Conf) (enable bool, host string, data
 		dataBase := metric.String("dataBase")
 		userName := metric.String("userName")
 		password := metric.String("password")
+		cron := metric.String("cron", "@every 1m")
 		enable, _ = metric.Bool("enable", true)
 		if host == "" || dataBase == "" {
 			err = fmt.Errorf("metric配置错误:host 和 dataBase不能为空(`host:%s，dataBase:%s)", host, dataBase)
-			return false, "", "", "", "", 0, err
+			return false, "", "", "", "", "", err
 		}
 		if !strings.Contains(host, "://") {
 			host = "http://" + host
 		}
-		return enable, host, dataBase, userName, password, time.Second * 60, nil
+		return enable, host, dataBase, userName, password, cron, nil
 	}
 	err = ERR_NO_CHANGED
 	return

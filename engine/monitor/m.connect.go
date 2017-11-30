@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"fmt"
-	"os/exec"
 	"strconv"
 
 	"github.com/qxnw/hydra/context"
@@ -21,29 +20,23 @@ func (s *monitorProxy) netConnectCollect(name string, mode string, service strin
 	if err != nil {
 		return
 	}
-	err = updateNetConnectCountStatus(ctx, ctx.Input.GetArgsValue("influxdb", "alarm"), int64(ncc), "server", ip, "max", fmt.Sprintf("%d", max))
+	err = updateNetConnectCountStatus(ctx, int64(ncc), "server", ip, "max", fmt.Sprintf("%d", max))
 	response.SetError(0, err)
 	return
 }
 func (s *monitorProxy) getNetConnectCount() (v int, err error) {
-	cmd1 := exec.Command("netstat", "-an")
-	cmd2 := exec.Command("grep", "tcp")
-	cmd3 := exec.Command("wc", "-l")
-	cmds := []*exec.Cmd{cmd1, cmd2, cmd3}
-	count, err := pipes.Run(cmds)
+	count, err := pipes.BashRun(`netstat -an|grep tcp|wc -l`)
 	if err != nil {
 		return
 	}
 	v, _ = strconv.Atoi(count)
-	return v, nil
+	return
 }
 func (s *monitorProxy) getMaxOpenFiles() (v int, err error) {
-	cmd1 := exec.Command("ulimit ", "-n")
-	cmds := []*exec.Cmd{cmd1}
-	count, err := pipes.Run(cmds)
+	count, err := pipes.BashRun("ulimit -n")
 	if err != nil {
 		return
 	}
 	v, _ = strconv.Atoi(count)
-	return v, nil
+	return
 }

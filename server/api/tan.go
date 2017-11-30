@@ -75,9 +75,9 @@ func WithIP(ip string) Option {
 }
 
 //WithInfluxMetric 设置基于influxdb的系统监控组件
-func WithInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) Option {
+func WithInfluxMetric(host string, dataBase string, userName string, password string, cron string) Option {
 	return func(o *webServerOption) {
-		o.metric.RestartReport(host, dataBase, userName, password, timeSpan, o.Logger)
+		o.metric.RestartReport(host, dataBase, userName, password, cron, o.Logger)
 	}
 }
 
@@ -127,8 +127,8 @@ func (t *HTTPServer) SetHost(host string) {
 }
 
 //SetInfluxMetric 重置metric
-func (t *HTTPServer) SetInfluxMetric(host string, dataBase string, userName string, password string, timeSpan time.Duration) {
-	err := t.metric.RestartReport(host, dataBase, userName, password, timeSpan, t.Logger)
+func (t *HTTPServer) SetInfluxMetric(host string, dataBase string, userName string, password string, cron string) {
+	err := t.metric.RestartReport(host, dataBase, userName, password, cron, t.Logger)
 	if err != nil {
 		t.Error("启动metric失败：", err)
 	}
