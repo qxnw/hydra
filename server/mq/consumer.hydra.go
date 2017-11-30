@@ -35,6 +35,7 @@ func newHydraMQConsumer(handler server.EngineHandler, r server.IServiceRegistry,
 	h.server, err = NewMQConsumer(cnf.String("domain"), cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
+		WithRaw(cnf.GetContent()),
 		WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	if err != nil {
@@ -50,6 +51,7 @@ func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 	w.server, err = NewMQConsumer(cnf.String("domain"), cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
+		WithRaw(cnf.GetContent()),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
 		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
 	if err != nil {
@@ -203,12 +205,12 @@ func (w *hydraMQConsumer) needRestart(conf conf.Conf) (bool, error) {
 	if !strings.EqualFold(conf.String("version"), w.conf.String("version")) {
 		return true, nil
 	}
-	routers, err := conf.GetNodeWithSectionName("queue")
+	routers, err := conf.GetNodeWithSectionName("queue", "#@path/queue")
 	if err != nil {
 		return false, fmt.Errorf("queue未配置或配置有误:%s(%+v)", conf.String("name"), err)
 	}
 	//检查路由是否变化，已变化则需要重启服务
-	if r, err := w.conf.GetNodeWithSectionName("queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+	if r, err := conf.GetNodeWithSectionName("queue", "#@path/queue"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
 	return false, nil

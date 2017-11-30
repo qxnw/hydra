@@ -15,6 +15,7 @@ type taskOption struct {
 	registryRoot string
 	registry     server.IServiceRegistry
 	version      string
+	raw          string
 	*logger.Logger
 }
 
@@ -36,6 +37,13 @@ func WithIP(ip string) TaskOption {
 	}
 }
 
+//WithRaw 设置配置原串
+func WithRaw(raw string) TaskOption {
+	return func(o *taskOption) {
+		o.raw = raw
+	}
+}
+
 //WithVersion 设置MQ版本号
 func WithVersion(version string) TaskOption {
 	return func(o *taskOption) {
@@ -48,6 +56,7 @@ type MQConsumer struct {
 	domain      string
 	address     string
 	consumer    mq.MQConsumer
+	count       int
 	handlers    []Handler
 	serverName  string
 	p           *sync.Pool
@@ -76,7 +85,8 @@ func NewMQConsumer(domain string, name string, address string, opts ...TaskOptio
 		Logging(),
 		Recovery(),
 		s.metric)
-	s.consumer, err = mq.NewMQConsumer(address, mq.WithVersion(s.version))
+	s.Logger.Debugf("raw:%s", s.raw)
+	s.consumer, err = mq.NewMQConsumer(address, mq.WithVersion(s.version), mq.WithRaw(s.raw))
 	return
 }
 
