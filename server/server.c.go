@@ -90,8 +90,8 @@ func GetXSRF(oconf conf.Conf, nconf conf.Conf) (enable bool, name, secret string
 		name := xsrf.String("name")
 		secret := xsrf.String("secret")
 		enable, _ := xsrf.Bool("enable", true)
-		if key == "" || secret == "" {
-			err = fmt.Errorf("xsrf配置错误：key,secret不能为空(%s,%s,%s)", xsrf.String("name"), key, secret)
+		if name == "" || secret == "" {
+			err = fmt.Errorf("xsrf配置错误：name,secret不能为空(%s,%s,%s)", xsrf.String("name"), name, secret)
 			return false, "", "", err
 		}
 		return enable, name, secret, nil
