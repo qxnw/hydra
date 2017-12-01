@@ -75,7 +75,7 @@ func GetStatic(oconf conf.Conf, nconf conf.Conf) (enable bool, prefix, dir strin
 }
 
 //GetXSRF 获取静态文件配置内容
-func GetXSRF(oconf conf.Conf, nconf conf.Conf) (enable bool, key, secret string, err error) {
+func GetXSRF(oconf conf.Conf, nconf conf.Conf) (enable bool, name, secret string, err error) {
 	xsrf, err := nconf.GetNodeWithSectionName("xsrf", "#@path/xsrf")
 	if err != nil {
 		if !nconf.Has("#@path/xsrf") {
@@ -87,14 +87,14 @@ func GetXSRF(oconf conf.Conf, nconf conf.Conf) (enable bool, key, secret string,
 	}
 	enable = true
 	if r, err := oconf.GetNodeWithSectionName("xsrf", "#@path/xsrf"); err != nil || r.GetVersion() != xsrf.GetVersion() {
-		key := xsrf.String("key")
+		name := xsrf.String("name")
 		secret := xsrf.String("secret")
 		enable, _ := xsrf.Bool("enable", true)
 		if key == "" || secret == "" {
 			err = fmt.Errorf("xsrf配置错误：key,secret不能为空(%s,%s,%s)", xsrf.String("name"), key, secret)
 			return false, "", "", err
 		}
-		return enable, key, secret, nil
+		return enable, name, secret, nil
 	}
 	err = ERR_NO_CHANGED
 	return

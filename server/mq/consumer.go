@@ -85,7 +85,6 @@ func NewMQConsumer(domain string, name string, address string, opts ...TaskOptio
 		Logging(),
 		Recovery(),
 		s.metric)
-	s.Logger.Debugf("raw:%s", s.raw)
 	s.consumer, err = mq.NewMQConsumer(address, mq.WithVersion(s.version), mq.WithRaw(s.raw))
 	return
 }

@@ -96,7 +96,7 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
-	if err == server.ERR_NOT_SETTING || enable {
+	if err == server.ERR_NOT_SETTING || !enable {
 		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
