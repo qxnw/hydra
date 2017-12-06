@@ -85,6 +85,26 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetRouters(apiRouters...)
 	}
 
+	//设置静态文件路由
+	enable, prefix, dir, showDir, exts, err1 := server.GetStatic(w.conf, conf)
+	if err1 != nil && err1 != server.ERR_NO_CHANGED && err1 != server.ERR_NOT_SETTING {
+		return err1
+	}
+	if err1 == server.ERR_NOT_SETTING || !enable {
+		w.server.Infof("%s(%s):未配置静态文件", conf.String("name"), conf.String("type"))
+		w.server.SetStatic(false, prefix, dir, showDir, exts)
+	}
+	if err1 == nil && enable {
+		w.server.Infof("%s(%s):启用静态文件", conf.String("name"), conf.String("type"))
+		w.server.SetStatic(true, prefix, dir, showDir, exts)
+	}
+	if err1 != nil && err != nil {
+		return fmt.Errorf("路由配置有误:%v，静态文件:%v", err, err1)
+	}
+	if len(routers) == 0 {
+		w.server.Infof("%s(%s):未配置路由", conf.String("name"), conf.String("type"))
+	}
+
 	//设置通用头信息
 	headers, err := server.GetHeaders(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
@@ -93,20 +113,6 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 	if err == nil || err == server.ERR_NOT_SETTING {
 		w.server.Infof("%s(%s):设置头%d", conf.String("name"), conf.String("type"), len(headers))
 		w.server.SetHeader(headers)
-	}
-
-	//设置静态文件路由
-	enable, prefix, dir, showDir, exts, err := server.GetStatic(w.conf, conf)
-	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		return err
-	}
-	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Infof("%s(%s):静态文件未配置", conf.String("name"), conf.String("type"))
-		w.server.SetStatic(false, prefix, dir, showDir, exts)
-	}
-	if err == nil && enable {
-		w.server.Infof("%s(%s):启用静态文件", conf.String("name"), conf.String("type"))
-		w.server.SetStatic(true, prefix, dir, showDir, exts)
 	}
 
 	//设置view配置

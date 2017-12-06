@@ -48,16 +48,13 @@ func Static(opts ...StaticOptions) HandlerFunc {
 			}
 			return
 		}
-
 		//检查是否定义静态文件前缀
 		if !strings.HasPrefix(rPath, opt.Prefix) {
 			ctx.Next()
 			return
 		}
-
 		rPath = rPath[len(opt.Prefix):]
 		dir := filepath.Dir(rPath)
-
 		//检查是否排除特殊名称
 		for _, v := range opt.Exclude {
 			if strings.Contains(dir, v) {
@@ -65,7 +62,6 @@ func Static(opts ...StaticOptions) HandlerFunc {
 				return
 			}
 		}
-
 		fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath))
 		//检查文件后缀
 		if len(opt.FilterExts) > 0 {
@@ -81,7 +77,6 @@ func Static(opts ...StaticOptions) HandlerFunc {
 				return
 			}
 		}
-
 		//检查文件是否存在
 		finfo, err := os.Stat(fPath)
 		if err != nil {
@@ -127,8 +122,8 @@ func prepareStaticOptions(options []StaticOptions) StaticOptions {
 			opt.Prefix = "/" + opt.Prefix
 		}
 	}
-	if len(opt.FilterExts) == 0 {
-		opt.FilterExts = append(opt.FilterExts, ".jpg", ".png", ".js", ".css", ".html", ".xml")
-	}
+	//if len(opt.FilterExts) == 0 {
+	//opt.FilterExts = append(opt.FilterExts, ".jpg", ".png", ".js", ".css", ".html", ".xml")
+	//}
 	return opt
 }

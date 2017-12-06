@@ -211,7 +211,7 @@ func GetRouters(oconf conf.Conf, nconf conf.Conf, defAction string, supportMetho
 			rrts = append(rrts, sigleRouter)
 		}
 		if len(rrts) == 0 {
-			return nil, fmt.Errorf("路由未配置:%d", len(rrts))
+			return nil, ERR_NOT_SETTING
 		}
 		return rrts, nil
 	}
