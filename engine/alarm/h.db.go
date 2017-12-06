@@ -14,6 +14,7 @@ func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "数据库监控服务")
 	msg := ctx.Input.GetArgsValue("msg", "数据库服务:@host当前值:@current")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")
 	if err != nil || sql == "" {
 		return
@@ -50,6 +51,7 @@ func (s *collectProxy) dbCollect(name string, mode string, service string, ctx *
 	tf.Set("unq", tf.Translate("{@host}_{@url}"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "db", tf, result)
 	response.SetError(st, err)
 	return

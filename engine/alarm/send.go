@@ -18,8 +18,8 @@ type notity struct {
 	SmsBroup []string `json:"sms"`
 }
 type setting struct {
-	Notify notity     `json:"wx"`
-	Users  []userInfo `json:"users"`
+	Notify notity      `json:"notify"`
+	Users  []*userInfo `json:"users"`
 }
 type userInfo struct {
 	Name   string   `json:"name"`
@@ -55,7 +55,6 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 		response.SetContent(204, "NONEED")
 		return response, nil
 	}
-
 	for _, rows := range data {
 		for _, item := range rows {
 			alarm, title, content, happendTime, group, remark, err := s.getMessage(item)
@@ -75,17 +74,36 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 	response.Success()
 	return
 }
-func (s *collectProxy) Notify(ctx *context.Context, group string, alarm bool, notify notity, u userInfo, title string, content string, time string, remark string) (st int, err error) {
+func (s *collectProxy) Notify(ctx *context.Context, group string, alarm bool, notify notity, u *userInfo, title string, content string, time string, remark string) (st int, err error) {
+
 	dataGroup := strings.Split(group, ",")
 	if !s.checkNeedSend(dataGroup, u.Group) {
-		return 204, nil
+		return 204, fmt.Errorf("未找到发送组:data:%v,u:%v", dataGroup, u.Group)
 	}
-	if s.checkNeedSend(notify.WxGroup, u.Group) {
+	has := s.checkNeedSend(notify.WxGroup, u.Group)
+	if has {
 		st, err = s.sendWXNotify(ctx, alarm, u, title, content, time, remark)
+		if err == nil {
+			ctx.Infof("微信发送给:%s[发送成功]", u.Name)
+		} else {
+			ctx.Infof("微信发送给:%s[发送失败] err:%v", u.Name, err)
+		}
 	}
+
 	if s.checkNeedSend(notify.SmsBroup, u.Group) {
+		has = true
 		st, err = s.sendSMSNotify(ctx, alarm, u, title, content, time, remark)
+		if err == nil {
+			ctx.Infof("短信发送给:%s[发送成功]", u.Name)
+		} else {
+			ctx.Infof("短信发送给:%s[发送失败] err:%v", u.Name, err)
+		}
 	}
+	if !has {
+		st = 404
+		err = fmt.Errorf("未找到发送组")
+	}
+
 	return
 }
 
@@ -132,7 +150,7 @@ func (s *collectProxy) getMessage(input map[string]interface{}) (alarm bool, tit
 	return
 
 }
-func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, u userInfo, title string, content string, time string, remark string) (status int, err error) {
+func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
 	tp := types.DecodeString(alarm, true, "alarm", "normal")
 	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "wx_setting")
 	if err != nil {
@@ -149,7 +167,7 @@ func (s *collectProxy) sendWXNotify(ctx *context.Context, alarm bool, u userInfo
 	})
 	return
 }
-func (s *collectProxy) sendSMSNotify(ctx *context.Context, alarm bool, u userInfo, title string, content string, time string, remark string) (status int, err error) {
+func (s *collectProxy) sendSMSNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
 	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "sms_setting")
 	if err != nil {
 		err = fmt.Errorf("未找到短信发送配置:%v", err)

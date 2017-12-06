@@ -15,7 +15,7 @@ func (s *collectProxy) responseCollect(tp string) context.SHandlerFunc {
 		response = context.GetStandardResponse()
 		title := ctx.Input.GetArgsValue("title", "请求响应码")
 		msg := ctx.Input.GetArgsValue("msg", "@url请求响应码:@code在@span内出现:@current次")
-
+		platform := ctx.Input.GetArgsValue("platform", "----")
 		domain, err := ctx.Input.GetArgsByName("domain")
 		if err != nil {
 			return
@@ -52,6 +52,7 @@ func (s *collectProxy) responseCollect(tp string) context.SHandlerFunc {
 			tf.Set("unq", tf.Translate("{@domain}_{@url}_{@code}"))
 			tf.Set("title", tf.TranslateAll(title, true))
 			tf.Set("msg", tf.TranslateAll(msg, true))
+			tf.Set("platform", platform)
 			st, err := s.checkAndSave(ctx, tp, tf, value)
 			if err != nil {
 				response.SetError(st, err)

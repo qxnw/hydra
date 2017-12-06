@@ -15,6 +15,7 @@ func (s *collectProxy) nginxAccessCountCollect(name string, mode string, service
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "nginx 每分钟请求数")
 	msg := ctx.Input.GetArgsValue("msg", "@host服务器 nginx每分钟请求数:@current(@ct)")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	maxValue, err := ctx.Input.GetArgsIntValue("max")
 	if err != nil {
 		return
@@ -38,6 +39,7 @@ func (s *collectProxy) nginxAccessCountCollect(name string, mode string, service
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "nginx-access", tf, value)
 	response.SetError(st, err)
 	return

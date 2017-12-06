@@ -12,9 +12,10 @@ import (
 )
 
 func (s *collectProxy) tcpCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "TCP服务器")
 	msg := ctx.Input.GetArgsValue("msg", "TCP服务器地址:@url")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	host, err := ctx.Input.GetArgsByName("host")
 	if err != nil {
 		return
@@ -34,6 +35,7 @@ func (s *collectProxy) tcpCollect(name string, mode string, service string, ctx 
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "tcp", tf, result)
 	response.SetError(st, err)
 	return

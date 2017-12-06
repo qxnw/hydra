@@ -13,6 +13,7 @@ import (
 func (s *collectProxy) netConnectCountCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "网络连接数")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	msg := ctx.Input.GetArgsValue("msg", "@host服务器网络连接数:@current")
 	maxValue, err := ctx.Input.GetArgsIntValue("max")
 	if err != nil {
@@ -36,6 +37,7 @@ func (s *collectProxy) netConnectCountCollect(name string, mode string, service 
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "ncc", tf, value)
 	response.SetError(st, err)
 	return

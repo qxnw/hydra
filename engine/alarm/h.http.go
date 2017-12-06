@@ -17,6 +17,7 @@ func (s *collectProxy) httpCollect(name string, mode string, service string, ctx
 	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "HTTP服务器")
 	msg := ctx.Input.GetArgsValue("msg", "HTTP服务器地址:@url请求响应码:@current")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	uri, err := ctx.Input.GetArgsByName("url")
 	if err != nil {
 		return
@@ -40,6 +41,7 @@ func (s *collectProxy) httpCollect(name string, mode string, service string, ctx
 	tf.Set("unq", tf.Translate("@url"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "http", tf, value)
 	response.SetError(st, err)
 	return

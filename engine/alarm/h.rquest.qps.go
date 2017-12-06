@@ -12,10 +12,10 @@ import (
 func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-		response =context.GetStandardResponse()
+		response = context.GetStandardResponse()
 		title := ctx.Input.GetArgsValue("title", "每秒钟请求数")
 		msg := ctx.Input.GetArgsValue("msg", "@url在@span内请求:@current次")
-
+		platform := ctx.Input.GetArgsValue("platform", "----")
 		domain, err := ctx.Input.GetArgsByName("domain")
 		if err != nil {
 			return
@@ -50,6 +50,7 @@ func (s *collectProxy) requestQPSCollect(tp string) context.SHandlerFunc {
 			tf.Set("unq", tf.Translate("{@domain}_{@url}_QPS"))
 			tf.Set("title", tf.TranslateAll(title, true))
 			tf.Set("msg", tf.TranslateAll(msg, true))
+			tf.Set("platform", platform)
 			st, err := s.checkAndSave(ctx, tp, tf, value)
 			if err != nil {
 				response.SetError(st, err)

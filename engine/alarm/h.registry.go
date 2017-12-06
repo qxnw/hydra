@@ -10,9 +10,10 @@ import (
 )
 
 func (s *collectProxy) registryCollect(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	title := ctx.Input.GetArgsValue("title", "注册中心服务")
 	msg := ctx.Input.GetArgsValue("msg", "注册中心服务:@url当前数量:@current")
+	platform := ctx.Input.GetArgsValue("platform", "----")
 	path, err := ctx.Input.GetArgsByName("path")
 	if err != nil {
 		return
@@ -40,6 +41,7 @@ func (s *collectProxy) registryCollect(name string, mode string, service string,
 	tf.Set("unq", tf.Translate("@host"))
 	tf.Set("title", tf.Translate(title))
 	tf.Set("msg", tf.Translate(msg))
+	tf.Set("platform", platform)
 	st, err := s.checkAndSave(ctx, "registry", tf, value)
 	response.SetError(st, err)
 	return
