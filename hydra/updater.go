@@ -1,43 +1,35 @@
 package hydra
 
-/*
-func update(domain string, address string, log *logger.Logger) (err error) {
-	rgst, err := registry.NewRegistryWithAddress(address, log)
+import (
+	"bytes"
+	"crypto"
+	"fmt"
+	"net/http"
+
+	"github.com/zkfy/go-update"
+)
+
+//update 下载安装包并解压到临时目录，停止所有服务器，并拷贝到当前工作目录
+func updateNow(url string) (err error) {
+	resp, err := http.Get(url)
 	if err != nil {
-		err = fmt.Errorf("初始化注册中心失败：%s:%v", address, err)
 		return err
 	}
-	path := fmt.Sprintf("%s/var/global/logger", domain)
-	buff, err := getConfig(rgst, path)
+	defer resp.Body.Close()
+	var buff []byte
+	_, err = resp.Body.Read(buff)
 	if err != nil {
-		return err
-	}
-	loggerConf, err := conf.NewJSONConfWithJson(string(buff), 0, nil)
-	if err != nil {
-		err = fmt.Errorf("rpc日志配置错误:%s,%v", string(buff), err)
 		return
 	}
-	return
-}
-
-func getConfig(rgst registry.Registry, path string) ([]byte, error) {
-LOOP:
-	for {
-		select {
-		case <-r.closeChan:
-			break LOOP
-		case <-time.After(time.Second):
-			if b, err := rgst.Exists(path); err == nil && b {
-				buff, _, err := rgst.GetValue(path)
-				if err != nil {
-					err = fmt.Errorf("无法获取RPC日志配置:%v", err)
-					return nil, err
-				}
-				return buff, nil
-			}
+	err = update.Apply(bytes.NewReader(buff), update.Options{
+		Hash:     crypto.SHA256,
+		Checksum: buff,
+	})
+	if err != nil {
+		if err1 := update.RollbackError(err); err1 != nil {
+			err = fmt.Errorf("%+v,%v", err, err1)
+			return
 		}
 	}
-	return nil, fmt.Errorf("关闭监听:%s", path)
-
+	return err
 }
-*/
