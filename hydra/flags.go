@@ -17,6 +17,7 @@ import (
 type HFlags struct {
 	currentRegistry        string
 	Domain                 string
+	SystemName             string
 	runMode                string
 	tag                    string
 	mask                   string

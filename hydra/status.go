@@ -2,9 +2,6 @@ package hydra
 
 import (
 	"encoding/json"
-	"net/http"
-	"os"
-	"runtime/trace"
 
 	"strings"
 
@@ -12,7 +9,6 @@ import (
 
 	"github.com/qxnw/hydra/server/api"
 	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 )
 
@@ -30,38 +26,13 @@ var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 101
 func (h *Hydra) StartStatusServer(domain string) (err error) {
 	ws := api.NewAPI(domain, "status.server")
 	ws.Route("GET", "/sys/server/query", func(c *api.Context) {
-		status := make([]StatusServer, 0, len(h.servers))
-		for _, v := range h.servers {
-			status = append(status, StatusServer{Name: fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType), Start: v.runTime.Unix(), Address: v.address})
-		}
-		buf, err := jsons.Marshal(status)
-		if err != nil {
-			c.Result = &api.StatusResult{Code: 500, Result: "Internal Server Error(工作引擎发生异常)", Type: 0}
-			return
-		}
-		c.Result = &api.StatusResult{Code: 200, Result: json.RawMessage(buf), Type: api.JsonResponse}
-		return
+		h.queryServerStatus(c)
 	})
 	ws.Route("GET", "/sys/server/query/:name", func(c *api.Context) {
-		server := c.Param("name")
-		status := make([]StatusServer, 0, 1)
-		for _, v := range h.servers {
-			if strings.Contains(v.serverName, server) {
-				status = append(status, StatusServer{
-					Name:     fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType),
-					Start:    v.runTime.Unix(),
-					Address:  v.address,
-					Services: v.localServices,
-				})
-			}
-		}
-		buf, err := jsons.Marshal(status)
-		if err != nil {
-			c.Result = &api.StatusResult{Code: 500, Result: "Internal Server Error(工作引擎发生异常)", Type: 0}
-			return
-		}
-		c.Result = &api.StatusResult{Code: 200, Result: json.RawMessage(buf), Type: api.JsonResponse}
-		return
+		h.queryServerStatusByName(c)
+	})
+	ws.Route("POST", "/sys/server/update/:version", func(c *api.Context) {
+		h.update(c)
 	})
 
 	go func() error {
@@ -74,19 +45,65 @@ func (h *Hydra) StartStatusServer(domain string) (err error) {
 	return nil
 }
 
-//StartTraceServer 启用性能跟踪(协程，内存，堵塞等)
-func StartTraceServer(log *logger.Logger) error {
-	f, err := os.Create("trace.out")
-	if err != nil {
-		return err
+//--------------------------------------服务器相关操作----------------------------------------------------
+func (h *Hydra) queryServerStatus(c *api.Context) {
+	server := c.Param("name")
+	status := make([]StatusServer, 0, 1)
+	for _, v := range h.servers {
+		if strings.Contains(v.serverName, server) {
+			status = append(status, StatusServer{
+				Name:     fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType),
+				Start:    v.runTime.Unix(),
+				Address:  v.address,
+				Services: v.localServices,
+			})
+		}
 	}
-	defer f.Close()
-	err = trace.Start(f)
+	buf, err := jsons.Marshal(status)
 	if err != nil {
-		return err
+		c.Result = &api.StatusResult{Code: 500, Result: "Internal Server Error(工作引擎发生异常)", Type: 0}
+		return
 	}
-	defer trace.Stop()
-	addr := "0.0.0.0:19999"
-	log.Info("启用项目跟踪:http://0.0.0.0:19999/debug/pprof/")
-	return http.ListenAndServe(addr, nil)
+	c.Result = &api.StatusResult{Code: 200, Result: json.RawMessage(buf), Type: api.JsonResponse}
+	return
+}
+
+func (h *Hydra) queryServerStatusByName(c *api.Context) {
+	server := c.Param("name")
+	status := make([]StatusServer, 0, 1)
+	for _, v := range h.servers {
+		if strings.Contains(v.serverName, server) {
+			status = append(status, StatusServer{
+				Name:     fmt.Sprintf("%s/%s/%s", v.domain, v.serverName, v.serverType),
+				Start:    v.runTime.Unix(),
+				Address:  v.address,
+				Services: v.localServices,
+			})
+		}
+	}
+	buf, err := jsons.Marshal(status)
+	if err != nil {
+		c.Result = &api.StatusResult{Code: 500, Result: "Internal Server Error(工作引擎发生异常)", Type: 0}
+		return
+	}
+	c.Result = &api.StatusResult{Code: 200, Result: json.RawMessage(buf), Type: api.JsonResponse}
+	return
+}
+func (h *Hydra) update(c *api.Context) {
+	version := c.Param("version")
+	setting, err := h.getSetting(version)
+	if err != nil {
+		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		return
+	}
+	if version != setting.Version {
+		err = fmt.Errorf("更新报有误，配置的版本号不一致")
+		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		return
+	}
+	err = h.updateNow(setting.URL)
+	if err != nil {
+		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		return
+	}
 }
