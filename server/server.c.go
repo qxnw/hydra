@@ -57,7 +57,7 @@ func GetStatic(oconf conf.Conf, nconf conf.Conf) (enable bool, prefix, dir strin
 		err = fmt.Errorf("static未配置或配置有误:%+v", err)
 		return false, "", "", false, nil, err
 	}
-	enable = true
+	enable = false
 	if r, err := oconf.GetNodeWithSectionName("static", "#@path/static"); err != nil || r.GetVersion() != static.GetVersion() {
 		prefix := static.String("prefix")
 		dir := static.String("dir")

@@ -10,7 +10,10 @@ import (
 )
 
 //update 下载安装包并解压到临时目录，停止所有服务器，并拷贝到当前工作目录
-func updateNow(url string) (err error) {
+func updateNow(packageName string, version string, url string) (err error) {
+	if Version == version {
+		return nil
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -21,6 +24,7 @@ func updateNow(url string) (err error) {
 	if err != nil {
 		return
 	}
+
 	err = update.Apply(bytes.NewReader(buff), update.Options{
 		Hash:     crypto.SHA256,
 		Checksum: buff,

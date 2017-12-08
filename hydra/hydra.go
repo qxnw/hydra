@@ -25,6 +25,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var Version string
+
+func init() {
+	Version = "2.1.0.1"
+}
+
 //Hydra Hydra server
 type Hydra struct {
 	system string

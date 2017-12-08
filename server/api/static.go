@@ -23,6 +23,10 @@ type StaticOptions struct {
 func Static(opts ...StaticOptions) HandlerFunc {
 	return func(ctx *Context) {
 		opt := prepareStaticOptions(opts)
+		if !opt.Enable {
+			ctx.Next()
+			return
+		}
 		if ctx.Req().Method != "GET" && ctx.Req().Method != "HEAD" {
 			ctx.Next()
 			return
@@ -122,8 +126,8 @@ func prepareStaticOptions(options []StaticOptions) StaticOptions {
 			opt.Prefix = "/" + opt.Prefix
 		}
 	}
-	//if len(opt.FilterExts) == 0 {
-	//opt.FilterExts = append(opt.FilterExts, ".jpg", ".png", ".js", ".css", ".html", ".xml")
-	//}
+	// if len(opt.FilterExts) == 0 {
+	// 	opt.FilterExts = append(opt.FilterExts, ".jpg", ".png", ".js", ".css", ".html", ".xml")
+	// }
 	return opt
 }
