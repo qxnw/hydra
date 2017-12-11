@@ -5,6 +5,7 @@
 package api
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,6 +25,7 @@ func Static(opts ...StaticOptions) HandlerFunc {
 	return func(ctx *Context) {
 		opt := prepareStaticOptions(opts)
 		if !opt.Enable {
+			fmt.Println("未启用静态文件")
 			ctx.Next()
 			return
 		}
@@ -89,11 +91,11 @@ func Static(opts ...StaticOptions) HandlerFunc {
 				ctx.HandleError()
 				return
 			}
-			ctx.NotFound()
+			ctx.NotFound("未找到文件")
 			return
 		}
 		if finfo.IsDir() {
-			ctx.NotFound()
+			ctx.NotFound("未找到文件")
 			return
 		}
 		//文件已存在，则返回文件

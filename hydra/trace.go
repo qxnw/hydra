@@ -2,6 +2,7 @@ package hydra
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime/trace"
 
