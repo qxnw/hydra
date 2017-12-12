@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/profile"
 	"github.com/qxnw/hydra/server"
+	"github.com/qxnw/hydra/server/api"
 
 	"sync"
 
@@ -25,18 +26,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
+//Version 当前版本号
 var Version string
 
 func init() {
-	Version = "2.1.0.1"
+	Version = "2.0.0.1"
 }
 
 //Hydra Hydra server
 type Hydra struct {
-	system string
-
+	system       string
 	collectIndex int
-
 	*logger.Logger
 	watcher      conf.Watcher
 	servers      map[string]*Server
@@ -45,6 +45,7 @@ type Hydra struct {
 	closeChan    chan struct{}
 	done         bool
 	mu           sync.Mutex
+	ws           *api.HTTPServer
 	*HFlags
 }
 
@@ -118,6 +119,7 @@ func (h *Hydra) Start() (err error) {
 
 	//监听操作系统事件ctrl+c, kill
 	interrupt := make(chan os.Signal, 1)
+
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM) //9:kill/SIGKILL,15:SIGTEM,20,SIGTOP 2:interrupt/syscall.SIGINT
 LOOP:
 	for {

@@ -244,7 +244,7 @@ func New(domain string, name string, typeName string, opts ...Option) *HTTPServe
 		t.webServerOption.metric,
 		Compresses([]string{}),
 		WriteHeader(),
-		Static(StaticOptions{Prefix: ""}),
+		Static(StaticOptions{Enable: false}),
 		OnlyAllowAjaxRequest(),
 		XSRFFilter(),
 		JWTFilter(),

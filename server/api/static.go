@@ -25,7 +25,6 @@ func Static(opts ...StaticOptions) HandlerFunc {
 	return func(ctx *Context) {
 		opt := prepareStaticOptions(opts)
 		if !opt.Enable {
-			fmt.Println("未启用静态文件")
 			ctx.Next()
 			return
 		}
@@ -33,7 +32,7 @@ func Static(opts ...StaticOptions) HandlerFunc {
 			ctx.Next()
 			return
 		}
-
+		fmt.Println("in.static")
 		var rPath = ctx.Req().URL.Path
 		//处理特殊文件
 		if rPath == "/favicon.ico" || rPath == "/robots.txt" {

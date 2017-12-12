@@ -123,7 +123,6 @@ func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *trans
 	} else {
 		//上次消息是失败，但记录时间小于5分钟，则不上报
 		if len(value) > 0 && len(value[0]) > 0 && types.GetString(value[0][0]["value"]) == "1" {
-			//fmt.Println("time:", value[0][0]["time"], value)
 			lastTime, err := time.Parse("2006-01-02T15:04:05.999999999Z07:00", fmt.Sprintf("%v", value[0][0]["time"]))
 			if err != nil {
 				return 204, err
@@ -133,12 +132,6 @@ func (s *collectProxy) checkAndSave(ctx *context.Context, mode string, tf *trans
 			}
 		}
 	}
-
-	//err = db.SendLineProto(tf.TranslateAll(s.reportMap[mode], true))
-	//if err != nil {
-	//return 500, err
-	//}
-	//return 200, nil
 	sql := s.reportMap[mode]
 	return s.save2Influxdb(sql, tf, db)
 }
