@@ -12,6 +12,14 @@ import (
 	"github.com/qxnw/lib4go/types"
 )
 
+type IContextDB interface {
+	GetDB(names ...string) (d *db.DB, err error)
+	Scalar(tpl []string, input map[string]interface{}) (data interface{}, err error)
+	Execute(tpl []string, input map[string]interface{}) (row int64, err error)
+	GetFirstRow(tpl []string, input map[string]interface{}) (data db.QueryRow, err error)
+	GetDataRows(tpl []string, input map[string]interface{}) (data []db.QueryRow, err error)
+}
+
 //ContextDB 数据库操作
 type ContextDB struct {
 	ctx *Context

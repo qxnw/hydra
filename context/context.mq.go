@@ -11,6 +11,12 @@ import (
 	"github.com/qxnw/lib4go/mq"
 )
 
+type IContextMQ interface {
+	Send(queue string, msg string, timeout int) error
+	SendBySetting(queueName string, msg string, timeoutName string) error
+	GetProducer() (p mq.MQProducer, err error)
+}
+
 //ContextMQ MQ操作实例
 type ContextMQ struct {
 	ctx *Context

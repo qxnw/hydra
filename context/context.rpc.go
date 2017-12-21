@@ -6,7 +6,15 @@ import (
 	"github.com/qxnw/lib4go/jsons"
 )
 
-//ContextRPC MQ操作实例
+//IContextRPC rpc基础操作
+type IContextRPC interface {
+	PreInit(services ...string) error
+	RequestFailRetry(service string, input map[string]string, times int) (status int, r string, param map[string]string, err error)
+	Request(service string, input map[string]string, failFast bool) (status int, r string, param map[string]string, err error)
+	RequestMap(service string, input map[string]string, failFast bool) (status int, r map[string]interface{}, param map[string]string, err error)
+}
+
+//ContextRPC rpc操作实例
 type ContextRPC struct {
 	ctx *Context
 }

@@ -9,6 +9,12 @@ import (
 	"github.com/qxnw/lib4go/utility"
 )
 
+type IContextInput interface {
+	CheckArgs(names ...string) error
+	CheckInput(names ...string) error
+	GetVarParam(tpName string, name string) (string, error)
+}
+
 //Input 输入参数
 type Input struct {
 	Input  transform.ITransformGetter
