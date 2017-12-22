@@ -6,6 +6,7 @@ import (
 	"plugin"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/file"
 )
 
@@ -31,11 +32,12 @@ func (s *goPluginWorker) loadPlugin(p string) (r context.Worker, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("加载引擎插件%s失败未找到函数GetWorker,err:%v", path, err)
 	}
-	wkr, ok := work.(func() context.Worker)
+	wkr, ok := work.(func(engine.IContainer) context.Worker)
 	if !ok {
 		return nil, fmt.Errorf("加载引擎插件%s失败 GetWorker函数必须为 func() context.Worker类型", path)
 	}
-	rwrk := wkr()
+	context := engine.NewContainer(s.ctx.RPC, s.ctx.Registry, s.ctx.Domain, s.ctx.ServerName, s.ctx.Logger)
+	rwrk := wkr(context)
 	plugines[path] = rwrk
 	s.ctx.Logger.Info("加载引擎插件：", p)
 	return rwrk, nil
