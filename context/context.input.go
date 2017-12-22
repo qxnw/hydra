@@ -108,6 +108,19 @@ func (w *Input) GetInt(name string) (int, error) {
 	return v, nil
 }
 
+//GetInt64 从input中获取int64数字
+func (w *Input) GetInt64(name string) (int64, error) {
+	value, err := w.Get(name)
+	if err != nil {
+		return 0, err
+	}
+	iv, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		return iv, nil
+	}
+	return 0, err
+}
+
 //DecodeBody2Input 根据编码格式解码body参数，并更新input参数
 func (w *Input) DecodeBody2Input(encoding ...string) error {
 	body, err := w.DecodeBody(encoding...)
