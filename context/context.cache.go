@@ -63,7 +63,7 @@ func (cc *ContextCache) GetCache(names ...string) (c cache.ICache, err error) {
 			err = fmt.Errorf("cache[%s]配置文件错误，未包含server节点:%s", name, conf)
 			return nil, err
 		}
-		c, err = cache.NewCache(server.(string))
+		c, err = cache.NewCache(server.(string), conf)
 		if err != nil {
 			return nil, err
 		}

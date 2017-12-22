@@ -6,7 +6,7 @@ type TCache struct {
 	Values []string
 	Value  string
 	Err    error
-	N      uint64
+	N      int64
 }
 
 // Get 根据key获取memcache中的数据
@@ -15,12 +15,12 @@ func (c *TCache) Get(key string) (string, error) {
 }
 
 //Decrement 增加变量的值
-func (c *TCache) Decrement(key string, delta uint64) (n uint64, err error) {
+func (c *TCache) Decrement(key string, delta int64) (n int64, err error) {
 	return c.N, c.Err
 }
 
 //Increment 减少变量的值
-func (c *TCache) Increment(key string, delta uint64) (n uint64, err error) {
+func (c *TCache) Increment(key string, delta int64) (n int64, err error) {
 	return c.N, c.Err
 }
 
@@ -58,7 +58,7 @@ type tcacheResolver struct {
 	cache *TCache
 }
 
-func (s *tcacheResolver) Resolve(address []string) (cache.ICache, error) {
+func (s *tcacheResolver) Resolve(address []string, c string) (cache.ICache, error) {
 	return s.cache, nil
 }
 
