@@ -35,7 +35,7 @@ func (h *Hydra) StartStatusServer(domain string) (err error) {
 	h.ws.Route("GET", "/server/query", func(c *api.Context) {
 		h.queryServerStatus(c)
 	})
-	h.ws.Route("GET", "/server/update/:version", func(c *api.Context) {
+	h.ws.Route("GET", "/server/update/:systemName/:version", func(c *api.Context) {
 		h.update(c)
 	})
 
@@ -72,7 +72,8 @@ func (h *Hydra) queryServerStatus(c *api.Context) {
 func (h *Hydra) update(c *api.Context) {
 	h.Info("启动软件更新")
 	version := c.Param("version")
-	pkg, err := h.getPackage(version)
+	systemName := c.Param("systemName")
+	pkg, err := h.getPackage(systemName, version)
 	if err != nil {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
 		return

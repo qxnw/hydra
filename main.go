@@ -27,6 +27,7 @@ import (
 	_ "github.com/qxnw/hydra/server/rpc"
 	_ "github.com/qxnw/hydra/server/web"
 	_ "github.com/qxnw/lib4go/cache/memcache"
+	_ "github.com/qxnw/lib4go/cache/redis"
 	_ "github.com/qxnw/lib4go/mq/redis"
 	_ "github.com/qxnw/lib4go/mq/stomp"
 	_ "github.com/qxnw/lib4go/mq/xmq"

@@ -18,14 +18,14 @@ type updaterSetting struct {
 	Version string `json:"v"`
 }
 
-func (h *Hydra) getPackage(version string) (s *updaterSetting, err error) {
+func (h *Hydra) getPackage(systemName string, version string) (s *updaterSetting, err error) {
 	reg, err := registry.NewRegistryWithAddress(h.currentRegistry, h.Logger)
 	if err != nil {
 		err = fmt.Errorf("注册中心创建失败:%v", err)
 		return
 	}
 
-	path := fmt.Sprintf("%s/var/package/%s-%s", h.Domain, h.SystemName, version)
+	path := fmt.Sprintf("%s/var/package/%s-%s", h.Domain, systemName, version)
 	b, err := reg.Exists(path)
 	if err != nil {
 		err = fmt.Errorf("无法读取安装包配置:%s", path)
@@ -86,9 +86,11 @@ func (h *Hydra) updateNow(url string) (err error) {
 	return
 }
 func (h *Hydra) restartHydra() (err error) {
+	args := getExecuteParams(os.Args)
+	h.Info("准备重启：", args)
 	go func() {
 		time.Sleep(time.Second * 5)
-		cmd1 := exec.Command("/bin/bash", "-c", strings.Join(os.Args, " "))
+		cmd1 := exec.Command("/bin/bash", "-c", args)
 		cmd1.Stdout = os.Stdout
 		cmd1.Stderr = os.Stdout
 		cmd1.Stdin = os.Stdin
@@ -101,4 +103,15 @@ func (h *Hydra) restartHydra() (err error) {
 		os.Exit(20)
 	}()
 	return nil
+}
+func getExecuteParams(input []string) string {
+	args := make([]string, 0, len(input))
+	for i, v := range input {
+		if i > 0 && strings.HasPrefix(input[i-1], "-") && !strings.HasPrefix(v, "-") {
+			args = append(args, fmt.Sprintf(`"%s"`, v))
+		} else {
+			args = append(args, v)
+		}
+	}
+	return strings.Join(args, " ")
 }
