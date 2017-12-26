@@ -44,7 +44,7 @@ func (c *Container) GetServerName() string {
 
 //GetVarParam 获取配置参数
 func (c *Container) GetVarParam(tp string, name string) (string, error) {
-	buff, _, err := c.registry.GetValue(fmt.Sprintf("/%s/var/%s/%s", c.domain, tp, name))
+	buff, _, err := c.registry.GetValue(fmt.Sprintf("%s/var/%s/%s", c.domain, tp, name))
 	if err != nil {
 		return "", err
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 func (r *collectProxy) init() {
-	r.reportSQL = `select * from alarm_records where "time">now() - @time order by time`
+	r.reportSQL = `select * from alarm_records where "time"> now() - @time order by time desc`
 
 	r.queryMap["http"] = `select value from alarm_records where "type"='http' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
 	r.queryMap["tcp"] = `select value from alarm_records where "type"='tcp' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`

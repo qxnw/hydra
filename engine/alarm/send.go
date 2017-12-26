@@ -51,6 +51,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 		err = fmt.Errorf("从influxdb中查询报警数据失败%s:err:%v", tf.Translate(s.reportSQL), err)
 		return
 	}
+	//ctx.Info("sql:", tf.Translate(s.reportSQL), data)
 	if len(data) == 0 || len(data[0]) == 0 {
 		response.SetContent(204, "NONEED")
 		return response, nil
