@@ -29,6 +29,7 @@ type HFlags struct {
 	ip                     string
 	baseData               *transform.Transform
 	flag                   *pflag.FlagSet
+	inputArgs              []string
 }
 
 //BindFlags 绑定参数列表
@@ -46,6 +47,10 @@ func (h *HFlags) BindFlags(flag *pflag.FlagSet) {
 
 //CheckFlags 检查输入参数
 func (h *HFlags) CheckFlags(i ...int) (err error) {
+	h.inputArgs = make([]string, 0, len(os.Args))
+	for _, v := range os.Args {
+		h.inputArgs = append(h.inputArgs, v)
+	}
 	h.flag.Parse(os.Args[1:])
 	index := 1
 	if len(i) > 0 {

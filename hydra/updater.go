@@ -86,13 +86,13 @@ func (h *Hydra) updateNow(url string) (err error) {
 	return
 }
 func (h *Hydra) restartHydra() (err error) {
-	args := getExecuteParams(os.Args)
+	args := getExecuteParams(h.inputArgs)
 	h.Info("准备重启：", args)
 	go func() {
 		time.Sleep(time.Second * 5)
 		cmd1 := exec.Command("/bin/bash", "-c", args)
 		cmd1.Stdout = os.Stdout
-		cmd1.Stderr = os.Stdout
+		cmd1.Stderr = os.Stderr
 		cmd1.Stdin = os.Stdin
 		err = cmd1.Start()
 		if err != nil {

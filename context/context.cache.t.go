@@ -39,6 +39,11 @@ func (c *TCache) Set(key string, value string, expiresAt int) error {
 	return c.Err
 }
 
+// Set 更新数据到memcache中，没有则添加
+func (c *TCache) Exists(key string) bool {
+	return false
+}
+
 // Delete 删除memcache中的数据
 func (c *TCache) Delete(key string) error {
 	return c.Err

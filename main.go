@@ -31,6 +31,8 @@ import (
 	_ "github.com/qxnw/lib4go/mq/redis"
 	_ "github.com/qxnw/lib4go/mq/stomp"
 	_ "github.com/qxnw/lib4go/mq/xmq"
+	_ "github.com/qxnw/lib4go/queue"
+	_ "github.com/qxnw/lib4go/queue/redis"
 )
 
 func main() {
