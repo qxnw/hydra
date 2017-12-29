@@ -16,7 +16,7 @@ func (s *monitorProxy) registryCollect(name string, mode string, service string,
 		return
 	}
 	ip := xnet.GetLocalIPAddress(ctx.Input.GetArgsValue("mask", ""))
-	err = updateRegistryStatus(ctx,  int64(len(data)), "server", ip, "path", path)
+	err = updateRegistryStatus(ctx, int64(len(data)), "server", ip, "path", path)
 	response.SetError(0, err)
 	return
 }

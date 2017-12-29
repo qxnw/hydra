@@ -119,3 +119,6 @@ func updateNginxErrorCount(ctx *context.Context, value int64, params ...string) 
 func updateNginxAccessCount(ctx *context.Context, value int64, params ...string) error {
 	return updateStatusInt64(ctx, "influxdb", "monitor.nginx.access", value, params...)
 }
+func updateredisListCount(ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(ctx, "influxdb", "monitor.queue.count", value, params...)
+}

@@ -65,7 +65,7 @@ func (s *collectProxy) notifySend(name string, mode string, service string, ctx 
 			}
 			for _, u := range settingObj.Users {
 				st, err := s.Notify(ctx, group, alarm, settingObj.Notify, u, title, content, happendTime, remark)
-				if err != nil {
+				if err != nil && st != 204 {
 					response.SetError(st, err)
 					return response, err
 				}

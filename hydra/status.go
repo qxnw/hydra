@@ -12,6 +12,7 @@ import (
 )
 
 type HydraServer struct {
+	Version   string        `json:"version"`
 	Servers   []*ServerInfo `json:"servers"`
 	AppMemory uint64        `json:"app_memory"`
 	CPUUsed   string        `json:"cpu_used_precent"`
@@ -52,6 +53,7 @@ func (h *Hydra) StartStatusServer(domain string) (err error) {
 //--------------------------------------服务器相关操作----------------------------------------------------
 func (h *Hydra) queryServerStatus(c *api.Context) {
 	hydraServer := &HydraServer{}
+	hydraServer.Version = Version
 	hydraServer.AppMemory = memory.GetAPPMemory()
 	hydraServer.CPUUsed = fmt.Sprintf("%.2f", cpu.GetInfo(time.Millisecond*200).UsedPercent)
 	hydraServer.MemUsed = fmt.Sprintf("%.2f", memory.GetInfo().UsedPercent)
@@ -59,7 +61,7 @@ func (h *Hydra) queryServerStatus(c *api.Context) {
 	hydraServer.Servers = make([]*ServerInfo, 0, len(h.servers))
 	for _, v := range h.servers {
 		hydraServer.Servers = append(hydraServer.Servers, &ServerInfo{
-			Name:     fmt.Sprintf("%s/servers/%s/%s", v.domain, v.serverName, v.serverType),
+			Name:     fmt.Sprintf("/%s/servers/%s/%s", v.domain, v.serverName, v.serverType),
 			Start:    v.runTime.Unix(),
 			Address:  v.address,
 			Services: v.localServices,
@@ -73,6 +75,10 @@ func (h *Hydra) update(c *api.Context) {
 	h.Info("启动软件更新")
 	version := c.Param("version")
 	systemName := c.Param("systemName")
+	if version == Version {
+		c.Result = &api.StatusResult{Code: 204, Result: "无需更新", Type: 0}
+		return
+	}
 	pkg, err := h.getPackage(systemName, version)
 	if err != nil {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}

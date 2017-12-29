@@ -139,7 +139,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		ext := make(map[string]interface{})
 		ext["hydra_sid"] = task.GetSessionID()
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}

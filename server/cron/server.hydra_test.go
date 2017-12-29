@@ -90,7 +90,7 @@ func TestServer41(t *testing.T) {
 var confstr1 = `{   
     "status": "start",
     "package": "1.0.0.1",  
-	"metric": "#@domain/var/db/influxdb",
+	"metric": "#/@domain/var/db/influxdb",
     "task": "#@path/task"   
 }`
 
@@ -108,7 +108,7 @@ var taskStr1 = `{
 			"cron":"@every 2s",
             "service": "/order/request:@action",
 			"action": "request",
-            "params": "db=@domain/var/db/influxdb"
+            "params": "db=/@domain/var/db/influxdb"
         }
     ]
 }`

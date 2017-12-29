@@ -46,7 +46,7 @@ func newRPCWriter(domain string, address string, logger *logger.Logger) (r *rpcW
 		err = fmt.Errorf("初始化注册中心失败：%s:%v", address, err)
 		return nil, err
 	}
-	path := fmt.Sprintf("%s/var/global/logger", domain)
+	path := fmt.Sprintf("/%s/var/global/logger", domain)
 	buff, err := r.getConfig(registry, path)
 	if err != nil {
 		return nil, err

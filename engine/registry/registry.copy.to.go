@@ -8,7 +8,7 @@ import (
 
 //domainCopy 无需任何输入参数，直接备份当前域所在目录下的所有配置
 func (s *registryProxy) domainCopy(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response =context.GetStandardResponse()
+	response = context.GetStandardResponse()
 	domain, err := ctx.Input.Get("fromDomain")
 	if err != nil {
 		err = fmt.Errorf("缺少输入参数fromDomain")
@@ -21,24 +21,24 @@ func (s *registryProxy) domainCopy(name string, mode string, service string, ctx
 		return
 	}
 
-	serverData, err := s.getCopyNodes(fmt.Sprintf("%s/servers", domain), "servers")
+	serverData, err := s.getCopyNodes(fmt.Sprintf("/%s/servers", domain), "servers")
 	if err != nil {
 		return
 	}
 
-	varData, err := s.getCopyNodes(fmt.Sprintf("%s/var", domain), "var")
+	varData, err := s.getCopyNodes(fmt.Sprintf("/%s/var", domain), "var")
 	if err != nil {
 		return
 	}
 	for _, v := range serverData {
-		path := fmt.Sprintf("%s/%s", ndomain, v.vp)
+		path := fmt.Sprintf("/%s/%s", ndomain, v.vp)
 		err = s.registry.CreatePersistentNode(path, string(v.value))
 		if err != nil {
 			return
 		}
 	}
 	for _, v := range varData {
-		path := fmt.Sprintf("%s/%s", ndomain, v.vp)
+		path := fmt.Sprintf("/%s/%s", ndomain, v.vp)
 		err = s.registry.CreatePersistentNode(path, string(v.value))
 		if err != nil {
 			return

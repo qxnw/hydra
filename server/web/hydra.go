@@ -206,7 +206,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return encoding.Convert(c.BodyBuffer, ch)
 		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}

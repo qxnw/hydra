@@ -3,6 +3,7 @@ package cluster
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -29,17 +30,19 @@ type watchConf struct {
 	domain         string
 	args           map[string]string
 	closeChan      chan struct{}
+	tagName        string
 	*logger.Logger
 }
 
 //newWatchConf 监控配置文件变化
-func newWatchConf(domain string, serverName string, category string, confPath string, registry registry.Registry,
+func newWatchConf(domain string, serverName string, category string, tagName string, confPath string, registry registry.Registry,
 	updater chan *conf.Updater, timeSpan time.Duration, log *logger.Logger) *watchConf {
 	return &watchConf{confPath: confPath,
-		domain:         domain,
+		domain:         strings.Trim(domain, "/"),
 		registry:       registry,
 		serverName:     serverName,
 		category:       category,
+		tagName:        tagName,
 		notifyConfChan: updater,
 		timeSpan:       timeSpan,
 		Logger:         log,
@@ -147,9 +150,10 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	jconf.Set("domain", w.domain)
 	jconf.Set("path", w.confPath)
 	jconf.Set("type", w.category)
-	jconf.Set("root_path", fmt.Sprintf("%s/servers/%s/%s/conf", w.domain, w.serverName, w.category))
-	jconf.Set("category_path", fmt.Sprintf("%s/servers/%s/%s", w.domain, w.serverName, w.category))
-	jconf.Set("server_path", fmt.Sprintf("%s/servers/%s", w.domain, w.serverName))
+	jconf.Set("tag", w.tagName)
+	jconf.Set("root_path", fmt.Sprintf("/%s/servers/%s/%s/conf", w.domain, w.serverName, w.category))
+	jconf.Set("category_path", fmt.Sprintf("/%s/servers/%s/%s", w.domain, w.serverName, w.category))
+	jconf.Set("server_path", fmt.Sprintf("/%s/servers/%s", w.domain, w.serverName))
 	jconf.Content = string(content)
 	return jconf, nil
 }

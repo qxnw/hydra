@@ -79,7 +79,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 			if err != nil {
 				return fmt.Errorf("task的cron未配置或配置有误:%s(cron:%s,err:%+v)", conf.String("name"), task.Cron, err)
 			}
-			tk := NewTask(task.Name, s, w.handle(task.Service, task.Mode, task.Input, task.Body, task.Cron, task.Args), task.Service)
+			tk := NewTask(task.Name, s, w.handle(task), task.Service)
 			w.server.Add(tk)
 		}
 	}
@@ -100,6 +100,11 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 	}
 	w.server.cluster = conf.String("cluster", "master-slave")
 	w.server.Infof("%s(%s)启动模式:%s", conf.String("name"), conf.String("type"), w.server.cluster)
+	if len(conf.String("rds-records")) > 0 {
+		w.server.Infof("%s(%s):启用自动保存执行记录", conf.String("name"), conf.String("type"))
+	} else {
+		w.server.Warnf("%s(%s):未启用自动保存执行记录", conf.String("name"), conf.String("type"))
+	}
 	//设置基本参数
 	w.conf = conf
 	return nil
@@ -107,7 +112,7 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 }
 
 //setRouter 执行引擎操作
-func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) func(task *Task) error {
+func (w *hydraCronServer) handle(xtask *server.Task) func(task *Task) error {
 	return func(task *Task) (err error) {
 		//处理输入参数
 		ctx := context.GetContext()
@@ -117,8 +122,8 @@ func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) 
 		var inputGetter transform.ITransformGetter
 		var paramGetter transform.ITransformGetter
 		var inputBody string
-		if input != "" {
-			input, err := utility.GetMapWithQuery(input)
+		if xtask.Input != "" {
+			input, err := utility.GetMapWithQuery(xtask.Input)
 			if err != nil {
 				task.statusCode = 500
 				task.Result = err
@@ -130,40 +135,40 @@ func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) 
 			inputGetter = transform.NewMap(make(map[string]string)).Data
 			paramGetter = inputGetter
 		}
-		if body != "" {
-			if strings.HasPrefix(body, "#") {
-				cnf, err := w.conf.GetRawNodeWithValue(body, true)
+		if xtask.Body != "" {
+			if strings.HasPrefix(xtask.Body, "#") {
+				cnf, err := w.conf.GetRawNodeWithValue(xtask.Body, true)
 				if err != nil {
 					task.statusCode = 500
 					task.err = err
 					task.Result = err
-					task.Errorf("获取body节点(%s)数据失败:(err:%v)", body, task.err)
+					task.Errorf("获取body节点(%s)数据失败:(err:%v)", xtask.Body, task.err)
 					return err
 				}
 				inputBody = string(cnf)
 			} else {
-				inputBody = body
+				inputBody = xtask.Body
 			}
 		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
-			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#@domain/var/%s/%s", c, n), false)
+			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/@domain/var/%s/%s", c, n), false)
 			if err != nil {
 				return "", err
 			}
 			return string(cnf), nil
 		}
-		ext["__cron_"] = cron
-		margs, err := utility.GetMapWithQuery(args)
+		ext["__cron_"] = xtask.Cron
+		margs, err := utility.GetMapWithQuery(xtask.Args)
 		if err != nil {
 			task.statusCode = 500
-			task.err = fmt.Errorf("args配置出错(%s)：%v", args, err)
+			task.err = fmt.Errorf("args配置出错(%s)：%v", xtask.Args, err)
 			task.Result = task.err
 			task.Error(task.err)
 			return
 		}
 		//执行服务调用
 		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
-		response, err := w.handler.Handle(task.taskName, mode, service, ctx)
+		response, err := w.handler.Handle(task.taskName, xtask.Mode, xtask.Service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
@@ -172,6 +177,8 @@ func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) 
 			if err != nil {
 				task.Errorf("cron.response.error: %v", task.err)
 			}
+			xtask.Result = response.GetStatus()
+			w.saveHistory2Redis(xtask)
 		}()
 		if err != nil {
 			task.err = fmt.Errorf("cron.server.handler.error:%v,%v", response.GetContent(), err)
@@ -182,6 +189,17 @@ func (w *hydraCronServer) handle(service, mode, input, body, cron, args string) 
 		task.Result = response.GetContent()
 		task.statusCode = response.GetStatus()
 		return nil
+	}
+}
+func (w *hydraCronServer) saveHistory2Redis(xtask *server.Task) {
+	if len(w.conf.String("rds-records")) > 0 {
+		s, _ := cron.ParseStandard(xtask.Cron)
+		xtask.Next = s.Next(time.Now()).Format("20060102150405")
+		xtask.Last = time.Now().Format("20060102150405")
+		err := server.SaveCronExecuteHistory(w.conf.String("rds-records"), w.conf, xtask)
+		if err != nil {
+			w.server.Errorf("保存cron的执行记录失败:%v", err)
+		}
 	}
 }
 

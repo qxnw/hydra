@@ -82,7 +82,7 @@ var confstr1 = `{
     "package": "1.0.0.1",  
 	"address":"stomp://192.168.0.142:61613",
 	"version":"1.0",
-	"metric": "#@domain/var/db/influxdb",
+	"metric": "#/@domain/var/db/influxdb",
     "queue": "#@path/queue"   
 }`
 
@@ -98,7 +98,7 @@ var queue1 = `{
             "name": "hydra", 
 			"action": "get",  
             "service": "/order_query/@action",			
-            "args": "db=@domain/var/db/influxdb/@action"
+            "args": "db=/@domain/var/db/influxdb/@action"
         }
     ]
 }`

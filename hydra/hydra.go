@@ -29,10 +29,6 @@ import (
 //Version 当前版本号
 var Version string
 
-func init() {
-	Version = "2.0.0.1"
-}
-
 //Hydra Hydra server
 type Hydra struct {
 	system       string
@@ -184,7 +180,7 @@ LOOP:
 
 //获取服务器名称
 func (h *Hydra) getServerName(cnf conf.Conf) string {
-	return fmt.Sprintf("%s(%s)", cnf.String("name"), cnf.String("type"))
+	return fmt.Sprintf("%s(%s-%s)", cnf.String("name"), cnf.String("type"), cnf.String("tag"))
 }
 
 //添加新服务器

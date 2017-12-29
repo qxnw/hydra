@@ -25,7 +25,7 @@ func (h *Hydra) getPackage(systemName string, version string) (s *updaterSetting
 		return
 	}
 
-	path := fmt.Sprintf("%s/var/package/%s-%s", h.Domain, systemName, version)
+	path := fmt.Sprintf("/%s/var/package/%s-%s", h.Domain, systemName, version)
 	b, err := reg.Exists(path)
 	if err != nil {
 		err = fmt.Errorf("无法读取安装包配置:%s", path)

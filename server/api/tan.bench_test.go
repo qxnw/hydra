@@ -50,7 +50,7 @@ var confstr_b1 = `{
     "status": "starting",
     "package": "1.0.0.1",
     "QPS": 1000,
-    "metric": "#@domain/var/db/influxdb",
+    "metric": "#/@domain/var/db/influxdb",
     "limiter": "#@path/limiter1",
     "router": "#@path/router1"
 }`

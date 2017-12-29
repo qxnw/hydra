@@ -26,6 +26,7 @@ func (r *collectProxy) init() {
 	r.queryMap["ncc"] = `select value from alarm_records where "type"='ncc' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
 	r.queryMap["nginx-error"] = `select value from alarm_records where "type"='nginx-error' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
 	r.queryMap["nginx-access"] = `select value from alarm_records where "type"='nginx-access' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
+	r.queryMap["queue-count"] = `select value from alarm_records where "type"='queue-count' and platform='@platform' and "UNQ"='@unq' and "time">'now()-6h' order by time desc limit 1`
 
 	r.reportMap["http"] = "alarm_records type=http,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
 	r.reportMap["tcp"] = "alarm_records type=tcp,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
@@ -37,6 +38,7 @@ func (r *collectProxy) init() {
 	r.reportMap["ncc"] = "alarm_records type=ncc,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
 	r.reportMap["nginx-error"] = "alarm_records type=nginx-error,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
 	r.reportMap["nginx-access"] = "alarm_records type=nginx-access,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
+	r.reportMap["queue-count"] = "alarm_records type=queue-count,platform=@platform,UNQ=@unq,title=@title,group=@group,level=@level,t=@time,msg=@msg value=@value"
 
 	//服务器响应码
 	r.srvQueryMap["api_server_reponse"] = `select m5 *300 as t from "api.server.response.meter" where "domain" = '@domain' and "status" = '@code' and "time" > now() - 5m group by "url" fill(0) limit 1`

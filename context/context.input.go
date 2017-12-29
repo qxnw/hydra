@@ -195,6 +195,16 @@ func (w *Input) GetArgsInt(name string, v ...int) int {
 	}
 	return 0
 }
+func (w *Input) GetArgsInt64(name string, v ...int64) int64 {
+	r, err := w.GetArgsInt64Value(name)
+	if err == nil {
+		return r
+	}
+	if len(v) > 0 {
+		return v[0]
+	}
+	return 0
+}
 
 //GetArgsIntValue 从args中获取int数字
 func (w *Input) GetArgsIntValue(name string) (int, error) {
@@ -208,6 +218,19 @@ func (w *Input) GetArgsIntValue(name string) (int, error) {
 		return 0, err
 	}
 	return v, nil
+}
+
+//GetArgsInt64Value 从args中获取int64数字
+func (w *Input) GetArgsInt64Value(name string) (int64, error) {
+	value, err := w.GetArgsByName(name)
+	if err != nil {
+		return 0, err
+	}
+	v, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		return v, nil
+	}
+	return 0, err
 }
 
 //GetArgsFloat64Value 从args中获取float64数字

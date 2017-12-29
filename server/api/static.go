@@ -5,7 +5,6 @@
 package api
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,7 +31,6 @@ func Static(opts ...StaticOptions) HandlerFunc {
 			ctx.Next()
 			return
 		}
-		fmt.Println("in.static")
 		var rPath = ctx.Req().URL.Path
 		//处理特殊文件
 		if rPath == "/favicon.ico" || rPath == "/robots.txt" {

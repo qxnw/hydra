@@ -135,7 +135,7 @@ func (w *watchServer) startWatchConf(children []string, version int32) {
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
-					f := newWatchConf(w.domain, v, sv, path, w.registry, w.updater, w.timeSpan, w.Logger)
+					f := newWatchConf(w.domain, v, sv, w.clientTag, path, w.registry, w.updater, w.timeSpan, w.Logger)
 					f.args = map[string]string{
 						"domain": w.domain,
 						"root":   fmt.Sprintf("%s/%s/%s/conf", w.serverRoot, v, sv),

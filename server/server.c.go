@@ -378,14 +378,34 @@ type Router struct {
 	Args    string
 }
 type Task struct {
-	Name    string
-	Cron    string
-	Input   string
-	Body    string
-	Mode    string
-	Service string
-	Args    string
+	Name    string      `json:"name"`
+	Cron    string      `json:"cron"`
+	Input   string      `json:"input,omitempty"`
+	Body    string      `json:"body,omitempty"`
+	Mode    string      `json:"mode,omitempty"`
+	Service string      `json:"service"`
+	Args    string      `json:"args,omitempty"`
+	Next    string      `json:"next"`
+	Last    string      `json:"last"`
+	Result  interface{} `json:"result"`
 }
+
+func (t *Task) GetMap() map[string]interface{} {
+	return map[string]interface{}{
+		"name":    t.Name,
+		"cron":    t.Cron,
+		"input":   t.Input,
+		"body":    t.Body,
+		"mode":    t.Mode,
+		"service": t.Service,
+		"args":    t.Args,
+		"last":    t.Last,
+		"next":    t.Next,
+		"result":  t.Result,
+	}
+
+}
+
 type Queue struct {
 	Name    string
 	Mode    string

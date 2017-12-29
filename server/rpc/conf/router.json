@@ -1,11 +1,9 @@
 {
-    "routers": [
-        {
-            "name": "/:order/:request/:handler",
-            "method": "get,post",
-            "mode":"go",
-            "service": "/@order/@request/@handler",
-            "args": "db=@domain/var/db/influxdb"
-        }
-    ]
+    "routers": [{
+        "name": "/:order/:request/:handler",
+        "method": "get,post",
+        "mode": "go",
+        "service": "/@order/@request/@handler",
+        "args": "db=/@domain/var/db/influxdb"
+    }]
 }

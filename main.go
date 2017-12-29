@@ -35,7 +35,12 @@ import (
 	_ "github.com/qxnw/lib4go/queue/redis"
 )
 
+var (
+	VERSION = "1.0.1"
+)
+
 func main() {
+	hydra.Version = VERSION
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	hydra := hydra.NewHydra()
 	defer hydra.Close()

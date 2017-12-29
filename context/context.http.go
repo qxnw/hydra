@@ -3,6 +3,7 @@ package context
 import (
 	"errors"
 	"net/http"
+	"strings"
 )
 
 type ContextHTTP struct {
@@ -39,6 +40,28 @@ func (c *ContextHTTP) GetCookieString(name string) string {
 		return s
 	}
 	return ""
+}
+
+//GetClientIP 获取客户端IP地址
+func (c *ContextHTTP) GetClientIP() (string, error) {
+	request, err := c.GetHTTPRequest()
+	if err != nil {
+		return "", err
+	}
+	proxy := []string{}
+	if ips := request.Header.Get("X-Forwarded-For"); ips != "" {
+		proxy = strings.Split(ips, ",")
+	}
+	if len(proxy) > 0 && proxy[0] != "" {
+		return proxy[0], nil
+	}
+	ip := strings.Split(request.RemoteAddr, ":")
+	if len(ip) > 0 {
+		if ip[0] != "[" {
+			return ip[0], nil
+		}
+	}
+	return "127.0.0.1", nil
 }
 
 //GetCookie 从http.request中获取cookie

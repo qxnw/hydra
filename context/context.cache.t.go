@@ -39,7 +39,7 @@ func (c *TCache) Set(key string, value string, expiresAt int) error {
 	return c.Err
 }
 
-// Set 更新数据到memcache中，没有则添加
+// Exists 更新数据到memcache中，没有则添加
 func (c *TCache) Exists(key string) bool {
 	return false
 }
