@@ -76,27 +76,31 @@ func (h *Hydra) update(c *api.Context) {
 	version := c.Param("version")
 	systemName := c.Param("systemName")
 	if version == Version {
-		c.Result = &api.StatusResult{Code: 204, Result: "无需更新", Type: 0}
+	c.Result = &api.StatusResult{Code: 204, Result: "无需更新", Type: 0}
 		return
-	}
+		}
 	pkg, err := h.getPackage(systemName, version)
 	if err != nil {
+		h.Error(err)
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
 		return
 	}
 	if version != pkg.Version {
 		err = fmt.Errorf("安装包配置的版本号有误:%s(%s)", version, pkg.Version)
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		h.Error(err)
 		return
 	}
 	err = h.updateNow(pkg.URL, pkg.CRC32)
 	if err != nil {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		h.Error(err)
 		return
 	}
 	err = h.restartHydra()
 	if err != nil {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
+		h.Error(err)
 		return
 	}
 	c.Result = &api.StatusResult{Code: 200, Result: "SUCCESS", Type: 0}

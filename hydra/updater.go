@@ -82,7 +82,7 @@ func (h *Hydra) updateNow(url string, crc32 uint32) (err error) {
 	}
 	err = updater.Apply(resp.Body, UpdaterOptions{CRC32: crc32, TargetName: filepath.Base(url)})
 	if err != nil {
-		if err1 := updater.Rollback(); err != nil {
+		if err1 := updater.Rollback(); err1 != nil {
 			err = fmt.Errorf("更新失败%+v,回滚失败%v", err, err1)
 			return
 		}
