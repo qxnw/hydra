@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/qxnw/hydra/registry"
-	"github.com/zkfy/go-update"
 )
 
 type updaterSetting struct {
 	URL     string `json:"url"`
 	Version string `json:"v"`
+	CRC32   uint32 `json:"crc32"`
 }
 
 func (h *Hydra) getPackage(systemName string, version string) (s *updaterSetting, err error) {
@@ -46,11 +47,15 @@ func (h *Hydra) getPackage(systemName string, version string) (s *updaterSetting
 		err = fmt.Errorf("安装包格式有误:%v", err)
 		return
 	}
+	if s.URL == "" || s.Version == "" || s.CRC32 == 0 {
+		err = fmt.Errorf("pack配置有误，参数（url,v,crc32）不能为空")
+		return
+	}
 	return
 }
 
 //update 下载安装包并解压到临时目录，停止所有服务器，并拷贝到当前工作目录
-func (h *Hydra) updateNow(url string) (err error) {
+func (h *Hydra) updateNow(url string, crc32 uint32) (err error) {
 	h.Info("下载安装包:", url)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -70,13 +75,19 @@ func (h *Hydra) updateNow(url string) (err error) {
 		err = fmt.Errorf("无法读取更新包长度:%d", resp.ContentLength)
 		return
 	}
-	err = update.Apply(resp.Body, update.Options{})
+	updater, err := NewUpdater()
 	if err != nil {
-		if err1 := update.RollbackError(err); err1 != nil {
+		err = fmt.Errorf("无法创建updater:%v", err)
+		return
+	}
+	err = updater.Apply(resp.Body, UpdaterOptions{CRC32: crc32, TargetName: filepath.Base(url)})
+	if err != nil {
+		if err1 := updater.Rollback(); err != nil {
 			err = fmt.Errorf("更新失败%+v,回滚失败%v", err, err1)
 			return
 		}
-		err = fmt.Errorf("更新失败%+v", err)
+		err = fmt.Errorf("更新失败,已回滚(err:%v)", err)
+		return
 	}
 	h.Info("更新成功，停止所有服务，并准备重启")
 	for _, server := range h.servers {

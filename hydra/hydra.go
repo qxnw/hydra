@@ -111,7 +111,7 @@ func (h *Hydra) Start() (err error) {
 	}
 	go h.loopRecvNotify()
 	go h.freeMemory()
-	h.Infof("启动 hydra server(%s,%s)...", h.tag, h.runMode)
+	h.Infof("启动 hydra server(%s,%s,v:%s)...", h.tag, h.runMode, Version)
 
 	//监听操作系统事件ctrl+c, kill
 	interrupt := make(chan os.Signal, 1)

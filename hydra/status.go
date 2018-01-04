@@ -89,7 +89,7 @@ func (h *Hydra) update(c *api.Context) {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
 		return
 	}
-	err = h.updateNow(pkg.URL)
+	err = h.updateNow(pkg.URL, pkg.CRC32)
 	if err != nil {
 		c.Result = &api.StatusResult{Code: 500, Result: err.Error(), Type: 0}
 		return
