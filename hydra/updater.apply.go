@@ -48,6 +48,7 @@ func (u *Updater) Apply(update io.Reader, opts UpdaterOptions) (err error) {
 	}
 
 	//创建目标目录
+	defer os.Chdir(u.currentDir)
 	os.RemoveAll(u.newDir)
 	err = os.MkdirAll(u.newDir, 0755)
 	if err != nil {
@@ -81,6 +82,20 @@ func (u *Updater) Apply(update io.Reader, opts UpdaterOptions) (err error) {
 	u.needRollback = true
 	//将新的目标文件修改为当前目录
 	err = os.Rename(u.newDir, u.currentDir)
+	if err != nil {
+		err = fmt.Errorf("重命名文件夹失败:%v", err)
+		return
+	}
+	err = os.Chdir(u.currentDir)
+	if err != nil {
+		err = fmt.Errorf("切换工作目录失败:%v", err)
+		return
+	}
+	//err = os.Chtimes(u.currentDir, time.Now(), time.Now())
+	//if err != nil {
+	//err = fmt.Errorf("修改文件夹时间失败:%v", err)
+	//return
+	//}
 	return
 }
 
@@ -89,6 +104,7 @@ func (u *Updater) Rollback() error {
 	if !u.needRollback {
 		return nil
 	}
+	defer os.Chdir(u.currentDir)
 	if _, err := os.Stat(u.oldDir); os.IsNotExist(err) {
 		return fmt.Errorf("无法回滚，原备份文件(%s)不存在", u.oldDir)
 	}
@@ -98,7 +114,11 @@ func (u *Updater) Rollback() error {
 		return os.Rename(u.oldDir, u.currentDir)
 	}
 	os.RemoveAll(u.currentDir)
-	return os.Rename(u.oldDir, u.currentDir)
+	err := os.Rename(u.oldDir, u.currentDir)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //UpdaterOptions 文件更新选项

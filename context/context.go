@@ -11,6 +11,8 @@ import (
 	"github.com/qxnw/lib4go/transform"
 )
 
+type VarHandle func(tp string, name string) (string, error)
+
 //Context 引擎执行上下文
 type Context struct {
 	Input    *Input
