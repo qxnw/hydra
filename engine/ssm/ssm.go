@@ -36,6 +36,7 @@ func (s *smsProxy) Close() error {
 	return nil
 }
 
+
 //Handle
 //从input参数中获取: mobile,data
 //从args参数中获取:mail

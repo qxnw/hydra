@@ -50,6 +50,7 @@ func (s *monitorProxy) Start(ctx *engine.EngineContext) (services []string, err 
 func (s *monitorProxy) Close() error {
 	return nil
 }
+
 func (s *monitorProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return

@@ -1,7 +1,6 @@
 package alarm
 
 import (
-	"energy/coupon-services/access"
 	"fmt"
 	"strconv"
 	"time"
@@ -29,7 +28,7 @@ func (s *collectProxy) queueCountCollect(name string, mode string, service strin
 	}
 	max := ctx.Input.GetArgsInt64("max")
 	min := ctx.Input.GetArgsInt64("min")
-	queue, err := getQueue(queueName)
+	queue, err := getQueue(ctx, queueName)
 	if err != nil {
 		return
 	}
@@ -58,10 +57,10 @@ func (s *collectProxy) queueCountCollect(name string, mode string, service strin
 	return
 }
 
-func getQueue(name string) (q queue.IQueue, err error) {
+func getQueue(ctx *context.Context, name string) (q queue.IQueue, err error) {
 	_, iqueue, err := queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
 		name := input[0].(string)
-		content, err := access.Container.GetVarParam("queue", name)
+		content, err := ctx.Input.GetVarParam("queue", name)
 		if err != nil {
 			return nil, err
 		}

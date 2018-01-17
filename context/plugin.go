@@ -26,7 +26,7 @@ type RPCInvoker interface {
 }
 
 type Worker interface {
-	GetServices() []string
+	GetServices()([]string)
 	Handler
 }
 
@@ -47,7 +47,9 @@ type WHandlerFunc func(name string, mode string, service string, c *Context) (*W
 func (h WHandlerFunc) Handle(name string, mode string, service string, c *Context) (*WebResponse, error) {
 	return h(name, mode, service, c)
 }
-
+type preHandler interface{
+	PreHandle()error
+}
 //Handler context handler
 type Handler interface {
 	Handle(name string, mode string, service string, c *Context) (Response, error)
@@ -71,6 +73,7 @@ type WebHandler interface {
 }
 
 type Registry struct {
+	funcs map[string]func()(interface{},error)
 	Handlers map[string]interface{}
 	Services []string
 }
@@ -84,7 +87,18 @@ func NewRegistry() *Registry {
 }
 
 //Register 注册处理程序
-func (r *Registry) Register(name string, h interface{}) {
+func (r *Registry) Register(name string, h interface{}) {	
+	if v, ok := h.(func() (interface{}, error)); ok {
+		if _,ok:=r.funcs[name];ok{
+			panic(fmt.Sprintf("多次注册服务:%s", name))
+		}
+		r.funcs[name]=v
+		return
+	}
+	r.register(name, h)
+	return
+}
+func (r *Registry) register(name string, h interface{}){
 	for _, v := range r.Services {
 		if v == name {
 			panic(fmt.Sprintf("多次注册服务:%s", name))
@@ -98,7 +112,18 @@ func (r *Registry) Register(name string, h interface{}) {
 		panic(fmt.Sprintf("服务必须为Handler,MapHandler,StandardHandler,ObjectHandler,WebHandler:%s", name))
 	}
 }
-
+//LoadServices 加载所有服务
+func (r *Registry)LoadServices()([]string,error){
+	for name,v:=range r.funcs{
+		h,err:=v()
+		if err!=nil{
+			return nil,err
+		}
+		r.register(name,h)
+		delete(r.funcs,name)
+	}
+	return r.Services,nil
+}
 func (r *Registry) Handle(name string, mode string, service string, c *Context) (Response, error) {
 	response := GetStandardResponse()
 	response.SetStatus(404)

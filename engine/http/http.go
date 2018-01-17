@@ -39,6 +39,7 @@ func (s *httpProxy) Close() error {
 	return nil
 }
 
+
 //Handle
 //从input参数中获取 receiver,subject,content
 //从args参数中获取 mail

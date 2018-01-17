@@ -39,6 +39,7 @@ func (s *fileProxy) Start(ctx *engine.EngineContext) (services []string, err err
 func (s *fileProxy) Close() error {
 	return nil
 }
+
 func (s *fileProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return

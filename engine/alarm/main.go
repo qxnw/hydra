@@ -81,6 +81,7 @@ func (s *collectProxy) Start(ctx *engine.EngineContext) (services []string, err 
 func (s *collectProxy) Close() error {
 	return nil
 }
+
 func (s *collectProxy) Handle(svName string, mode string, service string, ctx *context.Context) (r context.Response, err error) {
 	if err = s.Has(service, service); err != nil {
 		return

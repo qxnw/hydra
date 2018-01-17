@@ -47,6 +47,7 @@ func (s *influxProxy) Close() error {
 	return nil
 }
 
+
 //Handle
 //save:从input中获取参数:measurement,tags,fields
 //get:从input中获取参数:q

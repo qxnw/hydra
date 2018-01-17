@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"energy/coupon-services/access"
 	"fmt"
 
 	"github.com/qxnw/hydra/context"
@@ -21,7 +20,7 @@ func (s *monitorProxy) queueCountCollect(name string, mode string, service strin
 	if err != nil {
 		return
 	}
-	queue, err := getQueue(redis)
+	queue, err := getQueue(ctx, redis)
 	if err != nil {
 		return
 	}
@@ -35,10 +34,10 @@ func (s *monitorProxy) queueCountCollect(name string, mode string, service strin
 	return
 }
 
-func getQueue(name string) (q queue.IQueue, err error) {
+func getQueue(ctx *context.Context, name string) (q queue.IQueue, err error) {
 	_, iqueue, err := queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
 		name := input[0].(string)
-		content, err := access.Container.GetVarParam("queue", name)
+		content, err := ctx.Input.GetVarParam("queue", name)
 		if err != nil {
 			return nil, err
 		}

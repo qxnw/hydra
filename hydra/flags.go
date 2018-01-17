@@ -56,7 +56,7 @@ func (h *HFlags) CheckFlags(i ...int) (err error) {
 		index = i[0]
 	}
 	server.IsDebug = true
-	if len(os.Args) < index {
+	if len(os.Args) <= index {
 		return errors.New("未指定域名称")
 	}
 	h.Domain = os.Args[index]
