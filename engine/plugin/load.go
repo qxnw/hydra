@@ -42,7 +42,7 @@ func (s *goPluginWorker) loadComponent(p string) (r *workerService, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("获取组件(%s)初始化失败,err:%v", path, err)
 	}
-	err = rwrk.Load()
+	err = rwrk.LoadServices()
 	if err != nil {
 		return nil, fmt.Errorf("组件(%s)初始化服务失败,err:%v", path, err)
 	}

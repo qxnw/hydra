@@ -148,7 +148,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 
 		//执行服务调用
 		ctx.SetInput(input, params, body, margs, ext)
-		response, err := w.handler.Handle(task.queue, mode, service, ctx)
+		response, err := w.handler.Execute(task.queue, mode, service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}

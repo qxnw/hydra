@@ -44,7 +44,6 @@ func (s *StandardConf) GetConf(conf interface{}) (c interface{}, err error) {
 }
 
 var confCache cmap.ConcurrentMap
-
 func init() {
 	confCache = cmap.New(2)
 }

@@ -3,10 +3,10 @@ package server
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
 
 	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/context"
 )
 
 //IsDebug 当前服务器是处于调试模式
@@ -43,8 +43,10 @@ type IHydraServer interface {
 type IServerAdapter interface {
 	Resolve(c EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
 }
+
 type EngineHandler interface {
-	context.Handler
+	Execute(name string, mode string, service string, c *context.Context) (context.Response, error)
+	Close() error
 	GetServices() []string
 }
 

@@ -23,7 +23,8 @@ func NewStandardComponent(componentName string) *StandardComponent {
 	return r
 }
 
-//AddService 添加服务处理程序
+
+//AddService 添加服务处理程序[服务可用于api,rpc]
 func (r *StandardComponent) AddService(service string, h interface{}) {
 	if v, ok := h.(func() (interface{}, error)); ok {
 		if _, ok := r.funcs[service]; ok {
@@ -50,8 +51,8 @@ func (r *StandardComponent) register(name string, h interface{}) {
 	}
 }
 
-//Load 加载组件
-func (r *StandardComponent) Load() error {
+//LoadServices 加载所有服务
+func (r *StandardComponent) LoadServices() error {
 	for name, v := range r.funcs {
 		h, err := v()
 		if err != nil {

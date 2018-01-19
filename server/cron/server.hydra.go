@@ -168,7 +168,7 @@ func (w *hydraCronServer) handle(xtask *server.Task) func(task *Task) error {
 		}
 		//执行服务调用
 		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
-		response, err := w.handler.Handle(task.taskName, xtask.Mode, xtask.Service, ctx)
+		response, err := w.handler.Execute(task.taskName, xtask.Mode, xtask.Service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}

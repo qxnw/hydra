@@ -5,8 +5,6 @@ import (
 
 	"fmt"
 
-	"github.com/qxnw/lib4go/cache"
-	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/transform"
 )
@@ -15,14 +13,13 @@ type VarHandle func(tp string, name string) (string, error)
 
 //Context 引擎执行上下文
 type Context struct {
-	Input    *Input
-	rpc      RPCInvoker
-	DB       *ContextDB
-	Cache    *ContextCache
-	MQ       *ContextMQ
-	RPC      *ContextRPC
-	HTTP     *ContextHTTP
-	Influxdb *ContextInfluxdb
+	Domain     string
+	ServerName string
+	ServerType string
+	Input      *Input
+	rpc        RPCInvoker
+	RPC        *ContextRPC
+	HTTP       *ContextHTTP
 	logger.ILogger
 }
 
@@ -34,15 +31,8 @@ func GetContext() *Context {
 //SetInput 设置输入参数
 func (c *Context) SetInput(input transform.ITransformGetter, param transform.ITransformGetter, body string, args map[string]string, ext map[string]interface{}) {
 	c.Input = &Input{Input: input, Params: param, Body: body, Args: args, Ext: ext}
-	if _, ok := c.Input.Ext["__test__"]; ok {
-		c.ILogger = &tLogger{}
-	}
 	c.ILogger, _ = c.getLogger()
-	c.DB.Reset(c)
-	c.MQ.Reset(c)
 	c.HTTP.Reset(c)
-	c.Cache.Reset(c)
-	c.Influxdb.Reset(c)
 }
 
 //SetRPC 根据输入的context创建插件的上下文对象
@@ -51,15 +41,6 @@ func (c *Context) SetRPC(rpc RPCInvoker) {
 	c.RPC.Reset(c)
 }
 
-//GetCache 获取缓存操作对象
-func (c *Context) GetCache(names ...string) (cache.ICache, error) {
-	return c.Cache.GetCache(names...)
-}
-
-//GetDB 获取数据库操作实例
-func (c *Context) GetDB(names ...string) (*db.DB, error) {
-	return c.DB.GetDB(names...)
-}
 func (c *Context) getLogger() (*logger.Logger, error) {
 	if session, ok := c.Input.Ext["hydra_sid"]; ok {
 		return logger.GetSession("hydra", session.(string)), nil
@@ -73,13 +54,9 @@ func init() {
 	contextPool = &sync.Pool{
 		New: func() interface{} {
 			return &Context{
-				Input:    &Input{},
-				DB:       &ContextDB{},
-				Cache:    &ContextCache{},
-				MQ:       &ContextMQ{},
-				RPC:      &ContextRPC{},
-				HTTP:     &ContextHTTP{},
-				Influxdb: &ContextInfluxdb{},
+				Input: &Input{},
+				RPC:   &ContextRPC{},
+				HTTP:  &ContextHTTP{},
 			}
 		},
 	}

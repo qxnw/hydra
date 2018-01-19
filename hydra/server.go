@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/qxnw/hydra/conf"
-	"github.com/qxnw/hydra/engine"
+	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/registry/service"
 	"github.com/qxnw/lib4go/logger"
 
@@ -27,7 +27,7 @@ var (
 type Server struct {
 	domain                  string
 	runMode                 string
-	engine                  engine.IEngine
+	engine                  engines.IServiceEngine
 	server                  server.IHydraServer
 	engines                 string
 	engineNames             []string
@@ -53,7 +53,6 @@ func NewHydraServer(domain string, runMode string, registry string, crurrentRegi
 		localServices:           make([]string, 0, 16),
 		crurrentRegistryAddress: crurrentRegistryAddress,
 		crossRegistryAddress:    crossRegistryAddress,
-		engine:                  engine.NewStandardEngine(),
 		logger:                  logger,
 	}
 }
@@ -73,8 +72,9 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", h.serverType, h.domain, err)
 	}
+	
 	// 启动执行引擎
-	_, err = h.engine.Start(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
+	h.engine, err = engines.NewGroupEngine(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:%v)", h.domain, h.serverName, h.serverType, err)
 	}

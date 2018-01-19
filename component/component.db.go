@@ -9,6 +9,7 @@ import (
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/types"
 )
+
 //IComponentDB Component DB
 type IComponentDB interface{
 	GetDefaultDB() (c *db.DB, err error)

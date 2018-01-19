@@ -230,7 +230,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		ctx.SetInput(tfForm.Data, tfParams.Data, body, margs, ext)
 
 		//执行服务调用
-		response, err := w.handler.Handle(name, mode, c.Req().Service, ctx)
+		response, err := w.handler.Execute(name, mode, c.Req().Service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}

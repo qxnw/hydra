@@ -22,6 +22,7 @@ func newFileProxy() *fileProxy {
 	}
 	r.serviceHandlers = make(map[string]context.SHandlerFunc, 1)
 	r.serviceHandlers["/file/upload"] = r.saveFileFromHTTPRequest
+	r.serviceHandlers["/file/upload/v2"] = r.saveFileFromHTTPRequest2
 	for k := range r.serviceHandlers {
 		r.services = append(r.services, k)
 	}
