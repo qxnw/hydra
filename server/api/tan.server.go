@@ -14,6 +14,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/encoding"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
@@ -25,17 +26,19 @@ type hydraAPIServer struct {
 	conf     conf.Conf
 	registry server.IServiceRegistry
 	handler  server.EngineHandler
+	log      *logger.Logger
 	mu       sync.Mutex
 }
 
 //newHydraAPIServer 创建API服务器
-func newHydraAPIServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraAPIServer, err error) {
+func newHydraAPIServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf, log *logger.Logger) (h *hydraAPIServer, err error) {
 	h = &hydraAPIServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
+		log:      log,
 		server: NewAPI(cnf.String("domain"), cnf.String("name", "api.server"),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
-			WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
+			WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(log))}
 	err = h.setConf(cnf)
 	return
 }
@@ -46,7 +49,7 @@ func (w *hydraAPIServer) restartServer(cnf conf.Conf) (err error) {
 	time.Sleep(time.Second)
 	w.server = NewAPI(cnf.String("domain"), cnf.String("name", "api.server"),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
-		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(w.log))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
 	if err != nil {
@@ -90,18 +93,21 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		return err1
 	}
 	if err1 == server.ERR_NOT_SETTING || !enable {
-		w.server.Infof("%s(%s):未配置静态文件", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:未配置静态文件", conf.String("name"), conf.String("type"))
 		w.server.SetStatic(false, prefix, dir, showDir, exts)
 	}
 	if err1 == nil && enable {
-		w.server.Infof("%s(%s):启用静态文件", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用静态文件", conf.String("name"), conf.String("type"))
 		w.server.SetStatic(true, prefix, dir, showDir, exts)
 	}
-	if err1 != nil && err != nil {
+	if err == server.ERR_NOT_SETTING && err1 == server.ERR_NOT_SETTING {
+		return fmt.Errorf("路由配置有误:%v，静态文件:%v", err, err1)
+	}
+	if err != nil && err1 != nil && err != server.ERR_NO_CHANGED && err1 != server.ERR_NO_CHANGED {
 		return fmt.Errorf("路由配置有误:%v，静态文件:%v", err, err1)
 	}
 	if len(routers) == 0 {
-		w.server.Infof("%s(%s):未配置路由", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:未配置路由", conf.String("name"), conf.String("type"))
 	}
 	//设置通用头信息
 	headers, err := server.GetHeaders(w.conf, conf)
@@ -109,7 +115,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		return err
 	}
 	if err == nil || err == server.ERR_NOT_SETTING {
-		w.server.Infof("%s(%s):http头配置:%d", conf.String("name"), conf.String("type"), len(headers))
+		w.server.Infof("%s.%s:http header:%d", conf.String("name"), conf.String("type"), len(headers))
 		w.server.SetHeader(headers)
 	}
 
@@ -122,7 +128,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 	if err == nil && xsrf.Enable {
-		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用xsrf校验", conf.String("name"), conf.String("type"))
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 
@@ -135,7 +141,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 	if err == nil && jwt.Enable {
-		w.server.Infof("%s(%s):启用jwt校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用jwt校验", conf.String("name"), conf.String("type"))
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 
@@ -148,7 +154,7 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 	if err == nil && basic.Enable {
-		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用basic校验", conf.String("name"), conf.String("type"))
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 
@@ -161,29 +167,29 @@ func (w *hydraAPIServer) setConf(conf conf.Conf) error {
 		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
 	}
 	if err == nil && api.Enable {
-		w.server.Infof("%s(%s):启用api校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用api校验", conf.String("name"), conf.String("type"))
 		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
 	}
 
 	//设置OnlyAllowAjaxRequest
 	enable = server.GetOnlyAllowAjaxRequest(conf)
 	if enable {
-		w.server.Infof("%s(%s):启用ajax调用限制", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用ajax调用限制", conf.String("name"), conf.String("type"))
 	}
 	w.server.OnlyAllowAjaxRequest(enable)
 
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.Errorf("%s.%s:metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
 	if err == nil && enable {
-		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 
@@ -231,7 +237,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		ctx.SetInput(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
+		ctx.SetInput(tfForm.Data, tfParams.Data, margs, ext)
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Execute(name, mode, rservice, ctx)
 		if reflect.ValueOf(response).IsNil() {
@@ -240,7 +246,7 @@ func (w *hydraAPIServer) handle(name string, mode string, service string, args s
 		defer func() {
 			response.Close()
 			if err != nil {
-				c.Errorf("api.response.error: %v", err)
+				c.Errorf("error: %v", err)
 			}
 		}()
 
@@ -317,7 +323,7 @@ func (w *hydraAPIServer) Notify(conf conf.Conf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.conf.GetVersion() == conf.GetVersion() {
-		w.server.Infof("%s(%s):配置未变化", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:配置未变化", conf.String("name"), conf.String("type"))
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -365,8 +371,8 @@ func (w *hydraAPIServer) Shutdown() {
 type apiServerAdapter struct {
 }
 
-func (h *apiServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraAPIServer(c, r, conf)
+func (h *apiServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf, log *logger.Logger) (server.IHydraServer, error) {
+	return newHydraAPIServer(c, r, conf, log)
 }
 
 func init() {

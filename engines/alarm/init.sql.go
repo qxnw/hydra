@@ -1,8 +1,8 @@
 package alarm
 
-var queryMap map[string]string
-var reportMap map[string]string
-var srvQueryMap map[string]string
+var queryMap = make(map[string]string)
+var reportMap = make(map[string]string)
+var srvQueryMap = make(map[string]string)
 var reportSQL string
 
 func init() {

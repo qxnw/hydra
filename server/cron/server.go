@@ -18,10 +18,18 @@ type cronOption struct {
 	registry     server.IServiceRegistry
 	metric       *InfluxMetric
 	startTime    time.Time
+	*logger.Logger
 }
 
 //CronOption 任务设置选项
 type CronOption func(*cronOption)
+
+//WithLogger 设置日志记录组件
+func WithLogger(logger *logger.Logger) CronOption {
+	return func(o *cronOption) {
+		o.Logger = logger
+	}
+}
 
 //WithIP 设置为循环执行任务
 func WithIP(ip string) CronOption {
@@ -57,13 +65,12 @@ func (h HandlerFunc) Handle(ctx *Task) {
 
 //CronServer 基于HashedWheelTimer算法的定时任务
 type CronServer struct {
-	domain     string
-	serverName string
-	length     int
-	index      int
-	span       time.Duration
-	done       bool
-	*logger.Logger
+	domain      string
+	serverName  string
+	length      int
+	index       int
+	span        time.Duration
+	done        bool
 	close       chan struct{}
 	once        sync.Once
 	slots       []cmap.ConcurrentMap
@@ -80,8 +87,7 @@ type CronServer struct {
 //NewCronServer 构建定时任务
 func NewCronServer(domain string, name string, length int, span time.Duration, opts ...CronOption) (w *CronServer) {
 	w = &CronServer{domain: domain, serverName: name, length: length, span: span, index: 0}
-	w.Logger = logger.GetSession("hydra.cron", logger.CreateSession())
-	w.cronOption = &cronOption{metric: NewInfluxMetric(), startTime: time.Now()}
+	w.cronOption = &cronOption{metric: NewInfluxMetric(), startTime: time.Now(), Logger: logger.GetSession("hydra.cron", logger.CreateSession())}
 	w.close = make(chan struct{})
 	w.handlers = make([]Handler, 0, 3)
 	w.slots = make([]cmap.ConcurrentMap, length, length)
@@ -106,7 +112,6 @@ func (w *CronServer) handle(task *cronTask) {
 
 //Start start cron server
 func (w *CronServer) Start() error {
-	w.Infof("start cron server(%s)[%d]", w.serverName, atomic.LoadInt32(&w.taskCount))
 	err := w.registryServer()
 	if err != nil {
 		w.running = false
@@ -180,7 +185,6 @@ func (w *CronServer) Close() {
 			return true
 		})
 	}
-	w.Infof("cron Server closed(%s)", w.serverName)
 }
 func (w *CronServer) execute() {
 	w.startTime = time.Now()

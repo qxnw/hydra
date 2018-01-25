@@ -17,8 +17,7 @@ import (
 
 func checkAndSave(c component.IContainer, tf *transform.Transform, t int, tp string) (status int, err error) {
 	status = 204
-	influxdb := component.NewStandardInfluxDB(c)
-	db, err := influxdb.GetDB("influxdb")
+	db, err := c.GetInflux("alarm")
 	if err != nil {
 		return
 	}
@@ -82,7 +81,7 @@ func save2Influxdb(sql string, tf *transform.Transform, db *influxdb.InfluxClien
 }
 
 func query(c component.IContainer, sql string, tf *transform.Transform) (domain []string, count []int, err error) {
-	db, err := component.NewStandardInfluxDB(c, "metricdb").GetDefaultDB()
+	db, err := c.GetInflux("metricdb")
 	if err != nil {
 		return
 	}

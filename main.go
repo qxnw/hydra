@@ -7,19 +7,6 @@ import (
 	_ "github.com/mattn/go-oci8"
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
-	_ "github.com/qxnw/hydra/engine/alarm"
-	_ "github.com/qxnw/hydra/engine/cache"
-	_ "github.com/qxnw/hydra/engine/file"
-	_ "github.com/qxnw/hydra/engine/http"
-	_ "github.com/qxnw/hydra/engine/influx"
-	_ "github.com/qxnw/hydra/engine/log"
-	_ "github.com/qxnw/hydra/engine/mock"
-	_ "github.com/qxnw/hydra/engine/monitor"
-	_ "github.com/qxnw/hydra/engine/plugin"
-	_ "github.com/qxnw/hydra/engine/registry"
-	_ "github.com/qxnw/hydra/engine/report"
-	_ "github.com/qxnw/hydra/engine/rpc"
-	_ "github.com/qxnw/hydra/engine/ssm"
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/hydra/server/api"
 	_ "github.com/qxnw/hydra/server/cron"
@@ -33,10 +20,21 @@ import (
 	_ "github.com/qxnw/lib4go/mq/xmq"
 	_ "github.com/qxnw/lib4go/queue"
 	_ "github.com/qxnw/lib4go/queue/redis"
+
+	_ "github.com/qxnw/hydra/engines/alarm"
+	_ "github.com/qxnw/hydra/engines/cache"
+	_ "github.com/qxnw/hydra/engines/file"
+	_ "github.com/qxnw/hydra/engines/http"
+	_ "github.com/qxnw/hydra/engines/influx"
+	_ "github.com/qxnw/hydra/engines/log"
+	_ "github.com/qxnw/hydra/engines/mock"
+	_ "github.com/qxnw/hydra/engines/monitor"
+	_ "github.com/qxnw/hydra/engines/registry"
+	_ "github.com/qxnw/hydra/engines/ssm"
 )
 
 var (
-	VERSION = "1.0.1"
+	VERSION = "2.0.1"
 )
 
 func main() {

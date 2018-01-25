@@ -3,29 +3,31 @@ package component
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/queue"
 )
+
 //IComponentQueue Component Queue
-type IComponentQueue interface{
+type IComponentQueue interface {
 	GetDefaultQueue() (c queue.IQueue, err error)
-	GetQueue(name string) (q queue.IQueue, err error) 
+	GetQueue(name string) (q queue.IQueue, err error)
+	Close() error
 }
 
 //StandardQueue queue
 type StandardQueue struct {
-	engine.IContainer
-	name string
+	IContainer
+	name       string
+	queueCache cmap.ConcurrentMap
 }
 
 //NewStandardQueue 创建queue
-func NewStandardQueue(c engine.IContainer, name ...string) *StandardQueue {
+func NewStandardQueue(c IContainer, name ...string) *StandardQueue {
 	if len(name) > 0 {
-		return &StandardQueue{IContainer: c, name: name[0]}
+		return &StandardQueue{IContainer: c, name: name[0], queueCache: cmap.New(2)}
 	}
-	return &StandardQueue{IContainer: c, name: "queue"}
+	return &StandardQueue{IContainer: c, name: "queue", queueCache: cmap.New(2)}
 }
 
 //GetDefaultQueue 获取默然Queue
@@ -35,7 +37,7 @@ func (s *StandardQueue) GetDefaultQueue() (c queue.IQueue, err error) {
 
 //GetQueue GetQueue
 func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
-	_, iqueue, err := queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
+	_, iqueue, err := s.queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
 		name := input[0].(string)
 		content, err := s.IContainer.GetVarParam("queue", name)
 		if err != nil {
@@ -67,8 +69,11 @@ func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
 
 }
 
-var queueCache cmap.ConcurrentMap
-
-func init() {
-	queueCache = cmap.New(2)
+//Close 释放所有缓存配置
+func (s *StandardQueue) Close() error {
+	s.queueCache.RemoveIterCb(func(k string, v interface{}) bool {
+		v.(queue.IQueue).Close()
+		return true
+	})
+	return nil
 }

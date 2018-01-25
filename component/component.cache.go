@@ -3,28 +3,31 @@ package component
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/engine"
 	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/jsons"
 )
+
 //IComponentCache Component Cache
-type IComponentCache interface{
+type IComponentCache interface {
 	GetDefaultCache() (c cache.ICache, err error)
 	GetCache(name string) (c cache.ICache, err error)
+	Close() error
 }
+
 //StandardCache cache
 type StandardCache struct {
-	engine.IContainer
-	name string
+	IContainer
+	name     string
+	cacheMap cmap.ConcurrentMap
 }
 
 //NewStandardCache 创建cache
-func NewStandardCache(c engine.IContainer, name ...string) *StandardCache {
+func NewStandardCache(c IContainer, name ...string) *StandardCache {
 	if len(name) > 0 {
-		return &StandardCache{IContainer: c, name: name[0]}
+		return &StandardCache{IContainer: c, name: name[0], cacheMap: cmap.New(2)}
 	}
-	return &StandardCache{IContainer: c, name: "cache"}
+	return &StandardCache{IContainer: c, name: "cache", cacheMap: cmap.New(2)}
 }
 
 //GetDefaultCache 获取默然配置cache
@@ -34,7 +37,7 @@ func (s *StandardCache) GetDefaultCache() (c cache.ICache, err error) {
 
 //GetCache 获取缓存操作对象
 func (s *StandardCache) GetCache(name string) (c cache.ICache, err error) {
-	_, cached, err := cacheMap.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
+	_, cached, err := s.cacheMap.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
 		name := input[0].(string)
 		conf, err := s.IContainer.GetVarParam("cache", name)
 		if err != nil {
@@ -63,8 +66,11 @@ func (s *StandardCache) GetCache(name string) (c cache.ICache, err error) {
 	return
 }
 
-var cacheMap cmap.ConcurrentMap
-
-func init() {
-	cacheMap = cmap.New(2)
+//Close 关闭缓存连接
+func (s *StandardCache) Close() error {
+	s.cacheMap.RemoveIterCb(func(k string, v interface{}) bool {
+		v.(cache.ICache).Close()
+		return true
+	})
+	return nil
 }

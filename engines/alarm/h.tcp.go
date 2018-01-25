@@ -16,13 +16,14 @@ import (
 func TCPStatusCollect(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		title := ctx.Input.GetArgsValue("title", "TCP服务器")
-		msg := ctx.Input.GetArgsValue("msg", "TCP服务器地址:@url")
-		platform := ctx.Input.GetArgsValue("platform", "----")
-		host, err := ctx.Input.GetArgsByName("host")
-		if err != nil {
+		if err = ctx.Request.Setting.Check("host"); err != nil {
+			response.SetStatus(500)
 			return
 		}
+		title := ctx.Request.Setting.GetString("title", "TCP服务器")
+		msg := ctx.Request.Setting.GetString("msg", "TCP服务器地址:@url")
+		platform := ctx.Request.Setting.GetString("platform", "----")
+		host := ctx.Request.Setting.GetString("host")
 		conn, err := net.DialTimeout("tcp", host, time.Second)
 		if err == nil {
 			conn.Close()
@@ -32,8 +33,8 @@ func TCPStatusCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("host", host)
 		tf.Set("url", host)
 		tf.Set("value", strconv.Itoa(result))
-		tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
-		tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
+		tf.Set("level", ctx.Request.Setting.GetString("level", "1"))
+		tf.Set("group", ctx.Request.Setting.GetString("group", "D"))
 		tf.Set("time", time.Now().Format("20060102150405"))
 		tf.Set("unq", tf.Translate("@host"))
 		tf.Set("title", tf.Translate(title))

@@ -17,13 +17,14 @@ import (
 func DiskUPCollect(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		title := ctx.Input.GetArgsValue("title", "服务器disk使用率")
-		msg := ctx.Input.GetArgsValue("msg", "@host服务器disk使用率:@current")
-		platform := ctx.Input.GetArgsValue("platform", "----")
-		maxValue, err := ctx.Input.GetArgsFloat64Value("max")
-		if err != nil {
+		if err = ctx.Request.Setting.Check("max"); err != nil {
+			response.SetStatus(500)
 			return
 		}
+		title := ctx.Request.Setting.GetString("title", "服务器disk使用率")
+		msg := ctx.Request.Setting.GetString("msg", "@host服务器disk使用率:@current")
+		platform := ctx.Request.Setting.GetString("platform", "----")
+		maxValue := ctx.Request.Setting.GetFloat64("max")
 		diskInfo := disk.GetInfo()
 		result := 1
 		if diskInfo.UsedPercent < maxValue {
@@ -33,8 +34,8 @@ func DiskUPCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("host", net.LocalIP)
 		tf.Set("value", strconv.Itoa(result))
 		tf.Set("current", fmt.Sprintf("%.2f", diskInfo.UsedPercent))
-		tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
-		tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
+		tf.Set("level", ctx.Request.Setting.GetString("level", "1"))
+		tf.Set("group", ctx.Request.Setting.GetString("group", "D"))
 		tf.Set("time", time.Now().Format("20060102150405"))
 		tf.Set("unq", tf.Translate("@host"))
 		tf.Set("title", tf.Translate(title))

@@ -8,7 +8,7 @@ import (
 
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/engine/ssm"
+	"github.com/qxnw/hydra/engines/ssm"
 
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -33,7 +33,7 @@ type userInfo struct {
 func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		settingData, err := ctx.Input.GetVarParamByArgsName("alarm", "notify_setting")
+		settingData, err := ctx.Request.Ext.GetVarParam("alarm", ctx.Request.Setting.GetString("notify_setting"))
 		if err != nil {
 			return
 		}
@@ -43,12 +43,12 @@ func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("args.setting配置文件有错:err:%v", err)
 			return
 		}
-		influxdb, err := component.NewStandardInfluxDB(c, "influxdb").GetDefaultDB()
+		influxdb, err := c.GetInflux("influxdb")
 		if err != nil {
 			return
 		}
 		tf := transform.New()
-		tf.Set("time", ctx.Input.GetArgsValue("time", "1m"))
+		tf.Set("time", ctx.Request.Setting.GetString("time", "1m"))
 		data, err := influxdb.QueryMaps(tf.Translate(reportSQL))
 		if err != nil {
 			err = fmt.Errorf("从influxdb中查询报警数据失败%s:err:%v", tf.Translate(reportSQL), err)
@@ -89,9 +89,9 @@ func Notify(ctx *context.Context, group string, alarm bool, notify notity, u *us
 	if has {
 		st, err = sendWXNotify(ctx, alarm, u, title, content, time, remark)
 		if err == nil {
-			ctx.Infof("微信发送给:%s[发送成功]", u.Name)
+			ctx.Log.Infof("微信发送给:%s[发送成功]", u.Name)
 		} else {
-			ctx.Infof("微信发送给:%s[发送失败] err:%v", u.Name, err)
+			ctx.Log.Infof("微信发送给:%s[发送失败] err:%v", u.Name, err)
 		}
 	}
 
@@ -99,9 +99,9 @@ func Notify(ctx *context.Context, group string, alarm bool, notify notity, u *us
 		has = true
 		st, err = sendSMSNotify(ctx, alarm, u, title, content, time, remark)
 		if err == nil {
-			ctx.Infof("短信发送给:%s[发送成功]", u.Name)
+			ctx.Log.Infof("短信发送给:%s[发送成功]", u.Name)
 		} else {
-			ctx.Infof("短信发送给:%s[发送失败] err:%v", u.Name, err)
+			ctx.Log.Infof("短信发送给:%s[发送失败] err:%v", u.Name, err)
 		}
 	}
 	if !has {
@@ -157,7 +157,7 @@ func getMessage(input map[string]interface{}) (alarm bool, title string, content
 }
 func sendWXNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
 	tp := types.DecodeString(alarm, true, "alarm", "normal")
-	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "wx_setting")
+	setting, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("wx_setting"))
 	if err != nil {
 		err = fmt.Errorf("未找到微信消息推送的相关配置:%v", err)
 		return
@@ -173,7 +173,7 @@ func sendWXNotify(ctx *context.Context, alarm bool, u *userInfo, title string, c
 	return
 }
 func sendSMSNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
-	setting, err := ctx.Input.GetVarParamByArgsName("ssm", "sms_setting")
+	setting, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("sms_setting"))
 	if err != nil {
 		err = fmt.Errorf("未找到短信发送配置:%v", err)
 		return

@@ -15,15 +15,17 @@ import (
 func HydraServerQPSCollect(c component.IContainer, tp string) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		title := ctx.Input.GetArgsValue("title", "每秒钟请求数")
-		msg := ctx.Input.GetArgsValue("msg", "@url在@span内请求:@current次")
-		platform := ctx.Input.GetArgsValue("platform", "----")
-		domain, err := ctx.Input.GetArgsByName("domain")
-		if err != nil {
+		if err = ctx.Request.Setting.Check("domain"); err != nil {
+			response.SetStatus(500)
 			return
 		}
-		max := ctx.Input.GetArgsInt("max", 0)
-		min := ctx.Input.GetArgsInt("min", 0)
+
+		title := ctx.Request.Setting.GetString("title", "每秒钟请求数")
+		msg := ctx.Request.Setting.GetString("msg", "@url在@span内请求:@current次")
+		platform := ctx.Request.Setting.GetString("platform", "----")
+		domain := ctx.Request.Setting.GetString("domain")
+		max := ctx.Request.Setting.GetInt("max", 0)
+		min := ctx.Request.Setting.GetInt("min", 0)
 		tf := transform.New()
 		tf.Set("domain", domain)
 		tf.Set("span", "5m")
@@ -45,8 +47,8 @@ func HydraServerQPSCollect(c component.IContainer, tp string) component.Standard
 			}
 			tf.Set("url", url)
 			tf.Set("value", strconv.Itoa(value))
-			tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
-			tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
+			tf.Set("level", ctx.Request.Setting.GetString("level", "1"))
+			tf.Set("group", ctx.Request.Setting.GetString("group", "D"))
 			tf.Set("current", strconv.Itoa(val))
 			tf.Set("time", time.Now().Format("20060102150405"))
 			tf.Set("unq", tf.Translate("{@domain}_{@url}_QPS"))

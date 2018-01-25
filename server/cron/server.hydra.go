@@ -11,6 +11,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
@@ -23,19 +24,21 @@ type hydraCronServer struct {
 	conf     conf.Conf
 	registry server.IServiceRegistry
 	handler  server.EngineHandler
+	log      *logger.Logger
 	mu       sync.Mutex
 }
 
 //newHydraRPCServer 构建基本配置参数的web server
-func newHydraCronServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraCronServer, err error) {
+func newHydraCronServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf, log *logger.Logger) (h *hydraCronServer, err error) {
 	h = &hydraCronServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
+		log:      log,
 		server: NewCronServer(cnf.String("domain"), cnf.String("name", "cron.server"),
 			60,
 			time.Second,
 			WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
-			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
+			WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(log)),
 	}
 	err = h.setConf(cnf)
 	return
@@ -48,7 +51,7 @@ func (w *hydraCronServer) restartServer(cnf conf.Conf) (err error) {
 		60,
 		time.Second,
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
-		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(w.log))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
 	if err != nil {
@@ -87,23 +90,23 @@ func (w *hydraCronServer) setConf(conf conf.Conf) error {
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.Errorf("%s.%s:metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
 	if err == nil && enable {
-		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 	w.server.cluster = conf.String("cluster", "master-slave")
-	w.server.Infof("%s(%s)启动模式:%s", conf.String("name"), conf.String("type"), w.server.cluster)
+	w.server.Infof("%s.%s启动模式:%s", conf.String("name"), conf.String("type"), w.server.cluster)
 	if len(conf.String("rds-records")) > 0 {
-		w.server.Infof("%s(%s):启用自动保存执行记录", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用自动保存执行记录", conf.String("name"), conf.String("type"))
 	} else {
-		w.server.Warnf("%s(%s):未启用自动保存执行记录", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未启用自动保存执行记录", conf.String("name"), conf.String("type"))
 	}
 	//设置基本参数
 	w.conf = conf
@@ -150,6 +153,9 @@ func (w *hydraCronServer) handle(xtask *server.Task) func(task *Task) error {
 				inputBody = xtask.Body
 			}
 		}
+		ext["__func_body_get_"] = func(ch string) (string, error) {
+			return inputBody, nil
+		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/@domain/var/%s/%s", c, n), false)
 			if err != nil {
@@ -167,7 +173,7 @@ func (w *hydraCronServer) handle(xtask *server.Task) func(task *Task) error {
 			return
 		}
 		//执行服务调用
-		ctx.SetInput(inputGetter, paramGetter, inputBody, margs, ext)
+		ctx.SetInput(inputGetter, paramGetter, margs, ext)
 		response, err := w.handler.Execute(task.taskName, xtask.Mode, xtask.Service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
@@ -270,8 +276,8 @@ func (w *hydraCronServer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraCronServer(c, r, conf)
+func (h *hydraCronServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf, log *logger.Logger) (server.IHydraServer, error) {
+	return newHydraCronServer(c, r, conf, log)
 }
 
 func init() {

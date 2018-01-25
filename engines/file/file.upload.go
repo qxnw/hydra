@@ -17,16 +17,16 @@ import (
 func FileUpload() component.MapServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.MapResponse, err error) {
 		response = context.GetMapResponse()
-		name, err = ctx.Input.Get("name")
+		name, err = ctx.Request.Form.Get("name")
 		if err != nil {
 			err = fmt.Errorf("输入参数input未传入name参数(err:%v)", err)
 			return
 		}
-		root, err := ctx.Input.GetArgsByName("root")
+		root, err := ctx.Request.Setting.Get("root")
 		if err != nil {
 			return
 		}
-		f, err := ctx.HTTP.GetHTTPRequest()
+		f, err := ctx.Request.Http.Get()
 		if err != nil {
 			return
 		}

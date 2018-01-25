@@ -12,20 +12,17 @@ import (
 func WriteInfoLog() component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		if ctx.Input.Body == "" {
+		body, err := ctx.Request.Ext.GetBody()
+		if err != nil || body == "" {
 			err = fmt.Errorf("未设置日志内容")
 			return
 		}
-		name, err = ctx.Input.GetArgsByName("name")
+		name, err = ctx.Request.Setting.Get("name")
 		if err != nil {
 			return
 		}
-		sessionID, ok := ctx.Input.Ext["hydra_sid"]
-		if !ok || sessionID == "" {
-			sessionID = logger.CreateSession()
-		}
-		lg := logger.GetSession(name, sessionID.(string))
-		lg.Info(ctx.Input.Body)
+		lg := logger.GetSession(name, ctx.Request.Ext.GetUUID())
+		lg.Info(body)
 		return
 	}
 }
@@ -34,20 +31,17 @@ func WriteInfoLog() component.StandardServiceFunc {
 func WriteErrorLog() component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		if ctx.Input.Body == "" {
+		body, err := ctx.Request.Ext.GetBody()
+		if err != nil || body == "" {
 			err = fmt.Errorf("未设置日志内容")
 			return
 		}
-		name, err = ctx.Input.GetArgsByName("name")
+		name, err = ctx.Request.Setting.Get("name")
 		if err != nil {
 			return
 		}
-		sessionID, ok := ctx.Input.Ext["hydra_sid"]
-		if !ok || sessionID == "" {
-			sessionID = logger.CreateSession()
-		}
-		lg := logger.GetSession(name, sessionID.(string))
-		lg.Error(ctx.Input.Body)
+		lg := logger.GetSession(name, ctx.Request.Ext.GetUUID())
+		lg.Error(body)
 		return
 	}
 }

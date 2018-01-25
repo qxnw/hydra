@@ -11,6 +11,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/jsons"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
@@ -24,20 +25,22 @@ type hydraMQConsumer struct {
 	conf     conf.Conf
 	handler  server.EngineHandler
 	mu       sync.Mutex
+	log      *logger.Logger
 }
 
 //newHydraRPCServer 构建mq consumer服务器
-func newHydraMQConsumer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraMQConsumer, err error) {
+func newHydraMQConsumer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf, log *logger.Logger) (h *hydraMQConsumer, err error) {
 	h = &hydraMQConsumer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
+		log:      log,
 	}
 	h.server, err = NewMQConsumer(cnf.String("domain"), cnf.String("name", "mq.server"),
 		cnf.String("address"),
 		WithVersion(cnf.String("version")),
 		WithRaw(cnf.GetContent()),
 		WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
-		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(log))
 	if err != nil {
 		return
 	}
@@ -53,7 +56,7 @@ func (w *hydraMQConsumer) restartServer(cnf conf.Conf) (err error) {
 		WithVersion(cnf.String("version")),
 		WithRaw(cnf.GetContent()),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
-		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(w.log))
 	if err != nil {
 		return
 	}
@@ -93,15 +96,15 @@ func (w *hydraMQConsumer) setConf(conf conf.Conf) error {
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.Errorf("%s.%s:metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
 	if err == nil && enable {
-		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 	//更新配置
@@ -138,6 +141,9 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		params := transform.NewMaps(make(map[string]interface{})).Data
 		ext := make(map[string]interface{})
 		ext["hydra_sid"] = task.GetSessionID()
+		ext["__func_body_get_"] = func(ch string) (string, error) {
+			return body, nil
+		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/@domain/var/%s/%s", c, n), false)
 			if err != nil {
@@ -147,7 +153,7 @@ func (w *hydraMQConsumer) handle(service, mode, method, args string) func(task *
 		}
 
 		//执行服务调用
-		ctx.SetInput(input, params, body, margs, ext)
+		ctx.SetInput(input, params, margs, ext)
 		response, err := w.handler.Execute(task.queue, mode, service, ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
@@ -233,8 +239,8 @@ func (w *hydraMQConsumer) Shutdown() {
 type hydraCronServerAdapter struct {
 }
 
-func (h *hydraCronServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraMQConsumer(c, r, conf)
+func (h *hydraCronServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf, log *logger.Logger) (server.IHydraServer, error) {
+	return newHydraMQConsumer(c, r, conf, log)
 }
 
 func init() {

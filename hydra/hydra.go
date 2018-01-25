@@ -121,7 +121,7 @@ LOOP:
 	for {
 		select {
 		case <-interrupt:
-			h.Warnf("hydra server(%s) was killed", h.Domain)
+			h.Warnf("hydra server was killed(%s,%s,v:%s)...", h.tag, h.runMode, Version)
 			h.done = true
 			break LOOP
 		}
@@ -170,8 +170,8 @@ LOOP:
 			break
 		}
 	}
-	for name, srv := range h.servers {
-		h.Warnf("关闭服务器：%s", name)
+	for _, srv := range h.servers {
+		srv.logger.Warnf("关闭服务器：%s.%s(%s)", srv.serverName, srv.serverType, srv.tag)
 		srv.Shutdown()
 	}
 	h.closedNotify <- struct{}{}
@@ -180,7 +180,7 @@ LOOP:
 
 //获取服务器名称
 func (h *Hydra) getServerName(cnf conf.Conf) string {
-	return fmt.Sprintf("%s(%s-%s)", cnf.String("name"), cnf.String("type"), cnf.String("tag"))
+	return fmt.Sprintf("%s.%s(%s)", cnf.String("name"), cnf.String("type"), cnf.String("tag"))
 }
 
 //添加新服务器
@@ -189,13 +189,15 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 	if _, ok := h.servers[name]; ok {
 		return errServerIsExist
 	}
-	srv := NewHydraServer(h.Domain, h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress, h.Logger)
+
+	srv := NewHydraServer(h.Domain, cnf.String("tag"), h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress)
+
 	err := srv.Start(cnf)
 	if err != nil {
 		return err
 	}
 	h.servers[name] = srv
-	h.Logger.Infof("启动成功:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
+	srv.logger.Infof("启动成功:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
 	return nil
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/lib4go/logger"
 
 	"github.com/qxnw/hydra/conf"
 )
@@ -41,7 +42,7 @@ type IHydraServer interface {
 
 //IServerAdapter 服务解析器
 type IServerAdapter interface {
-	Resolve(c EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error)
+	Resolve(c EngineHandler, r IServiceRegistry, conf conf.Conf, log *logger.Logger) (IHydraServer, error)
 }
 
 type EngineHandler interface {
@@ -61,9 +62,9 @@ func Register(name string, resolver IServerAdapter) {
 }
 
 //NewServer 根据适配器名称生成服务
-func NewServer(adapter string, c EngineHandler, r IServiceRegistry, conf conf.Conf) (IHydraServer, error) {
+func NewServer(adapter string, c EngineHandler, r IServiceRegistry, conf conf.Conf, log *logger.Logger) (IHydraServer, error) {
 	if resolver, ok := serverResolvers[adapter]; ok {
-		return resolver.Resolve(c, r, conf)
+		return resolver.Resolve(c, r, conf, log)
 	}
 	return nil, fmt.Errorf("server: unknown adapter name %q (forgotten import?)", adapter)
 

@@ -30,6 +30,13 @@ func WithRegistry(r server.IServiceRegistry, root string) TaskOption {
 	}
 }
 
+//WithLogger 设置日志记录组件
+func WithLogger(logger *logger.Logger) TaskOption {
+	return func(o *taskOption) {
+		o.Logger = logger
+	}
+}
+
 //WithIP 设置为循环执行任务
 func WithIP(ip string) TaskOption {
 	return func(o *taskOption) {

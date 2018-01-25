@@ -14,6 +14,7 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/lib4go/jsons"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/types"
@@ -27,17 +28,19 @@ type hydraRPCServer struct {
 	conf     conf.Conf
 	handler  server.EngineHandler
 	mu       sync.Mutex
+	log      *logger.Logger
 }
 
 //newHydraRPCServer 构建RPC服务器
-func newHydraRPCServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraRPCServer, err error) {
+func newHydraRPCServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf, log *logger.Logger) (h *hydraRPCServer, err error) {
 	h = &hydraRPCServer{handler: handler,
 		conf:     conf.NewJSONConfWithEmpty(),
 		registry: r,
+		log:      log,
 		server: NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
 			handler.GetServices(),
 			WithRegistry(r, cnf.Translate("{@category_path}/servers")),
-			WithIP(net.GetLocalIPAddress(cnf.String("mask")))),
+			WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(log)),
 	}
 	err = h.setConf(cnf)
 	return
@@ -50,7 +53,7 @@ func (w *hydraRPCServer) restartServer(cnf conf.Conf) (err error) {
 	w.server = NewRPCServer(cnf.String("domain"), cnf.String("name", "rpc.server"),
 		w.handler.GetServices(),
 		WithRegistry(w.registry, cnf.Translate("{@category_path}/servers")),
-		WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		WithIP(net.GetLocalIPAddress(cnf.String("mask"))), WithLogger(w.log))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
 	if err != nil {
@@ -104,7 +107,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 			limitMap[limiter.Name] = limiter.Value
 		}
 		if len(limitMap) > 0 {
-			w.server.Infof("%s(%s):启用limiter", conf.String("name"), conf.String("type"))
+			w.server.Infof("%s.%s:启用limiter", conf.String("name"), conf.String("type"))
 		}
 		w.server.UpdateLimiter(limitMap)
 	}
@@ -118,7 +121,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 	if err == nil && xsrf.Enable {
-		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用xsrf校验", conf.String("name"), conf.String("type"))
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 
@@ -131,7 +134,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 	if err == nil && jwt.Enable {
-		w.server.Infof("%s(%s):启用jwt校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用jwt校验", conf.String("name"), conf.String("type"))
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 
@@ -144,7 +147,7 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 	if err == nil && basic.Enable {
-		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用basic校验", conf.String("name"), conf.String("type"))
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 
@@ -157,22 +160,22 @@ func (w *hydraRPCServer) setConf(conf conf.Conf) error {
 		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
 	}
 	if err == nil && api.Enable {
-		w.server.Infof("%s(%s):启用api校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用api校验", conf.String("name"), conf.String("type"))
 		w.server.SetAPI(api.Enable, api.Name, api.Mode, api.Secret, api.Exclude, api.ExpireAt)
 	}
 
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.Errorf("%s.%s:metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
 	if err == nil && enable {
-		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 	//设置基本参数
@@ -214,6 +217,9 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 		body, _ := tfForm.Get("__body")
 		ext := map[string]interface{}{"hydra_sid": c.GetSessionID()}
 		ext["__jwt_"] = c.jwtStorage
+		ext["__func_body_get_"] = func(ch string) (string, error) {
+			return body, nil
+		}
 		ext["__func_var_get_"] = func(c string, n string) (string, error) {
 			cnf, err := w.conf.GetRawNodeWithValue(fmt.Sprintf("#/@domain/var/%s/%s", c, n), false)
 			if err != nil {
@@ -227,7 +233,7 @@ func (w *hydraRPCServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		ctx.SetInput(tfForm.Data, tfParams.Data, body, margs, ext)
+		ctx.SetInput(tfForm.Data, tfParams.Data, margs, ext)
 
 		//执行服务调用
 		response, err := w.handler.Execute(name, mode, c.Req().Service, ctx)
@@ -320,8 +326,8 @@ func (w *hydraRPCServer) Shutdown() {
 type hydraRPCServerAdapter struct {
 }
 
-func (h *hydraRPCServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraRPCServer(c, r, conf)
+func (h *hydraRPCServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf, log *logger.Logger) (server.IHydraServer, error) {
+	return newHydraRPCServer(c, r, conf, log)
 }
 
 func init() {

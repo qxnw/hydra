@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var ERR_DataNotExist = errors.New("查询的数据不存在")
+
 type Error interface {
 	error
 	Code() int

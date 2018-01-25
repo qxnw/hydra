@@ -16,13 +16,14 @@ import (
 func NginxAccessCountCollect(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		title := ctx.Input.GetArgsValue("title", "nginx 每分钟请求数")
-		msg := ctx.Input.GetArgsValue("msg", "@host服务器 nginx每分钟请求数:@current(@ct)")
-		platform := ctx.Input.GetArgsValue("platform", "----")
-		maxValue, err := ctx.Input.GetArgsIntValue("max")
-		if err != nil {
+		if err = ctx.Request.Setting.Check("max"); err != nil {
+			response.SetStatus(500)
 			return
 		}
+		title := ctx.Request.Setting.GetString("title", "nginx 每分钟请求数")
+		msg := ctx.Request.Setting.GetString("msg", "@host服务器 nginx每分钟请求数:@current(@ct)")
+		platform := ctx.Request.Setting.GetString("platform", "----")
+		maxValue := ctx.Request.Setting.GetInt("max")
 		current, ct, err := getNginxAccessCount()
 		if err != nil {
 			return
@@ -35,8 +36,8 @@ func NginxAccessCountCollect(c component.IContainer) component.StandardServiceFu
 		tf.Set("host", net.LocalIP)
 		tf.Set("value", strconv.Itoa(value))
 		tf.Set("current", strconv.Itoa(current))
-		tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
-		tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
+		tf.Set("level", ctx.Request.Setting.GetString("level", "1"))
+		tf.Set("group", ctx.Request.Setting.GetString("group", "D"))
 		tf.Set("ct", ct)
 		tf.Set("time", time.Now().Format("20060102150405"))
 		tf.Set("unq", tf.Translate("@host"))

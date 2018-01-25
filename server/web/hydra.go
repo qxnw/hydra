@@ -15,6 +15,7 @@ import (
 	"github.com/qxnw/hydra/server"
 	"github.com/qxnw/hydra/server/api"
 	"github.com/qxnw/lib4go/encoding"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/qxnw/lib4go/utility"
@@ -27,16 +28,18 @@ type hydraWebServer struct {
 	registry server.IServiceRegistry
 	handler  server.EngineHandler
 	mu       sync.Mutex
+	log      *logger.Logger
 }
 
 //newHydraAPIServer 创建web服务器
-func newHydraWebServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf) (h *hydraWebServer, err error) {
+func newHydraWebServer(handler server.EngineHandler, r server.IServiceRegistry, cnf conf.Conf, log *logger.Logger) (h *hydraWebServer, err error) {
 	h = &hydraWebServer{handler: handler,
 		registry: r,
 		conf:     conf.NewJSONConfWithEmpty(),
+		log:      log,
 		server: New(cnf.String("domain"), cnf.String("name", "web.server"),
 			api.WithRegistry(r, cnf.Translate("{@category_path}/servers/{@tag}")),
-			api.WithIP(net.GetLocalIPAddress(cnf.String("mask"))))}
+			api.WithIP(net.GetLocalIPAddress(cnf.String("mask"))), api.WithLogger(log))}
 	err = h.setConf(cnf)
 	return
 }
@@ -47,7 +50,7 @@ func (w *hydraWebServer) restartServer(cnf conf.Conf) (err error) {
 	time.Sleep(time.Second)
 	w.server = New(cnf.String("domain"), cnf.String("name", "web.server"),
 		api.WithRegistry(w.registry, cnf.Translate("{@category_path}/servers/{@tag}")),
-		api.WithIP(net.GetLocalIPAddress(cnf.String("mask"))))
+		api.WithIP(net.GetLocalIPAddress(cnf.String("mask"))), api.WithLogger(w.log))
 	w.conf = conf.NewJSONConfWithEmpty()
 	err = w.setConf(cnf)
 	if err != nil {
@@ -91,18 +94,18 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		return err1
 	}
 	if err1 == server.ERR_NOT_SETTING || !enable {
-		w.server.Infof("%s(%s):未配置静态文件", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:未配置静态文件", conf.String("name"), conf.String("type"))
 		w.server.SetStatic(false, prefix, dir, showDir, exts)
 	}
 	if err1 == nil && enable {
-		w.server.Infof("%s(%s):启用静态文件", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用静态文件", conf.String("name"), conf.String("type"))
 		w.server.SetStatic(true, prefix, dir, showDir, exts)
 	}
 	if err1 != nil && err != nil {
 		return fmt.Errorf("路由配置有误:%v，静态文件:%v", err, err1)
 	}
 	if len(routers) == 0 {
-		w.server.Infof("%s(%s):未配置路由", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:未配置路由", conf.String("name"), conf.String("type"))
 	}
 
 	//设置通用头信息
@@ -111,7 +114,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		return err
 	}
 	if err == nil || err == server.ERR_NOT_SETTING {
-		w.server.Infof("%s(%s):设置头%d", conf.String("name"), conf.String("type"), len(headers))
+		w.server.Infof("%s.%s:http header%d", conf.String("name"), conf.String("type"), len(headers))
 		w.server.SetHeader(headers)
 	}
 
@@ -125,7 +128,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetDelims("{{", "}}")
 	}
 	if err == nil {
-		w.server.Infof("%s(%s):启用自定义view路径%s", conf.String("name"), conf.String("type"), views.ViewPath)
+		w.server.Infof("%s.%s:启用自定义view路径%s", conf.String("name"), conf.String("type"), views.ViewPath)
 		w.server.SetViewsPath(views.ViewPath)
 		w.server.SetDelims(views.Left, views.Right)
 	}
@@ -139,7 +142,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 	if err == nil && xsrf.Enable {
-		w.server.Infof("%s(%s):启用xsrf校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用xsrf校验", conf.String("name"), conf.String("type"))
 		w.server.SetXSRF(xsrf.Enable, xsrf.Name, xsrf.Secret, xsrf.Exclude, xsrf.ExpireAt)
 	}
 
@@ -152,7 +155,7 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 	if err == nil && jwt.Enable {
-		w.server.Infof("%s(%s):启用jwt校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用jwt校验", conf.String("name"), conf.String("type"))
 		w.server.SetJWT(jwt.Enable, jwt.Name, jwt.Mode, jwt.Secret, jwt.Exclude, jwt.ExpireAt)
 	}
 
@@ -165,22 +168,22 @@ func (w *hydraWebServer) setConf(conf conf.Conf) error {
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 	if err == nil && basic.Enable {
-		w.server.Infof("%s(%s):启用basic校验", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用basic校验", conf.String("name"), conf.String("type"))
 		w.server.SetBasic(basic.Enable, basic.Name, basic.Mode, basic.Secret, basic.Exclude, basic.ExpireAt)
 	}
 
 	//设置metric服务器监控数据
 	enable, host, dataBase, userName, password, span, err := server.GetMetric(w.conf, conf)
 	if err != nil && err != server.ERR_NO_CHANGED && err != server.ERR_NOT_SETTING {
-		w.server.Errorf("%s(%s):metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
+		w.server.Errorf("%s.%s:metric配置有误(%v)", conf.String("name"), conf.String("type"), err)
 		w.server.StopInfluxMetric()
 	}
 	if err == server.ERR_NOT_SETTING || !enable {
-		w.server.Warnf("%s(%s):未配置metric", conf.String("name"), conf.String("type"))
+		w.server.Warnf("%s.%s:未配置metric", conf.String("name"), conf.String("type"))
 		w.server.StopInfluxMetric()
 	}
 	if err == nil && enable {
-		w.server.Infof("%s(%s):启用metric", conf.String("name"), conf.String("type"))
+		w.server.Infof("%s.%s:启用metric", conf.String("name"), conf.String("type"))
 		w.server.SetInfluxMetric(host, dataBase, userName, password, span)
 	}
 
@@ -226,7 +229,7 @@ func (w *hydraWebServer) handle(name string, mode string, service string, args s
 			return
 		}
 
-		ctx.SetInput(tfForm.Data, tfParams.Data, string(c.BodyBuffer), margs, ext)
+		ctx.SetInput(tfForm.Data, tfParams.Data, margs, ext)
 
 		//调用执行引擎进行逻辑处理
 		response, err := w.handler.Execute(name, mode, c.ServiceName, ctx)
@@ -359,8 +362,8 @@ func (w *hydraWebServer) Shutdown() {
 type webServerAdapter struct {
 }
 
-func (h *webServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf) (server.IHydraServer, error) {
-	return newHydraWebServer(c, r, conf)
+func (h *webServerAdapter) Resolve(c server.EngineHandler, r server.IServiceRegistry, conf conf.Conf, log *logger.Logger) (server.IHydraServer, error) {
+	return newHydraWebServer(c, r, conf, log)
 }
 
 func init() {

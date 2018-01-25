@@ -27,6 +27,7 @@ var (
 type Server struct {
 	domain                  string
 	runMode                 string
+	tag                     string
 	engine                  engines.IServiceEngine
 	server                  server.IHydraServer
 	engines                 string
@@ -45,15 +46,15 @@ type Server struct {
 }
 
 //NewHydraServer 初始化服务器
-func NewHydraServer(domain string, runMode string, registry string, crurrentRegistryAddress []string, crossRegistryAddress []string, logger *logger.Logger) *Server {
+func NewHydraServer(domain string, tag string, runMode string, registry string, crurrentRegistryAddress []string, crossRegistryAddress []string) *Server {
 	return &Server{
 		domain:                  domain,
+		tag:                     tag,
 		runMode:                 runMode,
 		registry:                registry,
 		localServices:           make([]string, 0, 16),
 		crurrentRegistryAddress: crurrentRegistryAddress,
 		crossRegistryAddress:    crossRegistryAddress,
-		logger:                  logger,
 	}
 }
 
@@ -61,6 +62,8 @@ func NewHydraServer(domain string, runMode string, registry string, crurrentRegi
 func (h *Server) Start(cnf conf.Conf) (err error) {
 	h.serverName = cnf.String("name")
 	h.serverType = cnf.String("type")
+	h.logger = logger.New(fmt.Sprintf("%s-%s-%s", h.domain, h.serverName, h.serverType))
+	h.logger.Infof("开始启动:%s.%s(%s)", h.serverName, h.serverType, h.tag)
 	if strings.EqualFold(cnf.String("status"), server.ST_STOP) {
 		return fmt.Errorf("server未启动:%s(%s) 配置为:%s", cnf.String("name"), h.serverType, cnf.String("status"))
 	}
@@ -72,9 +75,9 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return fmt.Errorf("register初始化失败 mode:%s,domain:%s(err:%v)", h.serverType, h.domain, err)
 	}
-	
+
 	// 启动执行引擎
-	h.engine, err = engines.NewGroupEngine(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
+	h.engine, err = engines.NewServiceEngine(h.domain, h.serverName, h.serverType, h.registry, h.logger, h.engineNames...)
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:%v)", h.domain, h.serverName, h.serverType, err)
 	}
@@ -83,7 +86,7 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	}
 
 	//构建服务器
-	h.server, err = server.NewServer(h.serverType, h.engine, h.serviceRegistry, cnf)
+	h.server, err = server.NewServer(h.serverType, h.engine, h.serviceRegistry, cnf, h.logger)
 	if err != nil {
 		return fmt.Errorf("server启动失败:%s(%s)(err:%v)", h.serverName, h.serverType, err)
 	}
@@ -114,6 +117,6 @@ func (h *Server) EngineHasChange(p string) bool {
 
 //Shutdown 关闭服务器
 func (h *Server) Shutdown() {
-	h.engine.Close()
 	h.server.Shutdown()
+	h.engine.Close()
 }

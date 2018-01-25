@@ -15,16 +15,21 @@ import (
 func DBValueCollect(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		title := ctx.Input.GetArgsValue("title", "数据库监控服务")
-		msg := ctx.Input.GetArgsValue("msg", "数据库服务:@host当前值:@current")
-		platform := ctx.Input.GetArgsValue("platform", "----")
-		sql, err := ctx.Input.GetVarParamByArgsName("sql", "sql")
-		if err != nil || sql == "" {
+		if err = ctx.Request.Setting.Check("sql"); err != nil {
+			response.SetStatus(500)
 			return
 		}
-		max := ctx.Input.GetArgsInt("max")
-		min := ctx.Input.GetArgsInt("min")
-		db, err := component.NewStandardDB(c, "db").GetDefaultDB()
+		title := ctx.Request.Setting.GetString("title", "数据库监控服务")
+		msg := ctx.Request.Setting.GetString("msg", "数据库服务:@host当前值:@current")
+		platform := ctx.Request.Setting.GetString("platform", "----")
+		sql, err := ctx.Request.Ext.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
+		if err != nil || sql == "" {
+			response.SetStatus(500)
+			return
+		}
+		max := ctx.Request.Setting.GetInt("max")
+		min := ctx.Request.Setting.GetInt("min")
+		db, err := c.GetDB(ctx.Request.Setting.GetString("db", "db"))
 		if err != nil {
 			return
 		}
@@ -48,12 +53,12 @@ func DBValueCollect(c component.IContainer) component.StandardServiceFunc {
 		}
 
 		tf := transform.NewMap(map[string]string{})
-		tf.Set("host", ctx.Input.GetArgsValue("db"))
-		tf.Set("url", ctx.Input.GetArgsValue("sql"))
+		tf.Set("host", ctx.Request.Setting.GetString("db"))
+		tf.Set("url", ctx.Request.Setting.GetString("sql"))
 		tf.Set("value", strconv.Itoa(result))
 		tf.Set("current", strconv.Itoa(value))
-		tf.Set("level", ctx.Input.GetArgsValue("level", "1"))
-		tf.Set("group", ctx.Input.GetArgsValue("group", "D"))
+		tf.Set("level", ctx.Request.Setting.GetString("level", "1"))
+		tf.Set("group", ctx.Request.Setting.GetString("group", "D"))
 		tf.Set("time", time.Now().Format("20060102150405"))
 		tf.Set("unq", tf.Translate("{@host}_{@url}"))
 		tf.Set("title", tf.Translate(title))
