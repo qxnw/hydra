@@ -51,7 +51,7 @@ func NginxErrorCountCollect(c component.IContainer) component.StandardServiceFun
 }
 func getNginxErrorCount() (m int, tm string, err error) {
 	tm = time.Now().Add(-1 * time.Minute).Format("15:04")
-	cmd := fmt.Sprintf(`cat /usr/local/nginx/logs/error.log|grep ”%s:“|wc -l`, tm)
+	cmd := fmt.Sprintf(`cat /usr/local/nginx/logs/error.log|grep "%s:"|wc -l`, tm)
 	count, err := pipes.BashRun(cmd)
 	if err != nil {
 		return
