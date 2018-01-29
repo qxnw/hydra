@@ -41,7 +41,7 @@ type ServiceEngine struct {
 //NewServiceEngine 构建服务引擎
 func NewServiceEngine(domain string, serverName string, serverType string, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
 	e = &ServiceEngine{domain: domain, serverName: serverName, serverType: serverType, registryAddr: registryAddr, logger: logger, engines: engines}
-	e.StandardComponent = component.NewStandardComponent("sys.engine")
+	e.StandardComponent = component.NewStandardComponent("sys.engine", e)
 	e.Invoker = rpc.NewInvoker(domain, serverName, registryAddr)
 	e.IComponentCache = component.NewStandardCache(e, "cache")
 	e.IComponentConf = component.NewStandardConf(e)

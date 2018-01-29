@@ -76,7 +76,7 @@ func (r *Request) clear() {
 	r.Form.data = nil
 	r.Param.data = nil
 	r.Setting.data = nil
-	r.CircuitBreaker.inputParams = nil
+	r.CircuitBreaker.inputParams.data = nil
 	r.CircuitBreaker.ext = nil
 	r.Ext.ext = nil
 	r.Http.ext = nil

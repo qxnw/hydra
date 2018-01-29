@@ -26,23 +26,24 @@ var ErrNotFoundService = errors.New("未找到服务")
 
 //StandardComponent 标准组件
 type StandardComponent struct {
-	Name             string                              //组件名称
-	funcs            map[string]map[string]reflect.Value //每个分组对应的服务及处理程序
-	Handlers         map[string]interface{}              //每个服务对应的处理程序
-	FallbackHandlers map[string]interface{}              //每个服务对应的降级处理程序
-	Services         []string                            //所有服务
-	GroupServices    map[string][]string                 //每个分组包含的服务
-	ServiceGroup     map[string][]string                 //每个服务对应的分组
-	ServicePages     map[string][]string                 //每个服务对应的页面
-	ServiceTagPages  map[string]map[string][]string      //服务对应的tag,及每个tag对应的页面
-	ServicesTags     map[string][]string                 //服务对应的tag列表
-	TagServices      map[string][]string                 //tag对应的服务列表
+	Container        IContainer
+	Name             string                            //组件名称
+	funcs            map[string]map[string]interface{} //每个分组对应的服务及处理程序
+	Handlers         map[string]interface{}            //每个服务对应的处理程序
+	FallbackHandlers map[string]interface{}            //每个服务对应的降级处理程序
+	Services         []string                          //所有服务
+	GroupServices    map[string][]string               //每个分组包含的服务
+	ServiceGroup     map[string][]string               //每个服务对应的分组
+	ServicePages     map[string][]string               //每个服务对应的页面
+	ServiceTagPages  map[string]map[string][]string    //服务对应的tag,及每个tag对应的页面
+	ServicesTags     map[string][]string               //服务对应的tag列表
+	TagServices      map[string][]string               //tag对应的服务列表
 }
 
 //NewStandardComponent 构建标准组件
-func NewStandardComponent(componentName string) *StandardComponent {
-	r := &StandardComponent{Name: componentName}
-	r.funcs = make(map[string]map[string]reflect.Value)
+func NewStandardComponent(componentName string, c IContainer) *StandardComponent {
+	r := &StandardComponent{Name: componentName, Container: c}
+	r.funcs = make(map[string]map[string]interface{})
 	r.Handlers = make(map[string]interface{})
 	r.FallbackHandlers = make(map[string]interface{})
 	r.GroupServices = make(map[string][]string)
@@ -164,18 +165,16 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 		}
 		r.ServiceGroup[name] = append(r.ServiceGroup[name], group)
 	default:
-		fv := reflect.ValueOf(h)
-		if fv.Kind() == reflect.Func {
-			if _, ok := r.funcs[group]; !ok {
-				r.funcs[group] = make(map[string]reflect.Value)
-			}
-			if _, ok := r.funcs[group][name]; ok {
-				panic(fmt.Sprintf("多次注册服务:%s", name))
-			}
-			r.funcs[group][name] = fv
-			return
+		r.checkFuncType(name, h)
+		if _, ok := r.funcs[group]; !ok {
+			r.funcs[group] = make(map[string]interface{})
 		}
-		panic(fmt.Sprintf("服务:%s必须为Handler,MapHandler,StandardHandler,ObjectHandler,WebHandler, Handler, MapServiceFunc, StandardServiceFunc, WebServiceFunc, ServiceFunc:%v", name, handler))
+		if _, ok := r.funcs[group][name]; ok {
+			panic(fmt.Sprintf("多次注册服务:%s", name))
+		}
+		r.funcs[group][name] = h
+		return
+
 	}
 
 	switch handler := h.(type) {
@@ -186,6 +185,50 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 	}
 
 }
+func (r *StandardComponent) checkFuncType(name string, h interface{}) {
+	fv := reflect.ValueOf(h)
+	if fv.Kind() != reflect.Func {
+		panic(fmt.Sprintf("服务:%s必须为Handler,MapHandler,StandardHandler,ObjectHandler,WebHandler, Handler, MapServiceFunc, StandardServiceFunc, WebServiceFunc, ServiceFunc:%v", name, h))
+	}
+	tp := reflect.TypeOf(h)
+	if tp.NumIn() > 2 || tp.NumOut() == 0 || tp.NumOut() > 2 {
+		panic(fmt.Sprintf("服务:%s只能包含最多1个输入参数，最多2个返回值", name))
+	}
+	if tp.NumIn() == 1 {
+		if tp.In(0).Name() != "IContainer" {
+			panic(fmt.Sprintf("服务:%s输入参数必须为component.IContainer类型(%s)", name, tp.In(0).Name()))
+		}
+	}
+	if tp.NumOut() == 2 {
+		if tp.Out(1).Name() != "error" {
+			panic(fmt.Sprintf("服务:%s的2个返回值必须为error类型", name))
+		}
+	}
+}
+func (r *StandardComponent) callFuncType(name string, h interface{}) (i interface{}, err error) {
+	fv := reflect.ValueOf(h)
+	tp := reflect.TypeOf(h)
+	var rvalue []reflect.Value
+	if tp.NumIn() == 1 {
+		ivalue := make([]reflect.Value, 0, 1)
+		ivalue = append(ivalue, reflect.ValueOf(r.Container))
+		rvalue = fv.Call(ivalue)
+	} else {
+		rvalue = fv.Call(nil)
+	}
+	if len(rvalue) == 0 || len(rvalue) > 2 {
+		panic(fmt.Sprintf("%s类型错误,返回值只能有1个(handler)或2个（Handler,error）", name))
+	}
+	if len(rvalue) > 1 {
+		if rvalue[1].Interface() != nil {
+			if err, ok := rvalue[1].Interface().(error); ok {
+				return nil, err
+			}
+		}
+	}
+
+	return rvalue[0].Interface(), nil
+}
 
 //LoadServices 加载所有服务
 func (r *StandardComponent) LoadServices() error {
@@ -195,17 +238,11 @@ func (r *StandardComponent) LoadServices() error {
 				r.register(group, name, h)
 				continue
 			}
-			rtValues := sv.Call(nil)
-			if len(rtValues) != 2 {
-				panic(fmt.Sprintf("%s类型错误,返回值必须为2个（Handler,error）", name))
+			rt, err := r.callFuncType(name, sv)
+			if err != nil {
+				return err
 			}
-			if rtValues[1].Interface() != nil {
-				if err, ok := rtValues[1].Interface().(error); ok {
-					return err
-				}
-			}
-
-			r.register(group, name, rtValues[0].Interface())
+			r.register(group, name, rt)
 		}
 		delete(r.funcs, group)
 	}

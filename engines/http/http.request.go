@@ -3,12 +3,13 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"energy2/coupon-services/libs/aes"
 	"fmt"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/qxnw/lib4go/security/aes"
 
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
