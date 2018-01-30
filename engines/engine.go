@@ -13,6 +13,7 @@ import (
 
 //IServiceEngine 服务引擎接口
 type IServiceEngine interface {
+	GetRegistry() registry.Registry
 	GetServices() []string
 	Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error)
 	Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)

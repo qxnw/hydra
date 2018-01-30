@@ -28,10 +28,12 @@ func Proxy() component.WebServiceFunc {
 		if err != nil {
 			return
 		}
-		values := u.Query()
-		ctx.Request.Form.Each(func(k, v string) {
-			values.Add(k, v)
-		})
+
+		query, err := ctx.Request.Ext.GetBody()
+		if err != nil {
+			return
+		}
+		values, err := url.ParseQuery(query)
 		header := make(map[string]string)
 		header["Cookie"] = fmt.Sprintf("hydra_sid=%s", ctx.Request.Ext.GetUUID())
 		client := http.NewHTTPClient()

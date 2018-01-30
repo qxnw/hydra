@@ -61,15 +61,7 @@ func Request() component.WebServiceFunc {
 			input = conf.NewJSONConfWithHandle(make(map[string]interface{}), 0, nil)
 			return
 		}
-
-		paraTransform := transform.New() //transform.NewGetter(ctx.Input.Params)
-		ctx.Request.Param.Each(func(k, v string) {
-			paraTransform.Set(k, v)
-		})
-		ctx.Request.Form.Each(func(k, v string) {
-			paraTransform.Set(k, v)
-		})
-		values, raw, err := getData(u.Query(), input, paraTransform)
+		values, raw, err := getData(u.Query(), input, nil) //??后期修改
 		if err != nil {
 			return
 		}

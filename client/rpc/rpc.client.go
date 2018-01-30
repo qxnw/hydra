@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/client/rpc/balancer"
-	"github.com/qxnw/hydra/server/rpc/pb"
+	"github.com/qxnw/hydra/servers/rpc/standard/pb"
 	"github.com/qxnw/lib4go/logger"
 
 	"errors"

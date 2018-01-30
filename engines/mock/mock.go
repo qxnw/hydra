@@ -6,7 +6,6 @@ import (
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/lib4go/transform"
 )
 
 func RawRequest() component.StandardServiceFunc {
@@ -17,16 +16,9 @@ func RawRequest() component.StandardServiceFunc {
 			err = fmt.Errorf("args配置错误，args.setting配置的节点获取失败(err:%v)", err)
 			return
 		}
-		paraTransform := transform.New()
-		ctx.Request.Param.Each(func(k, v string) {
-			paraTransform.Set(k, v)
-		})
-		ctx.Request.Form.Each(func(k, v string) {
-			paraTransform.Set(k, v)
-		})
 
 		response.SetHeader("Content-Type", "text/plain")
-		response.SetContent(200, paraTransform.Translate(content))
+		response.SetContent(200, ctx.Request.Translate(content, true))
 		header := ctx.Request.Setting.GetString("header")
 		if header == "" {
 			return
@@ -43,7 +35,7 @@ func RawRequest() component.StandardServiceFunc {
 		}
 
 		mapHeader.Each(func(k string) {
-			response.SetHeader(k, paraTransform.Translate(mapHeader.String(k)))
+			response.SetHeader(k, ctx.Request.Translate(mapHeader.String(k), true))
 		})
 		return
 	}

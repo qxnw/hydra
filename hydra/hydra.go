@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/pkg/profile"
-	"github.com/qxnw/hydra/server"
-	"github.com/qxnw/hydra/server/api"
+	"github.com/qxnw/hydra/servers"
+	"github.com/qxnw/hydra/servers/http/api/standard"
 
 	"sync"
 
@@ -41,7 +41,7 @@ type Hydra struct {
 	closeChan    chan struct{}
 	done         bool
 	mu           sync.Mutex
-	ws           *api.HTTPServer
+	ws           *standard.Server
 	*HFlags
 }
 
@@ -65,7 +65,7 @@ func (h *Hydra) Start() (err error) {
 		h.Error(err)
 		return
 	}
-	if !server.IsDebug {
+	if !servers.IsDebug {
 		logger.AddWriteThread(49) //非调试模式时设置日志写协程数为50个
 	}
 	//检查是否配置RPC日志服务
@@ -78,9 +78,9 @@ func (h *Hydra) Start() (err error) {
 		h.Info("hydra:启用RPC日志")
 	}
 	//启动服务器状态查询服务
-	if err = h.StartStatusServer(h.Domain); err != nil {
-		return
-	}
+	//if err = h.StartStatusServer(h.Domain); err != nil {
+	//return
+	//	}
 
 	//启用项目性能跟踪
 	switch h.trace {
@@ -216,7 +216,7 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 	}
 
 	err := srv.Notify(cnf)
-	if err != nil || srv.GetStatus() == server.ST_STOP {
+	if err != nil || srv.GetStatus() == servers.ST_STOP {
 		err = fmt.Errorf("server启动失败:%s:%v", name, err)
 		h.deleteServer(cnf)
 		srv.Shutdown()

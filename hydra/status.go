@@ -1,16 +1,6 @@
 package hydra
 
-import (
-	"fmt"
-	"time"
-
-	"github.com/qxnw/hydra/server/api"
-	"github.com/qxnw/lib4go/net"
-	"github.com/qxnw/lib4go/sysinfo/cpu"
-	"github.com/qxnw/lib4go/sysinfo/disk"
-	"github.com/qxnw/lib4go/sysinfo/memory"
-)
-
+/*
 type HydraServer struct {
 	Version   string        `json:"version"`
 	Servers   []*ServerInfo `json:"servers"`
@@ -32,7 +22,7 @@ var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 101
 
 //StartStatusServer 启动状态服务器
 func (h *Hydra) StartStatusServer(domain string) (err error) {
-	h.ws = api.NewAPI(domain, "status.server")
+	/*h.ws = api.NewAPI(domain, "status.server")
 	h.ws.Route("GET", "/server/query", func(c *api.Context) {
 		h.queryServerStatus(c)
 	})
@@ -76,9 +66,9 @@ func (h *Hydra) update(c *api.Context) {
 	version := c.Param("version")
 	systemName := c.Param("systemName")
 	if version == Version {
-	c.Result = &api.StatusResult{Code: 204, Result: "无需更新", Type: 0}
+		c.Result = &api.StatusResult{Code: 204, Result: "无需更新", Type: 0}
 		return
-		}
+	}
 	pkg, err := h.getPackage(systemName, version)
 	if err != nil {
 		h.Error(err)
@@ -106,3 +96,4 @@ func (h *Hydra) update(c *api.Context) {
 	c.Result = &api.StatusResult{Code: 200, Result: "SUCCESS", Type: 0}
 	return
 }
+*/

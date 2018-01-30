@@ -85,10 +85,7 @@ func SendWeiXinMesssage(c component.IContainer) component.StandardServiceFunc {
 		if err = ctx.Request.Form.Check("open_id"); err != nil {
 			return
 		}
-		input := make(map[string]string)
-		ctx.Request.Form.Each(func(k, v string) {
-			input[k] = v
-		})
+		input := ctx.Request.Ext.GetBodyMap()
 		r, status, err := SendWXM(content, input)
 		if err != nil {
 			response.SetError(status, err)

@@ -7,14 +7,15 @@ import (
 )
 
 type IData interface {
-	Set(string, string)
+	//Set(string, string)
 	Get(string) (string, error)
-	Each(func(string, string))
+	//Each(func(string, string))
 }
 
 //Request 输入参数
 type Request struct {
 	Form           *inputParams
+	QueryString    *inputParams
 	Param          *inputParams
 	Setting        *inputParams
 	CircuitBreaker *circuitBreakerParam //熔断处理
@@ -24,6 +25,7 @@ type Request struct {
 
 func newRequest() *Request {
 	return &Request{
+		QueryString:    &inputParams{},
 		Form:           &inputParams{},
 		Param:          &inputParams{},
 		Setting:        &inputParams{},
@@ -33,7 +35,8 @@ func newRequest() *Request {
 	}
 }
 
-func (r *Request) reset(form IData, param IData, setting IData, ext map[string]interface{}) {
+func (r *Request) reset(queryString IData, form IData, param IData, setting IData, ext map[string]interface{}) {
+	r.QueryString.data = queryString
 	r.Form.data = form
 	r.Param.data = param
 	r.Setting.data = param
@@ -45,34 +48,60 @@ func (r *Request) reset(form IData, param IData, setting IData, ext map[string]i
 }
 
 //Check 检查输入参数和配置参数是否为空
-func (w *Request) Check(checker map[string][]string) (int, error) {
-	if err := w.Form.Check(checker["input"]...); err != nil {
-		return ERR_NOT_ACCEPTABLE, fmt.Errorf("输入参数:%v", err)
+func (r *Request) Check(checker map[string][]string) (int, error) {
+	for _, field := range checker["input"] {
+		if err := r.Form.Check(field); err == nil {
+			continue
+		}
+		if err := r.QueryString.Check(field); err != nil {
+			return ERR_NOT_ACCEPTABLE, fmt.Errorf("输入参数:%v", err)
+		}
 	}
-	if err := w.Setting.Check(checker["setting"]...); err != nil {
+	if err := r.Setting.Check(checker["setting"]...); err != nil {
 		return ERR_NOT_EXTENDED, fmt.Errorf("配置参数:%v", err)
 	}
 	return 0, nil
 }
 
 //Body2Input 根据编码格式解码body参数，并更新input参数
-func (w *Request) Body2Input(encoding ...string) error {
-	body, err := w.Ext.GetBody(encoding...)
+func (r *Request) Body2Input(encoding ...string) (map[string]string, error) {
+	body, err := r.Ext.GetBody(encoding...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	qString, err := utility.GetMapWithQuery(body)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	for k, v := range qString {
-		w.Form.data.Set(k, v)
+	//for k, v := range qString {
+	//w.Form.data.Set(k, v)
+	//}
+	return qString, nil
+}
+
+//Translate 根据输入参数[Param,Form,QueryString,Setting]
+func (r *Request) Translate(format string, a bool) string {
+	str, i := r.Param.Translate(format, false)
+	if i == 0 {
+		return str
 	}
-	return nil
+
+	str, i = r.Form.Translate(format, false)
+	if i == 0 {
+		return str
+	}
+	str, i = r.QueryString.Translate(str, false)
+	if i == 0 {
+		return str
+	}
+
+	str, _ = r.Setting.Translate(str, false)
+	return str
 }
 
 //clear 清空数据
 func (r *Request) clear() {
+	r.QueryString.data = nil
 	r.Form.data = nil
 	r.Param.data = nil
 	r.Setting.data = nil

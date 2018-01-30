@@ -2,6 +2,7 @@ package context
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 )
 
@@ -13,14 +14,12 @@ type inputParams struct {
 func (i *inputParams) Check(names ...string) error {
 	for _, v := range names {
 		if r, err := i.Get(v); err != nil || r == "" {
-			return fmt.Errorf("字段:%v值不能为空", v)
+			return fmt.Errorf("%s值不能为空", v)
 		}
 	}
 	return nil
 }
-func (i *inputParams) Each(f func(string, string)) {
-	i.data.Each(f)
-}
+
 func (i *inputParams) Get(name string, p ...string) (string, error) {
 	return i.data.Get(name)
 }
@@ -81,4 +80,32 @@ func (i *inputParams) GetFloat64(name string, p ...float64) float64 {
 		return p[0]
 	}
 	return 0
+}
+
+//Translate 翻译带有@变量的字符串
+func (i *inputParams) Translate(format string, a bool) (string, int) {
+	brackets, _ := regexp.Compile(`\{@\w+\}`)
+	v := 0
+	result := brackets.ReplaceAllStringFunc(format, func(s string) string {
+		if v, err := i.Get(s[2 : len(s)-1]); err == nil {
+			return v
+		}
+		v++
+		if a {
+			return ""
+		}
+		return s
+	})
+	word, _ := regexp.Compile(`@\w+`)
+	result = word.ReplaceAllStringFunc(result, func(s string) string {
+		if v, err := i.Get(s[1:]); err == nil {
+			return v
+		}
+		v++
+		if a {
+			return ""
+		}
+		return s
+	})
+	return result, v
 }

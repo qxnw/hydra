@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/hydra/server"
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/transform"
 	"github.com/spf13/pflag"
@@ -37,7 +37,7 @@ func (h *HFlags) BindFlags(flag *pflag.FlagSet) {
 	flag.StringVarP(&h.mask, "ip mask", "i", "", "ip掩码(本有多个IP时指定，格式:192.168.0)")
 	flag.StringVarP(&h.tag, "server tag", "t", "", "服务器名称(默认为本机IP地址)")
 	flag.StringVarP(&h.trace, "enable trace", "p", "", "启用项目性能跟踪cpu/mem/block/mutex/server")
-	flag.BoolVarP(&server.IsDebug, "enable debug", "d", false, "是否启用调试模式")
+	flag.BoolVarP(&servers.IsDebug, "enable debug", "d", false, "是否启用调试模式")
 	flag.StringVarP(&h.crossRegistry, "cross  registry  center address", "c", "", "跨域注册中心地址")
 	flag.BoolVarP(&h.rpcLogger, "use rpc logger", "g", false, "使用RPC远程记录日志")
 	h.flag = flag
@@ -55,7 +55,7 @@ func (h *HFlags) CheckFlags(i ...int) (err error) {
 	if len(i) > 0 {
 		index = i[0]
 	}
-	server.IsDebug = true
+	servers.IsDebug = true
 	if len(os.Args) <= index {
 		return errors.New("未指定域名称")
 	}
@@ -112,7 +112,7 @@ func (h *HFlags) ToArgs() []string {
 	if h.mask != "" {
 		args = append(args, "-i", h.mask)
 	}
-	if server.IsDebug {
+	if servers.IsDebug {
 		args = append(args, "-d")
 	}
 	if h.crossRegistry != "" {

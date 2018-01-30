@@ -1,5 +1,0 @@
-{
-    "status": "start",
-    "address":"stomp://192.168.0.142:61613",
-    "queue": "#@path/queue"
-}

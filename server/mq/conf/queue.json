@@ -1,8 +1,0 @@
-{
-    "queues": [{
-        "name": "hydra",
-        "mode": "script",
-        "service": "/order/request/query",
-        "args": "db=/@domain/var/db/influxdb"
-    }]
-}

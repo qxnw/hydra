@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/transform"
 )
 
 //Context 引擎执行上下文
@@ -16,14 +15,11 @@ type Context struct {
 }
 
 //GetContext 从缓存池中获取一个context
-func GetContext() *Context {
-	return contextPool.Get().(*Context)
-}
-
-//SetInput 设置输入参数
-func (c *Context) SetInput(input IData, param IData, setting map[string]string, ext map[string]interface{}) {
-	c.Request.reset(input, param, transform.NewMap(setting).Data, ext)
+func GetContext(queryString IData, form IData, param IData, setting IData, ext map[string]interface{}) *Context {
+	c := contextPool.Get().(*Context)
+	c.Request.reset(queryString, form, param, setting, ext)
 	c.Log = logger.GetSession("hydra", c.Request.Ext.GetUUID())
+	return c
 }
 
 //SetRPC 根据输入的context创建插件的上下文对象

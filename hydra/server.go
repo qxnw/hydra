@@ -7,13 +7,12 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/registry/service"
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/logger"
 
 	"strings"
 
 	"time"
-
-	"github.com/qxnw/hydra/server"
 )
 
 var (
@@ -29,7 +28,7 @@ type Server struct {
 	runMode                 string
 	tag                     string
 	engine                  engines.IServiceEngine
-	server                  server.IHydraServer
+	server                  servers.IRegistryServer
 	engines                 string
 	engineNames             []string
 	serviceRegistry         service.IService
@@ -64,7 +63,7 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	h.serverType = cnf.String("type")
 	h.logger = logger.New(fmt.Sprintf("%s-%s-%s", h.domain, h.serverName, h.serverType))
 	h.logger.Infof("开始启动:%s.%s(%s)", h.serverName, h.serverType, h.tag)
-	if strings.EqualFold(cnf.String("status"), server.ST_STOP) {
+	if strings.EqualFold(cnf.String("status"), servers.ST_STOP) {
 		return fmt.Errorf("server未启动:%s(%s) 配置为:%s", cnf.String("name"), h.serverType, cnf.String("status"))
 	}
 
@@ -81,12 +80,12 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:%v)", h.domain, h.serverName, h.serverType, err)
 	}
-	if !server.IsDebug && strings.EqualFold(h.serverType, server.SRV_TP_RPC) && len(h.localServices) == 0 {
+	if !servers.IsDebug && strings.EqualFold(h.serverType, servers.SRV_TP_RPC) && len(h.localServices) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:engine中未找到任何服务)", h.domain, h.serverName, h.serverType)
 	}
 
 	//构建服务器
-	h.server, err = server.NewServer(h.serverType, h.engine, h.serviceRegistry, cnf, h.logger)
+	h.server, err = servers.NewRegistryServer(h.serverType, h.engine, cnf, h.logger)
 	if err != nil {
 		return fmt.Errorf("server启动失败:%s(%s)(err:%v)", h.serverName, h.serverType, err)
 	}

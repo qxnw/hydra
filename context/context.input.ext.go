@@ -3,6 +3,8 @@ package context
 import (
 	"errors"
 	"fmt"
+
+	"github.com/qxnw/lib4go/utility"
 )
 
 type extParams struct {
@@ -12,6 +14,18 @@ type extParams struct {
 func (w *extParams) Get(name string) (interface{}, bool) {
 	v, ok := w.ext[name]
 	return v, ok
+}
+func (w *extParams) GetBodyMap(encoding ...string) map[string]string {
+	content, err := w.GetBody(encoding...)
+	if err != nil {
+		return make(map[string]string)
+	}
+	mSetting, err := utility.GetMapWithQuery(content)
+	if err != nil {
+		return make(map[string]string)
+	}
+	return mSetting
+
 }
 func (w *extParams) GetBody(encoding ...string) (string, error) {
 	e := "utf-8"
@@ -52,13 +66,4 @@ func (w *extParams) GetJWTBody() interface{} {
 //GetUUID
 func (w *extParams) GetUUID() string {
 	return w.ext["hydra_sid"].(string)
-}
-
-//CheckAPISign 指定secret, 所有参数(除sign)组成键值对并排序，前后组合secret并生成md5签名，并判断与传入的sign是否相等
-func (w *extParams) CheckAPISign(secret string) Error {
-	if f, ok := w.ext["__checkAPIAuth__"].(func(string) Error); ok {
-		return f(secret)
-	}
-	return NewError(ERR_NOT_EXTENDED, "不支持APIAuth")
-
 }
