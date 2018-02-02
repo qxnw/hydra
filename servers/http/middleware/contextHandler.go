@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/context"
@@ -20,6 +21,21 @@ func getUUID(c *gin.Context) string {
 	}
 	return ck.Value
 }
+func setStartTime(c *gin.Context) {
+	c.Set("__start_time_", time.Now())
+}
+func setLogger(c *gin.Context, l *logger.Logger) {
+	c.Set("__logger_", l)
+}
+func getLogger(c *gin.Context) *logger.Logger {
+	l, _ := c.Get("__logger_")
+	return l.(*logger.Logger)
+}
+func getExpendTime(c *gin.Context) time.Duration {
+	start, _ := c.Get("__start_time_")
+	return time.Since(start.(time.Time))
+
+}
 func getJWTRaw(c *gin.Context) interface{} {
 	jwt, _ := c.Get("__jwt_")
 	return jwt
@@ -27,39 +43,46 @@ func getJWTRaw(c *gin.Context) interface{} {
 func setJWTRaw(c *gin.Context, v interface{}) {
 	c.Set("__jwt_", v)
 }
-
+func getServiceName(c *gin.Context) string {
+	if service, ok := c.Get("__service_"); ok {
+		return service.(string)
+	}
+	return ""
+}
+func setServiceName(c *gin.Context, v string) {
+	c.Set("__service_", v)
+}
 func setResponse(c *gin.Context, r context.Response) {
 	c.Set("__response_", r)
 }
 func getResponse(c *gin.Context) context.Response {
 	result, _ := c.Get("__response_")
-	if result != nil {
+	if result == nil {
 		return nil
 	}
 	return result.(context.Response)
 }
 
 //ContextHandler api请求处理程序
-func ContextHandler(handler servers.IRegistryEngine, name string, engine string, service string, setting string) func(c *gin.Context) {
+func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		//处理输入参数
-
-		resp := context.GetStandardResponse()
 		mSetting, err := utility.GetMapWithQuery(setting)
 		if err != nil {
+			resp := context.GetStandardResponse()
 			resp.SetError(500, err)
 			setResponse(c, resp)
 			return
 		}
 		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c))
 		defer ctx.Close()
+		defer setServiceName(c, ctx.Request.Translate(service, true))
 
 		//调用执行引擎进行逻辑处理
-		response, err := handler.Execute(name, engine, service, ctx)
+		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, true), ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
-		defer response.Close()
 		//处理错误err,5xx
 		if err != nil {
 			err = fmt.Errorf("error:%v", err)
@@ -74,10 +97,12 @@ func ContextHandler(handler servers.IRegistryEngine, name string, engine string,
 		//处理跳转3xx
 		if url, ok := response.IsRedirect(); ok {
 			c.Redirect(response.GetStatus(), url)
+			return
 		}
 
 		//处理4xx,2xx
 		setResponse(c, response)
+
 	}
 }
 

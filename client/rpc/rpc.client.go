@@ -116,7 +116,7 @@ func (c *Client) connect() (err error) {
 
 //Request 发送Request请求
 func (c *Client) Request(service string, input map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
-	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
+	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Header: input},
 		grpc.FailFast(failFast))
 	if err != nil {
 		status = 500
@@ -124,7 +124,7 @@ func (c *Client) Request(service string, input map[string]string, failFast bool)
 	}
 	status = int(response.Status)
 	result = response.GetResult()
-	param = response.Params
+	param = response.Header
 	return
 }
 
@@ -142,7 +142,7 @@ func (c *Client) Close() {
 	c.isClose = true
 	if c.resolver != nil {
 		c.resolver.Close()
-	}
+	}	
 	if c.conn != nil {
 		c.conn.Close()
 	}

@@ -23,11 +23,16 @@ func (w *RegistryServer) SetConf(conf *RegistryConf) error {
 		err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
-	for _, router := range routers {
-		router.Handler = middleware.ContextHandler(w.engine, router.Name, router.Engine, router.Service, router.Setting)
+	if err != ERR_NO_CHANGED {
+		for _, router := range routers {
+			router.Handler = middleware.ContextHandler(w.engine, router.Name, router.Engine, router.Service, router.Setting)
+		}
+		err = w.server.SetRouters(routers)
+		if err != nil {
+			return fmt.Errorf("路由配置有误:%v", err)
+		}
+		w.Infof("%s:路由配置:%d", conf.GetFullName(), len(routers))
 	}
-	w.server.SetRouters(routers)
-	w.Infof("%s路由配置:%d", conf.GetFullName(), len(routers))
 
 	//设置静态文件路由
 	enable, prefix, dir, showDir, exts, err1 := conf.GetStatic()
@@ -48,7 +53,7 @@ func (w *RegistryServer) SetConf(conf *RegistryConf) error {
 	if err != nil && err1 != nil && err != ERR_NO_CHANGED && err1 != ERR_NO_CHANGED {
 		return fmt.Errorf("路由配置有误:%v，静态文件:%v", err, err1)
 	}
-	if len(routers) == 0 {
+	if err == nil && len(routers) == 0 {
 		w.Infof("%s:未配置路由", conf.GetFullName())
 	}
 	//设置通用头信息

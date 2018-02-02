@@ -83,6 +83,7 @@ func (r *StandardComponent) AddRPCProxy(h interface{}) {
 //AddTagPageService 添加带有标签的页面服务
 func (r *StandardComponent) AddTagPageService(service string, h interface{}, tag string, pages ...string) {
 	r.addService(PageService, service, h)
+	r.ServicePages[service] = pages
 	if _, ok := r.ServiceTagPages[tag]; !ok {
 		r.ServiceTagPages[tag] = make(map[string][]string)
 	}
@@ -101,6 +102,12 @@ func (r *StandardComponent) AddCustomerService(service string, h interface{}, gr
 	for _, group := range groupNames {
 		r.addService(group, service, h)
 	}
+}
+
+//AddCustomerTagService 添加自定义分组服务
+func (r *StandardComponent) AddCustomerTagService(service string, h interface{}, tag string, groupNames ...string) {
+	r.AddCustomerService(service, h, groupNames...)
+	r.addTags(service, tag)
 }
 
 //IsMicroService 是否是微服务
@@ -164,6 +171,7 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 			r.ServiceGroup[name] = make([]string, 0, 2)
 		}
 		r.ServiceGroup[name] = append(r.ServiceGroup[name], group)
+		return
 	default:
 		r.checkFuncType(name, h)
 		if _, ok := r.funcs[group]; !ok {

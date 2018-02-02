@@ -6,12 +6,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/security/jwt"
 )
 
 //JwtAuth jwt
-func JwtAuth(conf *http.ServerConf) gin.HandlerFunc {
+func JwtAuth(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		jwtAuth := conf.JWTAuth
 		if jwtAuth == nil || !jwtAuth.Enable {
@@ -25,7 +25,7 @@ func JwtAuth(conf *http.ServerConf) gin.HandlerFunc {
 			setJWTRaw(ctx, data)
 			ctx.Next()
 			response := getResponse(ctx)
-			SetJwtToken(ctx, conf, response.GetParams()["__jwt_"])
+			setJwtResponse(ctx, conf, response.GetParams()["__jwt_"])
 			return
 		}
 
@@ -37,25 +37,24 @@ func JwtAuth(conf *http.ServerConf) gin.HandlerFunc {
 				return
 			}
 		}
-
 		//jwt.token错误，返回错误码
 		ctx.AbortWithError(err.Code(), err)
 		return
 
 	}
 }
-func SetJwtToken(ctx *gin.Context, conf *http.ServerConf, data interface{}) {
-	if data == nil || conf.JWTAuth == nil || !conf.JWTAuth.Enable {
+func setJwtResponse(ctx *gin.Context, conf *conf.ServerConf, data interface{}) {
+	if data == nil {
+		data = getJWTRaw(ctx)
 		return
 	}
-	jwtAuth := conf.JWTAuth
 
-	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)
+	jwtToken, err := jwt.Encrypt(conf.JWTAuth.Secret, conf.JWTAuth.Mode, data, conf.JWTAuth.ExpireAt)
 	if err != nil {
 		ctx.AbortWithError(500, fmt.Errorf("jwt配置出错：%v", err))
 		return
 	}
-	ctx.Header("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", jwtAuth.Name, jwtToken))
+	ctx.Header("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", conf.JWTAuth.Name, jwtToken))
 }
 
 // CheckJWT 检查jwk参数是否合法

@@ -12,7 +12,6 @@ func init() {
 	standradResponsePool = &sync.Pool{
 		New: func() interface{} {
 			r := &StandardResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
-			r.Params["__view"] = "NONE"
 			return r
 		},
 	}
@@ -73,6 +72,5 @@ func (r *StandardResponse) Set(s int, rr string, p map[string]string, err error)
 func (r *StandardResponse) Close() {
 	r.Content = ""
 	r.Params = make(map[string]interface{})
-	r.Params["__view"] = "NONE"
 	standradResponsePool.Put(r)
 }

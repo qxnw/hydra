@@ -3,12 +3,13 @@ package standard
 import (
 	"strings"
 
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 //SetRouters 设置路由配置
-func (s *Server) SetRouters(routers []*http.Router) {
-	s.engine.Handler = s.getHandler(routers)
+func (s *Server) SetRouters(routers []*conf.Router) (err error) {
+	s.engine.Handler, err = s.getHandler(routers)
+	return
 }
 
 //SetJWT Server
@@ -42,6 +43,7 @@ func (s *Server) SetStatic(enable bool, prefix string, dir string, listDir bool,
 	s.static.Prefix = prefix
 	s.static.RootPath = dir
 	s.static.FilterExts = exts
+	s.static.Prepare()
 }
 
 //SetMetric 重置metric

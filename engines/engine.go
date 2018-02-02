@@ -114,7 +114,7 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	}
 	response := context.GetStandardResponse()
 	response.SetStatus(404)
-	return response, fmt.Errorf("在%s未找到服务(%s)", r.Name, service)
+	return response, fmt.Errorf("在%s(%s)未找到服务[tags:(%s)(%v) group:(%s)(%v)]", r.Name, service, engine, r.GetTags(service), component.GetGroupName(r.serverType), r.ServiceGroup)
 }
 
 //GetRegistry 获取注册中心
@@ -134,6 +134,7 @@ func (r *ServiceEngine) GetServerName() string {
 
 //Close 关闭引擎
 func (r *ServiceEngine) Close() error {
+	r.Invoker.Close()
 	r.IComponentCache.Close()
 	r.IComponentConf.Close()
 	r.IComponentDB.Close()

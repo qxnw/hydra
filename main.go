@@ -9,6 +9,8 @@ import (
 	_ "github.com/qxnw/hydra/conf/standalone"
 	"github.com/qxnw/hydra/hydra"
 	_ "github.com/qxnw/hydra/servers/http/api/registry"
+	_ "github.com/qxnw/hydra/servers/http/web/registry"
+	_ "github.com/qxnw/hydra/servers/rpc/registry"
 	_ "github.com/qxnw/lib4go/cache/memcache"
 	_ "github.com/qxnw/lib4go/cache/redis"
 	_ "github.com/qxnw/lib4go/mq/redis"

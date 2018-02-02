@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,14 +18,49 @@ type StaticOptions struct {
 	FilterExts []string
 }
 
-//Static 静态文件处理插件
-func Static(opts ...*StaticOptions) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		opt := prepareStaticOptions(opts)
-		if !opt.Enable {
-			ctx.Next()
-			return
+//MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
+func (s *StaticOptions) MustStatic(rPath string) int {
+	if strings.HasPrefix(rPath, s.Prefix) {
+		return 1
+	}
+	rPath = rPath[len(s.Prefix):]
+	dir := filepath.Dir(rPath)
+	//检查是否排除特殊名称
+	for _, v := range s.Exclude {
+		if strings.Contains(dir, v) {
+			return 0
 		}
+	}
+	if len(s.FilterExts) > 0 {
+		for _, ext := range s.FilterExts {
+			if filepath.Ext(rPath) == ext {
+				return 1
+			}
+		}
+		return 0
+	}
+	return 2
+}
+
+//Prepare 准备初始参数
+func (s *StaticOptions) Prepare() {
+	if len(s.Exclude) == 0 {
+		s.Exclude = append(s.Exclude, "bin", "conf")
+	}
+	if s.RootPath == "" {
+		s.RootPath = "../"
+	}
+	if s.Prefix == "" {
+		s.Prefix = "/"
+	}
+	if s.Prefix[0] != '/' {
+		s.Prefix = "/" + s.Prefix
+	}
+}
+
+//Static 静态文件处理插件
+func Static(opt *StaticOptions) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
 		if ctx.Request.Method != "GET" && ctx.Request.Method != "HEAD" {
 			ctx.Next()
 			return
@@ -39,85 +75,57 @@ func Static(opts ...*StaticOptions) gin.HandlerFunc {
 				return
 			}
 			if err != nil {
-				ctx.AbortWithError(500, err)
+				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", rPath, err))
 				return
 			}
-
 			ctx.File(file)
-
 			return
 		}
-		//检查是否定义静态文件前缀
-		if !strings.HasPrefix(rPath, opt.Prefix) {
+		if !opt.Enable {
 			ctx.Next()
 			return
 		}
-		rPath = rPath[len(opt.Prefix):]
-		dir := filepath.Dir(rPath)
-		//检查是否排除特殊名称
-		for _, v := range opt.Exclude {
-			if strings.Contains(dir, v) {
-				ctx.Next()
-				return
-			}
-		}
-		fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath))
-		//检查文件后缀
-		if len(opt.FilterExts) > 0 {
-			var matched bool
-			for _, ext := range opt.FilterExts {
-				if filepath.Ext(fPath) == ext {
-					matched = true
-					break
+		s := opt.MustStatic(rPath)
+		switch s {
+		case 0:
+			ctx.Next()
+			return
+		case 1:
+			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath[len(opt.Prefix):]))
+			finfo, err := os.Stat(fPath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
+					return
 				}
+				ctx.AbortWithStatus(404)
+				return
 			}
-			if !matched {
+			if finfo.IsDir() {
+				ctx.AbortWithStatus(404)
+				return
+			}
+			//文件已存在，则返回文件
+			ctx.File(fPath)
+			return
+		case 2:
+			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath))
+			finfo, err := os.Stat(fPath)
+			if err != nil {
+				if !os.IsNotExist(err) {
+					ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
+					return
+				}
 				ctx.Next()
 				return
 			}
-		}
-		//检查文件是否存在
-		finfo, err := os.Stat(fPath)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				ctx.AbortWithStatus(500)
+			if finfo.IsDir() {
+				ctx.Next()
 				return
 			}
-			ctx.AbortWithStatus(404)
+			//文件已存在，则返回文件
+			ctx.File(fPath)
 			return
 		}
-		if finfo.IsDir() {
-			ctx.AbortWithStatus(404)
-			return
-		}
-		//文件已存在，则返回文件
-		ctx.File(fPath)
-		return
 	}
-}
-
-func prepareStaticOptions(options []*StaticOptions) *StaticOptions {
-	var opt *StaticOptions
-	if len(options) > 0 {
-		opt = options[0]
-	}
-	if len(opt.Exclude) == 0 {
-		opt.Exclude = append(opt.Exclude, "bin", "conf")
-	}
-	// Defaults
-	if len(opt.RootPath) == 0 {
-		opt.RootPath = "../"
-	}
-	if len(opt.Prefix) == 0 {
-		opt.Prefix = "/"
-	}
-	if len(opt.Prefix) > 0 {
-		if opt.Prefix[0] != '/' {
-			opt.Prefix = "/" + opt.Prefix
-		}
-	}
-	// if len(opt.FilterExts) == 0 {
-	// 	opt.FilterExts = append(opt.FilterExts, ".jpg", ".png", ".js", ".css", ".html", ".xml")
-	// }
-	return opt
 }

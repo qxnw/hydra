@@ -3,13 +3,12 @@ package middleware
 import (
 	"strings"
 
-	"github.com/qxnw/hydra/servers/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 //Header 头设置
-func Header(conf *http.ServerConf) gin.HandlerFunc {
+func Header(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Next()
 		if len(conf.Headers) == 0 {
@@ -21,11 +20,12 @@ func Header(conf *http.ServerConf) gin.HandlerFunc {
 					hosts := strings.Split(v, ",")
 					for _, h := range hosts {
 						if strings.Contains(h, ctx.Request.Host) {
-							ctx.Header(k, v)
+							ctx.Header(k, h)
 							continue
 						}
 					}
 				}
+				continue
 			}
 			ctx.Header(k, v)
 		}

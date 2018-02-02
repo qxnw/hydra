@@ -74,12 +74,14 @@ func (r *baseResponse) PlainContentType() {
 }
 
 func (r *baseResponse) GetContentType() int {
-	responseType := 1
+	responseType := 0
 	if tp, ok := r.Params["Content-Type"].(string); ok {
-		if strings.Contains(tp, "xml") {
+		if strings.Contains(tp, "json") {
+			responseType = 1
+		} else if strings.Contains(tp, "xml") {
 			responseType = 2
 		} else if strings.Contains(tp, "plain") {
-			responseType = 0
+			responseType = 3
 		}
 	}
 	return responseType

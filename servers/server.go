@@ -2,6 +2,7 @@ package servers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
@@ -21,14 +22,37 @@ var (
 	SRV_TP_WEB   = "web"
 )
 
-//IRegistryServer 基于注册中心的服务器
-type IRegistryServer interface {
-	Notify(conf.Conf) error
+type IServer interface {
 	GetAddress() string
 	GetServices() []string
 	GetStatus() string
+	Run(string) error
+	SetJWT(enable bool, name string, mode string, secret string, exclude []string, expireAt int64)
+	SetHost(host string)
+	SetMetric(host string, dataBase string, userName string, password string, cron string)
+	SetHeader(headers map[string]string)
+	StopMetric()
+	Shutdown(time.Duration)
+}
+
+//IRegistryServer 基于注册中心的服务器
+type IRegistryServer interface {
+	Notify(conf.Conf) error
 	Start() error
+	GetAddress() string
+	GetServices() []string
+	GetStatus() string
 	Shutdown()
+}
+
+type IExecuter interface {
+	Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)
+}
+
+type IExecuteHandler func(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)
+
+func (i IExecuteHandler) Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error) {
+	return i(name, engine, service, ctx)
 }
 
 //IRegistryEngine 基于注册中心的执行引擎

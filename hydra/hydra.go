@@ -34,14 +34,14 @@ type Hydra struct {
 	system       string
 	collectIndex int
 	*logger.Logger
-	watcher      conf.Watcher
-	servers      map[string]*Server
-	notify       chan *conf.Updater
-	closedNotify chan struct{}
-	closeChan    chan struct{}
-	done         bool
-	mu           sync.Mutex
-	ws           *standard.Server
+	watcher       conf.Watcher
+	servers       map[string]*Server
+	notify        chan *conf.Updater
+	closedNotify  chan struct{}
+	closeChan     chan struct{}
+	done          bool
+	mu            sync.Mutex
+	healthChecker *standard.Server
 	*HFlags
 }
 
@@ -77,25 +77,6 @@ func (h *Hydra) Start() (err error) {
 		}
 		h.Info("hydra:启用RPC日志")
 	}
-	//启动服务器状态查询服务
-	//if err = h.StartStatusServer(h.Domain); err != nil {
-	//return
-	//	}
-
-	//启用项目性能跟踪
-	switch h.trace {
-	case "cpu":
-		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "mem":
-		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "block":
-		defer profile.Start(profile.BlockProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "mutex":
-		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "web":
-		go StartTraceServer(h.Logger)
-	default:
-	}
 
 	//启动服务器配置监控
 	h.watcher, err = conf.NewWatcher(h.runMode, h.Domain, h.tag, h.Logger, h.currentRegistryAddress)
@@ -112,6 +93,26 @@ func (h *Hydra) Start() (err error) {
 	go h.loopRecvNotify()
 	go h.freeMemory()
 	h.Infof("启动 hydra server(%s,%s,v:%s)...", h.tag, h.runMode, Version)
+
+	//启动服务器状态查询服务
+	if err = h.StartStatusServer(h.Domain); err != nil {
+		return
+	}
+
+	//启用项目性能跟踪
+	switch h.trace {
+	case "cpu":
+		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mem":
+		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "block":
+		defer profile.Start(profile.BlockProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mutex":
+		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "web":
+		go StartTraceServer(h.Domain, h.tag, h.Logger)
+	default:
+	}
 
 	//监听操作系统事件ctrl+c, kill
 	interrupt := make(chan os.Signal, 1)
@@ -141,6 +142,7 @@ LOOP:
 				break LOOP
 			}
 			u.Conf.Set("tag", h.tag)
+			u.Conf.Set("healthChecker", h.healthChecker.GetAddress())
 			switch u.Op {
 			case registry.ADD:
 				h.mu.Lock()

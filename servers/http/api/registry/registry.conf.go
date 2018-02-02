@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qxnw/hydra/conf"
+	xconf "github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/net"
 )
 
@@ -15,8 +15,8 @@ var ERR_NOT_SETTING = errors.New("未配置")
 var ERR_NO_CHANGED = errors.New("配置未变化")
 
 type RegistryConf struct {
-	nconf        conf.Conf
-	oconf        conf.Conf
+	nconf        xconf.Conf
+	oconf        xconf.Conf
 	Domain       string
 	Name         string
 	Type         string
@@ -29,7 +29,7 @@ type RegistryConf struct {
 func (s *RegistryConf) GetFullName() string {
 	return fmt.Sprintf("%s.%s(%s)", s.Name, s.Type, s.Cluster)
 }
-func NewRegistryConf(oconf conf.Conf, nconf conf.Conf) *RegistryConf {
+func NewRegistryConf(oconf xconf.Conf, nconf xconf.Conf) *RegistryConf {
 	return &RegistryConf{
 		nconf:        nconf,
 		oconf:        oconf,
@@ -44,7 +44,7 @@ func NewRegistryConf(oconf conf.Conf, nconf conf.Conf) *RegistryConf {
 
 //IsChanged 配置是否已经发生变化
 func (s *RegistryConf) IsChanged() bool {
-	return s.oconf.GetVersion() == s.nconf.GetVersion()
+	return s.oconf.GetVersion() != s.nconf.GetVersion()
 }
 
 //IsStoped 服务器已停止
@@ -93,7 +93,6 @@ func (s *RegistryConf) GetMetric() (enable bool, host string, dataBase string, u
 
 //GetStatic 获取静态文件配置内容
 func (s *RegistryConf) GetStatic() (enable bool, prefix, dir string, showDir bool, exts []string, err error) {
-
 	static, err := s.nconf.GetNodeWithSectionName("static", "#@path/static")
 	if err != nil {
 		if !s.nconf.Has("#@path/static") {
@@ -121,8 +120,8 @@ func (s *RegistryConf) GetStatic() (enable bool, prefix, dir string, showDir boo
 }
 
 //GetAuth 获取安全认证配置参数
-func (s *RegistryConf) GetAuth(name string) (a *http.Auth, err error) {
-	a = &http.Auth{}
+func (s *RegistryConf) GetAuth(name string) (a *conf.Auth, err error) {
+	a = &conf.Auth{}
 	auth, err := s.nconf.GetNodeWithSectionName("auth", "#@path/auth")
 	if err != nil {
 		if !s.nconf.Has("#@path/auth") {
@@ -147,7 +146,7 @@ func (s *RegistryConf) GetAuth(name string) (a *http.Auth, err error) {
 		exclude := xsrf.Strings("exclude")
 		expireAt, _ := xsrf.Int("expireAt", 0)
 		enable, _ := xsrf.Bool("enable", true)
-		return &http.Auth{Name: nm, Mode: mode, Secret: secret, Exclude: exclude, ExpireAt: int64(expireAt), Enable: enable}, nil
+		return &conf.Auth{Name: nm, Mode: mode, Secret: secret, Exclude: exclude, ExpireAt: int64(expireAt), Enable: enable}, nil
 	}
 	err = ERR_NO_CHANGED
 	return
@@ -185,13 +184,13 @@ func (s *RegistryConf) GetHeaders() (hmap map[string]string, err error) {
 	}
 	return hmap, ERR_NO_CHANGED
 }
-func (s *RegistryConf) GetRouters() (rrts []*http.Router, err error) {
+func (s *RegistryConf) GetRouters() (rrts []*conf.Router, err error) {
 	defAction := "get"
 	routers, err := s.nconf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
 		return nil, err
 	}
-	rrts = make([]*http.Router, 0, 4)
+	rrts = make([]*conf.Router, 0, 4)
 	if r, err := s.oconf.GetNodeWithSectionName("router", "#@path/router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		baseArgs := routers.String("args")
 		rts, err := routers.GetSections("routers")
@@ -222,7 +221,7 @@ func (s *RegistryConf) GetRouters() (rrts []*http.Router, err error) {
 					return nil, fmt.Errorf("action:%v不支持,只支持:%v", actions, supportMethods)
 				}
 			}
-			sigleRouter := &http.Router{
+			sigleRouter := &conf.Router{
 				Name:    name,
 				Action:  actions,
 				Engine:  engine,

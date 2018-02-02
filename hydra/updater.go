@@ -93,7 +93,7 @@ func (h *Hydra) updateNow(url string, crc32 uint32) (err error) {
 	for _, server := range h.servers {
 		server.Shutdown()
 	}
-	h.ws.Shutdown(time.Second)
+	h.healthChecker.Shutdown(time.Second)
 	return
 }
 func (h *Hydra) restartHydra() (err error) {

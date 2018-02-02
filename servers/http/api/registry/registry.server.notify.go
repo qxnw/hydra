@@ -47,6 +47,14 @@ func (w *RegistryServer) NeedRestart(conf conf.Conf) (bool, error) {
 	if r, err := w.conf.GetNodeWithSectionName("router", "#@path/router"); err != nil || r.GetVersion() != routers.GetVersion() {
 		return true, nil
 	}
+	headers, err := conf.GetNodeWithSectionName("header", "#@path/header")
+	if err != nil {
+		return false, nil
+	}
+	//检查头配置是否变化，已变化则需要重启服务
+	if r, err := w.conf.GetNodeWithSectionName("header", "#@path/header"); err != nil || r.GetVersion() != headers.GetVersion() {
+		return true, nil
+	}
 	return false, nil
 
 }

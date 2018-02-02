@@ -80,18 +80,19 @@ func (h *Server) Start(cnf conf.Conf) (err error) {
 	if err != nil {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:%v)", h.domain, h.serverName, h.serverType, err)
 	}
-	if !servers.IsDebug && strings.EqualFold(h.serverType, servers.SRV_TP_RPC) && len(h.localServices) == 0 {
+
+	if !servers.IsDebug && strings.EqualFold(h.serverType, servers.SRV_TP_RPC) && len(h.engine.GetServices()) == 0 {
 		return fmt.Errorf("engine启动失败 domain:%s name:%s(%s)(err:engine中未找到任何服务)", h.domain, h.serverName, h.serverType)
 	}
 
 	//构建服务器
 	h.server, err = servers.NewRegistryServer(h.serverType, h.engine, cnf, h.logger)
 	if err != nil {
-		return fmt.Errorf("server启动失败:%s(%s)(err:%v)", h.serverName, h.serverType, err)
+		return fmt.Errorf("server启动失败:%s.%s(%s)(err:%v)", h.serverName, h.serverType, h.tag, err)
 	}
 	err = h.server.Start()
 	if err != nil {
-		return fmt.Errorf("server启动失败:%s(%s)(err:%v)", h.serverName, h.serverType, err)
+		return fmt.Errorf("server启动失败:%s.%s(%s)(err:%v)", h.serverName, h.serverType, h.tag, err)
 	}
 	h.address = h.server.GetAddress()
 	h.runTime = time.Now()

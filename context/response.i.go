@@ -12,7 +12,6 @@ func init() {
 	objectResponsePool = &sync.Pool{
 		New: func() interface{} {
 			r := &ObjectResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
-			r.Params["__view"] = "NONE"
 			return r
 		},
 	}
@@ -53,7 +52,6 @@ func (r *ObjectResponse) SetContent(status int, content interface{}) *ObjectResp
 func (r *ObjectResponse) Close() {
 	r.Content = nil
 	r.Params = make(map[string]interface{})
-	r.Params["__view"] = "NONE"
 	objectResponsePool.Put(r)
 }
 func (r *ObjectResponse) SetError(status int, err error) {

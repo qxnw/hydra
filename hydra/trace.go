@@ -10,7 +10,7 @@ import (
 )
 
 //StartTraceServer 启用性能跟踪(协程，内存，堵塞等)
-func StartTraceServer(log *logger.Logger) error {
+func StartTraceServer(domain string, tag string, log *logger.Logger) error {
 	f, err := os.Create("trace.out")
 	if err != nil {
 		return err
@@ -22,6 +22,6 @@ func StartTraceServer(log *logger.Logger) error {
 	}
 	defer trace.Stop()
 	addr := "0.0.0.0:19999"
-	log.Info("启用项目跟踪:http://0.0.0.0:19999/debug/pprof/")
+	log.Info("启动成功:pprof-trace.web(addr:http://0.0.0.0:19999/debug/pprof/)")
 	return http.ListenAndServe(addr, nil)
 }

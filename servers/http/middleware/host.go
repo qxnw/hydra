@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 //Host 处理服务器的主机头
-func Host(conf *http.ServerConf) gin.HandlerFunc {
+func Host(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if len(conf.Hosts) == 0 {
 			ctx.Next()
@@ -17,6 +17,7 @@ func Host(conf *http.ServerConf) gin.HandlerFunc {
 		}
 		correct := checkHost(conf.Hosts, ctx)
 		if !correct {
+			getLogger(ctx).Errorf("访问被拒绝,必须使用:%v访问", conf.Hosts)
 			ctx.AbortWithStatus(x.StatusNotAcceptable)
 			return
 		}

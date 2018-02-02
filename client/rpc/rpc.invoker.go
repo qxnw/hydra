@@ -122,7 +122,7 @@ func (r *Invoker) GetClient(addr string) (c *Client, err error) {
 	if err != nil {
 		return
 	}
-	fullService := fmt.Sprintf("/%s/services/%s%s/providers", strings.TrimPrefix(domain, "/"), server, service)
+	fullService := fmt.Sprintf("/%s/services/rpc/%s%s/providers", strings.TrimPrefix(domain, "/"), server, service)
 	_, client, err := r.cache.SetIfAbsentCb(fullService, func(i ...interface{}) (interface{}, error) {
 		rsrvs := i[0].(string)
 		opts := make([]ClientOption, 0, 0)

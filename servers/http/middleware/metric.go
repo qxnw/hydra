@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/metrics"
@@ -27,11 +27,11 @@ type Metric struct {
 	registry        cmap.ConcurrentMap
 	mu              sync.Mutex
 	currentRegistry metrics.Registry
-	conf            *http.ServerConf
+	conf            *conf.ServerConf
 }
 
 //NewMetric new metric
-func NewMetric(conf *http.ServerConf) *Metric {
+func NewMetric(conf *conf.ServerConf) *Metric {
 	return &Metric{
 		conf:            conf,
 		currentRegistry: metrics.NewRegistry(),

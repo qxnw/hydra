@@ -4,26 +4,25 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/http"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/logger"
 )
 
 //Logging 记录日志
-func Logging(conf *http.ServerConf) gin.HandlerFunc {
+func Logging(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		sid := ctx.Keys["hydra_sid"].(string)
 		start := time.Now()
+		setStartTime(ctx)
 		p := ctx.Request.URL.Path
-		if len(ctx.Request.URL.RawQuery) > 0 {
+		if ctx.Request.URL.RawQuery != "" {
 			p = p + "?" + ctx.Request.URL.RawQuery
 		}
-		log := logger.GetSession(conf.GetFullName(), sid)
+		log := logger.GetSession(conf.GetFullName(), getUUID(ctx))
 		log.Info(conf.Type+".request:", conf.Name, ctx.Request.Method, p, "from", ctx.ClientIP())
-
+		setLogger(ctx, log)
 		ctx.Next()
 
 		statusCode := ctx.Writer.Status()
-
 		if statusCode >= 200 && statusCode < 400 {
 			log.Info(conf.Type+".response:", conf.Name, ctx.Request.Method, p, statusCode, time.Since(start))
 		} else {

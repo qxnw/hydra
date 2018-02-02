@@ -87,7 +87,8 @@ func (r *ServiceEngine) LoadComponents(files ...string) error {
 		service := cmp.GetGroupServices(component.GetGroupName(r.serverType))
 		r.logger.Infof("加载组件:%s[%d]", file, len(service))
 		for _, srvs := range service {
-			r.AddMicroService(srvs, handler(cmp), "go")
+			r.AddCustomerTagService(srvs, handler(cmp), "go", component.GetGroupName(r.serverType))
+
 		}
 	}
 	return nil

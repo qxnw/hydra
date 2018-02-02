@@ -13,7 +13,6 @@ func init() {
 		New: func() interface{} {
 			r := &MapResponse{
 				baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
-			r.Params["__view"] = "NONE"
 			return r
 		},
 	}
@@ -72,6 +71,5 @@ func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string,
 func (r *MapResponse) Close() {
 	r.Content = make(map[string]interface{})
 	r.Params = make(map[string]interface{})
-	r.Params["__view"] = "NONE"
 	mapResponsePool.Put(r)
 }

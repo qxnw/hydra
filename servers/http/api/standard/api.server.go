@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/http"
 	"github.com/qxnw/hydra/servers/http/middleware"
+	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/logger"
 )
 
 //Server api服务器
 type Server struct {
 	*option
-	conf    *http.ServerConf
+	conf    *conf.ApiServerConf
 	engine  *x.Server
 	running bool
 	proto   string
@@ -25,20 +25,25 @@ type Server struct {
 }
 
 //New 创建api服务器
-func New(conf *http.ServerConf, routers []*http.Router, opts ...Option) *Server {
-	t := &Server{conf: conf}
-	t.option = &option{metric: middleware.NewMetric(t.conf), static: &middleware.StaticOptions{Enable: false}}
+func New(conf *conf.ApiServerConf, routers []*conf.Router, opts ...Option) (t *Server, err error) {
+	t = &Server{conf: conf}
+	t.option = &option{metric: middleware.NewMetric(t.conf.ServerConf), static: &middleware.StaticOptions{Enable: false}}
 	for _, opt := range opts {
 		opt(t.option)
 	}
 	if t.Logger == nil {
 		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
 	}
-	t.engine = &x.Server{}
-	if routers != nil {
-		t.engine.Handler = t.getHandler(routers)
+	t.engine = &x.Server{
+		ReadHeaderTimeout: time.Second * 3,
+		ReadTimeout:       time.Second * 3,
+		WriteTimeout:      time.Second * 3,
+		MaxHeaderBytes:    1 << 20,
 	}
-	return t
+	if routers != nil {
+		t.engine.Handler, err = t.getHandler(routers)
+	}
+	return
 }
 
 // Run the http server
@@ -47,9 +52,19 @@ func (s *Server) Run(address ...interface{}) error {
 	s.proto = "http"
 	s.engine.Addr = addr
 	s.running = true
-	err := s.engine.ListenAndServe()
-	s.running = false
-	return err
+	errChan := make(chan error, 1)
+	go func(ch chan error) {
+		if err := s.engine.ListenAndServe(); err != nil {
+			ch <- err
+		}
+	}(errChan)
+	select {
+	case <-time.After(time.Millisecond * 500):
+		return nil
+	case err := <-errChan:
+		s.running = false
+		return err
+	}
 }
 
 //RunTLS RunTLS server
@@ -58,9 +73,19 @@ func (s *Server) RunTLS(certFile, keyFile string, address ...interface{}) error 
 	s.proto = "https"
 	s.engine.Addr = addr
 	s.running = true
-	err := s.engine.ListenAndServeTLS(certFile, keyFile)
-	s.running = false
-	return err
+	errChan := make(chan error, 1)
+	go func(ch chan error) {
+		if err := s.engine.ListenAndServeTLS(certFile, keyFile); err != nil {
+			ch <- err
+		}
+	}(errChan)
+	select {
+	case <-time.After(time.Millisecond * 500):
+		return nil
+	case err := <-errChan:
+		s.running = false
+		return err
+	}
 }
 
 //Shutdown 关闭服务器
