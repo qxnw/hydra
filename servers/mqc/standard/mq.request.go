@@ -1,6 +1,10 @@
 package standard
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 type mqRequest struct {
 	service string
@@ -25,7 +29,7 @@ func newMQRequest(service, method, raw string) *mqRequest {
 }
 
 func (m *mqRequest) GetService() string {
-	return m.service
+	return fmt.Sprintf("/%s", strings.TrimPrefix(m.service, "/"))
 }
 func (m *mqRequest) GetMethod() string {
 	return m.method

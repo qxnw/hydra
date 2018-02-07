@@ -1,6 +1,7 @@
 package standard
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -40,7 +41,7 @@ func (s *Processor) AddRouters() {
 		return
 	}
 	for _, r := range s.queues {
-		s.Dispatcher.Handle(strings.ToUpper("GET"), r.Name, r.Handler.(dispatcher.HandlerFunc))
+		s.Dispatcher.Handle(strings.ToUpper("GET"), fmt.Sprintf("/%s", strings.TrimPrefix(r.Name, "/")), r.Handler.(dispatcher.HandlerFunc))
 	}
 	s.hasAddRouters = true
 }
