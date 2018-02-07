@@ -13,7 +13,7 @@ import (
 func CollectReportValue(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		sql, err := ctx.Request.Ext.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
+		sql, err := c.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
 		if err != nil || sql == "" {
 			err = fmt.Errorf("var.sql参数未配置:%v", err)
 			return

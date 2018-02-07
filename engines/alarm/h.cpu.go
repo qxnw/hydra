@@ -43,7 +43,7 @@ func CPUUPCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, value, "cpu")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

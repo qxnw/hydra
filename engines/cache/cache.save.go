@@ -49,7 +49,7 @@ func Save(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("cache.set错误(err:%v)", err)
 			return
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

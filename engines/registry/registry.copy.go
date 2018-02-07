@@ -53,7 +53,7 @@ func Copy(c component.IContainer) component.StandardServiceFunc {
 				return
 			}
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

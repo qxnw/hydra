@@ -21,7 +21,7 @@ func Delete(c component.IContainer) component.StandardServiceFunc {
 		if err != nil {
 			return
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

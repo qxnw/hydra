@@ -22,7 +22,7 @@ func DBValueCollect(c component.IContainer) component.StandardServiceFunc {
 		title := ctx.Request.Setting.GetString("title", "数据库监控服务")
 		msg := ctx.Request.Setting.GetString("msg", "数据库服务:@host当前值:@current")
 		platform := ctx.Request.Setting.GetString("platform", "----")
-		sql, err := ctx.Request.Ext.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
+		sql, err := c.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
 		if err != nil || sql == "" {
 			response.SetStatus(500)
 			return
@@ -65,7 +65,7 @@ func DBValueCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, result, "db")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

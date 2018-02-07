@@ -5,6 +5,7 @@ import (
 
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/types"
 )
 
 //RPCProxy rpc 代理服务
@@ -18,7 +19,12 @@ func (r *ServiceEngine) RPCProxy() component.StandardServiceFunc {
 		if err != nil {
 			err = fmt.Errorf("rpc执行错误status：%d,result:%v,err:%v", status, result, err)
 		}
-		response.Set(status, result, params, err)
+		response.Params = types.GetIMap(params)
+		if err != nil {
+			response.SetContent(status, err)
+			return response, err
+		}
+		response.SetContent(status, result)
 		return response, err
 	}
 }

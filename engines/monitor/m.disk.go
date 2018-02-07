@@ -13,8 +13,8 @@ func CollectDiskUP(c component.IContainer) component.StandardServiceFunc {
 		response = context.GetStandardResponse()
 		diskInfo := disk.GetInfo()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateDiskStatus(ctx, diskInfo.UsedPercent, "server", ip)
-		response.SetError(0, err)
+		err = updateDiskStatus(c, ctx, diskInfo.UsedPercent, "server", ip)
+		response.SetContent(0, err)
 		return
 	}
 }

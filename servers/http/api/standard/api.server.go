@@ -96,7 +96,7 @@ func (s *Server) Shutdown(timeout time.Duration) {
 		defer cannel()
 		if err := s.engine.Shutdown(ctx); err != nil {
 			if err == x.ErrServerClosed {
-				s.Errorf("%s:已关闭", s.conf.GetFullName())
+				s.Infof("%s:已关闭", s.conf.GetFullName())
 				return
 			}
 			s.Errorf("%s关闭出现错误:%v", s.conf.GetFullName(), err)

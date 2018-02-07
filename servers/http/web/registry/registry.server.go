@@ -54,6 +54,7 @@ func (w *RegistryServer) Restart(cnf xconf.Conf) (err error) {
 	w.closeChan = make(chan struct{})
 	w.conf = xconf.NewJSONConfWithEmpty()
 	w.serverConf = conf.NewWebServerConfBy(cnf)
+	w.once = sync.Once{}
 	w.server, err = standard.New(w.serverConf, nil, standard.WithIP(w.serverConf.IP), standard.WithLogger(w.Logger))
 	if err != nil {
 		return

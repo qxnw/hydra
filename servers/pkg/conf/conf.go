@@ -8,6 +8,8 @@ import (
 )
 
 type ServerConf struct {
+	nconf         conf.Conf
+	Raw           string
 	Domain        string
 	Name          string
 	Type          string
@@ -25,6 +27,9 @@ type ServerConf struct {
 //GetFullName 获取服务名称
 func (s *ServerConf) GetFullName() string {
 	return fmt.Sprintf("%s.%s(%s)", s.Name, s.Type, s.Cluster)
+}
+func (s *ServerConf) Get(key string) string {
+	return s.nconf.String(key)
 }
 func (s *ServerConf) GetHealthChecker() string {
 	return s.HealthChecker
@@ -45,6 +50,8 @@ func NewConf(domain string, name string, typeName string, tag string, registryNo
 
 func NewConfBy(nconf conf.Conf) *ServerConf {
 	c := &ServerConf{
+		Raw:           nconf.GetContent(),
+		nconf:         nconf,
 		Domain:        nconf.String("domain"),
 		Name:          nconf.String("name"),
 		Type:          nconf.String("type"),
@@ -83,4 +90,25 @@ type View struct {
 	Left  string
 	Right string
 	Files []string
+}
+type Queue struct {
+	Name        string
+	Queue       string
+	Engine      string
+	Service     string
+	Setting     string
+	Concurrency int
+	Handler     interface{}
+}
+type Task struct {
+	Name    string      `json:"name"`
+	Cron    string      `json:"cron"`
+	Input   string      `json:"input,omitempty"`
+	Body    string      `json:"body,omitempty"`
+	Engine  string      `json:"engine,omitempty"`
+	Service string      `json:"service"`
+	Setting string      `json:"setting,omitempty"`
+	Next    string      `json:"next"`
+	Last    string      `json:"last"`
+	Handler interface{} `json:"handler,omitempty"`
 }

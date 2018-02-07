@@ -46,7 +46,7 @@ func FileUpload() component.MapServiceFunc {
 		defer nf.Close()
 		_, err = io.Copy(nf, uf)
 		if err != nil {
-			response.SetError(500, err)
+			response.SetContent(500, err)
 			return
 		}
 		buff, err := ioutil.ReadAll(nf)

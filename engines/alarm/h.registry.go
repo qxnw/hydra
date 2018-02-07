@@ -44,7 +44,7 @@ func RegistryNodeCountCollect(c component.IContainer) component.StandardServiceF
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, value, "registry")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

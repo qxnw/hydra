@@ -50,7 +50,7 @@ func Delay(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("delay错误(err:%v)", err)
 			return
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

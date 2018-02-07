@@ -124,14 +124,14 @@ func SendSMS(mobile, data, setting string) (st int, r string, err error) {
 }
 
 //SendYTXSMS 通过云通讯发送短信
-func SendYTXSMS() component.StandardServiceFunc {
+func SendYTXSMS(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Form.Check("mobile", "data"); err != nil {
 			response.SetStatus(501)
 			return
 		}
-		content, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("ssm"))
+		content, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("ssm"))
 		if err != nil {
 			response.SetStatus(501)
 			return

@@ -101,7 +101,7 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	switch engine {
 	case "rpc":
 		return nil, nil
-	case "*":
+	case "", "*":
 		if r.IsCustomerService(component.GetGroupName(r.serverType), service) {
 			return nil, nil
 		}
@@ -114,7 +114,7 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	}
 	response := context.GetStandardResponse()
 	response.SetStatus(404)
-	return response, fmt.Errorf("在%s(%s)未找到服务[tags:(%s)(%v) group:(%s)(%v)]", r.Name, service, engine, r.GetTags(service), component.GetGroupName(r.serverType), r.ServiceGroup)
+	return response, fmt.Errorf("%s未找到服务:%s", r.Name, service)
 }
 
 //GetRegistry 获取注册中心

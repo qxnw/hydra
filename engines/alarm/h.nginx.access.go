@@ -45,7 +45,7 @@ func NginxAccessCountCollect(c component.IContainer) component.StandardServiceFu
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, value, "nginx-access")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

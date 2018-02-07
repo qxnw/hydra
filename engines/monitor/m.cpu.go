@@ -13,8 +13,8 @@ func CollectCPUUP(c component.IContainer) component.StandardServiceFunc {
 		response = context.GetStandardResponse()
 		cpuInfo := cpu.GetInfo()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateCPUStatus(ctx, cpuInfo.UsedPercent, "server", ip)
-		response.SetError(0, err)
+		err = updateCPUStatus(c, ctx, cpuInfo.UsedPercent, "server", ip)
+		response.SetContent(0, err)
 		return
 	}
 }

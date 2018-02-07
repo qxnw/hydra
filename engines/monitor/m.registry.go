@@ -19,8 +19,8 @@ func CollectRegistryNodeCount(c component.IContainer) component.StandardServiceF
 			return
 		}
 		ip := xnet.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateRegistryStatus(ctx, int64(len(data)), "server", ip, "path", path)
-		response.SetError(0, err)
+		err = updateRegistryStatus(c, ctx, int64(len(data)), "server", ip, "path", path)
+		response.SetContent(0, err)
 		return
 	}
 }

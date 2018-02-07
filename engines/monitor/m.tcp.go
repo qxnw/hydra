@@ -24,8 +24,8 @@ func CollectTCPStatus(c component.IContainer) component.StandardServiceFunc {
 		}
 		value := types.DecodeInt(err, nil, 0, 1)
 		ip := xnet.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateTCPStatus(ctx, int64(value), "server", ip, "host", host)
-		response.SetError(0, err)
+		err = updateTCPStatus(c, ctx, int64(value), "server", ip, "host", host)
+		response.SetContent(0, err)
 		return
 	}
 }

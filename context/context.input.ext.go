@@ -1,7 +1,6 @@
 package context
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/qxnw/lib4go/utility"
@@ -15,6 +14,19 @@ func (w *extParams) Get(name string) (interface{}, bool) {
 	v, ok := w.ext[name]
 	return v, ok
 }
+
+//GetSharding 获取任务分片信息(分片索引[从1开始]，分片总数)
+func (w *extParams) GetSharding() (int, int) {
+	v, ok := w.ext["__get_sharding_index_"]
+	if !ok {
+		return 0, 0
+	}
+	if f, ok := v.(func() (int, int)); ok {
+		return f()
+	}
+	return 0, 0
+}
+
 func (w *extParams) GetBodyMap(encoding ...string) map[string]string {
 	content, err := w.GetBody(encoding...)
 	if err != nil {
@@ -38,6 +50,7 @@ func (w *extParams) GetBody(encoding ...string) (string, error) {
 	return "", fmt.Errorf("无法根据%s格式转换数据", e)
 }
 
+/*
 func (w *extParams) getVarParam() (func(c string, n string) (string, error), error) {
 	funcVar := w.ext["__func_var_get_"]
 	if funcVar == nil {
@@ -56,7 +69,7 @@ func (w *extParams) GetVarParam(tpName string, name string) (string, error) {
 		return "", err
 	}
 	return f(tpName, name)
-}
+}*/
 
 //GetJWTBody 获取jwt存储数据
 func (w *extParams) GetJWTBody() interface{} {

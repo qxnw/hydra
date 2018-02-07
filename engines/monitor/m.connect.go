@@ -23,8 +23,8 @@ func CollectNetConnNum(c component.IContainer) component.StandardServiceFunc {
 		if err != nil {
 			return
 		}
-		err = updateNetConnectCountStatus(ctx, int64(ncc), "server", ip, "max", fmt.Sprintf("%d", max))
-		response.SetError(0, err)
+		err = updateNetConnectCountStatus(c, ctx, int64(ncc), "server", ip, "max", fmt.Sprintf("%d", max))
+		response.SetContent(0, err)
 		return
 	}
 }

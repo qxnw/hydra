@@ -57,7 +57,6 @@ func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
 			fmt.Println("queue.err:", err)
 			return
 		}
-		fmt.Println("queue.content:", content)
 
 		return
 	}, name)

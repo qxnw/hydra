@@ -7,7 +7,6 @@ import (
 	xconf "github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/conf"
-	"github.com/qxnw/hydra/servers/pkg/core"
 	"github.com/qxnw/hydra/servers/rpc/standard"
 	"github.com/qxnw/lib4go/logger"
 )
@@ -36,7 +35,7 @@ func NewRegistryServer(engine servers.IRegistryEngine, cnf xconf.Conf, logger *l
 		serverConf: serverConf,
 		Logger:     logger,
 		pubs:       make([]string, 0, 2)}
-	h.server, err = standard.New(serverConf, nil, core.WithIP(serverConf.IP), core.WithLogger(logger))
+	h.server, err = standard.New(serverConf, nil, standard.WithIP(serverConf.IP), standard.WithLogger(logger))
 	if err != nil {
 		return
 	}
@@ -55,7 +54,8 @@ func (w *RegistryServer) Restart(cnf xconf.Conf) (err error) {
 	w.closeChan = make(chan struct{})
 	w.conf = xconf.NewJSONConfWithEmpty()
 	w.serverConf = conf.NewRpcServerConfBy(cnf)
-	w.server, err = standard.New(w.serverConf, nil, core.WithIP(w.serverConf.IP), core.WithLogger(w.Logger))
+	w.once = sync.Once{}
+	w.server, err = standard.New(w.serverConf, nil, standard.WithIP(w.serverConf.IP), standard.WithLogger(w.Logger))
 	if err != nil {
 		return
 	}
@@ -70,7 +70,6 @@ func (w *RegistryServer) Restart(cnf xconf.Conf) (err error) {
 //Start 启用服务
 func (w *RegistryServer) Start() (err error) {
 	err = w.server.Run(w.conf.String("address", ":81"))
-
 	if err != nil {
 		return
 	}

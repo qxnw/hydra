@@ -43,7 +43,7 @@ func UpdateNodeValue(c component.IContainer) component.StandardServiceFunc {
 		}
 		err = registry.Update(path, value, int32(v))
 		if err == nil {
-			response.Success()
+			response.Success("success")
 			return
 		}
 		_, ov, err1 := registry.GetValue(path)

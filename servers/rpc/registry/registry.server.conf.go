@@ -26,7 +26,7 @@ func (w *RegistryServer) SetConf(cnf *conf.RegistryConf) error {
 	}
 	if err != conf.ERR_NO_CHANGED {
 		for _, router := range routers {
-			router.Handler = middleware.ContextHandler(w.engine, router.Name, router.Engine, router.Service, router.Setting)
+			router.Handler = middleware.ContextHandler(w.engine, router.Name, router.Engine, router.Service, router.Setting, nil)
 		}
 		err = w.server.SetRouters(routers)
 		if err != nil {

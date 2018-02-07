@@ -44,7 +44,7 @@ func NetConnNumCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, value, "ncc")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

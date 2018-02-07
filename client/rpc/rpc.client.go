@@ -89,7 +89,7 @@ func NewClient(address string, opts ...ClientOption) (*Client, error) {
 	grpclog.SetLogger(client.log)
 	err := client.connect()
 	if err != nil {
-		err = fmt.Errorf("rpc.client连接到服务器失败:%s(err:%v)", address, err)
+		err = fmt.Errorf("rpc.client连接到服务器失败:%s(%v)(err:%v)", address, client.connectionTimeout, err)
 		return nil, err
 	}
 	return client, err
@@ -142,7 +142,7 @@ func (c *Client) Close() {
 	c.isClose = true
 	if c.resolver != nil {
 		c.resolver.Close()
-	}	
+	}
 	if c.conn != nil {
 		c.conn.Close()
 	}

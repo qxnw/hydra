@@ -14,7 +14,7 @@ func (s *Server) getProcessor(routers []*conf.Router) (*Processor, error) {
 	engine := NewProcessor()
 	engine.Use(middleware.Logging(s.conf.ServerConf)) //记录请求日志
 	engine.Use(middleware.Recovery())
-	engine.Use(s.Metric.Handle())                     //生成metric报表
+	engine.Use(s.option.metric.Handle())              //生成metric报表
 	engine.Use(middleware.Host(s.conf.ServerConf))    // 检查主机头是否合法
 	engine.Use(middleware.JwtAuth(s.conf.ServerConf)) //jwt安全认证
 	engine.Use(middleware.Body())                     //处理请求form
@@ -57,6 +57,6 @@ func (r *Routers) Route(method string, name string, f servers.IExecuteHandler) {
 			Action:  strings.Split(method, ","),
 			Engine:  "*",
 			Service: name,
-			Handler: middleware.ContextHandler(f, name, "*", name, ""),
+			Handler: middleware.ContextHandler(f, name, "*", name, "", nil),
 		})
 }

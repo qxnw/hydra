@@ -70,7 +70,7 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 		mSetting, err := utility.GetMapWithQuery(setting)
 		if err != nil {
 			resp := context.GetStandardResponse()
-			resp.SetError(500, err)
+			resp.SetContent(500, err)
 			setResponse(c, resp)
 			return
 		}
@@ -89,7 +89,7 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 			if !servers.IsDebug {
 				err = errors.New("error:Internal Server Error(工作引擎发生异常)")
 			}
-			response.SetError(response.GetStatus(err), err)
+			response.SetContent(0, err)
 			setResponse(c, response)
 			return
 		}

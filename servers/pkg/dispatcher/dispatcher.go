@@ -110,6 +110,7 @@ func (engine *Dispatcher) handleRequest(c *Context) {
 			break
 		}
 	}
+	c.handlers = engine.RouterGroup.Handlers
 	serveError(c, 404, default404Body)
 }
 

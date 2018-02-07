@@ -57,7 +57,7 @@ func HydraServerQPSCollect(c component.IContainer, tp string) component.Standard
 			tf.Set("platform", platform)
 			st, err := checkAndSave(c, tf, value, tp)
 			if err != nil {
-				response.SetError(st, err)
+				response.SetContent(st, err)
 				return response, err
 			}
 		}

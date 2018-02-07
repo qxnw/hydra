@@ -23,7 +23,7 @@ type email struct {
 	smtp     string
 }
 
-func getEmailParams(ctx *context.Context) (mail *email, err error) {
+func getEmailParams(c component.IContainer, ctx *context.Context) (mail *email, err error) {
 	mail = &email{mailtype: "Content-Type: text/plain; charset=UTF-8"}
 	receivers, err := ctx.Request.Form.Get("receiver")
 	if err != nil || receivers == "" {
@@ -41,7 +41,7 @@ func getEmailParams(ctx *context.Context) (mail *email, err error) {
 		err = fmt.Errorf("邮件内容不能为空")
 		return
 	}
-	content, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("email"))
+	content, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("email"))
 	if err != nil {
 		return
 	}
@@ -96,7 +96,7 @@ func send(m *email) error {
 func SendMail(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		m, err := getEmailParams(ctx)
+		m, err := getEmailParams(c, ctx)
 		if err != nil {
 			return
 		}
@@ -104,7 +104,7 @@ func SendMail(c component.IContainer) component.StandardServiceFunc {
 		if err != nil {
 			return
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

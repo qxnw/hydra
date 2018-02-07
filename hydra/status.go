@@ -95,25 +95,25 @@ func (h *Hydra) update(name string, engine string, service string, ctx *context.
 	pkg, err := h.getPackage(systemName, version)
 	if err != nil {
 		h.Error(err)
-		response.SetError(500, err)
+		response.SetContent(500, err)
 		return response, err
 	}
 	if version != pkg.Version {
 		err = fmt.Errorf("安装包配置的版本号有误:%s(%s)", version, pkg.Version)
 		h.Error(err)
-		response.SetError(500, err)
+		response.SetContent(500, err)
 		return response, err
 	}
 	err = h.updateNow(pkg.URL, pkg.CRC32)
 	if err != nil {
 		h.Error(err)
-		response.SetError(500, err)
+		response.SetContent(500, err)
 		return response, err
 	}
 	err = h.restartHydra()
 	if err != nil {
 		h.Error(err)
-		response.SetError(500, err)
+		response.SetContent(500, err)
 		return response, err
 	}
 	response.SetContent(200, "success")

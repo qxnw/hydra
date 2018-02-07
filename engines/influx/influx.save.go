@@ -116,7 +116,7 @@ func Save(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("save(err:%v)", err)
 			return
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

@@ -20,18 +20,18 @@ func CollectNetPackages(c component.IContainer) component.StandardServiceFunc {
 		}
 		ip := xnet.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
 		for _, ni := range netInfo {
-			err = updateNetRecvStatus(ctx, ni.BytesRecv, "server", ip, "name", ni.Name)
+			err = updateNetRecvStatus(c, ctx, ni.BytesRecv, "server", ip, "name", ni.Name)
 			if err != nil {
-				response.SetError(0, err)
+				response.SetContent(0, err)
 				return
 			}
-			err = updateNetSentStatus(ctx, ni.BytesSent, "server", ip, "name", ni.Name)
+			err = updateNetSentStatus(c, ctx, ni.BytesSent, "server", ip, "name", ni.Name)
 			if err != nil {
-				response.SetError(0, err)
+				response.SetContent(0, err)
 				return
 			}
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }

@@ -23,10 +23,10 @@ import (
 )
 
 //Request 请求转跳
-func Request() component.WebServiceFunc {
+func Request(c component.IContainer) component.WebServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.WebResponse, err error) {
 		response = context.GetWebResponse(ctx)
-		content, err := ctx.Request.Ext.GetVarParam("setting", ctx.Request.Setting.GetString("setting"))
+		content, err := c.GetVarParam("setting", ctx.Request.Setting.GetString("setting"))
 		if err != nil {
 			return
 		}

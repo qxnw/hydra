@@ -45,7 +45,7 @@ func NginxErrorCountCollect(c component.IContainer) component.StandardServiceFun
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, value, "nginx-error")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

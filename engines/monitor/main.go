@@ -18,7 +18,6 @@ func loadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddAutoflowService("/monitor/nginx/error/count", CollectNginxErrorNum(i), "monitor")
 	r.AddAutoflowService("/monitor/nginx/access/count", CollectNginxAccessNum(i), "monitor")
 	r.AddAutoflowService("/monitor/queue/count", CollectQueueMessageCount(i), "monitor")
-
 }
 func init() {
 	engines.AddServiceLoader("monitor", loadService)

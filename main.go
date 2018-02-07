@@ -4,12 +4,14 @@ import (
 	"runtime"
 
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/mattn/go-oci8"
+
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
 	"github.com/qxnw/hydra/hydra"
+	_ "github.com/qxnw/hydra/servers/cron/registry"
 	_ "github.com/qxnw/hydra/servers/http/api/registry"
 	_ "github.com/qxnw/hydra/servers/http/web/registry"
+	_ "github.com/qxnw/hydra/servers/mqc/registry"
 	_ "github.com/qxnw/hydra/servers/rpc/registry"
 	_ "github.com/qxnw/lib4go/cache/memcache"
 	_ "github.com/qxnw/lib4go/cache/redis"

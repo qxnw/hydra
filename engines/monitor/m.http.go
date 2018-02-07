@@ -28,8 +28,8 @@ func CollectHTTPStatus(c component.IContainer) component.StandardServiceFunc {
 		_, t, err := client.Get(uri)
 		value := types.DecodeInt(t, 200, 0, 1)
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateHTTPStatus(ctx, int64(value), "server", ip, "url", uri)
-		response.SetError(0, err)
+		err = updateHTTPStatus(c, ctx, int64(value), "server", ip, "url", uri)
+		response.SetContent(0, err)
 		return
 	}
 }

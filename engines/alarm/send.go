@@ -33,7 +33,7 @@ type userInfo struct {
 func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		settingData, err := ctx.Request.Ext.GetVarParam("alarm", ctx.Request.Setting.GetString("notify_setting"))
+		settingData, err := c.GetVarParam("alarm", ctx.Request.Setting.GetString("notify_setting"))
 		if err != nil {
 			return
 		}
@@ -67,19 +67,19 @@ func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
 					return response, nil
 				}
 				for _, u := range settingObj.Users {
-					st, err := Notify(ctx, group, alarm, settingObj.Notify, u, title, content, happendTime, remark)
+					st, err := Notify(c, ctx, group, alarm, settingObj.Notify, u, title, content, happendTime, remark)
 					if err != nil && st != 204 {
-						response.SetError(st, err)
+						response.SetContent(st, err)
 						return response, err
 					}
 				}
 			}
 		}
-		response.Success()
+		response.Success("success")
 		return
 	}
 }
-func Notify(ctx *context.Context, group string, alarm bool, notify notity, u *userInfo, title string, content string, time string, remark string) (st int, err error) {
+func Notify(c component.IContainer, ctx *context.Context, group string, alarm bool, notify notity, u *userInfo, title string, content string, time string, remark string) (st int, err error) {
 
 	dataGroup := strings.Split(group, ",")
 	if !checkNeedSend(dataGroup, u.Group) {
@@ -87,7 +87,7 @@ func Notify(ctx *context.Context, group string, alarm bool, notify notity, u *us
 	}
 	has := checkNeedSend(notify.WxGroup, u.Group)
 	if has {
-		st, err = sendWXNotify(ctx, alarm, u, title, content, time, remark)
+		st, err = sendWXNotify(c, ctx, alarm, u, title, content, time, remark)
 		if err == nil {
 			ctx.Log.Infof("微信发送给:%s[发送成功]", u.Name)
 		} else {
@@ -97,7 +97,7 @@ func Notify(ctx *context.Context, group string, alarm bool, notify notity, u *us
 
 	if checkNeedSend(notify.SmsBroup, u.Group) {
 		has = true
-		st, err = sendSMSNotify(ctx, alarm, u, title, content, time, remark)
+		st, err = sendSMSNotify(c, ctx, alarm, u, title, content, time, remark)
 		if err == nil {
 			ctx.Log.Infof("短信发送给:%s[发送成功]", u.Name)
 		} else {
@@ -155,9 +155,9 @@ func getMessage(input map[string]interface{}) (alarm bool, title string, content
 	return
 
 }
-func sendWXNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
+func sendWXNotify(c component.IContainer, ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
 	tp := types.DecodeString(alarm, true, "alarm", "normal")
-	setting, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("wx_setting"))
+	setting, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("wx_setting"))
 	if err != nil {
 		err = fmt.Errorf("未找到微信消息推送的相关配置:%v", err)
 		return
@@ -172,8 +172,8 @@ func sendWXNotify(ctx *context.Context, alarm bool, u *userInfo, title string, c
 	})
 	return
 }
-func sendSMSNotify(ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
-	setting, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("sms_setting"))
+func sendSMSNotify(c component.IContainer, ctx *context.Context, alarm bool, u *userInfo, title string, content string, time string, remark string) (status int, err error) {
+	setting, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("sms_setting"))
 	if err != nil {
 		err = fmt.Errorf("未找到短信发送配置:%v", err)
 		return

@@ -39,7 +39,7 @@ func (r *Request) reset(queryString IData, form IData, param IData, setting IDat
 	r.QueryString.data = queryString
 	r.Form.data = form
 	r.Param.data = param
-	r.Setting.data = param
+	r.Setting.data = setting
 	r.CircuitBreaker.inputParams.data = setting
 	r.CircuitBreaker.ext = ext
 	r.Ext.ext = ext

@@ -27,8 +27,8 @@ func CollectQueueMessageCount(c component.IContainer) component.StandardServiceF
 			return
 		}
 		ip := xnet.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateredisListCount(ctx, count, "server", ip, "key", key)
-		response.SetError(0, err)
+		err = updateredisListCount(c, ctx, count, "server", ip, "key", key)
+		response.SetContent(0, err)
 		return
 	}
 }

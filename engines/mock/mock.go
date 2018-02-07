@@ -8,10 +8,10 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func RawRequest() component.StandardServiceFunc {
+func RawRequest(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		content, err := ctx.Request.Ext.GetVarParam("setting", ctx.Request.Setting.GetString("setting"))
+		content, err := c.GetVarParam("setting", ctx.Request.Setting.GetString("setting"))
 		if err != nil {
 			err = fmt.Errorf("args配置错误，args.setting配置的节点获取失败(err:%v)", err)
 			return
@@ -23,7 +23,7 @@ func RawRequest() component.StandardServiceFunc {
 		if header == "" {
 			return
 		}
-		headerContent, err := ctx.Request.Ext.GetVarParam("header", header)
+		headerContent, err := c.GetVarParam("header", header)
 		if err != nil {
 			err = fmt.Errorf("args配置错误，args.header配置的节点:%s获取失败(err:%v)", header, err)
 			return

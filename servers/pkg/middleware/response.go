@@ -11,14 +11,18 @@ import (
 func Response(conf *conf.ServerConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		ctx.Next()
-		if ctx.Writer.Written() {
-			return
-		}
 		response := getResponse(ctx)
 		if response == nil {
+			getLogger(ctx).Warn("response is nil")
 			return
 		}
 		defer response.Close()
+		if response.GetError() != nil {
+			getLogger(ctx).Errorf("err:%v", response.GetError())
+		}
+		if ctx.Writer.Written() {
+			return
+		}
 		switch response.GetContentType() {
 		case 1:
 			ctx.SecureJSON(response.GetStatus(), response.GetContent())

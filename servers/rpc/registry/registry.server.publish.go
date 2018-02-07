@@ -31,14 +31,18 @@ func (w *RegistryServer) publish() (err error) {
 	if len(names) == 0 {
 		names = append(names, w.serverConf.Name)
 	}
+	srvs := w.GetServices()
 	for _, host := range names {
-		servicePath := path.Join(w.serverConf.ServiceNode, host, "providers", ipPort)
-		err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
-		if err != nil {
-			err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)
-			return err
+		for _, srv := range srvs {
+			servicePath := path.Join(w.serverConf.ServiceNode, host, srv, "providers", ipPort)
+			err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
+			if err != nil {
+				err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)
+				return err
+			}
+			w.pubs = append(w.pubs, servicePath)
 		}
-		w.pubs = append(w.pubs, servicePath)
+
 	}
 	go w.publishCheck(nodeData)
 	return

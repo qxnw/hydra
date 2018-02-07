@@ -13,8 +13,8 @@ func CollectMemUP(c component.IContainer) component.StandardServiceFunc {
 		response = context.GetStandardResponse()
 		memoryInfo := memory.GetInfo()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateMemStatus(ctx, memoryInfo.UsedPercent, "server", ip)
-		response.SetError(0, err)
+		err = updateMemStatus(c, ctx, memoryInfo.UsedPercent, "server", ip)
+		response.SetContent(0, err)
 		return
 	}
 }

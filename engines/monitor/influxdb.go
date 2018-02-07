@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -11,19 +12,23 @@ import (
 	"github.com/qxnw/lib4go/metrics"
 )
 
-var currentRegistry metrics.Registry
+var registryMap cmap.ConcurrentMap
 var influxdbCache cmap.ConcurrentMap
 var log *logger.Logger
 
 func init() {
 	influxdbCache = cmap.New(2)
-	currentRegistry = metrics.NewRegistry()
+	registryMap = cmap.New(2)
 	log = logger.New("monitor")
 }
-
-func getReporter(ctx *context.Context, influxName string, lg *logger.Logger) (report metrics.IReporter, err error) {
-
-	content, err := ctx.Request.Ext.GetVarParam("influxdb", ctx.Request.Setting.GetString(influxName))
+func getRegistry(cron string) metrics.Registry {
+	_, r, _ := influxdbCache.SetIfAbsentCb(cron, func(i ...interface{}) (interface{}, error) {
+		return metrics.NewRegistry(), nil
+	}, cron)
+	return r.(metrics.Registry)
+}
+func getReporter(c component.IContainer, ctx *context.Context, influxName string, lg *logger.Logger) (report metrics.IReporter, err error) {
+	content, err := c.GetVarParam("influxdb", ctx.Request.Setting.GetString(influxName))
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +55,7 @@ func getReporter(ctx *context.Context, influxName string, lg *logger.Logger) (re
 		if !strings.Contains(host, "://") {
 			host = "http://" + host
 		}
-		report, err := metrics.InfluxDB(currentRegistry, scron, host, dataBase, userName, password, lg)
+		report, err := metrics.InfluxDB(getRegistry(scron), scron, host, dataBase, userName, password, lg)
 		if err != nil {
 			err = fmt.Errorf("创建inflxudb失败,err:%v", err)
 			return nil, err
@@ -64,62 +69,70 @@ func getReporter(ctx *context.Context, influxName string, lg *logger.Logger) (re
 	return client.(metrics.IReporter), nil
 }
 
-func updateStatus(ctx *context.Context, influxName string, tagName string, value float64, params ...string) error {
-	_, err := getReporter(ctx, influxName, log)
+func updateStatus(c component.IContainer, ctx *context.Context, influxName string, tagName string, value float64, params ...string) error {
+	_, err := getReporter(c, ctx, influxName, log)
 	if err != nil {
 		return err
 	}
 	gaugeName := metrics.MakeName(tagName, metrics.GAUGE, params...) //堵塞计数
-	metrics.GetOrRegisterGaugeFloat64(gaugeName, currentRegistry).Update(value)
+	cron := "@every 1m"
+	if c, ok := ctx.Request.Ext.Get("__cron_"); ok {
+		cron = c.(string)
+	}
+	metrics.GetOrRegisterGaugeFloat64(gaugeName, getRegistry(cron)).Update(value)
 	return nil
 }
-func updateStatusInt64(ctx *context.Context, influxName string, tagName string, value int64, params ...string) error {
-	_, err := getReporter(ctx, influxName, log)
+func updateStatusInt64(c component.IContainer, ctx *context.Context, influxName string, tagName string, value int64, params ...string) error {
+	_, err := getReporter(c, ctx, influxName, log)
 	if err != nil {
 		return err
 	}
 	gaugeName := metrics.MakeName(tagName, metrics.GAUGE, params...) //堵塞计数
-	metrics.GetOrRegisterGauge(gaugeName, currentRegistry).Update(value)
+	cron := "@every 1m"
+	if c, ok := ctx.Request.Ext.Get("__cron_"); ok {
+		cron = c.(string)
+	}
+	metrics.GetOrRegisterGauge(gaugeName, getRegistry(cron)).Update(value)
 	return nil
 }
 
-func updateCPUStatus(ctx *context.Context, value float64, params ...string) error {
-	return updateStatus(ctx, "influxdb", "monitor.cpu.status", value, params...)
+func updateCPUStatus(c component.IContainer, ctx *context.Context, value float64, params ...string) error {
+	return updateStatus(c, ctx, "influxdb", "monitor.cpu.status", value, params...)
 }
-func updateMemStatus(ctx *context.Context, value float64, params ...string) error {
-	return updateStatus(ctx, "influxdb", "monitor.mem.status", value, params...)
+func updateMemStatus(c component.IContainer, ctx *context.Context, value float64, params ...string) error {
+	return updateStatus(c, ctx, "influxdb", "monitor.mem.status", value, params...)
 }
-func updateDiskStatus(ctx *context.Context, value float64, params ...string) error {
-	return updateStatus(ctx, "influxdb", "monitor.disk.status", value, params...)
+func updateDiskStatus(c component.IContainer, ctx *context.Context, value float64, params ...string) error {
+	return updateStatus(c, ctx, "influxdb", "monitor.disk.status", value, params...)
 }
-func updateHTTPStatus(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.http.status", value, params...)
+func updateHTTPStatus(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.http.status", value, params...)
 }
-func updateTCPStatus(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.tcp.status", value, params...)
+func updateTCPStatus(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.tcp.status", value, params...)
 }
-func updateRegistryStatus(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.registry.status", value, params...)
+func updateRegistryStatus(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.registry.status", value, params...)
 }
-func updateDBStatus(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.db.status", value, params...)
+func updateDBStatus(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.db.status", value, params...)
 }
 
-func updateNetRecvStatus(ctx *context.Context, value uint64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.net.recv", int64(value), params...)
+func updateNetRecvStatus(c component.IContainer, ctx *context.Context, value uint64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.net.recv", int64(value), params...)
 }
-func updateNetSentStatus(ctx *context.Context, value uint64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.net.sent", int64(value), params...)
+func updateNetSentStatus(c component.IContainer, ctx *context.Context, value uint64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.net.sent", int64(value), params...)
 }
-func updateNetConnectCountStatus(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.net.conn", value, params...)
+func updateNetConnectCountStatus(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.net.conn", value, params...)
 }
-func updateNginxErrorCount(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.nginx.error", value, params...)
+func updateNginxErrorCount(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.nginx.error", value, params...)
 }
-func updateNginxAccessCount(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.nginx.access", value, params...)
+func updateNginxAccessCount(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.nginx.access", value, params...)
 }
-func updateredisListCount(ctx *context.Context, value int64, params ...string) error {
-	return updateStatusInt64(ctx, "influxdb", "monitor.queue.count", value, params...)
+func updateredisListCount(c component.IContainer, ctx *context.Context, value int64, params ...string) error {
+	return updateStatusInt64(c, ctx, "influxdb", "monitor.queue.count", value, params...)
 }

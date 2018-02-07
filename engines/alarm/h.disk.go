@@ -42,7 +42,7 @@ func DiskUPCollect(c component.IContainer) component.StandardServiceFunc {
 		tf.Set("msg", tf.Translate(msg))
 		tf.Set("platform", platform)
 		st, err := checkAndSave(c, tf, result, "disk")
-		response.SetError(st, err)
+		response.SetContent(st, err)
 		return
 	}
 }

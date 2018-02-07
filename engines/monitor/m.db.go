@@ -14,7 +14,7 @@ import (
 func CollectDBValue(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		sql, err := ctx.Request.Ext.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
+		sql, err := c.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
 		if err != nil || sql == "" {
 			return
 		}
@@ -38,8 +38,8 @@ func CollectDBValue(c component.IContainer) component.StandardServiceFunc {
 			return
 		}
 		ip := xnet.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		err = updateDBStatus(ctx, int64(value), "server", ip, "name", sqlNames[len(sqlNames)-1])
-		response.SetError(0, err)
+		err = updateDBStatus(c, ctx, int64(value), "server", ip, "name", sqlNames[len(sqlNames)-1])
+		response.SetContent(0, err)
 		return
 	}
 }

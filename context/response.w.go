@@ -22,6 +22,7 @@ func init() {
 type WebResponse struct {
 	Content interface{}
 	ctx     *Context
+	err     error
 	*baseResponse
 }
 
@@ -32,28 +33,11 @@ func GetWebResponse(ctx *Context) *WebResponse {
 }
 
 //Redirect 设置页面转跳
-func (r *WebResponse) Redirect(code int, url string) *WebResponse {
+func (r *WebResponse) Redirect(code int, url string) {
 	r.Params["Status"] = code
 	r.Params["Location"] = url
 	r.Status = code
-	return r
-}
-func (r *WebResponse) GetContent(errs ...error) interface{} {
-	if r.Content != nil {
-		return r.Content
-	}
-	if len(errs) > 0 {
-		return errs[0]
-	}
-	return r.Content
-}
-func (r *WebResponse) Success(v ...interface{}) *WebResponse {
-	r.Status = 200
-	if len(v) > 0 {
-		r.Content = v[0]
-		return r
-	}
-	return r
+	return
 }
 
 //SetView 设置view
@@ -101,24 +85,35 @@ func (c *WebResponse) getSetCookie(name string, value string, timeout interface{
 	return b.String()
 }
 
-func (r *WebResponse) SetError(status int, err error) {
-	if err != nil {
-		r.Status = types.DecodeInt(status, 0, 500, status)
-		r.Content = err
-		return
-	}
-	r.Status = types.DecodeInt(status, 0, 200, status)
+func (r *WebResponse) GetContent() interface{} {
+	return r.Content
 }
-func (r *WebResponse) Set(s int, rr interface{}, p map[string]string, err error) error {
-	r.Status = s
-	if r.Status == 0 {
-		r.Status = types.DecodeInt(err, nil, 500, 200)
+
+func (r *WebResponse) Success(v string) {
+	r.Status = 200
+	r.Content = v
+	return
+
+}
+func (r *WebResponse) SetContent(status int, content interface{}) {
+	if status == 0 {
+		status = r.Status
 	}
-	for k, v := range p {
-		r.Params[k] = v
+	switch content.(type) {
+	case HydraError:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(HydraError).error
+	case error:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(error)
+	default:
+		r.Status = 200
+		r.Content = content
 	}
-	r.Content = rr
-	return err
+	return
+}
+func (r *WebResponse) GetError() error {
+	return r.err
 }
 func (r *WebResponse) Close() {
 	r.Content = nil

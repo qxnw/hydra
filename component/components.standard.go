@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/lib4go/types"
 )
 
 const (
@@ -162,6 +164,9 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 			r.Handlers[name] = handler
 			r.Services = append(r.Services, name)
 		}
+		if strings.HasPrefix(name, "__") {
+			break
+		}
 		if _, ok := r.GroupServices[group]; !ok {
 			r.GroupServices[group] = make([]string, 0, 2)
 		}
@@ -171,7 +176,6 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 			r.ServiceGroup[name] = make([]string, 0, 2)
 		}
 		r.ServiceGroup[name] = append(r.ServiceGroup[name], group)
-		return
 	default:
 		r.checkFuncType(name, h)
 		if _, ok := r.funcs[group]; !ok {
@@ -181,10 +185,7 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 			panic(fmt.Sprintf("多次注册服务:%s", name))
 		}
 		r.funcs[group][name] = h
-		return
-
 	}
-
 	switch handler := h.(type) {
 	case FallbackHandler, FallbackMapHandler, FallbackObjectHandler, FallbackStandardHandler, FallbackWebHandler:
 		if _, ok := r.FallbackHandlers[name]; !ok {
@@ -347,7 +348,11 @@ func (r *StandardComponent) Handle(name string, engine string, service string, c
 		rs, err = response, fmt.Errorf("未找到服务:%s", service)
 	}
 	if err != nil {
-		err = fmt.Errorf("%s:status:%d,err:%v", name, rs.GetStatus(err), err)
+		status := 500
+		if rs != nil && !reflect.ValueOf(rs).IsNil() {
+			status = rs.GetStatus()
+		}
+		err = fmt.Errorf("%s:status:%d,err:%v", r.Name, types.DecodeInt(status, 0, 500, status), err)
 	}
 	return
 }
@@ -375,7 +380,11 @@ func (r *StandardComponent) Fallback(name string, engine string, service string,
 		rs, err = response, fmt.Errorf("未找到服务:%s", service)
 	}
 	if err != nil {
-		err = fmt.Errorf("%s:status:%d,err:%v", name, rs.GetStatus(err), err)
+		status := 500
+		if rs != nil && !reflect.ValueOf(rs).IsNil() {
+			status = rs.GetStatus()
+		}
+		err = fmt.Errorf("%s:status:%d,err:%v", r.Name, types.DecodeInt(status, 0, 500, status), err)
 	}
 	return
 }
@@ -399,7 +408,7 @@ func GetGroupName(serverType string) string {
 	switch serverType {
 	case "api", "rpc":
 		return MicroService
-	case "mq", "cron":
+	case "mqc", "cron":
 		return AutoflowService
 	case "web":
 		return PageService

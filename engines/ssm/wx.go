@@ -78,7 +78,7 @@ func SendWXM(ssetting string, param map[string]string) (r string, status int, er
 func SendWeiXinMesssage(c component.IContainer) component.StandardServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
-		content, err := ctx.Request.Ext.GetVarParam("ssm", ctx.Request.Setting.GetString("wx"))
+		content, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("wx"))
 		if err != nil {
 			return
 		}
@@ -88,7 +88,7 @@ func SendWeiXinMesssage(c component.IContainer) component.StandardServiceFunc {
 		input := ctx.Request.Ext.GetBodyMap()
 		r, status, err := SendWXM(content, input)
 		if err != nil {
-			response.SetError(status, err)
+			response.SetContent(status, err)
 			return response, err
 		}
 		response.SetContent(status, r)

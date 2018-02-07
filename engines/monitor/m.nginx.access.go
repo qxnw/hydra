@@ -16,12 +16,12 @@ func CollectNginxAccessNum(c component.IContainer) component.StandardServiceFunc
 	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
 		response = context.GetStandardResponse()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
-		c, _, err := getNginxAccessCount()
+		n, _, err := getNginxAccessCount()
 		if err != nil {
 			return
 		}
-		err = updateNginxAccessCount(ctx, int64(c), "server", ip)
-		response.SetError(0, err)
+		err = updateNginxAccessCount(c, ctx, int64(n), "server", ip)
+		response.SetContent(0, err)
 		return
 	}
 }

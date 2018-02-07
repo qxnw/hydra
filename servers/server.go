@@ -14,6 +14,7 @@ var IsDebug = false
 var (
 	ST_RUNNING   = "running"
 	ST_STOP      = "stop"
+	ST_PAUSE     = "pause"
 	SRV_TP_API   = "api"
 	SRV_FILE_API = "file"
 	SRV_TP_RPC   = "rpc"

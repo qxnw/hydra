@@ -64,17 +64,17 @@ func getResponse(c *dispatcher.Context) context.Response {
 }
 
 //ContextHandler api请求处理程序
-func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string) dispatcher.HandlerFunc {
+func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string, ext map[string]interface{}) dispatcher.HandlerFunc {
 	return func(c *dispatcher.Context) {
 		//处理输入参数
 		mSetting, err := utility.GetMapWithQuery(setting)
 		if err != nil {
 			resp := context.GetStandardResponse()
-			resp.SetError(500, err)
+			resp.SetContent(500, err)
 			setResponse(c, resp)
 			return
 		}
-		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c))
+		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext))
 		defer ctx.Close()
 		defer setServiceName(c, ctx.Request.Translate(service, true))
 
@@ -84,12 +84,15 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 			response = context.GetStandardResponse()
 		}
 		//处理错误err,5xx
-		if err != nil {
+		if err != nil || response.GetError() != nil {
+			if response.GetError() != nil {
+				err = response.GetError()
+			}
 			err = fmt.Errorf("error:%v", err)
 			if !servers.IsDebug {
 				err = errors.New("error:Internal Server Error(工作引擎发生异常)")
 			}
-			response.SetError(response.GetStatus(err), err)
+			response.SetContent(0, err)
 			setResponse(c, response)
 			return
 		}
@@ -119,8 +122,11 @@ func makeSettingData(ctx *dispatcher.Context, m map[string]string) ParamData {
 	return m
 }
 
-func makeExtData(c *dispatcher.Context) map[string]interface{} {
+func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]interface{} {
 	input := make(map[string]interface{})
+	for k, v := range ext {
+		input[k] = v
+	}
 	input["hydra_sid"] = getUUID(c)
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
@@ -140,9 +146,12 @@ type InputData func(key string) (string, bool)
 
 //Get 获取指定键对应的数据
 func (i InputData) Get(key string) (string, error) {
-	if r, ok := i(key); ok {
-		return r, nil
+	if i != nil {
+		if r, ok := i(key); ok {
+			return r, nil
+		}
 	}
+
 	return "", fmt.Errorf("数据不存在:%s", key)
 }
 

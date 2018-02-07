@@ -219,3 +219,106 @@ func (s *RegistryConf) GetRouters() (rrts []*Router, err error) {
 	}
 	return nil, ERR_NO_CHANGED
 }
+
+func (s *RegistryConf) GetServerRaw() (sr string, err error) {
+	server, err := s.nconf.GetNodeWithSectionName("server", "#@path/server")
+	if err != nil {
+		return "", err
+	}
+	return server.GetContent(), nil
+}
+
+func (s *RegistryConf) GetQueues() (rrts []*Queue, err error) {
+	routers, err := s.nconf.GetNodeWithSectionName("queue", "#@path/queue")
+	if err != nil {
+		return nil, err
+	}
+	rrts = make([]*Queue, 0, 4)
+	if r, err := s.oconf.GetNodeWithSectionName("queue", "#@path/queue"); err != nil || r.GetVersion() != routers.GetVersion() {
+		baseArgs := routers.String("args")
+		rts, err := routers.GetSections("queues")
+		if err != nil {
+			return nil, fmt.Errorf("queue配置出错:err:%+v", err)
+		}
+		if len(rts) == 0 {
+			return nil, ERR_NOT_SETTING
+		}
+		for _, c := range rts {
+			name := c.String("name")
+			queue := c.String("queue", name)
+			service := c.String("service")
+			engine := c.String("engine", "*")
+			concurrency, _ := c.Int("concurrency", 0)
+			args := c.String("args")
+			if name == "" || service == "" {
+				return nil, fmt.Errorf("name 和 service不能为空（name:%s，service:%s）", name, service)
+			}
+			sigleRouter := &Queue{
+				Name:        name,
+				Queue:       queue,
+				Concurrency: concurrency,
+				Engine:      engine,
+				Service:     service,
+				Setting:     baseArgs + "&" + args,
+			}
+			rrts = append(rrts, sigleRouter)
+		}
+		if len(rrts) == 0 {
+			return nil, fmt.Errorf("queue未配置:%d", len(rrts))
+		}
+		return rrts, nil
+	}
+	return nil, ERR_NO_CHANGED
+}
+
+func (s *RegistryConf) GetTasks() (rrts []*Task, err error) {
+	tasks, err := s.nconf.GetNodeWithSectionName("task", "#@path/task")
+	if err != nil {
+		return nil, err
+	}
+	rrts = make([]*Task, 0, 4)
+	if r, err := s.oconf.GetNodeWithSectionName("task", "#@path/task"); err != nil || r.GetVersion() != tasks.GetVersion() {
+		baseArgs := tasks.String("args")
+		rts, err := tasks.GetSections("tasks")
+		if err != nil {
+			return nil, fmt.Errorf("task配置出错:err:%+v", err)
+		}
+		if len(rts) == 0 {
+			return nil, ERR_NOT_SETTING
+		}
+		for _, c := range rts {
+			name := c.String("name")
+			service := c.String("service")
+			engine := c.String("engine", "*")
+			args := c.String("args")
+			input := c.String("input")
+			body := c.String("body")
+			cron := c.String("cron")
+			if name == "" || service == "" || cron == "" {
+				return nil, fmt.Errorf("name,cron,service不能为空（name:%s，cron:%s,service:%s）", name, cron, service)
+			}
+			sigleRouter := &Task{
+				Name:    name,
+				Cron:    cron,
+				Engine:  engine,
+				Input:   input,
+				Body:    body,
+				Service: service,
+				Setting: baseArgs + "&" + args,
+			}
+			rrts = append(rrts, sigleRouter)
+		}
+		if len(rrts) == 0 {
+			return nil, fmt.Errorf("task未配置:%d", len(rrts))
+		}
+		return rrts, nil
+	}
+	return nil, ERR_NO_CHANGED
+}
+func (s *RegistryConf) GetRedisRaw() (sr string, err error) {
+	redis, err := s.nconf.GetNodeWithSectionName("redis", "#@path/redis")
+	if err != nil {
+		return "", err
+	}
+	return redis.GetContent(), nil
+}
