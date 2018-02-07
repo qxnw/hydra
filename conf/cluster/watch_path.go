@@ -131,15 +131,17 @@ func (w *watchServer) startWatchConf(children []string, version int32) {
 
 	for _, v := range children { //检查当前配置地址未缓存
 		for _, sv := range conf.WatchServers { //hydra/servers/merchant.api/rpc/conf/conf
-			name := fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
+			//name := fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
+			name := fmt.Sprintf("%s/%s/%s/%s", w.serverRoot, v, sv, w.clientTag)
 			if _, ok := w.cacheAddress.Get(name); !ok {
 				w.cacheAddress.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 					path := input[0].(string)
 					f := newWatchConf(w.domain, v, sv, w.clientTag, path, w.registry, w.updater, w.timeSpan, w.Logger)
 					f.args = map[string]string{
 						"domain": w.domain,
-						"root":   fmt.Sprintf("%s/%s/%s/conf", w.serverRoot, v, sv),
-						"path":   name,
+						//"root":   fmt.Sprintf("%s/%s/%s/conf", w.serverRoot, v, sv),
+						"root": fmt.Sprintf("%s/%s/%s", w.serverRoot, v, sv),
+						"path": name,
 					}
 					go f.watch()
 					return f, nil
@@ -153,7 +155,8 @@ func (w *watchServer) startWatchConf(children []string, version int32) {
 	START:
 		for _, v := range children {
 			for _, sv := range conf.WatchServers {
-				exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
+				//	exists = key == fmt.Sprintf("%s/%s/%s/conf/%s", w.serverRoot, v, sv, w.clientTag)
+				exists = key == fmt.Sprintf("%s/%s/%s/%s", w.serverRoot, v, sv, w.clientTag)
 				if exists {
 					break START
 				}

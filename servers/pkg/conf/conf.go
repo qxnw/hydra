@@ -57,7 +57,7 @@ func NewConfBy(nconf conf.Conf) *ServerConf {
 		Type:          nconf.String("type"),
 		Cluster:       nconf.String("tag"),
 		HealthChecker: nconf.Translate("@healthChecker}"),
-		ServerNode:    nconf.Translate("{@category_path}/servers"),
+		ServerNode:    nconf.Translate("{@category_path}/servers/@tag"),
 		ServiceNode:   nconf.Translate("/@domain/services/@type"),
 		IP:            net.GetLocalIPAddress(nconf.String("mask")),
 		JWTAuth:       &Auth{Enable: false},
