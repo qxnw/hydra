@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/qxnw/lib4go/archiver"
 	"github.com/qxnw/lib4go/osext"
 	"github.com/qxnw/lib4go/security/crc32"
-	"github.com/zkfy/archiver"
 )
 
 type Updater struct {
