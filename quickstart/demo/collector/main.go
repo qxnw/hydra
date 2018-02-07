@@ -2,8 +2,6 @@ package main
 
 //go build -buildmode=plugin
 import (
-	"energy/coupon-services/conf"
-
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/context"
 )
@@ -17,6 +15,7 @@ type DemoService struct {
 func NewDemoService(c component.IContainer) *DemoService {
 	s := &DemoService{}
 	s.StandardComponent = component.NewStandardComponent("demo-service", c)
+	s.registerService()
 	return s
 }
 
@@ -26,6 +25,7 @@ func (cs *DemoService) Handling(name string, mode string, service string, ctx *c
 	return nil, nil
 }
 
+/*
 //LoadServices 加载组件
 func (cs *DemoService) LoadServices() error {
 	cs.registerService()
@@ -35,7 +35,7 @@ func (cs *DemoService) LoadServices() error {
 	}
 	return cs.StandardComponent.LoadServices()
 }
-
+*/
 //GetComponent 获取GetComponent
 func GetComponent(container component.IContainer) (component.IComponent, error) {
 	return NewDemoService(container), nil
