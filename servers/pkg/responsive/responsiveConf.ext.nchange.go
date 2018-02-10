@@ -10,6 +10,16 @@ func (s *ResponsiveConf) IsValueChanged(names ...string) (isChanged bool) {
 	return false
 }
 
+//HasNode 检查节点是否存在
+func (s *ResponsiveConf) HasNode(name ...string) bool {
+	for _, v := range name {
+		if s.Nconf.Has("#@path/" + v) {
+			return true
+		}
+	}
+	return false
+}
+
 //IsNodeChanged 检查节点是否发生变化
 func (s *ResponsiveConf) IsNodeChanged(name string) (isChanged bool) {
 	if s.Oconf.Has("#@path/"+name) != s.Nconf.Has("#@path/"+name) {

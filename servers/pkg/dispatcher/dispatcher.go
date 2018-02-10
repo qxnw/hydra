@@ -86,6 +86,18 @@ func (engine *Dispatcher) HandleRequest(r IRequest) (w *responseWriter, err erro
 	return
 }
 
+//Find 查找指定路由是否存在
+func (engine *Dispatcher) Find(path string) bool {
+	t := engine.trees
+	for i, tl := 0, len(t); i < tl; i++ {
+		root := t[i].root
+		handlers, _, _ := root.getValue(path, make(Params, 0, 2), false)
+		if handlers != nil {
+			return true
+		}
+	}
+	return false
+}
 func (engine *Dispatcher) handleRequest(c *Context) {
 	httpMethod := c.Request.GetMethod()
 	path := c.Request.GetService()

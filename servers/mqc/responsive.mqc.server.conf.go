@@ -63,7 +63,9 @@ func (w *MqcResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err erro
 			return err
 		}
 	}
-
+	if err != nil {
+		return
+	}
 	//设置metric
 	if ok, err = conf.SetMetric(w.server); err != nil {
 		err = fmt.Errorf("%s:metric配置有误:%v", conf.GetFullName(), err)

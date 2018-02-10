@@ -52,7 +52,8 @@ func (w *registryConfWatcher) Start() error {
 		return nil
 	}
 	w.isInitialized = true
-	path := fmt.Sprintf("/%s/conf", w.domain)
+	//path := fmt.Sprintf("/%s/conf", w.domain)
+	path := fmt.Sprintf("/%s", w.domain)
 	w.watchRootChan <- path
 
 	go w.watch()

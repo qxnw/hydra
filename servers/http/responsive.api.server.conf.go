@@ -62,15 +62,20 @@ func (w *ApiResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err erro
 	if conf.IsStoped() {
 		return fmt.Errorf("%s:配置为:stop", conf.GetFullName())
 	}
+
+	if !conf.HasNode("router", "static") {
+		err = fmt.Errorf("%s:路由或静态文件未配置", conf.GetFullName())
+		return err
+	}
+
 	var ok bool
 	//设置路由
-	if ok, err = conf.IsRequiredNodeChanged("router"); err == nil && ok {
+	if ok = conf.IsNodeChanged("router"); ok {
 		if _, err := conf.SetHttpRouters(w.engine, w.server, nil); err != nil {
 			err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
 			return err
 		}
 	}
-
 	//设置静态文件
 	if ok, err = conf.SetStatic(w.server); err != nil {
 		err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)

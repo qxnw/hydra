@@ -66,7 +66,9 @@ func (w *RpcResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err erro
 			return err
 		}
 	}
-
+	if err != nil {
+		return
+	}
 	//设置jwt安全认证
 	if ok, err = conf.SetJWT(w.server); err != nil {
 		err = fmt.Errorf("%s:header配置有误:%v", conf.GetFullName(), err)

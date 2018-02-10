@@ -107,7 +107,7 @@ func Tracef(print func(f string, args ...interface{}), format string, args ...in
 	if !IsDebug {
 		return
 	}
-	print(format, args)
+	print(format, args...)
 }
 
 //TraceIf 根据条件打印跟踪信息

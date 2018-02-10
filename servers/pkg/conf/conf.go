@@ -91,7 +91,7 @@ func NewConfBy(nconf conf.Conf) *ServerConf {
 		Type:          nconf.String("type"),
 		Cluster:       nconf.String("tag"),
 		HealthChecker: nconf.Translate("@healthChecker}"),
-		ServerNode:    nconf.Translate("/{@domain}/servers/@name/@type/@tag"),
+		ServerNode:    nconf.Translate("/{@domain}/@name/@type/@tag/servers"),
 		ServiceNode:   nconf.Translate("/@domain/services/@type"),
 		IP:            net.GetLocalIPAddress(nconf.String("mask")),
 		meta:          cmap.New(8),

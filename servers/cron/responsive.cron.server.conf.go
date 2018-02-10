@@ -78,6 +78,9 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 			return err
 		}
 	}
+	if err != nil {
+		return
+	}
 
 	//设置metric
 	if ok, err = conf.SetMetric(w.server); err != nil {
