@@ -47,15 +47,13 @@ func (s *ResponsiveConf) GetAuth(name string) (a *conf.Auth, err error) {
 	auth, err := s.Nconf.GetNodeWithSectionName("auth", "#@path/auth")
 	if err != nil {
 		if !s.Nconf.Has("#@path/auth") {
-			err = conf.ErrNoSetting
-			return
+			return nil, conf.ErrNoSetting
 		}
 		err = fmt.Errorf("auth配置有误:%+v", err)
-		return a, err
+		return nil, err
 	}
 	if !auth.Has(name) {
-		err = conf.ErrNoSetting
-		return a, err
+		return nil, conf.ErrNoSetting
 	}
 	xsrf, err := auth.GetSection(name)
 	if err != nil {
@@ -183,11 +181,9 @@ func (s *ResponsiveConf) GetView() (rrts *conf.View, err error) {
 	xsrf, err := s.Nconf.GetNodeWithSectionName("view", "#@path/view")
 	if err != nil {
 		if !s.Nconf.Has("#@path/view") {
-			err = conf.ErrNoSetting
-			return
+			return nil, conf.ErrNoSetting
 		}
-		err = fmt.Errorf("view未配置或配置有误:%+v", err)
-		return nil, err
+		return nil, fmt.Errorf("view未配置或配置有误:%+v", err)
 	}
 	viewPath := xsrf.String("path", "../views")
 	left := xsrf.String("left", "{{")

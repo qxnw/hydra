@@ -6,8 +6,7 @@ import (
 
 //SetRouters 设置路由配置
 func (s *RpcServer) SetRouters(routers []*conf.Router) (err error) {
-	s.Processor, err = s.getProcessor(routers)
-	if err != nil {
+	if s.Processor, err = s.getProcessor(routers); err != nil {
 		return
 	}
 	return

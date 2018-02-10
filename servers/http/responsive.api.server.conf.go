@@ -25,16 +25,24 @@ func (w *ApiResponsiveServer) Notify(conf xconf.Conf) error {
 		return w.Restart(nConf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	return w.SetConf(nConf)
+	if err = w.SetConf(nConf); err != nil {
+		return err
+	}
+	w.currentConf = nConf
+	return nil
 }
 
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *ApiResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool, error) {
-	if conf.IsValueChanged("status", "address", "host") {
+	if conf.IsValueChanged("status", "address", "engines", "host", "readTimeout", "writeTimeout", "readHeaderTimeout") {
 		return true, nil
 	}
-	if ok, err := conf.IsRequiredNodeChanged("router"); err != nil || ok {
-		return ok, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.GetFullName(), err)
+	ok, err := conf.IsRequiredNodeChanged("router")
+	if ok {
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", conf.GetFullName(), err)
 	}
 	if ok := conf.IsNodeChanged("header"); ok {
 		return ok, nil

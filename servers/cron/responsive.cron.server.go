@@ -78,10 +78,9 @@ func (w *CronResponsiveServer) Shutdown() {
 	w.done = true
 	w.once.Do(func() {
 		close(w.closeChan)
-		w.unpublish()
-		timeout := w.currentConf.GetInt("timeout", 10)
-		w.server.Shutdown(time.Duration(timeout) * time.Second)
 	})
+	w.unpublish()
+	w.server.Shutdown(time.Second)
 }
 
 //GetAddress 获取服务器地址

@@ -251,7 +251,6 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 	if ext == nil {
 		ext = map[string]interface{}{}
 	}
-
 	for _, queue := range queues {
 		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
 	}

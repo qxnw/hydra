@@ -11,17 +11,15 @@ import (
 	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
-func (s *WebServer) getHandler(routers []*conf.Router) (x.Handler, error) {
+func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) {
 	if !servers.IsDebug {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	engine := gin.New()
-	views, err := s.loadHTMLGlob(engine)
-	if err != nil {
+	if s.views, err = s.loadHTMLGlob(engine); err != nil {
 		s.Logger.Warnf("%s未找到模板:%v", s.conf.GetFullName(), err)
 		return nil, err
 	}
-	s.views = views
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
 	engine.Use(gin.Recovery())
 	engine.Use(s.option.metric.Handle())           //生成metric报表
@@ -31,8 +29,7 @@ func (s *WebServer) getHandler(routers []*conf.Router) (x.Handler, error) {
 	engine.Use(middleware.Body())                  //处理请求form
 	engine.Use(middleware.WebResponse(s.conf))     //处理返回值
 	engine.Use(middleware.Header(s.conf))          //设置请求头
-	err = setRouters(engine, routers)
-	if err != nil {
+	if err = setRouters(engine, routers); err != nil {
 		return nil, err
 	}
 	return engine, nil

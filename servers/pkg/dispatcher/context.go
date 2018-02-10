@@ -27,9 +27,7 @@ type Context struct {
 	index     int8
 	Keys      map[string]interface{}
 	Errors    errorMsgs
-
-	// Accepted defines a list of manually accepted formats for content negotiation.
-	Accepted []string
+	Accepted  []string
 }
 
 func (c *Context) reset(r IRequest) {

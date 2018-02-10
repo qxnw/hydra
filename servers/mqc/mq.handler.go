@@ -13,8 +13,7 @@ func (s *MqcServer) getProcessor(addr string, raw string, queues []*conf.Queue) 
 			err = fmt.Errorf("%v", err1)
 		}
 	}()
-	engine, err = NewProcessor(addr, raw, queues)
-	if err != nil {
+	if engine, err = NewProcessor(addr, raw, queues); err != nil {
 		return nil, err
 	}
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
@@ -22,8 +21,7 @@ func (s *MqcServer) getProcessor(addr string, raw string, queues []*conf.Queue) 
 	engine.Use(s.option.metric.Handle()) //生成metric报表
 	engine.Use(middleware.NoResponse(s.conf))
 	engine.AddRouters()
-	err = engine.Consumes()
-	if err != nil {
+	if err = engine.Consumes(); err != nil {
 		return nil, err
 	}
 	return engine, nil

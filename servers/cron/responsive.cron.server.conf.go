@@ -25,7 +25,11 @@ func (w *CronResponsiveServer) Notify(conf xconf.Conf) error {
 		return w.Restart(nConf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	return w.SetConf(nConf)
+	if err = w.SetConf(nConf); err != nil {
+		return err
+	}
+	w.currentConf = nConf
+	return nil
 }
 
 //NeedRestart 检查配置判断是否需要重启服务器
@@ -33,8 +37,12 @@ func (w *CronResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (boo
 	if conf.IsValueChanged("status", "engines", "sharding") {
 		return true, nil
 	}
-	if ok, err := conf.IsRequiredNodeChanged("task"); err != nil || ok {
-		return ok, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.GetFullName(), err)
+	ok, err := conf.IsRequiredNodeChanged("task")
+	if ok {
+		return ok, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.GetFullName(), err)
 	}
 	if ok := conf.IsNodeChanged("redis"); ok {
 		return true, nil
@@ -60,7 +68,11 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 	var ok bool
 	//设置task
 	if ok, err = conf.IsRequiredNodeChanged("task"); err == nil && ok {
-		if _, err := conf.SetTasks(w.engine, w.server, nil); err != nil {
+		if _, err := conf.SetTasks(w.engine, w.server, map[string]interface{}{
+			"__get_sharding_index_": func() (int, int) {
+				return w.shardingIndex, w.shardingCount
+			},
+		}); err != nil {
 			err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
 			return err
 		}

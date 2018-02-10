@@ -75,7 +75,7 @@ func (s *ResponsiveBaseConf) SetMetric(set ISetMetricHandler) (hasSet bool, err 
 	if err == conf.ErrNoSetting || !enable {
 		err = set.StopMetric()
 		hasSet = false
-		return
+		return false, nil
 	}
 	if err != nil {
 		return false, err

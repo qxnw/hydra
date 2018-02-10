@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/rpc/pb"
 
-	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 	"github.com/qxnw/lib4go/logger"
@@ -22,7 +22,7 @@ type RpcServer struct {
 	conf   *conf.ServerConf
 	engine *grpc.Server
 	*Processor
-	running bool
+	running string
 	proto   string
 	port    int
 	addr    string
@@ -44,9 +44,10 @@ func NewRpcServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option)
 		if err != nil {
 			return
 		}
-	} else {
-		t.Processor = NewProcessor()
 	}
+	//else {
+	//t.Processor = NewProcessor()
+	//}
 
 	return
 }
@@ -57,7 +58,7 @@ func (s *RpcServer) Run(address ...interface{}) error {
 	addr := s.getAddress(address...)
 	s.proto = "tcp"
 	s.addr = addr
-	s.running = true
+	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
 		lis, err := net.Listen("tcp", addr)
@@ -73,7 +74,7 @@ func (s *RpcServer) Run(address ...interface{}) error {
 	case <-time.After(time.Millisecond * 500):
 		return nil
 	case err := <-errChan:
-		s.running = false
+		s.running = servers.ST_STOP
 		return err
 	}
 }
@@ -81,7 +82,7 @@ func (s *RpcServer) Run(address ...interface{}) error {
 //Shutdown 关闭服务器
 func (s *RpcServer) Shutdown(timeout time.Duration) {
 	if s.engine != nil {
-		s.running = false
+		s.running = servers.ST_STOP
 		s.engine.GracefulStop()
 		time.Sleep(time.Second)
 		s.Infof("%s:已关闭", s.conf.GetFullName())
@@ -96,10 +97,7 @@ func (s *RpcServer) GetAddress() string {
 
 //GetStatus 获取当前服务器状态
 func (s *RpcServer) GetStatus() string {
-	if s.running {
-		return servers.ST_RUNNING
-	}
-	return servers.ST_STOP
+	return s.running
 }
 
 func (s *RpcServer) getAddress(args ...interface{}) string {

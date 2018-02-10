@@ -25,13 +25,11 @@ func NewWebResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 	h.currentConf = responsive.NewResponsiveConfBy(xconf.NewJSONConfWithEmpty(), cnf)
 	h.Logger = logger
 	h.pubs = make([]string, 0, 2)
-	h.webServer, err = NewWebServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger))
-	if err != nil {
+	if h.webServer, err = NewWebServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
 		return
 	}
 	h.server = h.webServer
-	err = h.SetConf(h.currentConf)
-	if err != nil {
+	if err = h.SetConf(h.currentConf); err != nil {
 		return
 	}
 	return
@@ -44,12 +42,11 @@ func (w *WebResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 	w.closeChan = make(chan struct{})
 	w.currentConf = cnf
 	w.once = sync.Once{}
-	w.server, err = NewWebServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger))
-	if err != nil {
+	if w.server, err = NewWebServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
 		return
 	}
-	err = w.SetConf(cnf)
-	if err != nil {
+
+	if err = w.SetConf(cnf); err != nil {
 		return
 	}
 	return w.Start()

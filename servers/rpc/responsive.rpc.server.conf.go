@@ -25,12 +25,16 @@ func (w *RpcResponsiveServer) Notify(conf xconf.Conf) error {
 		return w.Restart(nConf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	return w.SetConf(nConf)
+	if err = w.SetConf(nConf); err != nil {
+		return err
+	}
+	w.currentConf = nConf
+	return nil
 }
 
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *RpcResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool, error) {
-	if conf.IsValueChanged("status", "address", "host") {
+	if conf.IsValueChanged("status", "address", "engines", "host") {
 		return true, nil
 	}
 	if ok, err := conf.IsRequiredNodeChanged("router"); err != nil || ok {

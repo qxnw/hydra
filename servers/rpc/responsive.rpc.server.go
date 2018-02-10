@@ -32,12 +32,10 @@ func NewRpcResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 		Logger:      logger,
 		pubs:        make([]string, 0, 2),
 	}
-	h.server, err = NewRpcServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger))
-	if err != nil {
+	if h.server, err = NewRpcServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
 		return
 	}
-	err = h.SetConf(h.currentConf)
-	if err != nil {
+	if err = h.SetConf(h.currentConf); err != nil {
 		return
 	}
 	return
@@ -50,12 +48,10 @@ func (w *RpcResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 	w.closeChan = make(chan struct{})
 	w.currentConf = cnf
 	w.once = sync.Once{}
-	w.server, err = NewRpcServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger))
-	if err != nil {
+	if w.server, err = NewRpcServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
 		return
 	}
-	err = w.SetConf(cnf)
-	if err != nil {
+	if err = w.SetConf(cnf); err != nil {
 		return
 	}
 	return w.Start()
@@ -63,8 +59,7 @@ func (w *RpcResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 
 //Start 启用服务
 func (w *RpcResponsiveServer) Start() (err error) {
-	err = w.server.Run(w.currentConf.GetString("address", ":81"))
-	if err != nil {
+	if err = w.server.Run(w.currentConf.GetString("address", ":81")); err != nil {
 		return
 	}
 	return w.publish()
@@ -75,10 +70,10 @@ func (w *RpcResponsiveServer) Shutdown() {
 	w.done = true
 	w.once.Do(func() {
 		close(w.closeChan)
-		w.unpublish()
-		timeout := w.currentConf.GetInt("timeout", 10)
-		w.server.Shutdown(time.Duration(timeout) * time.Second)
 	})
+	w.unpublish()
+	timeout := w.currentConf.GetInt("timeout", 10)
+	w.server.Shutdown(time.Duration(timeout) * time.Second)
 }
 
 //GetAddress 获取服务器地址

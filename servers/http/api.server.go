@@ -19,7 +19,7 @@ type ApiServer struct {
 	*option
 	conf    *conf.ServerConf
 	engine  *x.Server
-	running bool
+	running string
 	proto   string
 	port    int
 }
@@ -35,9 +35,9 @@ func NewApiServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option)
 		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
 	}
 	t.engine = &x.Server{
-		ReadHeaderTimeout: time.Second * 3,
-		ReadTimeout:       time.Second * 3,
-		WriteTimeout:      time.Second * 3,
+		ReadHeaderTimeout: time.Second * time.Duration(conf.GetInt("readHeaderTimeout", 3)),
+		ReadTimeout:       time.Second * time.Duration(conf.GetInt("readTimeout", 3)),
+		WriteTimeout:      time.Second * time.Duration(conf.GetInt("writeTimeout", 3)),
 		MaxHeaderBytes:    1 << 20,
 	}
 	if routers != nil {
@@ -51,7 +51,7 @@ func (s *ApiServer) Run(address ...interface{}) error {
 	addr := s.getAddress(address...)
 	s.proto = "http"
 	s.engine.Addr = addr
-	s.running = true
+	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
 		if err := s.engine.ListenAndServe(); err != nil {
@@ -62,7 +62,7 @@ func (s *ApiServer) Run(address ...interface{}) error {
 	case <-time.After(time.Millisecond * 500):
 		return nil
 	case err := <-errChan:
-		s.running = false
+		s.running = servers.ST_STOP
 		return err
 	}
 }
@@ -72,7 +72,7 @@ func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 	addr := s.getAddress(address...)
 	s.proto = "https"
 	s.engine.Addr = addr
-	s.running = true
+	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
 		if err := s.engine.ListenAndServeTLS(certFile, keyFile); err != nil {
@@ -83,7 +83,7 @@ func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 	case <-time.After(time.Millisecond * 500):
 		return nil
 	case err := <-errChan:
-		s.running = false
+		s.running = servers.ST_STOP
 		return err
 	}
 }
@@ -91,7 +91,7 @@ func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 //Shutdown 关闭服务器
 func (s *ApiServer) Shutdown(timeout time.Duration) {
 	if s.engine != nil {
-		s.running = false
+		s.running = servers.ST_STOP
 		ctx, cannel := context.WithTimeout(context.Background(), timeout)
 		defer cannel()
 		if err := s.engine.Shutdown(ctx); err != nil {
@@ -111,10 +111,7 @@ func (s *ApiServer) GetAddress() string {
 
 //GetStatus 获取当前服务器状态
 func (s *ApiServer) GetStatus() string {
-	if s.running {
-		return servers.ST_RUNNING
-	}
-	return servers.ST_STOP
+	return s.running
 }
 
 func (s *ApiServer) getAddress(args ...interface{}) string {

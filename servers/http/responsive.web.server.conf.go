@@ -8,7 +8,7 @@ import (
 
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *WebResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool, error) {
-	if conf.IsValueChanged("status", "address", "host") {
+	if conf.IsValueChanged("status", "address", "engines", "host", "readTimeout", "writeTimeout", "readHeaderTimeout") {
 		return true, nil
 	}
 	if ok, err := conf.IsRequiredNodeChanged("router"); err != nil || ok {
@@ -26,7 +26,6 @@ func (w *WebResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool
 
 //SetConf 设置配置参数
 func (w *WebResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err error) {
-
 	if err = w.ApiResponsiveServer.SetConf(conf); err != nil {
 		return err
 	}
