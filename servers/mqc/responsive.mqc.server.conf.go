@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/responsive"
 )
 
@@ -13,7 +14,7 @@ func (w *MqcResponsiveServer) Notify(conf xconf.Conf) error {
 	defer w.mu.Unlock()
 	nConf := w.currentConf.CopyNew(conf)
 	if !nConf.IsChanged() {
-		w.Infof("%s:配置未变化", nConf.GetFullName())
+		servers.Trace(w.Infof, "%s:配置未变化", nConf.GetFullName())
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -58,7 +59,7 @@ func (w *MqcResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err erro
 	//设置task
 	if ok, err = conf.IsRequiredNodeChanged("queue"); err == nil && ok {
 		if _, err := conf.SetQueues(w.engine, w.server, nil); err != nil {
-			err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
+			err = fmt.Errorf("%s:queue配置有误:%v", conf.GetFullName(), err)
 			return err
 		}
 	}
@@ -68,7 +69,7 @@ func (w *MqcResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err erro
 		err = fmt.Errorf("%s:metric配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
-	w.Infof("%s:%smetric设置", conf.GetFullName(), getEnableName(ok))
+	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")
 
 	return nil
 }
@@ -76,5 +77,5 @@ func getEnableName(b bool) string {
 	if b {
 		return "启用"
 	}
-	return "禁用"
+	return "未启用"
 }

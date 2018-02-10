@@ -13,8 +13,8 @@ import (
 )
 
 //Backup 备份注册中心所有节点
-func Backup(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Backup(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		registry := c.GetRegistry()
 		serverData, err := getChildrenNodes(registry, fmt.Sprintf("/%s/servers", c.GetDomainName()))
@@ -45,7 +45,7 @@ func Backup(c component.IContainer) component.StandardServiceFunc {
 			}
 			savePath = append(savePath, realPath)
 		}
-		response.Success(fmt.Sprintf("success.%d", len(savePath)))
+		response.SetContent(200, fmt.Sprintf("success.%d", len(savePath)))
 		return
 	}
 }

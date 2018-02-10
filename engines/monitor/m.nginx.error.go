@@ -12,8 +12,8 @@ import (
 )
 
 //CollectNginxErrorNum 收集nginx错误数量
-func CollectNginxErrorNum(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectNginxErrorNum(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))
 		n, _, err := getNginxErrorCount()

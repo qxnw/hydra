@@ -9,8 +9,8 @@ import (
 )
 
 //WriteInfoLog 写入info类型日志
-func WriteInfoLog() component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func WriteInfoLog() component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		body, err := ctx.Request.Ext.GetBody()
 		if err != nil || body == "" {
@@ -23,13 +23,14 @@ func WriteInfoLog() component.StandardServiceFunc {
 		}
 		lg := logger.GetSession(name, ctx.Request.Ext.GetUUID())
 		lg.Info(body)
+		response.SetStatus(200)
 		return
 	}
 }
 
 //WriteErrorLog 写入错误日志
-func WriteErrorLog() component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func WriteErrorLog() component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		body, err := ctx.Request.Ext.GetBody()
 		if err != nil || body == "" {
@@ -42,6 +43,7 @@ func WriteErrorLog() component.StandardServiceFunc {
 		}
 		lg := logger.GetSession(name, ctx.Request.Ext.GetUUID())
 		lg.Error(body)
+		response.SetStatus(200)
 		return
 	}
 }

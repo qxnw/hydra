@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/responsive"
 )
 
@@ -13,7 +14,7 @@ func (w *CronResponsiveServer) Notify(conf xconf.Conf) error {
 	defer w.mu.Unlock()
 	nConf := w.currentConf.CopyNew(conf)
 	if !nConf.IsChanged() {
-		w.Infof("%s:配置未变化", nConf.GetFullName())
+		servers.Trace(w.Infof, nConf.GetFullName(), "配置未变化")
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -83,13 +84,12 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 		err = fmt.Errorf("%s:metric配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
-	w.Infof("%s:%smetric设置", conf.GetFullName(), getEnableName(ok))
-
+	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")
 	return nil
 }
 func getEnableName(b bool) string {
 	if b {
 		return "启用"
 	}
-	return "禁用"
+	return "未启用"
 }

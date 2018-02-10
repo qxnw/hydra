@@ -11,8 +11,8 @@ import (
 )
 
 //RegistryNodeCountCollect 注册中心的节点数收集
-func RegistryNodeCountCollect(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func RegistryNodeCountCollect(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("path", "min"); err != nil {
 			response.SetStatus(500)

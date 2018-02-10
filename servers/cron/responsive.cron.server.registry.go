@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/types"
 )
 
@@ -14,7 +15,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 		return err
 	}
 	s.master = s.isMaster(path, cldrs)
-	s.Debugf("%s是:%s", s.currentConf.GetFullName(), types.DecodeString(s.master, true, "master server", "slave server"))
+	servers.Tracef(s.Debugf, "%s是:%s", s.currentConf.GetFullName(), types.DecodeString(s.master, true, "master server", "slave server"))
 	if err = s.notifyConsumer(s.master); err != nil {
 		return err
 	}
@@ -31,7 +32,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 				cldrs, _ = cldWatcher.GetValue()
 				master := s.isMaster(path, cldrs)
 				if master != s.master {
-					s.Debugf("%s是:%s", s.currentConf.GetFullName(), types.DecodeString(master, true, "master server", "slave server"))
+					servers.Tracef(s.Debugf, "%s是:%s", s.currentConf.GetFullName(), types.DecodeString(master, true, "master server", "slave server"))
 					s.notifyConsumer(master)
 					s.master = master
 				}
@@ -39,7 +40,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 			LOOP:
 				children, err = s.engine.GetRegistry().WatchChildren(root)
 				if err != nil {
-					s.Errorf("监控服务节点发生错误:err:%v", err)
+					servers.Tracef(s.Errorf, "%s:监控服务节点发生错误:err:%v", s.currentConf.GetFullName(), err)
 					if s.done {
 						return
 					}

@@ -14,8 +14,8 @@ import (
 )
 
 //DiskUPCollect 硬盘使用率收集
-func DiskUPCollect(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func DiskUPCollect(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("max"); err != nil {
 			response.SetStatus(500)

@@ -93,8 +93,8 @@ func send(m *email) error {
 }
 
 //SendMail 发送邮件
-func SendMail(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func SendMail(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		m, err := getEmailParams(c, ctx)
 		if err != nil {
@@ -104,7 +104,7 @@ func SendMail(c component.IContainer) component.StandardServiceFunc {
 		if err != nil {
 			return
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

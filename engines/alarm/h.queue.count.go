@@ -13,8 +13,8 @@ import (
 )
 
 //QueueMessageCountCollect 队列里的消息条数收集
-func QueueMessageCountCollect(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func QueueMessageCountCollect(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("queue", "key"); err != nil {
 			response.SetStatus(500)

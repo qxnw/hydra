@@ -33,8 +33,8 @@ func getSaveParams(ctx *context.Context) (key string, value string, expiresAt in
 }
 
 //Save 保存缓存值
-func Save(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Save(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		key, value, expiresAt, err := getSaveParams(ctx)
 		if err != nil {
@@ -49,7 +49,7 @@ func Save(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("cache.set错误(err:%v)", err)
 			return
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

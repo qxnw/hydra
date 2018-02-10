@@ -100,8 +100,8 @@ func getSaveParams(ctx *context.Context) (measurement string, tags map[string]st
 }
 
 //Save 查询influxdb数据
-func Save(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Save(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		measurement, t, f, err := getSaveParams(ctx)
 		if err != nil {
@@ -116,7 +116,7 @@ func Save(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("save(err:%v)", err)
 			return
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

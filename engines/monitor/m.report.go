@@ -10,8 +10,8 @@ import (
 )
 
 //CollectReportValue 收集数据库数值用于报表显示
-func CollectReportValue(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectReportValue(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		sql, err := c.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
 		if err != nil || sql == "" {

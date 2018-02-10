@@ -11,8 +11,8 @@ import (
 )
 
 //CollectTCPStatus 收集tcp状态
-func CollectTCPStatus(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectTCPStatus(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		host, err := ctx.Request.Setting.Get("host")
 		if err != nil {

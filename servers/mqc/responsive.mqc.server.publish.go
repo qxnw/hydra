@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/jsons"
 )
 
@@ -21,7 +22,7 @@ func (w *MqcResponsiveServer) publish() (err error) {
 	nodeData := string(jsonData)
 	npath, err := w.engine.GetRegistry().CreateSeqNode(pubPath, nodeData)
 	if err != nil {
-		err = fmt.Errorf("服务发布失败:(%s)[%v]", pubPath, err)
+		err = fmt.Errorf("%s:服务发布失败:(%s)[%v]", w.currentConf.GetFullName(), pubPath, err)
 		return
 	}
 	w.pubs = []string{npath}
@@ -62,7 +63,7 @@ func (w *MqcResponsiveServer) checkPubPath(data string) {
 			if err != nil {
 				break
 			}
-			w.Logger.Infof("节点(%s)已恢复", path)
+			servers.Tracef(w.Infof, w.currentConf.GetFullName(), "节点(", path, ")已恢复")
 		}
 	}
 }

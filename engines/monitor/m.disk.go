@@ -8,8 +8,8 @@ import (
 )
 
 //CollectDiskUP 收集硬盘使用率
-func CollectDiskUP(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectDiskUP(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		diskInfo := disk.GetInfo()
 		ip := net.GetLocalIPAddress(ctx.Request.Setting.GetString("mask", ""))

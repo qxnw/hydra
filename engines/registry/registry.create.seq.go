@@ -8,8 +8,8 @@ import (
 )
 
 //CreateSEQNode 创建序列节点
-func CreateSEQNode(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CreateSEQNode(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		path, err := ctx.Request.Form.Get("path")
 		if err != nil {
@@ -34,7 +34,7 @@ func CreateSEQNode(c component.IContainer) component.StandardServiceFunc {
 		if err != nil {
 			return
 		}
-		response.Success(p)
+		response.SetContent(200, p)
 		return
 	}
 }

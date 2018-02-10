@@ -11,8 +11,8 @@ import (
 )
 
 //CollectDBValue 收集数据库值
-func CollectDBValue(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectDBValue(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		sql, err := c.GetVarParam("sql", ctx.Request.Setting.GetString("sql"))
 		if err != nil || sql == "" {

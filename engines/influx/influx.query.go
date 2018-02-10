@@ -37,8 +37,8 @@ func getQueryParams(ctx *context.Context) (sql string, err error) {
 }
 
 //Query 查询influxdb数据
-func Query(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Query(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		sql, err := getQueryParams(ctx)
 		if err != nil {
@@ -53,7 +53,7 @@ func Query(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("sql执行出错:%s，(err:%v)", sql, err)
 			return
 		}
-		response.Success(r)
+		response.SetContent(200, r)
 		return
 	}
 }

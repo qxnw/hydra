@@ -10,11 +10,15 @@ import (
 type Response interface {
 	GetContent() interface{}
 	GetStatus() int
+	SetStatus(int)
 	GetParams() map[string]interface{}
+	SetParams(v map[string]interface{})
+	SetParam(key string, v interface{})
 	SetContent(status int, content interface{})
 	IsRedirect() (string, bool)
 	GetContentType() int
 	GetHeaders() map[string]string
+	SetHeader(name string, value string)
 	GetError() error
 	Close()
 }
@@ -31,8 +35,10 @@ func (r *baseResponse) GetStatus() int {
 func (r *baseResponse) GetParams() map[string]interface{} {
 	return r.Params
 }
-
-func (r *baseResponse) SetParams(key string, v interface{}) {
+func (r *baseResponse) SetParams(v map[string]interface{}) {
+	r.Params = v
+}
+func (r *baseResponse) SetParam(key string, v interface{}) {
 	r.Params[key] = v
 }
 

@@ -30,8 +30,8 @@ type userInfo struct {
 }
 
 //SendAlarmNotify 发送报警通知
-func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func SendAlarmNotify(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		settingData, err := c.GetVarParam("alarm", ctx.Request.Setting.GetString("notify_setting"))
 		if err != nil {
@@ -75,7 +75,7 @@ func SendAlarmNotify(c component.IContainer) component.StandardServiceFunc {
 				}
 			}
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

@@ -30,8 +30,8 @@ func getInputKey(ctx *context.Context) (key string, err error) {
 }
 
 //Get 获取缓存值
-func Get(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Get(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		key, err := getInputKey(ctx)
 		if err != nil {
@@ -47,7 +47,7 @@ func Get(c component.IContainer) component.StandardServiceFunc {
 			response.SetStatus(410)
 			return
 		}
-		response.Success(r)
+		response.SetContent(200, r)
 		return
 	}
 }

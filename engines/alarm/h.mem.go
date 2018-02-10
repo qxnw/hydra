@@ -14,8 +14,8 @@ import (
 )
 
 //MemUPCollect 内存使用率收集
-func MemUPCollect(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func MemUPCollect(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("max"); err != nil {
 			response.SetStatus(500)

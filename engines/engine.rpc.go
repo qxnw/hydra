@@ -9,8 +9,8 @@ import (
 )
 
 //RPCProxy rpc 代理服务
-func (r *ServiceEngine) RPCProxy() component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func (r *ServiceEngine) RPCProxy() component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		input := make(map[string]string)
 		body, _ := ctx.Request.Ext.GetBody()
@@ -19,7 +19,7 @@ func (r *ServiceEngine) RPCProxy() component.StandardServiceFunc {
 		if err != nil {
 			err = fmt.Errorf("rpc执行错误status：%d,result:%v,err:%v", status, result, err)
 		}
-		response.Params = types.GetIMap(params)
+		response.SetParams(types.GetIMap(params))
 		if err != nil {
 			response.SetContent(status, err)
 			return response, err

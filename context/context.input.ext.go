@@ -14,6 +14,12 @@ func (w *extParams) Get(name string) (interface{}, bool) {
 	v, ok := w.ext[name]
 	return v, ok
 }
+func (w *extParams) GetMethod() string {
+	if m, ok := w.ext["__method_"].(string); ok {
+		return m
+	}
+	return ""
+}
 
 //GetSharding 获取任务分片信息(分片索引[从1开始]，分片总数)
 func (w *extParams) GetSharding() (int, int) {

@@ -10,8 +10,8 @@ import (
 )
 
 //CollectNetPackages 收集网络数据包收发情况
-func CollectNetPackages(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectNetPackages(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		netInfo, err := net.GetInfo()
 		if err != nil {
@@ -31,7 +31,7 @@ func CollectNetPackages(c component.IContainer) component.StandardServiceFunc {
 				return
 			}
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

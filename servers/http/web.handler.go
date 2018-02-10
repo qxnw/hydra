@@ -54,6 +54,9 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (files []string, err error)
 		}
 		files = append(files, filenames...)
 	}
-	engine.LoadHTMLFiles(files...)
+	if len(files) > 0 {
+		engine.LoadHTMLFiles(files...)
+	}
+
 	return nil, nil
 }

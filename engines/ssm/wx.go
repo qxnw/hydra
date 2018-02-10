@@ -75,8 +75,8 @@ func SendWXM(ssetting string, param map[string]string) (r string, status int, er
 }
 
 //SendWeiXinMesssage 发送微信消息
-func SendWeiXinMesssage(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func SendWeiXinMesssage(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		content, err := c.GetVarParam("ssm", ctx.Request.Setting.GetString("wx"))
 		if err != nil {

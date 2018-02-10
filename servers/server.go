@@ -93,3 +93,31 @@ func NewRegistryServer(identifier string, c IRegistryEngine, conf conf.Conf, log
 	}
 	return nil, fmt.Errorf("server: unknown identifier name %q (forgotten import?)", identifier)
 }
+
+//Trace 打印跟踪信息
+func Trace(print func(f string, args ...interface{}), serverName string, args ...interface{}) {
+	if !IsDebug {
+		return
+	}
+	print("%s:%s", serverName, args)
+}
+
+//Tracef 根据格式打印跟踪信息
+func Tracef(print func(f string, args ...interface{}), format string, args ...interface{}) {
+	if !IsDebug {
+		return
+	}
+	print(format, args)
+}
+
+//TraceIf 根据条件打印跟踪信息
+func TraceIf(b bool, okPrint func(f string, args ...interface{}), print func(f string, args ...interface{}), serverName string, args ...interface{}) {
+	if !IsDebug {
+		return
+	}
+	if b {
+		okPrint("%s:%s", serverName, args)
+		return
+	}
+	print("%s:%s", serverName, args)
+}

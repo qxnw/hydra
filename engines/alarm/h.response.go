@@ -12,8 +12,8 @@ import (
 )
 
 //HydraServerResponseCodeCollect hydra服务器的请求码收集
-func HydraServerResponseCodeCollect(c component.IContainer, tp string) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func HydraServerResponseCodeCollect(c component.IContainer, tp string) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("domain"); err != nil {
 			response.SetStatus(500)

@@ -14,8 +14,8 @@ import (
 )
 
 //FileUpload 文件上传服务
-func FileUpload() component.MapServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.MapResponse, err error) {
+func FileUpload() component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetMapResponse()
 		name, err = ctx.Request.Form.Get("name")
 		if err != nil {
@@ -55,7 +55,7 @@ func FileUpload() component.MapServiceFunc {
 			return
 		}
 		crc := crc32.Encrypt(buff)
-		response.Success(map[string]interface{}{
+		response.SetContent(200, map[string]interface{}{
 			"name": name,
 			"crc":  crc,
 		})

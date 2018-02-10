@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/servers/pkg/conf"
 )
@@ -28,6 +30,15 @@ func APIResponse(conf *conf.ServerConf) gin.HandlerFunc {
 		case 3:
 			ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
 		default:
+			if content, ok := response.GetContent().(string); ok {
+				if (strings.HasPrefix(content, "[") || strings.HasPrefix(content, "{")) &&
+					(strings.HasSuffix(content, "}") || strings.HasSuffix(content, "]")) {
+					ctx.SecureJSON(response.GetStatus(), response.GetContent())
+				} else {
+					ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
+				}
+				return
+			}
 			ctx.SecureJSON(response.GetStatus(), response.GetContent())
 		}
 	}

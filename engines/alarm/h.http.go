@@ -15,8 +15,8 @@ import (
 )
 
 //HTTPStatusCollect http状态收集
-func HTTPStatusCollect(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func HTTPStatusCollect(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		if err = ctx.Request.Setting.Check("url"); err != nil {
 			response.SetStatus(500)

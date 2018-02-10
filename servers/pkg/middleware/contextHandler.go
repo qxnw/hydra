@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/qxnw/hydra/context"
@@ -128,6 +129,7 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 		input[k] = v
 	}
 	input["hydra_sid"] = getUUID(c)
+	input["__method_"] = strings.ToLower(c.Request.GetMethod())
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Writer

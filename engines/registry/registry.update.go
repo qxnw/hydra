@@ -9,8 +9,8 @@ import (
 )
 
 //UpdateNodeValue 修改节点值
-func UpdateNodeValue(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func UpdateNodeValue(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		path, err := ctx.Request.Form.Get("path")
 		if err != nil {
@@ -43,7 +43,7 @@ func UpdateNodeValue(c component.IContainer) component.StandardServiceFunc {
 		}
 		err = registry.Update(path, value, int32(v))
 		if err == nil {
-			response.Success("success")
+			response.SetContent(200, "success")
 			return
 		}
 		_, ov, err1 := registry.GetValue(path)

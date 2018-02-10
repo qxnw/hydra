@@ -15,8 +15,8 @@ type kv struct {
 }
 
 //Copy 备份注册中心所有节点
-func Copy(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Copy(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		domain, err := ctx.Request.Form.Get("fromDomain")
 		if err != nil {
@@ -53,7 +53,7 @@ func Copy(c component.IContainer) component.StandardServiceFunc {
 				return
 			}
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

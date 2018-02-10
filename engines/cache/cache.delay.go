@@ -34,8 +34,8 @@ func getKeyExpiresAt(ctx *context.Context) (key string, expiresAt int, err error
 }
 
 //Delay 延长缓存时间
-func Delay(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func Delay(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		key, expiresAt, err := getKeyExpiresAt(ctx)
 		if err != nil {
@@ -50,7 +50,7 @@ func Delay(c component.IContainer) component.StandardServiceFunc {
 			err = fmt.Errorf("delay错误(err:%v)", err)
 			return
 		}
-		response.Success("success")
+		response.SetContent(200, "success")
 		return
 	}
 }

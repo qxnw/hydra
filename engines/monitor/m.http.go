@@ -12,8 +12,8 @@ import (
 )
 
 //CollectHTTPStatus 收集http状态
-func CollectHTTPStatus(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func CollectHTTPStatus(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		uri, err := ctx.Request.Setting.Get("url")
 		if err != nil {

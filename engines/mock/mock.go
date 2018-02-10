@@ -8,8 +8,8 @@ import (
 	"github.com/qxnw/hydra/context"
 )
 
-func RawRequest(c component.IContainer) component.StandardServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func RawRequest(c component.IContainer) component.ServiceFunc {
+	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
 		content, err := c.GetVarParam("setting", ctx.Request.Setting.GetString("setting"))
 		if err != nil {
