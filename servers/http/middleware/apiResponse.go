@@ -6,7 +6,7 @@ import (
 )
 
 //APIResponse 处理api返回值
-func APIResponse(conf *conf.ApiServerConf) gin.HandlerFunc {
+func APIResponse(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Next()
 		response := getResponse(ctx)

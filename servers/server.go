@@ -69,6 +69,12 @@ type IRegistryEngine interface {
 type IServerResolver interface {
 	Resolve(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error)
 }
+type IServerResolverHandler func(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error)
+
+//Resolve 创建服务器实例
+func (i IServerResolverHandler) Resolve(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error) {
+	return i(c, conf, log)
+}
 
 var resolvers = make(map[string]IServerResolver)
 

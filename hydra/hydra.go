@@ -9,13 +9,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/profile"
-	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/http/api/standard"
-
 	"sync"
 
+	"github.com/pkg/profile"
+	"github.com/qxnw/hydra/servers"
+
 	"runtime/debug"
+
+	xhttp "github.com/qxnw/hydra/servers/http"
 
 	"github.com/qxnw/hydra/conf"
 
@@ -41,7 +42,7 @@ type Hydra struct {
 	closeChan     chan struct{}
 	done          bool
 	mu            sync.Mutex
-	healthChecker *standard.Server
+	healthChecker *xhttp.ApiServer
 	*HFlags
 }
 

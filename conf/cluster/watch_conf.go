@@ -152,9 +152,9 @@ func (w *watchConf) getConf(content []byte, version int32) (cf conf.Conf, err er
 	jconf.Set("type", w.category)
 	jconf.Set("tag", w.tagName)
 	//jconf.Set("root_path", fmt.Sprintf("/%s/servers/%s/%s/conf", w.domain, w.serverName, w.category))
-	jconf.Set("root_path", fmt.Sprintf("/%s/servers/%s/%s", w.domain, w.serverName, w.category))
-	jconf.Set("category_path", fmt.Sprintf("/%s/servers/%s/%s", w.domain, w.serverName, w.category))
-	jconf.Set("server_path", fmt.Sprintf("/%s/servers/%s", w.domain, w.serverName))
+	jconf.Set("root_path", fmt.Sprintf("/%s/conf/%s/%s", w.domain, w.serverName, w.category))
+	jconf.Set("category_path", fmt.Sprintf("/%s/conf/%s/%s", w.domain, w.serverName, w.category))
+	jconf.Set("server_path", fmt.Sprintf("/%s/conf/%s", w.domain, w.serverName))
 	jconf.Content = string(content)
 	return jconf, nil
 }

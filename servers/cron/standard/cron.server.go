@@ -34,6 +34,9 @@ func New(conf *conf.ServerConf, redisSetting string, tasks []*conf.Task, opts ..
 	}
 	return
 }
+func (s *Server) Start() error {
+	return s.Run()
+}
 
 // Run the http server
 func (s *Server) Run() error {

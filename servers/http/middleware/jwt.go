@@ -11,10 +11,10 @@ import (
 )
 
 //JwtAuth jwt
-func JwtAuth(conf *conf.ServerConf) gin.HandlerFunc {
+func JwtAuth(cnf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		jwtAuth := conf.JWTAuth
-		if jwtAuth == nil || !jwtAuth.Enable {
+		jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
+		if !ok || jwtAuth == nil || !jwtAuth.Enable {
 			ctx.Next()
 			return
 		}
@@ -25,7 +25,7 @@ func JwtAuth(conf *conf.ServerConf) gin.HandlerFunc {
 			setJWTRaw(ctx, data)
 			ctx.Next()
 			response := getResponse(ctx)
-			setJwtResponse(ctx, conf, response.GetParams()["__jwt_"])
+			setJwtResponse(ctx, cnf, response.GetParams()["__jwt_"])
 			return
 		}
 
@@ -43,18 +43,21 @@ func JwtAuth(conf *conf.ServerConf) gin.HandlerFunc {
 
 	}
 }
-func setJwtResponse(ctx *gin.Context, conf *conf.ServerConf, data interface{}) {
+func setJwtResponse(ctx *gin.Context, cnf *conf.ServerConf, data interface{}) {
 	if data == nil {
 		data = getJWTRaw(ctx)
 		return
 	}
-
-	jwtToken, err := jwt.Encrypt(conf.JWTAuth.Secret, conf.JWTAuth.Mode, data, conf.JWTAuth.ExpireAt)
+	jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
+	if !ok {
+		return
+	}
+	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)
 	if err != nil {
 		ctx.AbortWithError(500, fmt.Errorf("jwt配置出错：%v", err))
 		return
 	}
-	ctx.Header("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", conf.JWTAuth.Name, jwtToken))
+	ctx.Header("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", jwtAuth.Name, jwtToken))
 }
 
 // CheckJWT 检查jwk参数是否合法

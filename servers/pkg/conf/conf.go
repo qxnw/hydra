@@ -1,7 +1,10 @@
 package conf
 
 import (
+	"errors"
 	"fmt"
+
+	"github.com/qxnw/lib4go/concurrent/cmap"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/net"
@@ -21,12 +24,19 @@ type ServerConf struct {
 	Headers       map[string]string
 	HealthChecker string
 	Timeout       int
-	JWTAuth       *Auth
+	meta          cmap.ConcurrentMap
 }
 
 //GetFullName 获取服务名称
 func (s *ServerConf) GetFullName() string {
 	return fmt.Sprintf("%s.%s(%s)", s.Name, s.Type, s.Cluster)
+}
+func (s *ServerConf) GetMeta(key string) interface{} {
+	v, _ := s.meta.Get(key)
+	return v
+}
+func (s *ServerConf) SetMeta(key string, v interface{}) {
+	s.meta.Set(key, v)
 }
 func (s *ServerConf) Get(key string) string {
 	return s.nconf.String(key)
@@ -35,6 +45,30 @@ func (s *ServerConf) GetHealthChecker() string {
 	return s.HealthChecker
 }
 
+//GetString 获取指定节点的值
+func (s *ServerConf) GetString(name string, d ...string) string {
+	if s.nconf != nil {
+		return s.nconf.String(name, d...)
+	}
+	if len(d) > 0 {
+		return d[0]
+	}
+	return ""
+
+}
+
+//GetInt 获取指定节点的值
+func (s *ServerConf) GetInt(name string, d ...int) int {
+	if s.nconf != nil {
+		v, _ := s.nconf.Int(name, d...)
+		return v
+	}
+	if len(d) > 0 {
+		return d[0]
+	}
+	return 0
+
+}
 func NewConf(domain string, name string, typeName string, tag string, registryNode string, mask string, timeout int) *ServerConf {
 	return &ServerConf{
 		Domain:     domain,
@@ -43,8 +77,8 @@ func NewConf(domain string, name string, typeName string, tag string, registryNo
 		Cluster:    tag,
 		ServerNode: registryNode,
 		IP:         net.GetLocalIPAddress(mask),
-		JWTAuth:    &Auth{Enable: false},
 		Timeout:    timeout,
+		meta:       cmap.New(8),
 	}
 }
 
@@ -57,10 +91,10 @@ func NewConfBy(nconf conf.Conf) *ServerConf {
 		Type:          nconf.String("type"),
 		Cluster:       nconf.String("tag"),
 		HealthChecker: nconf.Translate("@healthChecker}"),
-		ServerNode:    nconf.Translate("{@category_path}/servers/@tag"),
+		ServerNode:    nconf.Translate("/{@domain}/servers/@name/@type/@tag"),
 		ServiceNode:   nconf.Translate("/@domain/services/@type"),
 		IP:            net.GetLocalIPAddress(nconf.String("mask")),
-		JWTAuth:       &Auth{Enable: false},
+		meta:          cmap.New(8),
 	}
 	c.Timeout, _ = nconf.Int("timeout", 3)
 	if c.Timeout == 0 {
@@ -68,6 +102,12 @@ func NewConfBy(nconf conf.Conf) *ServerConf {
 	}
 	return c
 }
+
+//ErrNoSetting 未配置
+var ErrNoSetting = errors.New("未配置")
+
+//ErrNoChanged 配置未变化
+var ErrNoChanged = errors.New("配置未变化")
 
 type Auth struct {
 	Name     string

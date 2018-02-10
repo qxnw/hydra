@@ -13,15 +13,16 @@ import (
 
 //RegistryServer mqc 服务器
 type RegistryServer struct {
-	server        *standard.Server
-	engine        servers.IRegistryEngine
-	pubs          []string
-	conf          xconf.Conf
-	serverConf    *conf.ServerConf
-	master        bool
+	server     *standard.Server
+	engine     servers.IRegistryEngine
+	pubs       []string
+	conf       xconf.Conf
+	serverConf *conf.ServerConf
+
 	closeChan     chan struct{}
 	shardingIndex int
 	shardingCount int
+	master        bool
 	once          sync.Once
 	done          bool
 	pubLock       sync.Mutex

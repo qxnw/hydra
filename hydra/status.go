@@ -5,10 +5,8 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/context"
+	xhttp "github.com/qxnw/hydra/servers/http"
 	"github.com/qxnw/hydra/servers/pkg/conf"
-
-	"github.com/qxnw/hydra/servers/http/api/standard"
-
 	"github.com/qxnw/lib4go/net"
 	"github.com/qxnw/lib4go/sysinfo/cpu"
 	"github.com/qxnw/lib4go/sysinfo/disk"
@@ -36,13 +34,13 @@ var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 101
 
 //StartStatusServer 启动状态服务器
 func (h *Hydra) StartStatusServer(domain string) (err error) {
-	conf := conf.NewApiServerConf(domain, "status", "api", h.tag, "", "", 3)
-	h.healthChecker, err = standard.New(conf, nil, standard.WithIP(conf.IP), standard.WithLogger(h.Logger))
+	conf := conf.NewConf(domain, "status", "api", h.tag, "", "", 3)
+	h.healthChecker, err = xhttp.NewApiServer(conf, nil, xhttp.WithIP(conf.IP), xhttp.WithLogger(h.Logger))
 	if err != nil {
 		h.Error("health-checker:", err)
 		return err
 	}
-	routers := standard.GetRouters()
+	routers := xhttp.GetRouters()
 	routers.Route("GET", "/server/query", func(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error) {
 		return h.queryServerStatus(name, engine, service, ctx)
 	})
