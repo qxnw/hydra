@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"context"
+	"golang.org/x/net/context"
 
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/hydra/servers/rpc/pb"
