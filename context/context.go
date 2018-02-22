@@ -15,10 +15,10 @@ type Context struct {
 }
 
 //GetContext 从缓存池中获取一个context
-func GetContext(queryString IData, form IData, param IData, setting IData, ext map[string]interface{}) *Context {
+func GetContext(queryString IData, form IData, param IData, setting IData, ext map[string]interface{}, logger *logger.Logger) *Context {
 	c := contextPool.Get().(*Context)
 	c.Request.reset(queryString, form, param, setting, ext)
-	c.Log = logger.GetSession("hydra", c.Request.Ext.GetUUID())
+	c.Log = logger
 	return c
 }
 

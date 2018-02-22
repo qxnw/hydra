@@ -46,7 +46,6 @@ func JwtAuth(cnf *conf.ServerConf) dispatcher.HandlerFunc {
 func setJwtResponse(ctx *dispatcher.Context, cnf *conf.ServerConf, data interface{}) {
 	if data == nil {
 		data = getJWTRaw(ctx)
-		return
 	}
 	jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
 	if !ok {

@@ -21,7 +21,6 @@ func (w *WebResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool
 		return ok, nil
 	}
 	return false, nil
-
 }
 
 //SetConf 设置配置参数

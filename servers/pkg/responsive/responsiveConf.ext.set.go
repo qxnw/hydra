@@ -75,6 +75,10 @@ type ISetJwtAuth interface {
 func (s *ResponsiveConf) SetJWT(set ISetJwtAuth) (enable bool, err error) {
 	//设置jwt安全认证参数
 	jwt, err := s.GetAuth("jwt")
+	if err == conf.ErrNoSetting {
+		err = nil
+		jwt = &conf.Auth{Enable: false}
+	}
 	if err != nil {
 		err = fmt.Errorf("jwt配置有误:%v", err)
 		return false, err

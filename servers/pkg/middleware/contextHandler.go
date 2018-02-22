@@ -75,7 +75,7 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 			setResponse(c, resp)
 			return
 		}
-		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext))
+		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext), getLogger(c))
 		defer ctx.Close()
 		defer setServiceName(c, ctx.Request.Translate(service, true))
 

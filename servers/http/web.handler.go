@@ -29,6 +29,7 @@ func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) 
 	engine.Use(middleware.Body())                  //处理请求form
 	engine.Use(middleware.WebResponse(s.conf))     //处理返回值
 	engine.Use(middleware.Header(s.conf))          //设置请求头
+	engine.Use(middleware.JwtWriter(s.conf))       //jwt回写
 	if err = setRouters(engine, routers); err != nil {
 		return nil, err
 	}
@@ -57,6 +58,5 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (files []string, err error)
 	if len(files) > 0 {
 		engine.LoadHTMLFiles(files...)
 	}
-
 	return nil, nil
 }

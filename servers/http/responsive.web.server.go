@@ -16,6 +16,7 @@ type WebResponsiveServer struct {
 	webServer *WebServer
 }
 
+//NewWebResponsiveServer 构建基于注册中心的响应式web服务器
 func NewWebResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logger *logger.Logger) (h *WebResponsiveServer, err error) {
 	h = &WebResponsiveServer{
 		ApiResponsiveServer: &ApiResponsiveServer{},
@@ -40,7 +41,7 @@ func (w *WebResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.closeChan = make(chan struct{})
-	w.currentConf = cnf
+	w.done = false
 	w.once = sync.Once{}
 	if w.server, err = NewWebServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
 		return
