@@ -75,13 +75,12 @@ func (s *ResponsiveBaseConf) SetMetric(set ISetMetricHandler) (hasSet bool, err 
 	if err == conf.ErrNoSetting || !enable {
 		err = set.StopMetric()
 		hasSet = false
-		return false, nil
+		return
 	}
 	if err != nil {
 		return false, err
 	}
 	err = set.SetMetric(host, dataBase, userName, password, span)
-	hasSet = true
-
+	hasSet = err == nil
 	return
 }

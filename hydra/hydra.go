@@ -245,7 +245,8 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 			break
 		}
 	}
-	return err
+	h.Logger.Infof("%s:配置更新完成", name)
+	return nil
 }
 
 //根据配置删除服务器

@@ -110,7 +110,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 	baseArgs := routers.String("args")
 	rts, err := routers.GetSections("routers")
 	if err != nil {
-		return nil, fmt.Errorf("路由配置出错:err:%+v", err)
+		return nil, err
 	}
 	if len(rts) == 0 {
 		return nil, conf.ErrNoSetting

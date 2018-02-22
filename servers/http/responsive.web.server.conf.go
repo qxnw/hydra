@@ -25,17 +25,15 @@ func (w *WebResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool
 }
 
 //SetConf 设置配置参数
-func (w *WebResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err error) {
-	if err = w.ApiResponsiveServer.SetConf(conf); err != nil {
+func (w *WebResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveConf) (err error) {
+	if err = w.ApiResponsiveServer.SetConf(restart, conf); err != nil {
 		return err
 	}
 	//设置metric
 	var ok bool
 	if ok, err = conf.SetView(w.webServer); err != nil {
-		err = fmt.Errorf("%s:view配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	w.Infof("%s:%sview设置", conf.GetFullName(), getEnableName(ok))
-
 	return nil
 }

@@ -29,7 +29,7 @@ func NewWebResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 		return
 	}
 	h.server = h.webServer
-	if err = h.SetConf(h.currentConf); err != nil {
+	if err = h.SetConf(true, h.currentConf); err != nil {
 		return
 	}
 	return
@@ -46,7 +46,7 @@ func (w *WebResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 		return
 	}
 
-	if err = w.SetConf(cnf); err != nil {
+	if err = w.SetConf(true, cnf); err != nil {
 		return
 	}
 	return w.Start()

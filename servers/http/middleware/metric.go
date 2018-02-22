@@ -12,7 +12,7 @@ import (
 )
 
 type reporter struct {
-	influxdb metrics.IReporter
+	reporter metrics.IReporter
 	Host     string
 	Database string
 	username string
@@ -42,8 +42,8 @@ func NewMetric(conf *conf.ServerConf) *Metric {
 func (m *Metric) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.reporter != nil && m.reporter.influxdb != nil {
-		m.reporter.influxdb.Close()
+	if m.reporter != nil && m.reporter.reporter != nil {
+		m.reporter.reporter.Close()
 	}
 }
 
@@ -52,12 +52,12 @@ func (m *Metric) Restart(host string, dataBase string, userName string, password
 	lg *logger.Logger) (err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.reporter != nil && m.reporter.influxdb != nil {
-		m.reporter.influxdb.Close()
+	if m.reporter != nil && m.reporter.reporter != nil {
+		m.reporter.reporter.Close()
 	}
 	m.logger = lg
 	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, cron: cron}
-	m.reporter.influxdb, err = metrics.InfluxDB(m.currentRegistry,
+	m.reporter.reporter, err = metrics.InfluxDB(m.currentRegistry,
 		cron,
 		m.reporter.Host, m.reporter.Database,
 		m.reporter.username,
@@ -65,7 +65,7 @@ func (m *Metric) Restart(host string, dataBase string, userName string, password
 	if err != nil {
 		return
 	}
-	go m.reporter.influxdb.Run()
+	go m.reporter.reporter.Run()
 	return nil
 }
 

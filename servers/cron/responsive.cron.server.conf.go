@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"fmt"
 
 	xconf "github.com/qxnw/hydra/conf"
@@ -60,7 +61,7 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 	}
 	//检查服务器状态
 	if conf.IsStoped() {
-		return fmt.Errorf("%s:配置为:stop", conf.GetFullName())
+		return errors.New("配置为:stop")
 	}
 
 	//设置分片数量
@@ -74,7 +75,7 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 				return w.shardingIndex, w.shardingCount
 			},
 		}); err != nil {
-			err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
+			err = fmt.Errorf("路由配置有误:%v", err)
 			return err
 		}
 	}
@@ -84,7 +85,7 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 
 	//设置metric
 	if ok, err = conf.SetMetric(w.server); err != nil {
-		err = fmt.Errorf("%s:metric配置有误:%v", conf.GetFullName(), err)
+		err = fmt.Errorf("metric配置有误:%v", err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")

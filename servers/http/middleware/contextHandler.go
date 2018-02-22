@@ -88,7 +88,7 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 		if err != nil {
 			err = fmt.Errorf("error:%v", err)
 			if !servers.IsDebug {
-				err = errors.New("error:Internal Server Error(工作引擎发生异常)")
+				err = errors.New("error:Internal Server Error")
 			}
 			response.SetContent(0, err)
 			setResponse(c, response)

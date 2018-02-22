@@ -20,7 +20,7 @@ type StaticOptions struct {
 
 //MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
 func (s *StaticOptions) MustStatic(rPath string) int {
-	if strings.HasPrefix(rPath, s.Prefix) {
+	if s.Prefix != "/" && strings.HasPrefix(rPath, s.Prefix) {
 		return 1
 	}
 	rPath = rPath[len(s.Prefix):]
@@ -71,10 +71,12 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			file := path.Join(".", rPath)
 			_, err := os.Stat(file)
 			if os.IsNotExist(err) {
+				ctx.AbortWithError(404, fmt.Errorf("static:找不到文件:%s", rPath))
 				ctx.AbortWithStatus(404)
 				return
 			}
 			if err != nil {
+				getLogger(ctx).Errorf("static:%v", err)
 				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", rPath, err))
 				return
 			}
@@ -95,14 +97,17 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if !os.IsNotExist(err) {
+					getLogger(ctx).Errorf("static:%v", err)
 					ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
 					return
 				}
-				ctx.AbortWithStatus(404)
+				getLogger(ctx).Errorf("static:找不到文件:%s,err:%v", fPath, err)
+				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 				return
 			}
 			if finfo.IsDir() {
-				ctx.AbortWithStatus(404)
+				getLogger(ctx).Errorf("static:找不到文件:%s,err:%v", fPath, err)
+				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 				return
 			}
 			//文件已存在，则返回文件
@@ -113,7 +118,8 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if !os.IsNotExist(err) {
-					ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
+					getLogger(ctx).Errorf("static:读取文件%s错误,err:%v", fPath, err)
+					ctx.AbortWithError(500, fmt.Errorf("读取文件%s错误,err:%v", fPath, err))
 					return
 				}
 				ctx.Next()

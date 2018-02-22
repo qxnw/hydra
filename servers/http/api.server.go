@@ -91,6 +91,7 @@ func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) err
 //Shutdown 关闭服务器
 func (s *ApiServer) Shutdown(timeout time.Duration) {
 	if s.engine != nil {
+		s.metric.Stop()
 		s.running = servers.ST_STOP
 		ctx, cannel := context.WithTimeout(context.Background(), timeout)
 		defer cannel()

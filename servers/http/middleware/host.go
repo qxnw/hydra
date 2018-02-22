@@ -17,7 +17,7 @@ func Host(conf *conf.ServerConf) gin.HandlerFunc {
 		}
 		correct := checkHost(conf.Hosts, ctx)
 		if !correct {
-			getLogger(ctx).Errorf("访问被拒绝,必须使用:%v访问:%d", conf.Hosts, len(conf.Hosts))
+			getLogger(ctx).Errorf("host:必须使用:%v访问", conf.Hosts)
 			ctx.AbortWithStatus(x.StatusNotAcceptable)
 			return
 		}

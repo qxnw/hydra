@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 
 	xconf "github.com/qxnw/hydra/conf"
@@ -14,7 +15,7 @@ func (w *ApiResponsiveServer) Notify(conf xconf.Conf) error {
 	defer w.mu.Unlock()
 	nConf := w.currentConf.CopyNew(conf)
 	if !nConf.IsChanged() {
-		servers.Trace(w.Infof, "%s:配置未变化", nConf.GetFullName())
+		//servers.Tracef(w.Infof, "%s:配置未变化", nConf.GetFullName())
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -23,10 +24,12 @@ func (w *ApiResponsiveServer) Notify(conf xconf.Conf) error {
 		return err
 	}
 	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
+		servers.Tracef(w.Infof, "%s:重启服务", nConf.GetFullName())
+		w.currentConf = nConf
 		return w.Restart(nConf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	if err = w.SetConf(nConf); err != nil {
+	if err = w.SetConf(false, nConf); err != nil {
 		return err
 	}
 	w.currentConf = nConf
@@ -49,69 +52,61 @@ func (w *ApiResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool
 		return ok, nil
 	}
 	return false, nil
-
 }
 
 //SetConf 设置配置参数
-func (w *ApiResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err error) {
+func (w *ApiResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveConf) (err error) {
 	//检查版本号
 	if !conf.IsChanged() {
 		return nil
 	}
 	//检查服务器状态
 	if conf.IsStoped() {
-		return fmt.Errorf("%s:配置为:stop", conf.GetFullName())
+		return errors.New("配置为:stop")
 	}
 
 	if !conf.HasNode("router", "static") {
-		err = fmt.Errorf("%s:路由或静态文件未配置", conf.GetFullName())
+		err = errors.New("%s:路由或静态文件未配置")
 		return err
 	}
 
 	var ok bool
 	//设置路由
-	if ok = conf.IsNodeChanged("router"); ok {
+	if ok = conf.IsNodeChanged("router"); ok || restart {
 		if _, err := conf.SetHttpRouters(w.engine, w.server, nil); err != nil {
-			err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
 			return err
 		}
 	}
 	//设置静态文件
 	if ok, err = conf.SetStatic(w.server); err != nil {
-		err = fmt.Errorf("%s:路由配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "静态文件")
 
 	//设置请求头
 	if ok, err = conf.SetHeaders(w.server); err != nil {
-		err = fmt.Errorf("%s:header配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "header设置")
 	//设置jwt安全认证
 	if ok, err = conf.SetJWT(w.server); err != nil {
-		err = fmt.Errorf("%s:header配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "jwt设置")
 	//设置ajax请求
 	if ok, err = conf.SetAjaxRequest(w.server); err != nil {
-		err = fmt.Errorf("%s:header配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "ajax请求限制设置")
 
 	//设置metric
 	if ok, err = conf.SetMetric(w.server); err != nil {
-		err = fmt.Errorf("%s:metric配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")
 
 	//设置host
 	if ok, err = conf.SetHosts(w.server); err != nil {
-		err = fmt.Errorf("%s:host配置有误:%v", conf.GetFullName(), err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "host设置")
