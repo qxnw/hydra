@@ -18,6 +18,8 @@ func APIResponse(conf *conf.ServerConf) gin.HandlerFunc {
 		defer response.Close()
 		if response.GetError() != nil {
 			getLogger(ctx).Error(response.GetError())
+			ctx.AbortWithError(response.GetStatus(), response.GetError())
+			return
 		}
 		if ctx.Writer.Written() {
 			return

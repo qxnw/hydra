@@ -49,7 +49,7 @@ func (s *ResponsiveConf) GetAuth(name string) (a *conf.Auth, err error) {
 		if !s.Nconf.Has("#@path/auth") {
 			return nil, conf.ErrNoSetting
 		}
-		err = fmt.Errorf("auth配置有误:%+v", err)
+		err = fmt.Errorf("auth[%s]配置有误:%+v", name, err)
 		return nil, err
 	}
 	if !auth.Has(name) {
@@ -122,7 +122,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 		engine := c.String("engine", "*")
 		args := c.String("args")
 		if name == "" || service == "" {
-			return nil, fmt.Errorf("service 和 name不能为空（name:%s，service:%s）", name, service)
+			return nil, fmt.Errorf("router配置出错:service 和 name不能为空（name:%s，service:%s）", name, service)
 		}
 		for _, v := range actions {
 			exist := false
@@ -133,7 +133,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 				}
 			}
 			if !exist {
-				return nil, fmt.Errorf("action:%v不支持,只支持:%v", actions, supportMethods)
+				return nil, fmt.Errorf("router配置出错:action:%v不支持,只支持:%v", actions, supportMethods)
 			}
 		}
 		sigleRouter := &conf.Router{
@@ -225,7 +225,7 @@ func (s *ResponsiveConf) GetQueues() (rrts []*conf.Queue, err error) {
 		concurrency, _ := c.Int("concurrency", 0)
 		args := c.String("args")
 		if name == "" || service == "" {
-			return nil, fmt.Errorf("name 和 service不能为空（name:%s，service:%s）", name, service)
+			return nil, fmt.Errorf("queue配置出错:name 和 service不能为空（name:%s，service:%s）", name, service)
 		}
 		sigleRouter := &conf.Queue{
 			Name:        name,
@@ -268,7 +268,7 @@ func (s *ResponsiveConf) GetTasks() (rrts []*conf.Task, err error) {
 		body := c.String("body")
 		cron := c.String("cron")
 		if name == "" || service == "" || cron == "" {
-			return nil, fmt.Errorf("name,cron,service不能为空（name:%s，cron:%s,service:%s）", name, cron, service)
+			return nil, fmt.Errorf("task配置出错:task配置name,cron,service不能为空（name:%s，cron:%s,service:%s）", name, cron, service)
 		}
 		sigleRouter := &conf.Task{
 			Name:    name,

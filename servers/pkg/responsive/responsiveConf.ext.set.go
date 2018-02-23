@@ -115,7 +115,6 @@ func (s *ResponsiveConf) SetHttpRouters(engine servers.IExecuter, set ISetRouter
 		return false, err
 	}
 	if err != nil {
-		err = fmt.Errorf("路由配置有误:%v", err)
 		return false, err
 	}
 
@@ -124,7 +123,7 @@ func (s *ResponsiveConf) SetHttpRouters(engine servers.IExecuter, set ISetRouter
 	}
 	err = set.SetRouters(routers)
 	if err != nil {
-		return false, fmt.Errorf("路由配置失败:%v", err)
+		return false, err
 	}
 	return len(routers) > 0, nil
 }
@@ -137,7 +136,6 @@ func (s *ResponsiveConf) SetRouters(engine servers.IExecuter, set ISetRouterHand
 		return false, err
 	}
 	if err != nil {
-		err = fmt.Errorf("路由配置有误:%v", err)
 		return false, err
 	}
 
@@ -146,7 +144,7 @@ func (s *ResponsiveConf) SetRouters(engine servers.IExecuter, set ISetRouterHand
 	}
 	err = set.SetRouters(routers)
 	if err != nil {
-		return false, fmt.Errorf("路由配置失败:%v", err)
+		return false, err
 	}
 	return len(routers) > 0, nil
 }
@@ -168,7 +166,6 @@ func (s *ResponsiveConf) SetStatic(set ISetStatic) (enable bool, err error) {
 		return false, nil
 	}
 	if err != nil {
-		err = fmt.Errorf("路由配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetStatic(enable, prefix, dir, showDir, exts)
@@ -192,7 +189,6 @@ func (s *ResponsiveConf) SetView(set ISetView) (enable bool, err error) {
 		return false, nil
 	}
 	if err != nil {
-		err = fmt.Errorf("view配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetView(view)
@@ -214,7 +210,6 @@ func (s *ResponsiveConf) SetTasks(engine servers.IExecuter, set ITasks, ext map[
 		return false, err
 	}
 	if err != nil {
-		err = fmt.Errorf("task配置有误:%v", err)
 		return false, err
 	}
 	if ext == nil {
@@ -226,7 +221,7 @@ func (s *ResponsiveConf) SetTasks(engine servers.IExecuter, set ITasks, ext map[
 	}
 	err = set.SetTasks(redisConf, tasks)
 	if err != nil {
-		return false, fmt.Errorf("task配置有误:%v", err)
+		return false, err
 	}
 	return true, nil
 }
@@ -246,7 +241,6 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 		return false, err
 	}
 	if err != nil {
-		err = fmt.Errorf("queue配置有误:%v", err)
 		return false, err
 	}
 	if ext == nil {
@@ -258,7 +252,7 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 	serverRaw, _ := s.GetServerRaw()
 	err = set.SetQueues(serverRaw, queues)
 	if err != nil {
-		return false, fmt.Errorf("queue配置有误:%v", err)
+		return false, err
 	}
 	return true, nil
 }

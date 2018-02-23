@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/responsive"
 )
 
@@ -33,6 +34,6 @@ func (w *WebResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveC
 	if ok, err = conf.SetView(w.webServer); err != nil {
 		return err
 	}
-	w.Infof("%s:%sview设置", conf.GetFullName(), getEnableName(ok))
+	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "view设置")
 	return nil
 }

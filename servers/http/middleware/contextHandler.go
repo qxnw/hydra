@@ -66,7 +66,7 @@ func getResponse(c *gin.Context) context.Response {
 
 //ContextHandler api请求处理程序
 func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string) gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(c *gin.Context) {		
 		//处理输入参数
 		mSetting, err := utility.GetMapWithQuery(setting)
 		if err != nil {

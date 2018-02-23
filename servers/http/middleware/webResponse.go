@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"fmt"
-	"strings"
+	"path/filepath"
 
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/servers/pkg/conf"
@@ -13,6 +13,7 @@ import (
 //WebResponse 处理web返回值
 func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		
 		ctx.Next()
 		response := getResponse(ctx)
 		if response == nil {
@@ -21,6 +22,8 @@ func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 		defer response.Close()
 		if response.GetError() != nil {
 			getLogger(ctx).Error(response.GetError())
+			ctx.AbortWithError(response.GetStatus(), response.GetError())
+			return
 		}
 		if ctx.Writer.Written() {
 			return
@@ -33,17 +36,25 @@ func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 		case 3:
 			ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
 		default:
-			renderHtml(ctx, response)
+			if renderHTML(ctx, response, conf) {
+				return
+			}
+			ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
 		}
 	}
 }
-func renderHtml(ctx *gin.Context, response context.Response) {
-	defer func() {
-		if err := recover(); err != nil {
-			getLogger(ctx).Error(err)
+func renderHTML(ctx *gin.Context, response context.Response, cnf *conf.ServerConf) bool {
+	files, ok := cnf.GetMeta("viewFiles").([]string)
+	if !ok {
+		return false
+	}
+	root := cnf.GetMeta("view").(*conf.View).Path
+	viewPath := filepath.Join(root, fmt.Sprintf("%s.html", getServiceName(ctx)))
+	for _, f := range files {
+		if f == viewPath {
+			ctx.HTML(response.GetStatus(), filepath.Base(viewPath), response.GetContent())
+			return true
 		}
-	}()
-	names := strings.Split(getServiceName(ctx), "/")
-	viewName := fmt.Sprintf("%s.html", names[len(names)-1])
-	ctx.HTML(response.GetStatus(), viewName, response.GetContent())
+	}
+	return false
 }

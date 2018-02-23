@@ -4,6 +4,7 @@ import (
 	x "net/http"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/servers"
@@ -35,28 +36,35 @@ func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) 
 	}
 	return engine, nil
 }
-func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (files []string, err error) {
+func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err error) {
 	defer func() {
 		if err1 := recover(); err1 != nil {
 			err = err1.(error)
 		}
 	}()
-	files = make([]string, 0, 8)
-	viewPath := "./"
+	viewFiles = make([]string, 0, 8)
+	viewRoot := "../views"
 	if view, ok := s.conf.GetMeta("view").(*conf.View); ok {
-		viewPath = view.Path
+		viewRoot = view.Path
+	} else {
+		s.conf.SetMeta("view", &conf.View{Path: viewRoot})
 	}
 
-	dirs := []string{path.Join(viewPath, "/*.html"), path.Join(viewPath, "/**/*.html")}
+	dirs := []string{
+		path.Join(viewRoot, "/**/*.html"),
+	}
 	for _, name := range dirs {
 		filenames, err := filepath.Glob(name)
 		if err != nil {
 			return nil, err
 		}
-		files = append(files, filenames...)
+		viewFiles = append(viewFiles, filenames...)
 	}
-	if len(files) > 0 {
-		engine.LoadHTMLFiles(files...)
+	if len(viewFiles) > 0 {
+		engine.LoadHTMLFiles(viewFiles...)
 	}
+	s.conf.SetMeta("viewFiles", viewFiles)
+	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Warnf, s.conf.GetFullName(),
+		getEnableName(len(viewFiles) > 0), "view模板", strings.Join(viewFiles, "\n"))
 	return nil, nil
 }

@@ -13,6 +13,7 @@ import (
 //JwtAuth jwt
 func JwtAuth(cnf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		
 		jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
 		if !ok || jwtAuth == nil || !jwtAuth.Enable {
 			ctx.Next()
@@ -47,7 +48,7 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.ServerConf, data interface{}) {
 		data = getJWTRaw(ctx)
 	}
 	jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
-	if !ok {
+	if !ok || !jwtAuth.Enable {
 		return
 	}
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)

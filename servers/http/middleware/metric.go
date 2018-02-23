@@ -73,9 +73,9 @@ func (m *Metric) Restart(host string, dataBase string, userName string, password
 func (m *Metric) Handle() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		url := ctx.Request.URL.Path
-		conterName := metrics.MakeName(m.conf.Type+".server.request", metrics.WORKING, "domain", m.conf.Domain, "name", m.conf.Name, "server", m.conf.IP, "url", url) //堵塞计数
-		timerName := metrics.MakeName(m.conf.Type+".server.request", metrics.TIMER, "domain", m.conf.Domain, "name", m.conf.Name, "server", m.conf.IP, "url", url)    //堵塞计数
-		requestName := metrics.MakeName(m.conf.Type+".server.request", metrics.QPS, "domain", m.conf.Domain, "name", m.conf.Name, "server", m.conf.IP, "url", url)    //请求数
+		conterName := metrics.MakeName(m.conf.Type+".server.request", metrics.WORKING, "domain", m.conf.Domain, "server", m.conf.Name, "cluster", m.conf.Cluster, "ip", m.conf.IP, "url", url) //堵塞计数
+		timerName := metrics.MakeName(m.conf.Type+".server.request", metrics.TIMER, "domain", m.conf.Domain, "server", m.conf.Name, "cluster", m.conf.Cluster, "ip", m.conf.IP, "url", url)    //堵塞计数
+		requestName := metrics.MakeName(m.conf.Type+".server.request", metrics.QPS, "domain", m.conf.Domain, "server", m.conf.Name, "cluster", m.conf.Cluster, "ip", m.conf.IP, "url", url)    //请求数
 		metrics.GetOrRegisterQPS(requestName, m.currentRegistry).Mark(1)
 
 		counter := metrics.GetOrRegisterCounter(conterName, m.currentRegistry)
@@ -84,7 +84,7 @@ func (m *Metric) Handle() gin.HandlerFunc {
 		counter.Dec(1)
 
 		statusCode := ctx.Writer.Status()
-		responseName := metrics.MakeName(m.conf.Type+".server.response", metrics.METER, "domain", m.conf.Domain, "name", m.conf.Name, "server", m.conf.IP,
+		responseName := metrics.MakeName(m.conf.Type+".server.response", metrics.METER, "domain", m.conf.Domain, "name", m.conf.Name, "cluster", m.conf.Cluster, "ip", m.conf.IP,
 			"url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
 		metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 	}

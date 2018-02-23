@@ -66,17 +66,15 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			return
 		}
 		var rPath = ctx.Request.URL.Path
-		//处理特殊文件
+		//处理特殊文件 /favicon.ico
 		if rPath == "/favicon.ico" || rPath == "/robots.txt" {
 			file := path.Join(".", rPath)
 			_, err := os.Stat(file)
 			if os.IsNotExist(err) {
 				ctx.AbortWithError(404, fmt.Errorf("static:找不到文件:%s", rPath))
-				ctx.AbortWithStatus(404)
 				return
 			}
 			if err != nil {
-				getLogger(ctx).Errorf("static:%v", err)
 				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", rPath, err))
 				return
 			}
@@ -96,17 +94,14 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath[len(opt.Prefix):]))
 			finfo, err := os.Stat(fPath)
 			if err != nil {
-				if !os.IsNotExist(err) {
-					getLogger(ctx).Errorf("static:%v", err)
-					ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
+				if os.IsNotExist(err) {
+					ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 					return
 				}
-				getLogger(ctx).Errorf("static:找不到文件:%s,err:%v", fPath, err)
-				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
+				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
 				return
 			}
 			if finfo.IsDir() {
-				getLogger(ctx).Errorf("static:找不到文件:%s,err:%v", fPath, err)
 				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 				return
 			}
@@ -117,12 +112,11 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath))
 			finfo, err := os.Stat(fPath)
 			if err != nil {
-				if !os.IsNotExist(err) {
-					getLogger(ctx).Errorf("static:读取文件%s错误,err:%v", fPath, err)
-					ctx.AbortWithError(500, fmt.Errorf("读取文件%s错误,err:%v", fPath, err))
+				if os.IsNotExist(err) {
+					ctx.Next()
 					return
 				}
-				ctx.Next()
+				ctx.AbortWithError(500, fmt.Errorf("读取文件%s错误,err:%v", fPath, err))
 				return
 			}
 			if finfo.IsDir() {
