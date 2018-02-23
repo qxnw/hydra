@@ -19,14 +19,24 @@ func NewQueryHandler(container component.IContainer) (u *QueryHandler) {
 	}
 	return
 }
-
-func (u *QueryHandler) Handle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
-	response = context.GetStandardResponse()
+func (u *QueryHandler) GetHandle(name string, engine string, service string, ctx *context.Context) (r context.Response, err error) {
+	response := context.GetStandardResponse()
+	response.SetContent(200, "OK")
+	response.SetJWTBody(map[string]string{
+		"id": "1",
+	})
+	return response, nil
+}
+func (u *QueryHandler) Handle(name string, engine string, service string, ctx *context.Context) (r context.Response, err error) {
+	response := context.GetStandardResponse()
 	ctx.Log.Info("-------order.query-------")
 	sharding_index, sharding_count := ctx.Request.Ext.GetSharding()
 	ctx.Log.Infof("sharding:index-%d,count-%d", sharding_index, sharding_count)
-	response.Success("success")
-	return
+	response.SetContent(200, "success")
+	response.SetJWTBody(map[string]string{
+		"id": "1",
+	})
+	return response, nil
 }
 
 func (u *QueryHandler) Close() error {

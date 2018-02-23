@@ -19,7 +19,7 @@ func NewOrderHandler(container component.IContainer) (u *OrderHandler, err error
 	}
 	return
 }
-func (u *OrderHandler) Fallback(name string, mode string, service string, ctx *context.Context) (response *context.ObjectResponse, err error) {
+func (u *OrderHandler) Fallback(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 	response = context.GetObjectResponse()
 	db, err := u.container.GetDefaultDB()
 	if err != nil {
@@ -29,11 +29,11 @@ func (u *OrderHandler) Fallback(name string, mode string, service string, ctx *c
 	if err != nil {
 		return
 	}
-	response.Success(data)
+	response.SetContent(200, data)
 	return
 }
 
-func (u *OrderHandler) Handle(name string, mode string, service string, ctx *context.Context) (response *context.ObjectResponse, err error) {
+func (u *OrderHandler) Handle(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 	response = context.GetObjectResponse()
 	db, err := u.container.GetDefaultDB()
 	if err != nil {
@@ -43,7 +43,7 @@ func (u *OrderHandler) Handle(name string, mode string, service string, ctx *con
 	if err != nil {
 		return
 	}
-	response.Success(data)
+	response.SetContent(200, data)
 	return
 }
 

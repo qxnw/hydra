@@ -20,7 +20,7 @@ func NewProductHandler(container component.IContainer) (u *ProductHandler) {
 	return
 }
 
-func (u *ProductHandler) Handle(name string, mode string, service string, ctx *context.Context) (response *context.StandardResponse, err error) {
+func (u *ProductHandler) Handle(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 	response = context.GetStandardResponse()
 	queue, err := u.container.GetDefaultQueue()
 	if err != nil {
@@ -30,7 +30,7 @@ func (u *ProductHandler) Handle(name string, mode string, service string, ctx *c
 	if err != nil {
 		return
 	}
-	response.Success(`success`)
+	response.SetContent(200, `success`)
 	return
 }
 

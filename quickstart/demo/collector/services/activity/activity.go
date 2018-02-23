@@ -26,7 +26,7 @@ func NewActivityHandler(container component.IContainer) (u *ActivityHandler, err
 	}
 	return
 }
-func (u *ActivityHandler) Fallback(name string, mode string, service string, ctx *context.Context) (response *context.ObjectResponse, err error) {
+func (u *ActivityHandler) Fallback(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 	response = context.GetObjectResponse()
 	db, err := u.container.GetDefaultDB()
 	if err != nil {
@@ -36,11 +36,11 @@ func (u *ActivityHandler) Fallback(name string, mode string, service string, ctx
 	if err != nil {
 		return
 	}
-	response.Success(data)
+	response.SetContent(200, data)
 	return
 }
 
-func (u *ActivityHandler) Handle(name string, mode string, service string, ctx *context.Context) (response *context.ObjectResponse, err error) {
+func (u *ActivityHandler) Handle(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 	response = context.GetObjectResponse()
 	db, err := u.container.GetDefaultDB()
 	if err != nil {
@@ -50,7 +50,7 @@ func (u *ActivityHandler) Handle(name string, mode string, service string, ctx *
 	if err != nil {
 		return
 	}
-	response.Success(data)
+	response.SetContent(200, data)
 	return
 }
 
