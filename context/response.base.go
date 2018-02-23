@@ -19,6 +19,8 @@ type Response interface {
 	GetContentType() int
 	GetHeaders() map[string]string
 	SetHeader(name string, value string)
+	SetHeaders(map[string]string)
+	SetJWTBody(data interface{})
 	GetError() error
 	Close()
 }
@@ -83,6 +85,11 @@ func (r *baseResponse) GetContentType() int {
 //SetHeader 设置http头
 func (r *baseResponse) SetHeader(name string, value string) {
 	r.Params[name] = value
+}
+func (r *baseResponse) SetHeaders(h map[string]string) {
+	for k, v := range h {
+		r.Params[k] = v
+	}
 }
 
 //GetHeaders 获取http头配置

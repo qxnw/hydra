@@ -145,9 +145,10 @@ func (r *ServiceEngine) Close() error {
 }
 func formatName(name string) string {
 	text := "/" + strings.Trim(strings.Trim(name, " "), "/")
-	index := strings.LastIndex(text, "#")
-	if index < 0 {
-		return strings.ToLower(text)
-	}
-	return strings.ToLower(text[0:index])
+	return strings.ToLower(text)
+	//index := strings.LastIndex(text, "#")
+	//if index < 0 {
+	//return strings.ToLower(text)
+	//}
+	//return strings.ToLower(text[0:index])
 }

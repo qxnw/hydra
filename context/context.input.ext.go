@@ -2,6 +2,7 @@ package context
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/qxnw/lib4go/utility"
 )
@@ -19,6 +20,18 @@ func (w *extParams) GetMethod() string {
 		return m
 	}
 	return ""
+}
+func (w *extParams) GetHeader() map[string]string {
+	if h, ok := w.ext["__header_"].(map[string]string); ok {
+		return h
+	}
+	header := make(map[string]string)
+	if h, ok := w.ext["__header_"].(map[string][]string); ok {
+		for k, v := range h {
+			header[k] = strings.Join(v, ",")
+		}
+	}
+	return header
 }
 
 //GetSharding 获取任务分片信息(分片索引[从1开始]，分片总数)
@@ -43,7 +56,6 @@ func (w *extParams) GetBodyMap(encoding ...string) map[string]string {
 		return make(map[string]string)
 	}
 	return mSetting
-
 }
 func (w *extParams) GetBody(encoding ...string) (string, error) {
 	e := "utf-8"
@@ -84,5 +96,5 @@ func (w *extParams) GetJWTBody() interface{} {
 
 //GetUUID
 func (w *extParams) GetUUID() string {
-	return w.ext["hydra_sid"].(string)
+	return w.ext["__hydra_sid_"].(string)
 }

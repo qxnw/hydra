@@ -16,11 +16,17 @@ import (
 )
 
 func getUUID(c *gin.Context) string {
+	if v, ok := c.Get("__hydra_sid_"); ok {
+		return v.(string)
+	}
 	ck, err := c.Request.Cookie("hydra_sid")
 	if err != nil || ck == nil || ck.Value == "" {
 		return logger.CreateSession()
 	}
 	return ck.Value
+}
+func setUUID(c *gin.Context, id string) {
+	c.Set("__hydra_sid_", id)
 }
 func setStartTime(c *gin.Context) {
 	c.Set("__start_time_", time.Now())
@@ -66,7 +72,7 @@ func getResponse(c *gin.Context) context.Response {
 
 //ContextHandler api请求处理程序
 func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string) gin.HandlerFunc {
-	return func(c *gin.Context) {		
+	return func(c *gin.Context) {
 		//处理输入参数
 		mSetting, err := utility.GetMapWithQuery(setting)
 		if err != nil {
@@ -77,10 +83,9 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 		}
 		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c), getLogger(c))
 		defer ctx.Close()
-		defer setServiceName(c, ctx.Request.Translate(service, true))
-
+		defer setServiceName(c, ctx.Request.Translate(service, false))
 		//调用执行引擎进行逻辑处理
-		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, true), ctx)
+		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, false), ctx)
 		if reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
@@ -103,7 +108,6 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 
 		//处理4xx,2xx
 		setResponse(c, response)
-
 	}
 }
 
@@ -122,8 +126,9 @@ func makeSettingData(ctx *gin.Context, m map[string]string) ParamData {
 
 func makeExtData(c *gin.Context) map[string]interface{} {
 	input := make(map[string]interface{})
-	input["hydra_sid"] = getUUID(c)
+	input["__hydra_sid_"] = getUUID(c)
 	input["__method_"] = strings.ToLower(c.Request.Method)
+	input["__header_"] = c.Request.Header
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Request.Response
@@ -132,7 +137,6 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 			return encoding.Convert(buff.([]byte), ch)
 		}
 		return "", errors.New("body读取错误")
-
 	}
 	return input
 }

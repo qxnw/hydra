@@ -101,6 +101,9 @@ func (s *ResponsiveConf) GetHeaders() (hmap map[string]string, err error) {
 
 //GetRouters 获取路由配置
 func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
+	if !s.HasNode("router") {
+		return nil, conf.ErrNoSetting
+	}
 	defAction := "get"
 	routers, err := s.Nconf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
@@ -194,8 +197,12 @@ func (s *ResponsiveConf) GetView() (rrts *conf.View, err error) {
 
 //GetServerRaw 获取server节点配置
 func (s *ResponsiveConf) GetServerRaw() (sr string, err error) {
+	if !s.HasNode("server") {
+		return "", conf.ErrNoSetting
+	}
 	server, err := s.Nconf.GetNodeWithSectionName("server", "#@path/server")
 	if err != nil {
+		err = fmt.Errorf("server配置有误:err:%+v", err)
 		return "", err
 	}
 	return server.GetContent(), nil
@@ -205,6 +212,7 @@ func (s *ResponsiveConf) GetServerRaw() (sr string, err error) {
 func (s *ResponsiveConf) GetQueues() (rrts []*conf.Queue, err error) {
 	routers, err := s.Nconf.GetNodeWithSectionName("queue", "#@path/queue")
 	if err != nil {
+		err = fmt.Errorf("queue配置出错:err:%+v", err)
 		return nil, err
 	}
 	rrts = make([]*conf.Queue, 0, 4)
@@ -246,6 +254,9 @@ func (s *ResponsiveConf) GetQueues() (rrts []*conf.Queue, err error) {
 
 //GetTasks 获取任务配置
 func (s *ResponsiveConf) GetTasks() (rrts []*conf.Task, err error) {
+	if !s.HasNode("task") {
+		return nil, conf.ErrNoSetting
+	}
 	tasks, err := s.Nconf.GetNodeWithSectionName("task", "#@path/task")
 	if err != nil {
 		return nil, err

@@ -15,7 +15,6 @@ func (w *CronResponsiveServer) Notify(conf xconf.Conf) error {
 	defer w.mu.Unlock()
 	nConf := w.currentConf.CopyNew(conf)
 	if !nConf.IsChanged() {
-		servers.Trace(w.Infof, nConf.GetFullName(), "配置未变化")
 		return nil
 	}
 	//检查是否需要重启服务器
@@ -24,10 +23,12 @@ func (w *CronResponsiveServer) Notify(conf xconf.Conf) error {
 		return err
 	}
 	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
+		servers.Tracef(w.Infof, "%s:重启服务", nConf.GetFullName())
+		w.currentConf = nConf
 		return w.Restart(nConf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	if err = w.SetConf(nConf); err != nil {
+	if err = w.SetConf(false, nConf); err != nil {
 		return err
 	}
 	w.currentConf = nConf
@@ -54,7 +55,7 @@ func (w *CronResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (boo
 }
 
 //SetConf 设置配置参数
-func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err error) {
+func (w *CronResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveConf) (err error) {
 	//检查版本号
 	if !conf.IsChanged() {
 		return nil
@@ -69,13 +70,12 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 
 	var ok bool
 	//设置task
-	if ok, err = conf.IsRequiredNodeChanged("task"); err == nil && ok {
+	if ok, err = conf.IsRequiredNodeChanged("task"); restart || (err == nil && ok) {
 		if _, err := conf.SetTasks(w.engine, w.server, map[string]interface{}{
 			"__get_sharding_index_": func() (int, int) {
 				return w.shardingIndex, w.shardingCount
 			},
 		}); err != nil {
-			err = fmt.Errorf("路由配置有误:%v", err)
 			return err
 		}
 	}
@@ -85,7 +85,6 @@ func (w *CronResponsiveServer) SetConf(conf *responsive.ResponsiveConf) (err err
 
 	//设置metric
 	if ok, err = conf.SetMetric(w.server); err != nil {
-		err = fmt.Errorf("metric配置有误:%v", err)
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")

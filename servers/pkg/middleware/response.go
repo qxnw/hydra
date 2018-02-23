@@ -14,7 +14,6 @@ func Response(conf *conf.ServerConf) dispatcher.HandlerFunc {
 		ctx.Next()
 		response := getResponse(ctx)
 		if response == nil {
-			getLogger(ctx).Warn("response is nil")
 			return
 		}
 		defer response.Close()

@@ -38,7 +38,7 @@ func NewMqcResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 	if h.server, err = NewMqcServer(h.currentConf.ServerConf, "", nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
 		return
 	}
-	if err = h.SetConf(h.currentConf); err != nil {
+	if err = h.SetConf(true, h.currentConf); err != nil {
 		return
 	}
 	return
@@ -48,16 +48,20 @@ func NewMqcResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 func (w *MqcResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
+	w.done = false
 	w.closeChan = make(chan struct{})
-	w.currentConf = cnf
 	w.once = sync.Once{}
 	if w.server, err = NewMqcServer(w.currentConf.ServerConf, "", nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
 		return
 	}
-	if err = w.SetConf(cnf); err != nil {
+	if err = w.SetConf(true, cnf); err != nil {
 		return
 	}
-	return w.Start()
+	if err = w.Start(); err == nil {
+		w.currentConf = cnf
+		return
+	}
+	return err
 }
 
 //Start 启用服务

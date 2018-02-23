@@ -16,12 +16,16 @@ import (
 )
 
 func getUUID(c *dispatcher.Context) string {
-	sid, ok := c.Request.GetHeader()["hydra_sid"]
+	sid, ok := c.Request.GetHeader()["__hydra_sid_"]
 	if !ok || sid == "" {
 		return logger.CreateSession()
 	}
 	return sid
 }
+func setUUID(c *dispatcher.Context, id string) {
+	c.Request.GetHeader()["__hydra_sid_"] = id
+}
+
 func setStartTime(c *dispatcher.Context) {
 	c.Set("__start_time_", time.Now())
 }
@@ -77,11 +81,11 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 		}
 		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext), getLogger(c))
 		defer ctx.Close()
-		defer setServiceName(c, ctx.Request.Translate(service, true))
+		defer setServiceName(c, ctx.Request.Translate(service, false))
 
 		//调用执行引擎进行逻辑处理
-		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, true), ctx)
-		if reflect.ValueOf(response).IsNil() {
+		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, false), ctx)
+		if response == nil || reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		//处理错误err,5xx
@@ -128,8 +132,9 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 	for k, v := range ext {
 		input[k] = v
 	}
-	input["hydra_sid"] = getUUID(c)
+	input["__hydra_sid_"] = getUUID(c)
 	input["__method_"] = strings.ToLower(c.Request.GetMethod())
+	input["__header_"] = c.Request.GetHeader()
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Writer

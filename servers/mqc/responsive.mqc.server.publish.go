@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/jsons"
 )
 
@@ -26,7 +25,10 @@ func (w *MqcResponsiveServer) publish() (err error) {
 		return
 	}
 	w.pubs = []string{npath}
-	err = w.watchMasterChange(w.currentConf.ServerNode, npath)
+	if err = w.watchMasterChange(w.currentConf.ServerNode, npath); err != nil {
+		return
+	}
+	go w.publishCheck(nodeData)
 	return
 }
 
@@ -63,7 +65,7 @@ func (w *MqcResponsiveServer) checkPubPath(data string) {
 			if err != nil {
 				break
 			}
-			servers.Tracef(w.Infof, w.currentConf.GetFullName(), "节点(", path, ")已恢复")
+			w.Logger.Infof("节点(%s)已恢复", path)
 		}
 	}
 }

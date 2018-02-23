@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/jsons"
 )
 
@@ -66,7 +65,7 @@ func (w *CronResponsiveServer) checkPubPath(data string) {
 			if err != nil {
 				break
 			}
-			servers.Trace(w.Infof, w.currentConf.GetFullName(), "节点(", path, ")已恢复")
+			w.Logger.Infof("节点(%s)已恢复", path)
 		}
 	}
 }

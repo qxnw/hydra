@@ -111,7 +111,7 @@ type ISetRouterHandler interface {
 func (s *ResponsiveConf) SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
 	routers, err := s.GetRouters()
 	if err == conf.ErrNoSetting {
-		err = fmt.Errorf("路由未配置:%v", err)
+		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
 	if err != nil {
@@ -132,7 +132,7 @@ func (s *ResponsiveConf) SetHttpRouters(engine servers.IExecuter, set ISetRouter
 func (s *ResponsiveConf) SetRouters(engine servers.IExecuter, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
 	routers, err := s.GetRouters()
 	if err == conf.ErrNoSetting {
-		err = fmt.Errorf("路由未配置:%v", err)
+		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
 	if err != nil {
@@ -206,7 +206,8 @@ func (s *ResponsiveConf) SetTasks(engine servers.IExecuter, set ITasks, ext map[
 	redisConf, _ := s.GetRedisRaw()
 	tasks, err := s.GetTasks()
 	if err == conf.ErrNoSetting || len(tasks) == 0 {
-		err = fmt.Errorf("task未配置:%v", err)
+		err = conf.ErrNoSetting
+		err = fmt.Errorf("task:%v", err)
 		return false, err
 	}
 	if err != nil {
@@ -237,7 +238,8 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 	//设置queue
 	queues, err := s.GetQueues()
 	if err == conf.ErrNoSetting || len(queues) == 0 {
-		err = fmt.Errorf("queue未配置:%v", err)
+		err = conf.ErrNoSetting
+		err = fmt.Errorf("queue:%v", err)
 		return false, err
 	}
 	if err != nil {
@@ -249,7 +251,14 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 	for _, queue := range queues {
 		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
 	}
-	serverRaw, _ := s.GetServerRaw()
+	serverRaw, err := s.GetServerRaw()
+	if err == conf.ErrNoSetting {
+		err = fmt.Errorf("server节点:%v", err)
+		return false, err
+	}
+	if err != nil {
+		return
+	}
 	err = set.SetQueues(serverRaw, queues)
 	if err != nil {
 		return false, err

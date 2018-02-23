@@ -115,8 +115,14 @@ func (c *Client) connect() (err error) {
 }
 
 //Request 发送Request请求
-func (c *Client) Request(service string, input map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
-	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Header: input},
+func (c *Client) Request(service string, method string, header map[string]string, form map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
+	response, err := c.client.Request(context.Background(),
+		&pb.RequestContext{
+			Method:  method,
+			Service: service,
+			Header:  header,
+			Form:    form,
+		},
 		grpc.FailFast(failFast))
 	if err != nil {
 		status = 500

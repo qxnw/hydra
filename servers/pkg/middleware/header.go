@@ -12,6 +12,14 @@ func Header(conf *conf.ServerConf) dispatcher.HandlerFunc {
 		for k, v := range conf.Headers {
 			ctx.Header(k, v)
 		}
+		response := getResponse(ctx)
+		if response == nil {
+			return
+		}
+		header := response.GetHeaders()
+		for k, v := range header {
+			ctx.Header(k, v)
+		}
 
 	}
 }

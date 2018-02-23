@@ -38,3 +38,9 @@ func (s *RpcServer) StopMetric() error {
 	s.metric.Stop()
 	return nil
 }
+
+//SetHeader 设置http头
+func (s *RpcServer) SetHeader(headers map[string]string) error {
+	s.conf.Headers = headers
+	return nil
+}

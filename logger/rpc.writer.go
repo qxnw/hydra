@@ -101,7 +101,7 @@ func (r *rpcWriter) Write(p []byte) (n int, err error) {
 	p = append(p, byte(']'))
 	dst := snappy.Encode(nil, p)
 	str := fmt.Sprintf("%s", string(dst))
-	_, _, _, err = r.rpcInvoker.Request(r.service, map[string]string{
+	_, _, _, err = r.rpcInvoker.Request(r.service, "GET", map[string]string{}, map[string]string{
 		"__body": str,
 	}, true)
 	if err != nil && !r.writeError {

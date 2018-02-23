@@ -11,6 +11,18 @@ type httpRequest struct {
 	ext map[string]interface{}
 }
 
+func (c *httpRequest) GetHeader() (map[string]string, error) {
+	request, err := c.Get()
+	if err != nil {
+		return nil, err
+	}
+	header := make(map[string]string)
+	for k, v := range request.Header {
+		header[k] = strings.Join(v, ",")
+	}
+	return header, nil
+}
+
 //Get 获和取http.request对象
 func (c *httpRequest) Get() (request *http.Request, err error) {
 	r := c.ext["__func_http_request_"]

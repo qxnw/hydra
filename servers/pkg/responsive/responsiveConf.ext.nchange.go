@@ -22,8 +22,13 @@ func (s *ResponsiveConf) HasNode(name ...string) bool {
 
 //IsNodeChanged 检查节点是否发生变化
 func (s *ResponsiveConf) IsNodeChanged(name string) (isChanged bool) {
-	if s.Oconf.Has("#@path/"+name) != s.Nconf.Has("#@path/"+name) {
+	oldExists := s.Oconf.Has("#@path/" + name)
+	newExists := s.Nconf.Has("#@path/" + name)
+	if oldExists != newExists {
 		return true
+	}
+	if !newExists {
+		return false
 	}
 
 	oldNode, err0 := s.Oconf.GetNodeWithSectionName(name, "#@path/"+name)

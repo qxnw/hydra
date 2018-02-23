@@ -15,7 +15,6 @@ func (w *ApiResponsiveServer) Notify(conf xconf.Conf) error {
 	defer w.mu.Unlock()
 	nConf := w.currentConf.CopyNew(conf)
 	if !nConf.IsChanged() {
-		//servers.Tracef(w.Infof, "%s:配置未变化", nConf.GetFullName())
 		return nil
 	}
 	//检查是否需要重启服务器

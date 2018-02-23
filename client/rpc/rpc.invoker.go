@@ -83,9 +83,9 @@ func NewInvoker(domain string, server string, address string, opts ...InvokerOpt
 }
 
 //RequestFailRetry 失败重试请求
-func (r *Invoker) RequestFailRetry(service string, input map[string]string, times int) (status int, result string, params map[string]string, err error) {
+func (r *Invoker) RequestFailRetry(service string, method string, header map[string]string, form map[string]string, times int) (status int, result string, params map[string]string, err error) {
 	for i := 0; i < times; i++ {
-		status, result, params, err = r.Request(service, input, true)
+		status, result, params, err = r.Request(service, method, header, form, true)
 		if err == nil || status < 500 {
 			return
 		}
@@ -94,14 +94,14 @@ func (r *Invoker) RequestFailRetry(service string, input map[string]string, time
 }
 
 //Request 使用RPC调用Request函数
-func (r *Invoker) Request(service string, input map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
+func (r *Invoker) Request(service string, method string, header map[string]string, form map[string]string, failFast bool) (status int, result string, params map[string]string, err error) {
 	status = 500
 	client, err := r.GetClient(service)
 	if err != nil {
 		return
 	}
 	rservice, _, _, _ := r.resolvePath(service)
-	status, result, params, err = client.Request(rservice, input, failFast)
+	status, result, params, err = client.Request(rservice, method, header, form, failFast)
 	if status != 200 || err != nil {
 		if err != nil {
 			err = fmt.Errorf("rpc request error:%d,%s err:%v", status, result, err)
@@ -123,6 +123,7 @@ func (r *Invoker) GetClient(addr string) (c *Client, err error) {
 		return
 	}
 	fullService := fmt.Sprintf("/%s/services/rpc/%s%s/providers", strings.TrimPrefix(domain, "/"), server, service)
+
 	_, client, err := r.cache.SetIfAbsentCb(fullService, func(i ...interface{}) (interface{}, error) {
 		rsrvs := i[0].(string)
 		opts := make([]ClientOption, 0, 0)
@@ -170,8 +171,8 @@ func (r *Invoker) Close() {
 //order.request 解析为 service: /order/request,server:merchant_cron,domain:hydra
 //order.request#merchant_rpc 解析为 service: /order/request,server:merchant_rpc,domain:hydra
 func (r *Invoker) resolvePath(address string) (service string, domain string, server string, err error) {
-	raddress := strings.TrimRight(address, "#")
-	addrs := strings.SplitN(raddress, "#", 2)
+	raddress := strings.TrimRight(address, "@")
+	addrs := strings.SplitN(raddress, "@", 2)
 	if len(addrs) == 1 {
 		if addrs[0] == "" {
 			return "", "", "", fmt.Errorf("服务地址%s不能为空", address)
@@ -181,17 +182,18 @@ func (r *Invoker) resolvePath(address string) (service string, domain string, se
 		server = r.server
 		return
 	}
-	if len(addrs[0]) == 0 {
+	if addrs[0] == "" {
 		return "", "", "", fmt.Errorf("%s错误，服务名不能为空", address)
 	}
-	if len(addrs[1]) == 0 {
+	if addrs[1] == "" {
 		return "", "", "", fmt.Errorf("%s错误，服务名，域不能为空", address)
 	}
 	service = "/" + strings.Trim(strings.Replace(addrs[0], ".", "/", -1), "/")
-	raddr := strings.SplitN(strings.TrimRight(addrs[1], "."), ".", 2)
-	if len(raddr) == 2 && raddr[0] != "" && raddr[1] != "" {
-		domain = raddr[1]
-		server = raddr[0]
+
+	raddr := strings.Split(strings.TrimRight(addrs[1], "."), ".")
+	if len(raddr) >= 2 && raddr[0] != "" && raddr[1] != "" {
+		domain = raddr[len(raddr)-1]
+		server = strings.Join(raddr[0:len(raddr)-1], ".")
 		return
 	}
 	if len(raddr) == 1 {

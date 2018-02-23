@@ -17,7 +17,9 @@ func Logging(conf *conf.ServerConf) gin.HandlerFunc {
 		if ctx.Request.URL.RawQuery != "" {
 			p = p + "?" + ctx.Request.URL.RawQuery
 		}
-		log := logger.GetSession(conf.GetFullName(), getUUID(ctx))
+		uuid := getUUID(ctx)
+		setUUID(ctx, uuid)
+		log := logger.GetSession(conf.GetFullName(), uuid)
 		log.Info(conf.Type+".request:", conf.Name, ctx.Request.Method, p, "from", ctx.ClientIP())
 		setLogger(ctx, log)
 		ctx.Next()

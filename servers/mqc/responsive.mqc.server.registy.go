@@ -29,7 +29,10 @@ func (s *MqcResponsiveServer) watchMasterChange(root, path string) error {
 			case <-s.closeChan:
 				return
 			case cldWatcher := <-children:
-				cldrs, _ = cldWatcher.GetValue()
+				if cldWatcher.GetError() != nil {
+					break
+				}
+				cldrs, _ := cldWatcher.GetValue()
 				master := s.isMaster(path, cldrs)
 				if master != s.master {
 					servers.Tracef(s.Debugf, "%s是:%s", s.currentConf.GetFullName(), types.DecodeString(master, true, "master server", "slave server"))

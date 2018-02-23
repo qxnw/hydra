@@ -86,7 +86,7 @@ func (r *Request) Translate(format string, a bool) string {
 		return str
 	}
 
-	str, i = r.Form.Translate(format, false)
+	str, i = r.Form.Translate(str, false)
 	if i == 0 {
 		return str
 	}
@@ -95,7 +95,7 @@ func (r *Request) Translate(format string, a bool) string {
 		return str
 	}
 
-	str, _ = r.Setting.Translate(str, false)
+	str, _ = r.Setting.Translate(str, a)
 	return str
 }
 

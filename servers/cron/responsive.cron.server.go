@@ -39,7 +39,7 @@ func NewCronResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, log
 	if err != nil {
 		return
 	}
-	err = h.SetConf(h.currentConf)
+	err = h.SetConf(true, h.currentConf)
 	if err != nil {
 		return
 	}
@@ -51,17 +51,21 @@ func (w *CronResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err erro
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.closeChan = make(chan struct{})
+	w.done = false
 	w.currentConf = cnf
 	w.once = sync.Once{}
 	w.server, err = NewCronServer(w.currentConf.ServerConf, "", nil, WithIP(w.currentConf.IP), WithLogger(w.Logger))
 	if err != nil {
 		return
 	}
-	err = w.SetConf(cnf)
-	if err != nil {
+	if err = w.SetConf(true, cnf); err != nil {
 		return
 	}
-	return w.Start()
+	if err = w.Start(); err == nil {
+		w.currentConf = cnf
+		return
+	}
+	return err
 }
 
 //Start 启用服务

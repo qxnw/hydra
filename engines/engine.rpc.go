@@ -2,6 +2,7 @@ package engines
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/context"
@@ -12,10 +13,12 @@ import (
 func (r *ServiceEngine) RPCProxy() component.ServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		response = context.GetStandardResponse()
-		input := make(map[string]string)
-		body, _ := ctx.Request.Ext.GetBody()
-		input["__body_"] = body
-		status, result, params, err := r.Invoker.Request(service, input, true)
+		header, err := ctx.Request.Http.GetHeader()
+		if err != nil {
+			response.SetContent(500, err)
+			return
+		}
+		status, result, params, err := ctx.RPC.Request(service, strings.ToUpper(ctx.Request.Ext.GetMethod()), header, ctx.Request.Ext.GetBodyMap(), true)
 		if err != nil {
 			err = fmt.Errorf("rpc执行错误status：%d,result:%v,err:%v", status, result, err)
 		}

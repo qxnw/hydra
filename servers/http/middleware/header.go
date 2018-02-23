@@ -29,6 +29,13 @@ func Header(conf *conf.ServerConf) gin.HandlerFunc {
 			}
 			ctx.Header(k, v)
 		}
-
+		response := getResponse(ctx)
+		if response == nil {
+			return
+		}
+		header := response.GetHeaders()
+		for k, v := range header {
+			ctx.Header(k, v)
+		}
 	}
 }
