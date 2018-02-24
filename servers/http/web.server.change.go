@@ -12,13 +12,13 @@ func (s *WebServer) SetRouters(routers []*conf.Router) (err error) {
 
 //SetJWT Server
 func (s *WebServer) SetJWT(auth *conf.Auth) error {
-	s.conf.SetMeta("jwt", auth)
+	s.conf.SetMetadata("jwt", auth)
 	return nil
 }
 
 //SetAjaxRequest 只允许ajax请求
 func (s *WebServer) SetAjaxRequest(allow bool) error {
-	s.conf.SetMeta("ajax-request", allow)
+	s.conf.SetMetadata("ajax-request", allow)
 	return nil
 }
 
@@ -61,6 +61,6 @@ func (s *WebServer) StopMetric() error {
 
 //SetView 设置view参数
 func (s *WebServer) SetView(view *conf.View) error {
-	s.conf.SetMeta("view", view)
+	s.conf.SetMetadata("view", view)
 	return nil
 }

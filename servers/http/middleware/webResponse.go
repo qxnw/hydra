@@ -13,7 +13,7 @@ import (
 //WebResponse 处理web返回值
 func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		
+
 		ctx.Next()
 		response := getResponse(ctx)
 		if response == nil {
@@ -44,11 +44,11 @@ func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 	}
 }
 func renderHTML(ctx *gin.Context, response context.Response, cnf *conf.ServerConf) bool {
-	files, ok := cnf.GetMeta("viewFiles").([]string)
+	files, ok := cnf.GetMetadata("viewFiles").([]string)
 	if !ok {
 		return false
 	}
-	root := cnf.GetMeta("view").(*conf.View).Path
+	root := cnf.GetMetadata("view").(*conf.View).Path
 	viewPath := filepath.Join(root, fmt.Sprintf("%s.html", getServiceName(ctx)))
 	for _, f := range files {
 		if f == viewPath {

@@ -13,7 +13,7 @@ import (
 //JwtAuth jwt
 func JwtAuth(cnf *conf.ServerConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
-		jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
+		jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
 		if !ok || jwtAuth == nil || !jwtAuth.Enable {
 			ctx.Next()
 			return
@@ -47,7 +47,7 @@ func setJwtResponse(ctx *dispatcher.Context, cnf *conf.ServerConf, data interfac
 	if data == nil {
 		data = getJWTRaw(ctx)
 	}
-	jwtAuth, ok := cnf.GetMeta("jwt").(*conf.Auth)
+	jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
 	if !ok {
 		return
 	}

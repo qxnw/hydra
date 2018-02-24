@@ -25,9 +25,9 @@ const (
 )
 
 type Error struct {
-	Err  error
-	Type ErrorType
-	Meta interface{}
+	Err      error
+	Type     ErrorType
+	Metadata interface{}
 }
 
 type errorMsgs []*Error
@@ -39,24 +39,24 @@ func (msg *Error) SetType(flags ErrorType) *Error {
 	return msg
 }
 
-func (msg *Error) SetMeta(data interface{}) *Error {
-	msg.Meta = data
+func (msg *Error) SetMetadata(data interface{}) *Error {
+	msg.Metadata = data
 	return msg
 }
 
 func (msg *Error) JSON() interface{} {
 	json := H{}
-	if msg.Meta != nil {
-		value := reflect.ValueOf(msg.Meta)
+	if msg.Metadata != nil {
+		value := reflect.ValueOf(msg.Metadata)
 		switch value.Kind() {
 		case reflect.Struct:
-			return msg.Meta
+			return msg.Metadata
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
 				json[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			json["meta"] = msg.Meta
+			json["meta"] = msg.Metadata
 		}
 	}
 	if _, ok := json["error"]; !ok {
@@ -149,8 +149,8 @@ func (a errorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
 		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
-		if msg.Meta != nil {
-			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
+		if msg.Metadata != nil {
+			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Metadata)
 		}
 	}
 	return buffer.String()

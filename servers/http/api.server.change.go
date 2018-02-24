@@ -14,13 +14,13 @@ func (s *ApiServer) SetRouters(routers []*conf.Router) (err error) {
 
 //SetJWT Server
 func (s *ApiServer) SetJWT(auth *conf.Auth) error {
-	s.conf.SetMeta("jwt", auth)
+	s.conf.SetMetadata("jwt", auth)
 	return nil
 }
 
 //SetAjaxRequest 只允许ajax请求
 func (s *ApiServer) SetAjaxRequest(allow bool) error {
-	s.conf.SetMeta("ajax-request", allow)
+	s.conf.SetMetadata("ajax-request", allow)
 	return nil
 }
 

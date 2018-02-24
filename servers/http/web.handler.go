@@ -44,10 +44,10 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err er
 	}()
 	viewFiles = make([]string, 0, 8)
 	viewRoot := "../views"
-	if view, ok := s.conf.GetMeta("view").(*conf.View); ok {
+	if view, ok := s.conf.GetMetadata("view").(*conf.View); ok {
 		viewRoot = view.Path
 	} else {
-		s.conf.SetMeta("view", &conf.View{Path: viewRoot})
+		s.conf.SetMetadata("view", &conf.View{Path: viewRoot})
 	}
 
 	dirs := []string{
@@ -63,7 +63,7 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err er
 	if len(viewFiles) > 0 {
 		engine.LoadHTMLFiles(viewFiles...)
 	}
-	s.conf.SetMeta("viewFiles", viewFiles)
+	s.conf.SetMetadata("viewFiles", viewFiles)
 	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Warnf, s.conf.GetFullName(),
 		getEnableName(len(viewFiles) > 0), "view模板", strings.Join(viewFiles, "\n"))
 	return nil, nil

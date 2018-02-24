@@ -24,19 +24,19 @@ type ServerConf struct {
 	Headers       map[string]string
 	HealthChecker string
 	Timeout       int
-	meta          cmap.ConcurrentMap
+	metadata      cmap.ConcurrentMap
 }
 
 //GetFullName 获取服务名称
 func (s *ServerConf) GetFullName() string {
 	return fmt.Sprintf("%s.%s(%s)", s.Name, s.Type, s.Cluster)
 }
-func (s *ServerConf) GetMeta(key string) interface{} {
-	v, _ := s.meta.Get(key)
+func (s *ServerConf) GetMetadata(key string) interface{} {
+	v, _ := s.metadata.Get(key)
 	return v
 }
-func (s *ServerConf) SetMeta(key string, v interface{}) {
-	s.meta.Set(key, v)
+func (s *ServerConf) SetMetadata(key string, v interface{}) {
+	s.metadata.Set(key, v)
 }
 func (s *ServerConf) Get(key string) string {
 	return s.nconf.String(key)
@@ -78,7 +78,7 @@ func NewConf(domain string, name string, typeName string, tag string, registryNo
 		ServerNode: registryNode,
 		IP:         net.GetLocalIPAddress(mask),
 		Timeout:    timeout,
-		meta:       cmap.New(8),
+		metadata:   cmap.New(8),
 	}
 }
 
@@ -94,7 +94,7 @@ func NewConfBy(nconf conf.Conf) *ServerConf {
 		ServerNode:    nconf.Translate("/{@domain}/@name/@type/@tag/servers"),
 		ServiceNode:   nconf.Translate("/@domain/services/@type"),
 		IP:            net.GetLocalIPAddress(nconf.String("mask")),
-		meta:          cmap.New(8),
+		metadata:      cmap.New(8),
 	}
 	c.Timeout, _ = nconf.Int("timeout", 3)
 	if c.Timeout == 0 {
