@@ -3,6 +3,7 @@ package circuit
 import "time"
 
 type StandardMetricCollector struct {
+	timeRange   int64
 	numRequests *SecondBucket
 	successes   *SecondBucket
 	failures    *SecondBucket
@@ -15,8 +16,8 @@ type StandardMetricCollector struct {
 	fallbackFailures  *SecondBucket
 }
 
-func NewStandardMetricCollector() *StandardMetricCollector {
-	d := &StandardMetricCollector{}
+func NewStandardMetricCollector(timeRange int64) *StandardMetricCollector {
+	d := &StandardMetricCollector{timeRange: timeRange}
 	d.Reset()
 	return d
 }
@@ -61,46 +62,46 @@ func (d *StandardMetricCollector) FallbackFailures() *SecondBucket {
 }
 
 //Success 成功记数
-func (d *StandardMetricCollector) Success(i uint64) {
+func (d *StandardMetricCollector) Success(i uint64) (t int64) {
 	d.numRequests.Increment(i)
-	d.successes.Increment(i)
+	return d.successes.Increment(i)
 }
 
 //Failure 失败记数
-func (d *StandardMetricCollector) Failure(i uint64) {
+func (d *StandardMetricCollector) Failure(i uint64) (t int64) {
 	d.numRequests.Increment(i)
-	d.failures.Increment(i)
+	return d.failures.Increment(i)
 }
 
 //Reject 拒绝访问
-func (d *StandardMetricCollector) Reject(i uint64) {
+func (d *StandardMetricCollector) Reject(i uint64) (t int64) {
 	d.numRequests.Increment(i)
-	d.rejects.Increment(i)
 	d.failures.Increment(i)
+	return d.rejects.Increment(i)
 }
 
 //Timeout 超时请求
-func (d *StandardMetricCollector) Timeout(i uint64) {
+func (d *StandardMetricCollector) Timeout(i uint64) (t int64) {
 	d.numRequests.Increment(i)
-	d.timeout.Increment(i)
 	d.failures.Increment(i)
+	return d.timeout.Increment(i)
 }
 
 //ShortCircuit 熔断记数
-func (d *StandardMetricCollector) ShortCircuit(i uint64) {
-	d.shortCircuits.Increment(i)
+func (d *StandardMetricCollector) ShortCircuit(i uint64) int64 {
+	return d.shortCircuits.Increment(i)
 }
 
 //FallbackSuccess 熔断执行成功记数
-func (d *StandardMetricCollector) FallbackSuccess(i uint64) {
+func (d *StandardMetricCollector) FallbackSuccess(i uint64) int64 {
 	d.shortCircuits.Increment(i)
-	d.fallbackSuccesses.Increment(i)
+	return d.fallbackSuccesses.Increment(i)
 }
 
 //FallbackFailure 熔断执行失败记数
-func (d *StandardMetricCollector) FallbackFailure(i uint64) {
+func (d *StandardMetricCollector) FallbackFailure(i uint64) int64 {
 	d.shortCircuits.Increment(i)
-	d.fallbackFailures.Increment(i)
+	return d.fallbackFailures.Increment(i)
 }
 
 func (m *StandardMetricCollector) FailurePercent(now time.Time) int {
@@ -125,12 +126,12 @@ func (m *StandardMetricCollector) RejectPercent(now time.Time) int {
 
 //Reset resets all metrics in this collector to 0.
 func (d *StandardMetricCollector) Reset() {
-	d.numRequests = NewSecondBucket()
-	d.successes = NewSecondBucket()
-	d.rejects = NewSecondBucket()
-	d.timeout = NewSecondBucket()
-	d.shortCircuits = NewSecondBucket()
-	d.failures = NewSecondBucket()
-	d.fallbackSuccesses = NewSecondBucket()
-	d.fallbackFailures = NewSecondBucket()
+	d.numRequests = NewSecondBucket(d.timeRange)
+	d.successes = NewSecondBucket(d.timeRange)
+	d.rejects = NewSecondBucket(d.timeRange)
+	d.timeout = NewSecondBucket(d.timeRange)
+	d.shortCircuits = NewSecondBucket(d.timeRange)
+	d.failures = NewSecondBucket(d.timeRange)
+	d.fallbackSuccesses = NewSecondBucket(d.timeRange)
+	d.fallbackFailures = NewSecondBucket(d.timeRange)
 }

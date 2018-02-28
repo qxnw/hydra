@@ -18,17 +18,17 @@ type value struct {
 }
 
 // NewSecondBucket initializes a RollingNumber struct.
-func NewSecondBucket() *SecondBucket {
-	return &SecondBucket{timeout: 10}
+func NewSecondBucket(seconds int64) *SecondBucket {
+	return &SecondBucket{timeout: seconds}
 }
 
-func (r *SecondBucket) getCurrentBucket() *value {
+func (r *SecondBucket) getCurrentBucket() (*value, int64) {
 	now := time.Now().Unix()
 	v, b := r.Buckets.LoadOrStore(now, &value{})
 	if b {
 		r.removeOldBuckets()
 	}
-	return v.(*value)
+	return v.(*value), now
 }
 
 func (r *SecondBucket) removeOldBuckets() {
@@ -42,20 +42,22 @@ func (r *SecondBucket) removeOldBuckets() {
 }
 
 // Increment increments the number in current SecondBucket.
-func (r *SecondBucket) Increment(i uint64) {
+func (r *SecondBucket) Increment(i uint64) (t int64) {
 	if i == 0 {
 		return
 	}
-	b := r.getCurrentBucket()
+	b, t := r.getCurrentBucket()
 	atomic.AddUint64(&b.Value, i)
+	return t
 }
 
 // UpdateMax updates the maximum value in the current bucket.
-func (r *SecondBucket) UpdateMax(n uint64) {
-	b := r.getCurrentBucket()
+func (r *SecondBucket) UpdateMax(n uint64) (t int64) {
+	b, t := r.getCurrentBucket()
 	if n > b.Value {
 		atomic.SwapUint64(&b.Value, n)
 	}
+	return t
 }
 
 // Sum sums the values over the buckets in the last 10 seconds.
@@ -85,6 +87,6 @@ func (r *SecondBucket) Max(now time.Time) uint64 {
 }
 
 //Average 指定一段时间内的平均值
-func (r *SecondBucket) Average() float64 {
-	return float64(r.Sum(time.Now())) / float64(r.timeout)
+func (r *SecondBucket) Average(now time.Time) float64 {
+	return float64(r.Sum(now)) / float64(r.timeout)
 }

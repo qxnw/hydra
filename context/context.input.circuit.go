@@ -9,3 +9,9 @@ type circuitBreakerParam struct {
 func (s *circuitBreakerParam) IsOpen() bool {
 	return false
 }
+func (s *circuitBreakerParam) GetDefStatus() int {
+	return 503
+}
+func (s *circuitBreakerParam) GetDefContent() string {
+	return ""
+}

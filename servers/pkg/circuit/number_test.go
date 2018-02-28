@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var num = NewSecondBucket()
+var num = NewSecondBucket(10)
 
 func BenchmarkT1(b *testing.B) {
 

@@ -307,3 +307,14 @@ func (s *ResponsiveConf) GetRedisRaw() (sr string, err error) {
 	}
 	return redis.GetContent(), nil
 }
+
+/*
+//GetCircuitBreaker 熔断配置
+func (s *ResponsiveConf) GetCircuitBreaker() (sr string, err error) {
+	circuit, err := s.Nconf.GetNodeWithSectionName("circuit", "#@path/circuit")
+	if err != nil {
+		return "", err
+	}
+	return redis.GetContent(), nil
+}
+*/

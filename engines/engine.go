@@ -73,13 +73,23 @@ func (r *ServiceEngine) GetServices() []string {
 func (r *ServiceEngine) Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error) {
 	service = formatName(service)
 	if ctx.Request.CircuitBreaker.IsOpen() { //熔断开关打开，则自动降级
-		rf, err := r.StandardComponent.Fallback(name, engine, service, ctx)
-		if err != component.ErrNotFoundService {
-			return rf, err
-		}
 		response := context.GetStandardResponse()
-		response.SetStatus(503)
-		err = fmt.Errorf("系统熔断:%s", service)
+		response.SetFallback()
+		rf, err := r.StandardComponent.Fallback(name, engine, service, ctx)
+		if rf != nil {
+			rf.SetFallback()
+			if err == nil {
+				rf.SetFallbackResult(rf.IsSuccess())
+				return rf, nil
+			}
+			if err != component.ErrNotFoundService {
+				rf.SetFallbackFailed()
+				return rf, err
+			}
+
+		}
+		response.SetFallbackFailed()
+		response.SetContent(ctx.Request.CircuitBreaker.GetDefStatus(), ctx.Request.CircuitBreaker.GetDefContent())
 		return response, err
 	}
 	if rh, err := r.Handling(name, engine, service, ctx); err != nil {

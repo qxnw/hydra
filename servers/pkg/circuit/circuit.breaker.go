@@ -6,11 +6,11 @@ import (
 )
 
 type option struct {
-	RPS         int
-	EPPS        int
-	RJTPS       int
-	Timeout     int
-	SleepWindow int64
+	RPS        int
+	EPPS       int
+	RJTPS      int
+	Timeout    int
+	TimeWindow int64
 }
 
 //Option 配置选项
@@ -23,7 +23,7 @@ func WithRPS(i int) Option {
 	}
 }
 
-//WithEPPS 每秒失败数
+//WithEPPS 每秒失败比例
 func WithEPPS(i int) Option {
 	return func(o *option) {
 		o.EPPS = i
@@ -47,7 +47,7 @@ func WithTimeout(i int) Option {
 //WithSleepWindow 每秒失败数
 func WithSleepWindow(i int64) Option {
 	return func(o *option) {
-		o.SleepWindow = i * int64(time.Millisecond)
+		o.TimeWindow = i
 	}
 }
 
@@ -64,14 +64,16 @@ type CircuitBreaker struct {
 // NewCircuitBreaker creates a CircuitBreaker with associated Health
 func NewCircuitBreaker(opts ...Option) *CircuitBreaker {
 	c := &CircuitBreaker{
-		metrics: NewStandardMetricCollector(),
+		forceOpen: -1,
+		open:      -1,
 		option: &option{
-			RPS:         0,
-			EPPS:        -1,
-			RJTPS:       -1,
-			SleepWindow: 0,
+			RPS:        0,
+			EPPS:       -1,
+			RJTPS:      -1,
+			TimeWindow: 10,
 		},
 	}
+	c.metrics = NewStandardMetricCollector(c.TimeWindow)
 	for _, opt := range opts {
 		opt(c.option)
 	}
@@ -91,37 +93,43 @@ func (circuit *CircuitBreaker) ToggleForceOpen(toggle bool) {
 // IsOpen is called before any Command execution to check whether or
 // not it should be attempted. An "open" circuit means it is disabled.
 func (circuit *CircuitBreaker) IsOpen() bool {
+	return circuit.isOpen(time.Now())
+}
+
+//IsOpenByTime 指定时间范围内
+func (circuit *CircuitBreaker) isOpen(now time.Time) bool {
 	o := circuit.forceOpen == 0 || circuit.open == 0
 	if o {
 		return true
 	}
-	now := time.Now()
 	if circuit.RPS == 0 || circuit.metrics.NumRequests().Sum(now) < uint64(circuit.RPS) {
 		return false
 	}
 
 	if !circuit.IsHealthy(now) {
 		circuit.setOpen()
-		return true
 	}
-	return false
+	return true
 }
 
 // AllowRequest is checked before a command executes, ensuring that circuit state and metric health allow it.
 // When the circuit is open, this call will occasionally return true to measure whether the external service
 // has recovered.
 func (circuit *CircuitBreaker) AllowRequest() bool {
-	return !circuit.IsOpen() || circuit.allowSingleTest()
+	return circuit.allowRequest(time.Now())
+}
+func (circuit *CircuitBreaker) allowRequest(now time.Time) bool {
+	return !circuit.isOpen(now) || circuit.allowSingleTest(now)
 }
 
-func (circuit *CircuitBreaker) allowSingleTest() bool {
-	if circuit.SleepWindow == 0 {
-		return true
+func (circuit *CircuitBreaker) allowSingleTest(now time.Time) bool {
+	if circuit.TimeWindow == 0 {
+		return false
 	}
-	now := time.Now().UnixNano()
+	nowNano := now.UnixNano()
 	openedOrLastTestedTime := atomic.LoadInt64(&circuit.openedOrLastTestedTime)
-	if circuit.open == 0 && now > openedOrLastTestedTime+circuit.SleepWindow {
-		swapped := atomic.CompareAndSwapInt64(&circuit.openedOrLastTestedTime, openedOrLastTestedTime, now)
+	if circuit.open == 0 && nowNano > openedOrLastTestedTime+circuit.TimeWindow*int64(time.Millisecond) {
+		swapped := atomic.CompareAndSwapInt64(&circuit.openedOrLastTestedTime, openedOrLastTestedTime, nowNano)
 		return swapped
 	}
 	return false
@@ -145,32 +153,35 @@ func (circuit *CircuitBreaker) IsHealthy(t time.Time) bool {
 }
 
 // ReportEvent records command metrics for tracking recent error rates and exposing data to the dashboard.
-func (circuit *CircuitBreaker) ReportEvent(event string, i uint64) error {
+func (circuit *CircuitBreaker) ReportEvent(event string, i uint64) int64 {
 	if event == EventSuccess && circuit.open == 0 {
 		circuit.setClose()
 	}
 	switch event {
 	case EventFailure:
-		circuit.metrics.Failure(i)
+		return circuit.metrics.Failure(i)
 	case EventFallbackFailure:
-		circuit.metrics.FallbackFailure(i)
+		return circuit.metrics.FallbackFailure(i)
 	case EventFallbackSuccess:
-		circuit.metrics.FallbackSuccess(i)
+		return circuit.metrics.FallbackSuccess(i)
 	case EventReject:
-		circuit.metrics.Reject(i)
+		return circuit.metrics.Reject(i)
 	case EventShortCircuit:
-		circuit.metrics.ShortCircuit(i)
+		return circuit.metrics.ShortCircuit(i)
 	case EventSuccess:
-		circuit.metrics.Success(i)
+		return circuit.metrics.Success(i)
+	case EventTimeout:
+		return circuit.metrics.Timeout(i)
 
 	}
-	return nil
+	return 0
 }
 
 var (
 	EventSuccess      = "SUCCESS"
 	EventFailure      = "FAILURE"
 	EventReject       = "REJECT"
+	EventTimeout      = "TIMEOUT"
 	EventShortCircuit = "SHORT_CIRCUIT"
 
 	EventFallbackSuccess = "FALLBACK_SUCCESS"
