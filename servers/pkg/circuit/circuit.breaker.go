@@ -7,7 +7,7 @@ import (
 
 type option struct {
 	RPS        int
-	EPPS       int
+	FPPS       int
 	RJTPS      int
 	Timeout    int
 	TimeWindow int64
@@ -24,9 +24,9 @@ func WithRPS(i int) Option {
 }
 
 //WithEPPS 每秒失败比例
-func WithEPPS(i int) Option {
+func WithFPPS(i int) Option {
 	return func(o *option) {
-		o.EPPS = i
+		o.FPPS = i
 	}
 }
 
@@ -68,15 +68,16 @@ func NewCircuitBreaker(opts ...Option) *CircuitBreaker {
 		open:      -1,
 		option: &option{
 			RPS:        0,
-			EPPS:       -1,
+			FPPS:       -1,
 			RJTPS:      -1,
 			TimeWindow: 10,
 		},
 	}
-	c.metrics = NewStandardMetricCollector(c.TimeWindow)
 	for _, opt := range opts {
 		opt(c.option)
 	}
+	c.metrics = NewStandardMetricCollector(c.TimeWindow)
+
 	return c
 }
 
@@ -98,7 +99,7 @@ func (circuit *CircuitBreaker) IsOpen() bool {
 
 //IsOpenByTime 指定时间范围内
 func (circuit *CircuitBreaker) isOpen(now time.Time) bool {
-	o := circuit.forceOpen == 0 || circuit.open == 0
+	o := circuit.forceOpen == 0 || (circuit.open == 0 && circuit.TimeWindow > 0)
 	if o {
 		return true
 	}
@@ -110,6 +111,14 @@ func (circuit *CircuitBreaker) isOpen(now time.Time) bool {
 		circuit.setOpen()
 	}
 	return true
+}
+
+//GetCircuitStatus 获取熔断状态
+func (circuit *CircuitBreaker) GetCircuitStatus() (isOpen bool, canRequest bool) {
+	now := time.Now()
+	isOpen = circuit.isOpen(now)
+	canRequest = !isOpen || circuit.allowSingleTest(now)
+	return
 }
 
 // AllowRequest is checked before a command executes, ensuring that circuit state and metric health allow it.
@@ -124,7 +133,7 @@ func (circuit *CircuitBreaker) allowRequest(now time.Time) bool {
 
 func (circuit *CircuitBreaker) allowSingleTest(now time.Time) bool {
 	if circuit.TimeWindow == 0 {
-		return false
+		return true
 	}
 	nowNano := now.UnixNano()
 	openedOrLastTestedTime := atomic.LoadInt64(&circuit.openedOrLastTestedTime)
@@ -149,7 +158,7 @@ func (circuit *CircuitBreaker) setClose() {
 
 //IsHealthy 当前服务器健康状况
 func (circuit *CircuitBreaker) IsHealthy(t time.Time) bool {
-	return (circuit.EPPS < 0 || circuit.metrics.FailurePercent(t) > circuit.EPPS) && (circuit.RJTPS < 0 || circuit.metrics.RejectPercent(t) > circuit.RJTPS)
+	return (circuit.FPPS < 0 || circuit.metrics.FailurePercent(t) > circuit.FPPS) && (circuit.RJTPS < 0 || circuit.metrics.RejectPercent(t) > circuit.RJTPS)
 }
 
 // ReportEvent records command metrics for tracking recent error rates and exposing data to the dashboard.

@@ -50,6 +50,9 @@ func (w *ApiResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool
 	if ok := conf.IsNodeChanged("header"); ok {
 		return ok, nil
 	}
+	if ok := conf.IsNodeChanged("circuit"); ok {
+		return ok, nil
+	}
 	return false, nil
 }
 
@@ -87,11 +90,19 @@ func (w *ApiResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveC
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "header设置")
+
+	//设置熔断配置
+	if ok, err = conf.SetCircuitBreaker(w.server); err != nil {
+		return err
+	}
+	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "熔断设置")
+
 	//设置jwt安全认证
 	if ok, err = conf.SetJWT(w.server); err != nil {
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "jwt设置")
+
 	//设置ajax请求
 	if ok, err = conf.SetAjaxRequest(w.server); err != nil {
 		return err
@@ -109,6 +120,7 @@ func (w *ApiResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveC
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "host设置")
+
 	return nil
 }
 func getEnableName(b bool) string {

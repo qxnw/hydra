@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/qxnw/hydra/servers/pkg/circuit"
 	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
@@ -62,5 +63,19 @@ func (s *WebServer) StopMetric() error {
 //SetView 设置view参数
 func (s *WebServer) SetView(view *conf.View) error {
 	s.conf.SetMetadata("view", view)
+	return nil
+}
+
+//CloseCircuitBreaker 关闭熔断配置
+func (s *WebServer) CloseCircuitBreaker() error {
+	if c, ok := s.conf.GetMetadata("__circuit-breaker_").(*circuit.NamedCircuitBreakers); ok {
+		c.Close()
+	}
+	return nil
+}
+
+//SetCircuitBreaker 设置熔断配置
+func (s *WebServer) SetCircuitBreaker(c *conf.CircuitBreaker) error {
+	s.conf.SetMetadata("__circuit-breaker_", circuit.NewNamedCircuitBreakers(c))
 	return nil
 }

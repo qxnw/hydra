@@ -31,6 +31,17 @@ func setUUID(c *gin.Context, id string) {
 func setStartTime(c *gin.Context) {
 	c.Set("__start_time_", time.Now())
 }
+
+func setFallback(c *gin.Context) {
+	c.Set("__fallback_executed_", "fb")
+}
+func getFallback(c *gin.Context) string {
+	if f, ok := c.Get("__fallback_executed_"); ok {
+		return f.(string)
+	}
+	return ""
+}
+
 func setLogger(c *gin.Context, l *logger.Logger) {
 	c.Set("__logger_", l)
 }
@@ -50,6 +61,17 @@ func getJWTRaw(c *gin.Context) interface{} {
 func setJWTRaw(c *gin.Context, v interface{}) {
 	c.Set("__jwt_", v)
 }
+
+func getIsCircuitBreaker(c *gin.Context) bool {
+	if b, ok := c.Get("__is_circuit_breaker_"); ok {
+		return b.(bool)
+	}
+	return false
+}
+func setIsCircuitBreaker(c *gin.Context, v bool) {
+	c.Set("__is_circuit_breaker_", v)
+}
+
 func getServiceName(c *gin.Context) string {
 	if service, ok := c.Get("__service_"); ok {
 		return service.(string)
@@ -129,6 +151,7 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 	input["__hydra_sid_"] = getUUID(c)
 	input["__method_"] = strings.ToLower(c.Request.Method)
 	input["__header_"] = c.Request.Header
+	input["__is_circuit_breaker_"] = getIsCircuitBreaker(c)
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Request.Response

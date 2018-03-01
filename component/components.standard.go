@@ -231,11 +231,13 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 	//get降级服务
 	switch handler := h.(type) {
 	case GetFallbackHandler:
+
 		name := filepath.Join(name, "get")
 		var f FallbackServiceFunc = handler.GetFallback
 		if _, ok := r.FallbackHandlers[name]; !ok {
 			r.FallbackHandlers[name] = f
 		}
+		fmt.Println("注册get降级服务:", h, r.FallbackHandlers)
 	}
 
 	//post降级服务
@@ -438,6 +440,7 @@ func (r *StandardComponent) Handle(name string, engine string, service string, c
 
 //GetFallbackHandler 获取失败降级处理函数
 func (r *StandardComponent) GetFallbackHandler(engine string, service string, method string) (interface{}, bool) {
+	fmt.Println("FallbackHandlers:", r.FallbackHandlers)
 	if f, ok := r.FallbackHandlers[filepath.Join(service, method)]; ok {
 		return f, ok
 	}
@@ -452,6 +455,7 @@ func (r *StandardComponent) Fallback(name string, engine string, service string,
 	response.SetStatus(404)
 	h, ok := r.GetFallbackHandler(engine, service, c.Request.Ext.GetMethod())
 	if !ok {
+		fmt.Println("fallback.handlers:", filepath.Join(service, c.Request.Ext.GetMethod()), r.FallbackHandlers)
 		return response, ErrNotFoundService
 	}
 	switch handler := h.(type) {

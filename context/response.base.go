@@ -22,10 +22,6 @@ type Response interface {
 	SetHeaders(map[string]string)
 	SetJWTBody(data interface{})
 	GetError() error
-	SetFallback()
-	SetFallbackSuccess()
-	SetFallbackFailed()
-	SetFallbackResult(bool)
 	IsSuccess() bool
 	Close()
 }
@@ -56,23 +52,7 @@ func (r *baseResponse) IsSuccess() bool {
 func (r *baseResponse) SetStatus(status int) {
 	r.Status = types.DecodeInt(status, 0, 200, status)
 }
-func (r *baseResponse) SetFallback() {
-	r.Params["__fallback_invoke_"] = true
-}
-func (r *baseResponse) SetFallbackSuccess() {
-	r.Params["__fallback_executed_"] = "success"
-}
-func (r *baseResponse) SetFallbackFailed() {
-	r.Params["__fallback_executed_"] = "failed"
-}
-func (r *baseResponse) SetFallbackResult(b bool) {
-	if b {
-		r.SetFallbackSuccess()
-		return
-	}
-	r.SetFallbackFailed()
-	return
-}
+
 func (r *baseResponse) SetJWTBody(data interface{}) {
 	r.Params["__jwt_"] = data
 }

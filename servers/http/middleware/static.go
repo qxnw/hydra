@@ -86,6 +86,7 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			return
 		}
 		s := opt.MustStatic(rPath)
+		fmt.Println("static", rPath, s)
 		switch s {
 		case 0:
 			ctx.Next()
@@ -95,17 +96,21 @@ func Static(opt *StaticOptions) gin.HandlerFunc {
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if os.IsNotExist(err) {
+					fmt.Println(fmt.Errorf("找不到文件:%s", fPath))
 					ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 					return
 				}
+				fmt.Println(fmt.Errorf("500找不到文件:%s %v", fPath, err))
 				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
 				return
 			}
 			if finfo.IsDir() {
+				fmt.Println(fmt.Errorf("找不到文件:%s", fPath))
 				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 				return
 			}
 			//文件已存在，则返回文件
+			fmt.Println(fmt.Errorf("文件已存在，则返回文件:%s", fPath))
 			ctx.File(fPath)
 			return
 		case 2:

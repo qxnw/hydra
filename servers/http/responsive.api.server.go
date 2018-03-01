@@ -16,6 +16,9 @@ type IServer interface {
 	Shutdown(timeout time.Duration)
 	GetStatus() string
 	GetAddress() string
+	CloseCircuitBreaker() error
+	SetCircuitBreaker(*conf.CircuitBreaker) error
+
 	SetRouters(routers []*conf.Router) (err error)
 	SetJWT(auth *conf.Auth) error
 	SetAjaxRequest(allow bool) error

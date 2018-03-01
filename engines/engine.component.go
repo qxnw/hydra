@@ -92,8 +92,9 @@ func (r *ServiceEngine) LoadComponents(files ...string) error {
 				tags = []string{"go"}
 			}
 			r.AddCustomerTagsService(srvs, handler(cmp), tags, component.GetGroupName(r.serverType))
-
+			r.logger.Debug("加载外部服务:", srvs,)
 		}
+		
 	}
 	return nil
 }

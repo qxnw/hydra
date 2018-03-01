@@ -265,3 +265,23 @@ func (s *ResponsiveConf) SetQueues(engine servers.IExecuter, set IQueues, ext ma
 	}
 	return true, nil
 }
+
+//ISetCircuitBreaker 设置CircuitBreaker
+type ISetCircuitBreaker interface {
+	CloseCircuitBreaker() error
+	SetCircuitBreaker(*conf.CircuitBreaker) error
+}
+
+//SetCircuitBreaker 设置熔断配置
+func (s *ResponsiveConf) SetCircuitBreaker(set ISetCircuitBreaker) (enable bool, err error) {
+	//设置CircuitBreaker
+	breaker, err := s.GetCircuitBreaker()
+	if err == conf.ErrNoSetting {
+		return false, set.CloseCircuitBreaker()
+	}
+	if err != nil {
+		return false, err
+	}
+	err = set.SetCircuitBreaker(breaker)
+	return err == nil, err
+}

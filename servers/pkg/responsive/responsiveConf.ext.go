@@ -308,13 +308,47 @@ func (s *ResponsiveConf) GetRedisRaw() (sr string, err error) {
 	return redis.GetContent(), nil
 }
 
-/*
 //GetCircuitBreaker 熔断配置
-func (s *ResponsiveConf) GetCircuitBreaker() (sr string, err error) {
-	circuit, err := s.Nconf.GetNodeWithSectionName("circuit", "#@path/circuit")
-	if err != nil {
-		return "", err
+func (s *ResponsiveConf) GetCircuitBreaker() (breaker *conf.CircuitBreaker, err error) {
+	if !s.HasNode("circuit") {
+		return nil, conf.ErrNoSetting
 	}
-	return redis.GetContent(), nil
+	tasks, err := s.Nconf.GetNodeWithSectionName("circuit", "#@path/circuit")
+	if err != nil {
+		return nil, err
+	}
+	breaker = &conf.CircuitBreaker{}
+	breaker.AutoBreak, _ = tasks.Bool("auto-break", false)
+	breaker.ForceBreak, _ = tasks.Bool("force-break", false)
+	breaker.SwitchWindow, _ = tasks.Int("swith-window", 0)
+	if !breaker.AutoBreak {
+		return breaker, nil
+	}
+	breakers, err := tasks.GetSections("circuit-breakers")
+	if err != nil {
+		return nil, fmt.Errorf("circuit-breakers配置出错:err:%+v", err)
+	}
+	if len(breakers) == 0 {
+		return nil, conf.ErrNoSetting
+	}
+	breaker.CircuitBreakers = make(map[string]*conf.Breaker)
+	for _, c := range breakers {
+		oneBreaker := &conf.Breaker{}
+		oneBreaker.URL = c.String("url")
+		if _, ok := breaker.CircuitBreakers[oneBreaker.URL]; ok {
+			return nil, fmt.Errorf("circuit-breakers重复配置:url:%s", c.String("url"))
+		}
+
+		oneBreaker.RequestPerSecond, _ = c.Int("request-per-second", 0)
+		oneBreaker.RejectPerSecond, _ = c.Int("reject-per-second", 0)
+		oneBreaker.FailedPercent, _ = c.Int("failed-percent", 0)
+		if oneBreaker.RequestPerSecond < 0 || oneBreaker.RejectPerSecond < 0 || oneBreaker.FailedPercent < 0 {
+			return nil, fmt.Errorf("circuit-breakers配置出错:%s", c.GetContent())
+		}
+		breaker.CircuitBreakers[oneBreaker.URL] = oneBreaker
+	}
+	if len(breakers) == 0 {
+		return nil, fmt.Errorf("circuit-breakers未配置:%d", len(breakers))
+	}
+	return breaker, nil
 }
-*/

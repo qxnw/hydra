@@ -152,3 +152,16 @@ type Task struct {
 	Last    string      `json:"last"`
 	Handler interface{} `json:"handler,omitempty"`
 }
+
+type CircuitBreaker struct {
+	ForceBreak      bool                `json:"force-break"`
+	AutoBreak       bool                `json:"auto-break"`
+	SwitchWindow    int                 `json:"swith-window"`
+	CircuitBreakers map[string]*Breaker `json:"circuit-breakers"`
+}
+type Breaker struct {
+	URL              string `json:"url"`
+	RequestPerSecond int    `json:"request-per-second"`
+	FailedPercent    int    `json:"failed-request"`
+	RejectPerSecond  int    `json:"reject-per-second"`
+}

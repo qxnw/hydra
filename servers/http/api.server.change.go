@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/servers/pkg/circuit"
 	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
@@ -63,5 +64,19 @@ func (s *ApiServer) SetHeader(headers map[string]string) error {
 //StopMetric stop metric
 func (s *ApiServer) StopMetric() error {
 	s.metric.Stop()
+	return nil
+}
+
+//CloseCircuitBreaker 关闭熔断配置
+func (s *ApiServer) CloseCircuitBreaker() error {
+	if c, ok := s.conf.GetMetadata("__circuit-breaker_").(*circuit.NamedCircuitBreakers); ok {
+		c.Close()
+	}
+	return nil
+}
+
+//SetCircuitBreaker 设置熔断配置
+func (s *ApiServer) SetCircuitBreaker(c *conf.CircuitBreaker) error {
+	s.conf.SetMetadata("__circuit-breaker_", circuit.NewNamedCircuitBreakers(c))
 	return nil
 }

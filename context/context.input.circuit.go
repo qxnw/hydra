@@ -7,7 +7,7 @@ type circuitBreakerParam struct {
 
 //IsOpen 熔断开发是否打开
 func (s *circuitBreakerParam) IsOpen() bool {
-	return false
+	return s.ext["__is_circuit_breaker_"].(bool)
 }
 func (s *circuitBreakerParam) GetDefStatus() int {
 	return 503
