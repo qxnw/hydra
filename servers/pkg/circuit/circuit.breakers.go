@@ -34,7 +34,7 @@ func (c *NamedCircuitBreakers) getBreakerConf(url string) *conf.Breaker {
 
 //GetBreaker 获取当前URL的熔断信息
 func (c *NamedCircuitBreakers) GetBreaker(url string) *CircuitBreaker {
-	if !c.conf.ForceBreak && !c.conf.AutoBreak {
+	if !c.conf.Enable {
 		return c.closedBreaker
 	}
 	if c.conf.ForceBreak {
@@ -57,6 +57,6 @@ func (c *NamedCircuitBreakers) GetBreaker(url string) *CircuitBreaker {
 
 //Close 关闭熔断配置
 func (c *NamedCircuitBreakers) Close() {
-	c.conf.AutoBreak = false
+	c.conf.Enable = false
 	c.conf.ForceBreak = false
 }

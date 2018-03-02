@@ -40,8 +40,7 @@ func (s *ApiServer) SetStatic(enable bool, prefix string, dir string, listDir bo
 	s.static.Enable = enable
 	s.static.Prefix = prefix
 	s.static.RootPath = dir
-	s.static.FilterExts = exts
-	s.static.Prepare()
+	s.static.Exts = exts
 	return nil
 }
 

@@ -26,9 +26,9 @@ func Logging(conf *conf.ServerConf) gin.HandlerFunc {
 
 		statusCode := ctx.Writer.Status()
 		if statusCode >= 200 && statusCode < 400 {
-			log.Info(conf.Type+".response:", conf.Name, ctx.Request.Method, p, statusCode, time.Since(start))
+			log.Info(conf.Type+".response:", conf.Name, ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
 		} else {
-			log.Error(conf.Type+".response:", conf.Name, ctx.Request.Method, p, statusCode, getFallback(ctx), time.Since(start))
+			log.Error(conf.Type+".response:", conf.Name, ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
 		}
 	}
 

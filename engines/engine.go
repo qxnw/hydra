@@ -61,7 +61,6 @@ func NewServiceEngine(domain string, serverName string, serverType string, regis
 	}
 	e.StandardComponent.AddRPCProxy(e.RPCProxy())
 	err = e.StandardComponent.LoadServices()
-	e.logger.Debug("service-FallbackHandlers:", e.StandardComponent.FallbackHandlers)
 	return
 }
 

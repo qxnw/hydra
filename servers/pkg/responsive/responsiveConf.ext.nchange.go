@@ -47,7 +47,7 @@ func (s *ResponsiveConf) IsNodeChanged(name string) (isChanged bool) {
 func (s *ResponsiveConf) IsRequiredNodeChanged(name string) (isChanged bool, err error) {
 	newNode, err1 := s.Nconf.GetNodeWithSectionName(name, "#@path/"+name)
 	if err1 != nil {
-		return false, err1
+		return true, err1
 	}
 	if s.Oconf.Has("#@path/"+name) != s.Nconf.Has("#@path/"+name) {
 		return true, nil

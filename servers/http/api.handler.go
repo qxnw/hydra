@@ -16,7 +16,6 @@ func (s *ApiServer) getHandler(routers []*conf.Router) (x.Handler, error) {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	engine := gin.New()
-	
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
 	engine.Use(gin.Recovery())
 	engine.Use(s.option.metric.Handle())           //生成metric报表
@@ -43,6 +42,8 @@ func setRouters(engine *gin.Engine, routers []*conf.Router) (err error) {
 			engine.Handle(strings.ToUpper(method), router.Name, router.Handler.(gin.HandlerFunc))
 		}
 	}
+	engine.StaticFile("/favicon.ico", "./favicon.ico")
+	engine.StaticFile("/robots.txt", "./robots.txt")
 	return nil
 }
 

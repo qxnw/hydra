@@ -68,7 +68,7 @@ func (w *ApiResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveC
 	}
 
 	if !conf.HasNode("router", "static") {
-		err = errors.New("%s:路由或静态文件未配置")
+		err = errors.New("路由或静态文件未配置")
 		return err
 	}
 
