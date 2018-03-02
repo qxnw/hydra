@@ -20,10 +20,10 @@ func NewActivityHandler(container component.IContainer) (u *ActivityHandler, err
 			"input": []string{"id"},
 		},
 	}
-	u.act, err = activity.GetActivity(container)
-	if err != nil {
-		return
-	}
+	//u.act, err = activity.GetActivity(container)
+	//if err != nil {
+	//	return
+	//}
 	return
 }
 func (u *ActivityHandler) Fallback(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
