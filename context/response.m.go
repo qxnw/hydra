@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/qxnw/lib4go/types"
@@ -13,7 +14,6 @@ func init() {
 		New: func() interface{} {
 			r := &MapResponse{
 				baseResponse: &baseResponse{Params: make(map[string]interface{})}, Content: make(map[string]interface{})}
-			r.Params["__view"] = "NONE"
 			return r
 		},
 	}
@@ -21,57 +21,55 @@ func init() {
 
 type MapResponse struct {
 	Content map[string]interface{}
+	err     error
 	*baseResponse
 }
 
 func GetMapResponse() *MapResponse {
 	return mapResponsePool.Get().(*MapResponse)
 }
-func (r *MapResponse) GetContent(errs ...error) interface{} {
-	if len(r.Content) > 0 {
-		return r.Content
-	}
-	if len(errs) > 0 {
-		return errs[0]
-	}
+
+func (r *MapResponse) GetContent() interface{} {
 	return r.Content
 }
-func (r *MapResponse) SetError(status int, err error) {
-	if err != nil {
-		r.Status = types.DecodeInt(status, 0, 500, status)
-		return
-	}
-	r.Status = types.DecodeInt(status, 0, 200, status)
-}
-func (r *MapResponse) Success(v ...map[string]interface{}) *MapResponse {
+
+func (r *MapResponse) Success(v map[string]interface{}) {
 	r.Status = 200
-	if len(v) > 0 {
-		r.Content = v[0]
-		return r
+	r.Content = v
+	return
+
+}
+func (r *MapResponse) SetContent(status int, content interface{}) {
+	if status == 0 {
+		status = r.Status
 	}
-	return r
+	switch content.(type) {
+	case HydraError:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(HydraError).error
+	case error:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(error)
+	case map[string]interface{}:
+		r.Status = types.DecodeInt(status, 0, 200, status)
+		r.Content = content.(map[string]interface{})
+	default:
+		if content == nil {
+			r.Status = types.DecodeInt(status, 0, 200, status)
+			return
+		}
+		r.Status = 500
+		r.err = fmt.Errorf("MapResponse.content输入类型错误,必须为:map[string]interface{}")
+	}
+	return
 }
 
-func (r *MapResponse) SetContent(status int, content map[string]interface{}) *MapResponse {
-	r.Status = types.DecodeInt(status, 0, 200, status)
-	r.Content = content
-	return r
+func (r *MapResponse) GetError() error {
+	return r.err
 }
 
-func (r *MapResponse) Set(s int, rr map[string]interface{}, p map[string]string, err error) error {
-	r.Status = s
-	if r.Status == 0 {
-		r.Status = types.DecodeInt(err, nil, 500, 200)
-	}
-	for k, v := range p {
-		r.Params[k] = v
-	}
-	r.Content = rr
-	return err
-}
 func (r *MapResponse) Close() {
 	r.Content = make(map[string]interface{})
 	r.Params = make(map[string]interface{})
-	r.Params["__view"] = "NONE"
 	mapResponsePool.Put(r)
 }

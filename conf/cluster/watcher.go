@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"sync"
@@ -36,7 +37,7 @@ func newRegistryConfWatcher(domain string, clientTag string, registry registry.R
 		watchPaths:     cmap.New(2),
 		registry:       registry,
 		timeSpan:       time.Second,
-		domain:         domain,
+		domain:         strings.Trim(domain, "/"),
 		clientTag:      clientTag,
 		Logger:         log,
 	}
@@ -51,7 +52,8 @@ func (w *registryConfWatcher) Start() error {
 		return nil
 	}
 	w.isInitialized = true
-	path := fmt.Sprintf("%s/servers", w.domain)
+	//path := fmt.Sprintf("/%s/conf", w.domain)
+	path := fmt.Sprintf("/%s", w.domain)
 	w.watchRootChan <- path
 
 	go w.watch()

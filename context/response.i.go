@@ -12,7 +12,6 @@ func init() {
 	objectResponsePool = &sync.Pool{
 		New: func() interface{} {
 			r := &ObjectResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
-			r.Params["__view"] = "NONE"
 			return r
 		},
 	}
@@ -20,6 +19,7 @@ func init() {
 
 type ObjectResponse struct {
 	Content interface{}
+	err     error
 	*baseResponse
 }
 
@@ -27,40 +27,40 @@ func GetObjectResponse() *ObjectResponse {
 	return objectResponsePool.Get().(*ObjectResponse)
 }
 
-func (r *ObjectResponse) GetContent(errs ...error) interface{} {
-	if r.Content != nil {
-		return r.Content
-	}
-	if len(errs) > 0 {
-		return errs[0]
-	}
+func (r *ObjectResponse) GetContent() interface{} {
 	return r.Content
 }
 
-func (r *ObjectResponse) Success(v ...interface{}) *ObjectResponse {
+func (r *ObjectResponse) Success(v interface{}) {
 	r.Status = 200
-	if len(v) > 0 {
-		r.Content = v[0]
-		return r
-	}
-	return r
+	r.Content = v
+	return
+
 }
-func (r *ObjectResponse) SetContent(status int, content interface{}) *ObjectResponse {
+func (r *ObjectResponse) SetContent(status int, content interface{}) {
+	if status == 0 {
+		status = r.Status
+	}
+	switch content.(type) {
+	case HydraError:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(HydraError).error
+	case error:
+		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.err = content.(error)
+	default:
+		r.Status = types.DecodeInt(status, 0, 200, status)
+	}
 	r.Status = types.DecodeInt(status, 0, 200, status)
 	r.Content = content
-	return r
+	return
+}
+
+func (r *ObjectResponse) GetError() error {
+	return r.err
 }
 func (r *ObjectResponse) Close() {
 	r.Content = nil
 	r.Params = make(map[string]interface{})
-	r.Params["__view"] = "NONE"
 	objectResponsePool.Put(r)
-}
-func (r *ObjectResponse) SetError(status int, err error) {
-	if err != nil {
-		r.Status = types.DecodeInt(status, 0, 500, status)
-		r.Content = err
-		return
-	}
-	r.Status = types.DecodeInt(status, 0, 200, status)
 }

@@ -1,6 +1,0 @@
-{
-    "status": "start",
-    "address":":8800",
-    "metric": "#@path/metric",
-    "router": "#@path/router"
-}

@@ -9,13 +9,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/profile"
-	"github.com/qxnw/hydra/server"
-	"github.com/qxnw/hydra/server/api"
-
 	"sync"
 
+	"github.com/pkg/profile"
+	"github.com/qxnw/hydra/servers"
+
 	"runtime/debug"
+
+	xhttp "github.com/qxnw/hydra/servers/http"
 
 	"github.com/qxnw/hydra/conf"
 
@@ -29,23 +30,19 @@ import (
 //Version 当前版本号
 var Version string
 
-func init() {
-	Version = "2.0.0.1"
-}
-
 //Hydra Hydra server
 type Hydra struct {
 	system       string
 	collectIndex int
 	*logger.Logger
-	watcher      conf.Watcher
-	servers      map[string]*Server
-	notify       chan *conf.Updater
-	closedNotify chan struct{}
-	closeChan    chan struct{}
-	done         bool
-	mu           sync.Mutex
-	ws           *api.HTTPServer
+	watcher       conf.Watcher
+	servers       map[string]*Server
+	notify        chan *conf.Updater
+	closedNotify  chan struct{}
+	closeChan     chan struct{}
+	done          bool
+	mu            sync.Mutex
+	healthChecker *xhttp.ApiServer
 	*HFlags
 }
 
@@ -69,7 +66,7 @@ func (h *Hydra) Start() (err error) {
 		h.Error(err)
 		return
 	}
-	if !server.IsDebug {
+	if !servers.IsDebug {
 		logger.AddWriteThread(49) //非调试模式时设置日志写协程数为50个
 	}
 	//检查是否配置RPC日志服务
@@ -80,25 +77,6 @@ func (h *Hydra) Start() (err error) {
 			return
 		}
 		h.Info("hydra:启用RPC日志")
-	}
-	//启动服务器状态查询服务
-	if err = h.StartStatusServer(h.Domain); err != nil {
-		return
-	}
-
-	//启用项目性能跟踪
-	switch h.trace {
-	case "cpu":
-		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "mem":
-		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "block":
-		defer profile.Start(profile.BlockProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "mutex":
-		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
-	case "web":
-		go StartTraceServer(h.Logger)
-	default:
 	}
 
 	//启动服务器配置监控
@@ -115,7 +93,27 @@ func (h *Hydra) Start() (err error) {
 	}
 	go h.loopRecvNotify()
 	go h.freeMemory()
-	h.Infof("启动 hydra server(%s,%s)...", h.tag, h.runMode)
+	h.Infof("启动 hydra server(%s,%s,v:%s)...", h.tag, h.runMode, Version)
+
+	//启动服务器状态查询服务
+	if err = h.StartStatusServer(h.Domain); err != nil {
+		return
+	}
+
+	//启用项目性能跟踪
+	switch h.trace {
+	case "cpu":
+		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mem":
+		defer profile.Start(profile.MemProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "block":
+		defer profile.Start(profile.BlockProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "mutex":
+		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
+	case "web":
+		go StartTraceServer(h.Domain, h.tag, h.Logger)
+	default:
+	}
 
 	//监听操作系统事件ctrl+c, kill
 	interrupt := make(chan os.Signal, 1)
@@ -125,7 +123,7 @@ LOOP:
 	for {
 		select {
 		case <-interrupt:
-			h.Warnf("hydra server(%s) was killed", h.Domain)
+			h.Warnf("hydra server was killed(%s,%s,v:%s)...", h.tag, h.runMode, Version)
 			h.done = true
 			break LOOP
 		}
@@ -145,6 +143,7 @@ LOOP:
 				break LOOP
 			}
 			u.Conf.Set("tag", h.tag)
+			u.Conf.Set("healthChecker", h.healthChecker.GetAddress())
 			switch u.Op {
 			case registry.ADD:
 				h.mu.Lock()
@@ -174,8 +173,8 @@ LOOP:
 			break
 		}
 	}
-	for name, srv := range h.servers {
-		h.Warnf("关闭服务器：%s", name)
+	for _, srv := range h.servers {
+		srv.logger.Warnf("关闭服务器：%s.%s(%s)", srv.serverName, srv.serverType, srv.tag)
 		srv.Shutdown()
 	}
 	h.closedNotify <- struct{}{}
@@ -184,7 +183,7 @@ LOOP:
 
 //获取服务器名称
 func (h *Hydra) getServerName(cnf conf.Conf) string {
-	return fmt.Sprintf("%s(%s)", cnf.String("name"), cnf.String("type"))
+	return fmt.Sprintf("%s.%s(%s)", cnf.String("name"), cnf.String("type"), cnf.String("tag"))
 }
 
 //添加新服务器
@@ -193,13 +192,15 @@ func (h *Hydra) addServer(cnf conf.Conf) error {
 	if _, ok := h.servers[name]; ok {
 		return errServerIsExist
 	}
-	srv := NewHydraServer(h.Domain, h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress, h.Logger)
+
+	srv := NewHydraServer(h.Domain, cnf.String("tag"), h.runMode, h.currentRegistry, h.currentRegistryAddress, h.crossRegistryAddress)
+
 	err := srv.Start(cnf)
 	if err != nil {
 		return err
 	}
 	h.servers[name] = srv
-	h.Logger.Infof("启动成功:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
+	srv.logger.Infof("启动成功:%s(addr:%s,srvs:%d)", name, srv.address, len(srv.localServices))
 	return nil
 }
 
@@ -218,7 +219,7 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 	}
 
 	err := srv.Notify(cnf)
-	if err != nil || srv.GetStatus() == server.ST_STOP {
+	if err != nil || srv.GetStatus() == servers.ST_STOP {
 		err = fmt.Errorf("server启动失败:%s:%v", name, err)
 		h.deleteServer(cnf)
 		srv.Shutdown()
@@ -244,7 +245,8 @@ func (h *Hydra) changeServer(cnf conf.Conf) error {
 			break
 		}
 	}
-	return err
+	h.Logger.Infof("%s:配置更新完成", name)
+	return nil
 }
 
 //根据配置删除服务器

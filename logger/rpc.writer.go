@@ -46,7 +46,7 @@ func newRPCWriter(domain string, address string, logger *logger.Logger) (r *rpcW
 		err = fmt.Errorf("初始化注册中心失败：%s:%v", address, err)
 		return nil, err
 	}
-	path := fmt.Sprintf("%s/var/global/logger", domain)
+	path := fmt.Sprintf("/%s/var/global/logger", domain)
 	buff, err := r.getConfig(registry, path)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (r *rpcWriter) Write(p []byte) (n int, err error) {
 	p = append(p, byte(']'))
 	dst := snappy.Encode(nil, p)
 	str := fmt.Sprintf("%s", string(dst))
-	_, _, _, err = r.rpcInvoker.Request(r.service, map[string]string{
+	_, _, _, err = r.rpcInvoker.Request(r.service, "GET", map[string]string{}, map[string]string{
 		"__body": str,
 	}, true)
 	if err != nil && !r.writeError {

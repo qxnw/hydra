@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/client/rpc/balancer"
-	"github.com/qxnw/hydra/server/rpc/pb"
+	"github.com/qxnw/hydra/servers/rpc/pb"
 	"github.com/qxnw/lib4go/logger"
 
 	"errors"
@@ -89,7 +89,7 @@ func NewClient(address string, opts ...ClientOption) (*Client, error) {
 	grpclog.SetLogger(client.log)
 	err := client.connect()
 	if err != nil {
-		err = fmt.Errorf("rpc.client连接到服务器失败:%s(err:%v)", address, err)
+		err = fmt.Errorf("rpc.client连接到服务器失败:%s(%v)(err:%v)", address, client.connectionTimeout, err)
 		return nil, err
 	}
 	return client, err
@@ -115,8 +115,14 @@ func (c *Client) connect() (err error) {
 }
 
 //Request 发送Request请求
-func (c *Client) Request(service string, input map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
-	response, err := c.client.Request(context.Background(), &pb.RequestContext{Service: service, Args: input},
+func (c *Client) Request(service string, method string, header map[string]string, form map[string]string, failFast bool) (status int, result string, param map[string]string, err error) {
+	response, err := c.client.Request(context.Background(),
+		&pb.RequestContext{
+			Method:  method,
+			Service: service,
+			Header:  header,
+			Form:    form,
+		},
 		grpc.FailFast(failFast))
 	if err != nil {
 		status = 500
@@ -124,7 +130,7 @@ func (c *Client) Request(service string, input map[string]string, failFast bool)
 	}
 	status = int(response.Status)
 	result = response.GetResult()
-	param = response.Params
+	param = response.Header
 	return
 }
 
