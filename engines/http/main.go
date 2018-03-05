@@ -10,5 +10,5 @@ func LoadService(r *component.StandardComponent, c component.IContainer) {
 	r.AddMicroService("/http/request", Request(c), "http")
 }
 func init() {
-	engines.AddServiceLoader("http", LoadService)
+	engines.AddLoader("http", LoadService)
 }

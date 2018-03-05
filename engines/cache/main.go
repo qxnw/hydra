@@ -13,5 +13,5 @@ func LoadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddMicroService("/cache/memcached/delay", Delay(i), "cache")
 }
 func init() {
-	engines.AddServiceLoader("cache", LoadService)
+	engines.AddLoader("cache", LoadService)
 }

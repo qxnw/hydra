@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/qxnw/hydra/engines"
+
 	"sync"
 
 	"github.com/pkg/profile"
@@ -22,9 +24,24 @@ import (
 
 	"github.com/qxnw/hydra/registry"
 
+	_ "github.com/go-sql-driver/mysql"
 	log "github.com/qxnw/hydra/logger"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/spf13/pflag"
+
+	_ "github.com/qxnw/hydra/conf/cluster"
+	_ "github.com/qxnw/hydra/conf/standalone"
+	_ "github.com/qxnw/hydra/servers/cron"
+	_ "github.com/qxnw/hydra/servers/http"
+	_ "github.com/qxnw/hydra/servers/mqc"
+	_ "github.com/qxnw/hydra/servers/rpc"
+	_ "github.com/qxnw/lib4go/cache/memcache"
+	_ "github.com/qxnw/lib4go/cache/redis"
+	_ "github.com/qxnw/lib4go/mq/redis"
+	_ "github.com/qxnw/lib4go/mq/stomp"
+	_ "github.com/qxnw/lib4go/mq/xmq"
+	_ "github.com/qxnw/lib4go/queue"
+	_ "github.com/qxnw/lib4go/queue/redis"
 )
 
 //Version 当前版本号
@@ -44,6 +61,14 @@ type Hydra struct {
 	mu            sync.Mutex
 	healthChecker *xhttp.ApiServer
 	*HFlags
+}
+
+//New 初始化hydra服务
+func New(loaders ...engines.ServiceLoader) *Hydra {
+	for _, loader := range loaders {
+		engines.AddGoLoader(loader)
+	}
+	return NewHydra()
 }
 
 //NewHydra 初始化Hydra服务

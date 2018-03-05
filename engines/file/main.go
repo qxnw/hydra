@@ -11,5 +11,5 @@ func LoadService(r *component.StandardComponent, i component.IContainer) {
 }
 
 func init() {
-	engines.AddServiceLoader("file", LoadService)
+	engines.AddLoader("file", LoadService)
 }

@@ -18,5 +18,5 @@ func loadService(r *component.StandardComponent, i component.IContainer) {
 
 }
 func init() {
-	engines.AddServiceLoader("registry", loadService)
+	engines.AddLoader("registry", loadService)
 }

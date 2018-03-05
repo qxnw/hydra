@@ -42,8 +42,8 @@ func setRouters(engine *gin.Engine, routers []*conf.Router) (err error) {
 			engine.Handle(strings.ToUpper(method), router.Name, router.Handler.(gin.HandlerFunc))
 		}
 	}
-	engine.StaticFile("/favicon.ico", "./favicon.ico")
-	engine.StaticFile("/robots.txt", "./robots.txt")
+	//engine.StaticFile("/favicon.ico", "./favicon.ico")
+	//engine.StaticFile("/robots.txt", "./robots.txt")
 	return nil
 }
 

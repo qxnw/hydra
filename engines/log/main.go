@@ -10,5 +10,5 @@ func LoadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddMicroService("/log/error", WriteErrorLog(), "log")
 }
 func init() {
-	engines.AddServiceLoader("log", LoadService)
+	engines.AddLoader("log", LoadService)
 }
