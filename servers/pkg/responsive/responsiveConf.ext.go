@@ -107,7 +107,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 	defAction := "get"
 	routers, err := s.Nconf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("路由配置有误:%v", err)
 	}
 	rrts = make([]*conf.Router, 0, 4)
 	baseArgs := routers.String("args")
