@@ -171,8 +171,8 @@ func (s *ResponsiveConf) GetStatic() (enable bool, prefix, dir string, showDir b
 	showDir = static.String("showDir") == "true"
 	exts = static.Strings("exts")
 	enable, _ = static.Bool("enable", true)
-	if dir == "" {
-		err = errors.New("static配置错误：dir不能为空")
+	if dir == "" || prefix == "" {
+		err = errors.New("static配置错误：dir,prefix不能为空")
 		return false, prefix, dir, showDir, exts, err
 	}
 	return enable, prefix, dir, showDir, exts, nil
@@ -318,10 +318,10 @@ func (s *ResponsiveConf) GetCircuitBreaker() (breaker *conf.CircuitBreaker, err 
 		return nil, err
 	}
 	breaker = &conf.CircuitBreaker{}
-	breaker.AutoBreak, _ = tasks.Bool("auto-break", false)
+	breaker.Enable, _ = tasks.Bool("enable", true)
 	breaker.ForceBreak, _ = tasks.Bool("force-break", false)
 	breaker.SwitchWindow, _ = tasks.Int("swith-window", 0)
-	if !breaker.AutoBreak {
+	if !breaker.Enable {
 		return breaker, nil
 	}
 	breakers, err := tasks.GetSections("circuit-breakers")

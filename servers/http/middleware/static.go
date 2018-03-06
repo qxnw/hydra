@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -11,126 +10,86 @@ import (
 )
 
 type StaticOptions struct {
-	Enable     bool
-	RootPath   string
-	Prefix     string
-	Exclude    []string
-	FilterExts []string
+	Enable   bool
+	RootPath string
+	Prefix   string
+	Exclude  []string
+	Exts     []string
+}
+
+func (s *StaticOptions) checkExt(rPath string) bool {
+	name := filepath.Base(rPath)
+	for _, v := range s.Exclude {
+		if name == v {
+			return true
+		}
+	}
+	hasExt := strings.Contains(filepath.Ext(name), ".")
+	if len(s.Exts) > 0 {
+		if s.Exts[0] == "*" && (rPath == "/" || hasExt) {
+			return true
+		}
+		pExt := filepath.Ext(name)
+		for _, ext := range s.Exts {
+			if pExt == ext {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 //MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
-func (s *StaticOptions) MustStatic(rPath string) int {
-	if s.Prefix != "/" && strings.HasPrefix(rPath, s.Prefix) {
-		return 1
+func (s *StaticOptions) MustStatic(rPath string) (b bool, xname string) {
+	if len(rPath) < len(s.Prefix) {
+		return s.checkExt(rPath), rPath
 	}
-	rPath = rPath[len(s.Prefix):]
-	dir := filepath.Dir(rPath)
-	//检查是否排除特殊名称
-	for _, v := range s.Exclude {
-		if strings.Contains(dir, v) {
-			return 0
-		}
+	if strings.HasPrefix(rPath, s.Prefix) {
+		return true, strings.TrimPrefix(rPath, s.Prefix)
 	}
-	if len(s.FilterExts) > 0 {
-		for _, ext := range s.FilterExts {
-			if filepath.Ext(rPath) == ext {
-				return 1
-			}
-		}
-		return 0
-	}
-	return 2
+	b = s.checkExt(rPath)
+	xname = strings.TrimPrefix(rPath, s.Prefix)
+	return
 }
-
-//Prepare 准备初始参数
-func (s *StaticOptions) Prepare() {
-	if len(s.Exclude) == 0 {
-		s.Exclude = append(s.Exclude, "bin", "conf")
+func (s *StaticOptions) getDefPath(p string) string {
+	if p == "" || p == "/" {
+		return "index.html"
 	}
-	if s.RootPath == "" {
-		s.RootPath = "../"
-	}
-	if s.Prefix == "" {
-		s.Prefix = "/"
-	}
-	if s.Prefix[0] != '/' {
-		s.Prefix = "/" + s.Prefix
-	}
+	return p
 }
 
 //Static 静态文件处理插件
 func Static(opt *StaticOptions) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if ctx.Request.Method != "GET" && ctx.Request.Method != "HEAD" {
+		if !opt.Enable || ctx.Request.Method != "GET" && ctx.Request.Method != "HEAD" {
 			ctx.Next()
 			return
 		}
 		var rPath = ctx.Request.URL.Path
-		//处理特殊文件 /favicon.ico
-		if rPath == "/favicon.ico" || rPath == "/robots.txt" {
-			file := path.Join(".", rPath)
-			_, err := os.Stat(file)
-			if os.IsNotExist(err) {
-				ctx.AbortWithError(404, fmt.Errorf("static:找不到文件:%s", rPath))
-				return
-			}
-			if err != nil {
-				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", rPath, err))
-				return
-			}
-			ctx.File(file)
-			return
-		}
-		if !opt.Enable {
-			ctx.Next()
-			return
-		}
-		s := opt.MustStatic(rPath)
-		fmt.Println("static", rPath, s)
-		switch s {
-		case 0:
-			ctx.Next()
-			return
-		case 1:
-			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath[len(opt.Prefix):]))
+		s, xname := opt.MustStatic(rPath)
+		if s {
+			setExt(ctx, "static")
+			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, opt.getDefPath(xname)))
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if os.IsNotExist(err) {
-					fmt.Println(fmt.Errorf("找不到文件:%s", fPath))
 					ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 					return
 				}
-				fmt.Println(fmt.Errorf("500找不到文件:%s %v", fPath, err))
 				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
 				return
 			}
 			if finfo.IsDir() {
-				fmt.Println(fmt.Errorf("找不到文件:%s", fPath))
 				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
 				return
 			}
 			//文件已存在，则返回文件
-			fmt.Println(fmt.Errorf("文件已存在，则返回文件:%s", fPath))
 			ctx.File(fPath)
-			return
-		case 2:
-			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, rPath))
-			finfo, err := os.Stat(fPath)
-			if err != nil {
-				if os.IsNotExist(err) {
-					ctx.Next()
-					return
-				}
-				ctx.AbortWithError(500, fmt.Errorf("读取文件%s错误,err:%v", fPath, err))
-				return
-			}
-			if finfo.IsDir() {
-				ctx.Next()
-				return
-			}
-			//文件已存在，则返回文件
-			ctx.File(fPath)
+			ctx.Abort()
 			return
 		}
+		ctx.Next()
+		return
+
 	}
 }

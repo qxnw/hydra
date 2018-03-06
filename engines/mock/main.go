@@ -10,5 +10,5 @@ func LoadService(r *component.StandardComponent, c component.IContainer) {
 	r.AddAutoflowService("/mock/raw/request", RawRequest(c), "mock")
 }
 func init() {
-	engines.AddServiceLoader("mock", LoadService)
+	engines.AddLoader("mock", LoadService)
 }

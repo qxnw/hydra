@@ -10,5 +10,5 @@ func LoadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddMicroService("/influx/save", Save(i), "influx")
 }
 func init() {
-	engines.AddServiceLoader("influx", LoadService)
+	engines.AddLoader("influx", LoadService)
 }

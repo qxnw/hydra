@@ -13,7 +13,8 @@ type IComponent interface {
 	IsAutoflowService(service string) bool
 	IsPageService(service string) bool
 	IsCustomerService(group string, service string) bool
-
+	GetFallbackHandlers() map[string]interface{}
+	AddFallbackHandlers(map[string]interface{})
 	LoadServices() error
 
 	GetGroupServices(group string) []string

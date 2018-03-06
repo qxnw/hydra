@@ -14,6 +14,7 @@ type IContainer interface {
 	GetVarParam(tp string, name string) (string, error)
 	GetDomainName() string
 	GetServerName() string
+	GetServerType() string
 	GetRegistry() registry.Registry
 	GetDefaultCache() (c cache.ICache, err error)
 	GetCache(name string) (c cache.ICache, err error)

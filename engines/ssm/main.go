@@ -12,5 +12,5 @@ func loadService(r *component.StandardComponent, c component.IContainer) {
 
 }
 func init() {
-	engines.AddServiceLoader("ssm", loadService)
+	engines.AddLoader("ssm", loadService)
 }

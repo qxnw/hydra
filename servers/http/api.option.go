@@ -45,16 +45,16 @@ func WithStatic(enable bool, prefix string, dir string, listDir bool, exts []str
 	return func(o *option) {
 		if o.static == nil {
 			o.static = &middleware.StaticOptions{
-				Enable:     enable,
-				Prefix:     prefix,
-				RootPath:   dir,
-				FilterExts: exts,
+				Enable:   enable,
+				Prefix:   prefix,
+				RootPath: dir,
+				Exts:     exts,
 			}
 			return
 		}
 		o.static.Enable = enable
 		o.static.Prefix = prefix
 		o.static.RootPath = dir
-		o.static.FilterExts = exts
+		o.static.Exts = exts
 	}
 }

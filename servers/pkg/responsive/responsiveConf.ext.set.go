@@ -276,12 +276,12 @@ type ISetCircuitBreaker interface {
 func (s *ResponsiveConf) SetCircuitBreaker(set ISetCircuitBreaker) (enable bool, err error) {
 	//设置CircuitBreaker
 	breaker, err := s.GetCircuitBreaker()
-	if err == conf.ErrNoSetting {
+	if err == conf.ErrNoSetting || !breaker.Enable {
 		return false, set.CloseCircuitBreaker()
 	}
 	if err != nil {
 		return false, err
 	}
 	err = set.SetCircuitBreaker(breaker)
-	return err == nil, err
+	return err == nil && breaker.Enable, err
 }

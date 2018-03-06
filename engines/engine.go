@@ -61,7 +61,6 @@ func NewServiceEngine(domain string, serverName string, serverType string, regis
 	}
 	e.StandardComponent.AddRPCProxy(e.RPCProxy())
 	err = e.StandardComponent.LoadServices()
-	e.logger.Debug("service-FallbackHandlers:", e.StandardComponent.FallbackHandlers)
 	return
 }
 
@@ -119,7 +118,12 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	}
 	response := context.GetStandardResponse()
 	response.SetStatus(404)
-	return response, fmt.Errorf("%s未找到服务:%s", r.Name, service)
+	return response, fmt.Errorf("%s未找到服务:%s %v", r.Name, service, r.getServiceMeta(engine, service))
+}
+func (r *ServiceEngine) getServiceMeta(engine string, service string) string {
+	return fmt.Sprintf(`engine:[%s]-%v
+		group:[%s]-%s`, engine, r.GetTags(service), component.GetGroupName(r.serverType),
+		r.GetGroups(service))
 }
 
 //GetRegistry 获取注册中心
@@ -135,6 +139,11 @@ func (r *ServiceEngine) GetDomainName() string {
 //GetServerName 获取服务器名称
 func (r *ServiceEngine) GetServerName() string {
 	return r.serverName
+}
+
+//GetServerType 获取服务器类型
+func (r *ServiceEngine) GetServerType() string {
+	return r.serverType
 }
 
 //Close 关闭引擎

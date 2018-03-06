@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/qxnw/hydra/servers/pkg/circuit"
 
 	"github.com/gin-gonic/gin"
@@ -14,14 +12,12 @@ func CircuitBreak(conf *conf.ServerConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		circuitBreaker, ok := conf.GetMetadata("__circuit-breaker_").(*circuit.NamedCircuitBreakers)
 		if !ok {
-			fmt.Println("no.breaker")
 			ctx.Next()
 			return
 		}
 		url := ctx.Request.URL.Path
 		breaker := circuitBreaker.GetBreaker(url)
 		isOpen, allowRequest := breaker.GetCircuitStatus()
-		fmt.Println("isOpen,allowRequest:", isOpen, allowRequest)
 		setIsCircuitBreaker(ctx, isOpen)
 		if !allowRequest {
 			breaker.ReportEvent(circuit.EventReject, 1)
@@ -41,7 +37,7 @@ func CircuitBreak(conf *conf.ServerConf) gin.HandlerFunc {
 			breaker.ReportEvent(circuit.EventFailure, 1)
 			return
 		}
-		setFallback(ctx)
+		setExt(ctx, "fb")
 		if success {
 			breaker.ReportEvent(circuit.EventFallbackSuccess, 1)
 			return

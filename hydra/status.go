@@ -34,7 +34,7 @@ var statusLocalPort = []int{10160, 10161, 10162, 10163, 10164, 10165, 10166, 101
 
 //StartStatusServer 启动状态服务器
 func (h *Hydra) StartStatusServer(domain string) (err error) {
-	conf := conf.NewConf(domain, "status", "api", h.tag, "", "", 3)
+	conf := conf.NewConf(domain, "health-checker", "api", h.tag, "", "", 3)
 	h.healthChecker, err = xhttp.NewApiServer(conf, nil, xhttp.WithIP(conf.IP), xhttp.WithLogger(h.Logger))
 	if err != nil {
 		h.Error("health-checker:", err)

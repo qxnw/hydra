@@ -155,7 +155,7 @@ type Task struct {
 
 type CircuitBreaker struct {
 	ForceBreak      bool                `json:"force-break"`
-	AutoBreak       bool                `json:"auto-break"`
+	Enable          bool                `json:"enable"`
 	SwitchWindow    int                 `json:"swith-window"`
 	CircuitBreakers map[string]*Breaker `json:"circuit-breakers"`
 }

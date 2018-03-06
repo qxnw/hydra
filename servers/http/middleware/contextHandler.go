@@ -32,11 +32,11 @@ func setStartTime(c *gin.Context) {
 	c.Set("__start_time_", time.Now())
 }
 
-func setFallback(c *gin.Context) {
-	c.Set("__fallback_executed_", "fb")
+func setExt(c *gin.Context, name string) {
+	c.Set("__ext_param_name_", name)
 }
-func getFallback(c *gin.Context) string {
-	if f, ok := c.Get("__fallback_executed_"); ok {
+func getExt(c *gin.Context) string {
+	if f, ok := c.Get("__ext_param_name_"); ok {
 		return f.(string)
 	}
 	return ""

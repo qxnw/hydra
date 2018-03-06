@@ -20,5 +20,5 @@ func loadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddAutoflowService("/monitor/queue/count", CollectQueueMessageCount(i), "monitor")
 }
 func init() {
-	engines.AddServiceLoader("monitor", loadService)
+	engines.AddLoader("monitor", loadService)
 }

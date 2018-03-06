@@ -33,5 +33,5 @@ func LoadService(r *component.StandardComponent, i component.IContainer) {
 	r.AddAutoflowService("/alarm/notify/send", SendAlarmNotify(i), "alarm")
 }
 func init() {
-	engines.AddServiceLoader("alarm", LoadService)
+	engines.AddLoader("alarm", LoadService)
 }
