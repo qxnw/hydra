@@ -47,15 +47,15 @@ hydra是一个能够快速开发http接口, web应用，RPC服务，流程服务
           + [附加header](https://github.com/qxnw/hydra/blob/master/quickstart/api/6.api_header.md)
       * rpc服务器
           + 路由配置
-          + 安全选项
+          + [jwt选项](https://github.com/qxnw/hydra/blob/master/quickstart/api/5.api_auth.md)
           + 限流配置
-          + metric
+          + [metric](https://github.com/qxnw/hydra/blob/master/quickstart/api/4.api_metric.md)
       * mq consumer
           + 队列配置
-          + metric
+          + [metric](https://github.com/qxnw/hydra/blob/master/quickstart/api/4.api_metric.md)
       * 定时服务
           + 任务配置
-          + metric
+          + [metric](https://github.com/qxnw/hydra/blob/master/quickstart/api/4.api_metric.md)
 3. 日志组件
 4. Context
       * 输入参数
