@@ -35,9 +35,9 @@ func APIResponse(conf *conf.ServerConf) gin.HandlerFunc {
 			if content, ok := response.GetContent().(string); ok {
 				if (strings.HasPrefix(content, "[") || strings.HasPrefix(content, "{")) &&
 					(strings.HasSuffix(content, "}") || strings.HasSuffix(content, "]")) {
-					ctx.SecureJSON(response.GetStatus(), response.GetContent())
+					ctx.SecureJSON(response.GetStatus(), content)
 				} else {
-					ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
+					ctx.Data(response.GetStatus(), "text/plain", []byte(content))
 				}
 				return
 			}

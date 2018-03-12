@@ -104,7 +104,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 	if !s.HasNode("router") {
 		return nil, conf.ErrNoSetting
 	}
-	defAction := "get"
+	defAction := "GET"
 	routers, err := s.Nconf.GetNodeWithSectionName("router", "#@path/router")
 	if err != nil {
 		return nil, fmt.Errorf("路由配置有误:%v", err)
@@ -130,7 +130,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 		for _, v := range actions {
 			exist := false
 			for _, e := range supportMethods {
-				if v == e {
+				if strings.ToUpper(v) == e {
 					exist = true
 					break
 				}

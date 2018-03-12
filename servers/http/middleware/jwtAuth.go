@@ -47,6 +47,9 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.ServerConf, data interface{}) {
 	if data == nil {
 		data = getJWTRaw(ctx)
 	}
+	if data == nil {
+		return
+	}
 	jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
 	if !ok || !jwtAuth.Enable {
 		return

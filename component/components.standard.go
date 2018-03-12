@@ -29,6 +29,7 @@ var ErrNotFoundService = errors.New("未找到服务")
 
 //StandardComponent 标准组件
 type StandardComponent struct {
+	HandlerCache     map[string]map[string]interface{} //handler缓存
 	Container        IContainer
 	Name             string                            //组件名称
 	funcs            map[string]map[string]interface{} //每个分组对应的服务及处理程序
@@ -46,6 +47,7 @@ type StandardComponent struct {
 //NewStandardComponent 构建标准组件
 func NewStandardComponent(componentName string, c IContainer) *StandardComponent {
 	r := &StandardComponent{Name: componentName, Container: c}
+	r.HandlerCache = make(map[string]map[string]interface{})
 	r.funcs = make(map[string]map[string]interface{})
 	r.Handlers = make(map[string]interface{})
 	r.FallbackHandlers = make(map[string]interface{})
@@ -153,9 +155,18 @@ func (r *StandardComponent) addTags(service string, tags ...string) {
 		r.TagServices[tag] = append(r.TagServices[tag], service)
 	}
 }
+func (r *StandardComponent) addToCache(group string, service string, handler interface{}) {
+	if _, ok := r.HandlerCache[group]; !ok {
+		r.HandlerCache[group] = make(map[string]interface{})
+	}
+	if _, ok := r.HandlerCache[group][service]; !ok {
+		r.HandlerCache[group][service] = handler
+	}
+}
 
 //addService 添加服务处理程序
 func (r *StandardComponent) addService(group string, service string, h interface{}) {
+	r.addToCache(group, service, h)
 	r.register(group, service, h)
 	return
 }
@@ -318,7 +329,7 @@ func (r *StandardComponent) callFuncType(name string, h interface{}) (i interfac
 			}
 		}
 	}
-
+	fmt.Printf("%s:%+v\n", name, rvalue[0].Interface())
 	return rvalue[0].Interface(), nil
 }
 
@@ -379,6 +390,14 @@ func (r *StandardComponent) GetTags(service string) []string {
 //GetFallbackHandlers 获取fallback处理程序
 func (r *StandardComponent) GetFallbackHandlers() map[string]interface{} {
 	return r.FallbackHandlers
+}
+
+//GetCachedHandler 获取已缓存的handler
+func (r *StandardComponent) GetCachedHandler(group string, service string) interface{} {
+	if srvs, ok := r.HandlerCache[group]; ok {
+		return srvs[service]
+	}
+	return nil
 }
 
 //AddFallbackHandlers 添加降级函数

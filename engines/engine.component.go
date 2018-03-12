@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/qxnw/hydra/component"
-	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/file"
 )
 
@@ -61,6 +60,8 @@ func loadComponent(path string, wkr func(component.IContainer) (component.ICompo
 	}
 	return rwrk, nil
 }
+
+/*
 func handler(f component.IComponent) component.ServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
 		if r, err := f.Handling(name, mode, service, ctx); err != nil {
@@ -76,7 +77,7 @@ func handler(f component.IComponent) component.ServiceFunc {
 		return rx, nil
 	}
 }
-
+*/
 //LoadComponents 加载所有插件
 func (r *ServiceEngine) LoadComponents(files ...string) error {
 	for _, file := range files {
@@ -98,13 +99,16 @@ func (r *ServiceEngine) LoadComponents(files ...string) error {
 			continue
 		}
 		services := cmp.GetGroupServices(component.GetGroupName(r.serverType))
+		groupName := component.GetGroupName(r.serverType)
 		r.logger.Infof("加载组件:%s[%d] %v", file, len(services), services)
 		for _, srv := range services {
 			tags := cmp.GetTags(srv)
 			if len(tags) == 0 {
 				tags = []string{"go"}
 			}
-			r.AddCustomerTagsService(srv, handler(cmp), tags, component.GetGroupName(r.serverType))
+			if hander := r.GetCachedHandler(groupName, srv); hander != nil {
+				r.AddCustomerTagsService(srv, hander, tags, groupName)
+			}
 		}
 		r.AddFallbackHandlers(cmp.GetFallbackHandlers())
 	}
