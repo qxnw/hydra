@@ -125,9 +125,9 @@ type Logger struct {
 // The flag argument defines the logging properties.
 func New(out io.Writer, prefix string, flag int) *Logger {
 	l := &Logger{out: out, prefix: prefix, Level: 1, flag: flag, loc: time.Local}
-	if out != os.Stdout {
-		l.flag = RmColorFlags(l.flag)
-	}
+	//if out != os.Stdout {
+	//l.flag = RmColorFlags(l.flag)
+	//}
 	return l
 }
 
