@@ -62,7 +62,7 @@ func (s *ResponsiveConf) GetAuth(name string) (a *conf.Auth, err error) {
 	nm := xsrf.String("name")
 	mode := xsrf.String("mode", "HS512")
 	secret := xsrf.String("secret")
-	exclude := xsrf.Strings("exclude")
+	exclude := xsrf.Strings("excludes")
 	expireAt, _ := xsrf.Int("expireAt", 0)
 	enable, _ := xsrf.Bool("enable", true)
 	return &conf.Auth{Name: nm, Mode: mode, Secret: secret, Exclude: exclude, ExpireAt: int64(expireAt), Enable: enable}, nil
@@ -121,7 +121,7 @@ func (s *ResponsiveConf) GetRouters() (rrts []*conf.Router, err error) {
 	for _, c := range rts {
 		name := c.String("name")
 		service := c.String("service")
-		actions := strings.Split(strings.ToUpper(c.String("action", defAction)), ",")
+		actions := c.Strings("action", []string{defAction})
 		engine := c.String("engine", "*")
 		args := c.String("args")
 		if name == "" || service == "" {
