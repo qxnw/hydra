@@ -18,8 +18,8 @@ var (
 	VERSION = "2.0.1"
 )
 
+//dev-whj 分支
 func main() {
-	//分支测试
 	hydra.Version = VERSION
 	hydra := hydra.NewHydra()
 	defer hydra.Close()
