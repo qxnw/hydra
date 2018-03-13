@@ -29,6 +29,7 @@ import (
 	"github.com/qxnw/lib4go/logger"
 	"github.com/spf13/pflag"
 
+	_ "github.com/mattn/go-oci8"
 	_ "github.com/qxnw/hydra/conf/cluster"
 	_ "github.com/qxnw/hydra/conf/standalone"
 	_ "github.com/qxnw/hydra/servers/cron"
