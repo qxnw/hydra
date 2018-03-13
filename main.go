@@ -19,6 +19,7 @@ var (
 )
 
 func main() {
+	//分支测试
 	hydra.Version = VERSION
 	hydra := hydra.NewHydra()
 	defer hydra.Close()
