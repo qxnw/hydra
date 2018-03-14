@@ -139,6 +139,9 @@ func (s *ApiServer) getAddress(args ...interface{}) string {
 		}
 		if arg, ok := args[1].(int); ok {
 			port = arg
+		}else{
+			_port, _ := strconv.ParseInt(args[1].(string), 10, 0)
+			port = int(_port)
 		}
 	}
 
@@ -147,7 +150,7 @@ func (s *ApiServer) getAddress(args ...interface{}) string {
 			host = "0.0.0.0"
 		}
 	}
-	if port == 0 {
+	if port <= 0 {
 		port = 8000
 	}
 	s.port = port
