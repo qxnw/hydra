@@ -51,7 +51,8 @@ func NewApiResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 		Logger:      logger,
 		pubs:        make([]string, 0, 2),
 	}
-	if h.server, err = NewApiServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
+	addr:=[]interface{}{h.currentConf.GetString("address", ":80")}
+	if h.server, err = NewApiServer(addr,h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {
@@ -67,7 +68,8 @@ func (w *ApiResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 	w.done = false
 	w.closeChan = make(chan struct{})
 	w.once = sync.Once{}
-	if w.server, err = NewApiServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
+	addr:=[]interface{}{w.currentConf.GetString("address", ":80")}
+	if w.server, err = NewApiServer(addr,w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {
@@ -82,7 +84,7 @@ func (w *ApiResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 
 //Start 启用服务
 func (w *ApiResponsiveServer) Start() (err error) {
-	if err = w.server.Run(w.currentConf.GetString("address", ":80")); err != nil {
+	if err = w.server.Run(""); err != nil {
 		return
 	}
 	return w.publish()

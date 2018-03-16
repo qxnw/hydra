@@ -3,13 +3,16 @@ package http
 import (
 	"fmt"
 
+	x "net/http"
 	"github.com/qxnw/hydra/servers/pkg/circuit"
 	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 //SetRouters 设置路由配置
 func (s *ApiServer) SetRouters(routers []*conf.Router) (err error) {
-	s.engine.Handler, err = s.getHandler(routers)
+	apiEngine := s.engine.(*x.Server)
+	apiEngine.Handler,err = s.getHandler(routers)
+	s.engine = apiEngine
 	return
 }
 

@@ -14,18 +14,25 @@ import (
 	"github.com/qxnw/lib4go/logger"
 )
 
+//ApiEngine api服务引擎接口
+type ApiEngine interface{
+	ListenAndServe() error
+	ListenAndServeTLS(certFile, keyFile string) error
+	Shutdown(ctx context.Context) error
+}
+
 //ApiServer api服务器
 type ApiServer struct {
 	*option
 	conf    *conf.ServerConf
-	engine  *x.Server
+	engine  ApiEngine
 	running string
 	proto   string
 	port    int
 }
 
 //NewApiServer 创建api服务器
-func NewApiServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option) (t *ApiServer, err error) {
+func NewApiServer(address []interface{},conf *conf.ServerConf, routers []*conf.Router, opts ...Option) (t *ApiServer, err error) {
 	t = &ApiServer{conf: conf}
 	t.option = &option{metric: middleware.NewMetric(t.conf), static: &middleware.StaticOptions{Enable: false}}
 	for _, opt := range opts {
@@ -34,23 +41,25 @@ func NewApiServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option)
 	if t.Logger == nil {
 		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
 	}
-	t.engine = &x.Server{
+	apiEngine := &x.Server{
+		Addr:              t.getAddress(address...),
 		ReadHeaderTimeout: time.Second * time.Duration(conf.GetInt("readHeaderTimeout", 3)),
 		ReadTimeout:       time.Second * time.Duration(conf.GetInt("readTimeout", 3)),
 		WriteTimeout:      time.Second * time.Duration(conf.GetInt("writeTimeout", 3)),
 		MaxHeaderBytes:    1 << 20,
 	}
 	if routers != nil {
-		t.engine.Handler, err = t.getHandler(routers)
+		apiEngine.Handler, err = t.getHandler(routers)
 	}
+	t.engine = apiEngine
 	return
 }
 
 // Run the http server
 func (s *ApiServer) Run(address ...interface{}) error {
-	addr := s.getAddress(address...)
+	//addr := s.getAddress(address...)
 	s.proto = "http"
-	s.engine.Addr = addr
+	//s.engine.Addr = addr
 	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
@@ -69,9 +78,9 @@ func (s *ApiServer) Run(address ...interface{}) error {
 
 //RunTLS RunTLS server
 func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
-	addr := s.getAddress(address...)
+	//addr := s.getAddress(address...)
 	s.proto = "https"
-	s.engine.Addr = addr
+	//s.engine.Addr = addr
 	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
