@@ -13,10 +13,10 @@ import (
 func (w *RpcResponsiveServer) publish() (err error) {
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s", w.currentConf.ServerNode, ipPort)
+	pubPath := fmt.Sprintf("%s/%s", w.currentConf.GetServerType(), ipPort)
 	data := map[string]string{
-		"service":        addr,
-		"health-checker": w.currentConf.GetHealthChecker(),
+		"service": addr,
+		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)
@@ -27,14 +27,14 @@ func (w *RpcResponsiveServer) publish() (err error) {
 	}
 	w.pubs = []string{pubPath}
 
-	names := w.currentConf.GetHosts()
+	names := w.currentConf.GetStrings("host")
 	if len(names) == 0 {
-		names = append(names, w.currentConf.Name)
+		names = append(names, w.currentConf.GetSysName())
 	}
 	srvs := w.GetServices()
 	for _, host := range names {
 		for _, srv := range srvs {
-			servicePath := path.Join(w.currentConf.ServiceNode, host, srv, "providers", ipPort)
+			servicePath := path.Join(w.currentConf.GetServerType(), host, srv, "providers", ipPort)
 			err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
 			if err != nil {
 				err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)

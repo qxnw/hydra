@@ -12,8 +12,11 @@ type Handler interface {
 type option struct {
 	ip string
 	*logger.Logger
-	metric *middleware.Metric
-	static *middleware.StaticOptions
+	readTimeout       int
+	writeTimeout      int
+	readHeaderTimeout int
+	metric            *middleware.Metric
+	static            *middleware.StaticOptions
 }
 
 //Option 配置选项

@@ -9,7 +9,7 @@ import (
 type rpcServerAdapter struct {
 }
 
-func (h *rpcServerAdapter) Resolve(c servers.IRegistryEngine, conf conf.Conf, log *logger.Logger) (servers.IRegistryServer, error) {
+func (h *rpcServerAdapter) Resolve(c string, conf conf.IServerConf, log *logger.Logger) (servers.IRegistryServer, error) {
 	return NewMqcResponsiveServer(c, conf, log)
 }
 

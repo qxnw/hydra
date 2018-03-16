@@ -1,8 +1,10 @@
 package http
 
 import (
+	"fmt"
+
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/circuit"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 //SetRouters 设置路由配置
@@ -24,32 +26,30 @@ func (s *WebServer) SetAjaxRequest(allow bool) error {
 }
 
 //SetHosts 设置组件的host name
-func (s *WebServer) SetHosts(hosts []string) error {
-	if len(hosts) == 0 {
-		s.conf.Hosts = make([]string, 0, 0)
-		return nil
-	}
-	s.conf.Hosts = hosts
+func (s *WebServer) SetHosts(hosts conf.Hosts) error {
+	s.conf.SetMetadata("hosts", hosts)
 	return nil
 }
 
 //SetStatic 设置静态文件路由
-func (s *WebServer) SetStatic(enable bool, prefix string, dir string, listDir bool, exts []string) error {
-	s.static.Enable = enable
-	s.static.Prefix = prefix
-	s.static.RootPath = dir
-	s.static.Exts = exts
+func (s *WebServer) SetStatic(static *conf.Static) error {
+	s.conf.SetMetadata("static", static)
 	return nil
 }
 
 //SetMetric 重置metric
-func (s *WebServer) SetMetric(host string, dataBase string, userName string, password string, cron string) error {
-	return s.metric.Restart(host, dataBase, userName, password, cron, s.Logger)
+func (s *WebServer) SetMetric(metric *conf.Metric) error {
+	s.metric.Stop()
+	if err := s.metric.Restart(metric.Host, metric.DataBase, metric.UserName, metric.Password, metric.Cron, s.Logger); err != nil {
+		err = fmt.Errorf("metric设置有误:%v", err)
+		return err
+	}
+	return nil
 }
 
 //SetHeader 设置http头
-func (s *WebServer) SetHeader(headers map[string]string) error {
-	s.conf.Headers = headers
+func (s *WebServer) SetHeader(headers conf.Headers) error {
+	s.conf.SetMetadata("headers", headers)
 	return nil
 }
 

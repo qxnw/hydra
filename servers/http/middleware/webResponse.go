@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 
 	"github.com/gin-gonic/gin"
 )
 
 //WebResponse 处理web返回值
-func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
+func WebResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		ctx.Next()
@@ -43,7 +43,7 @@ func WebResponse(conf *conf.ServerConf) gin.HandlerFunc {
 		}
 	}
 }
-func renderHTML(ctx *gin.Context, response context.Response, cnf *conf.ServerConf) bool {
+func renderHTML(ctx *gin.Context, response context.Response, cnf *conf.MetadataConf) bool {
 	files, ok := cnf.GetMetadata("viewFiles").([]string)
 	if !ok {
 		return false

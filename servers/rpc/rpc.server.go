@@ -10,7 +10,7 @@ import (
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/rpc/pb"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 	"github.com/qxnw/lib4go/logger"
 	"google.golang.org/grpc"
@@ -19,7 +19,7 @@ import (
 //RpcServer rpc服务器
 type RpcServer struct {
 	*option
-	conf   *conf.ServerConf
+	conf   *conf.MetadataConf
 	engine *grpc.Server
 	*Processor
 	running string
@@ -29,14 +29,17 @@ type RpcServer struct {
 }
 
 //NewRpcServer 创建rpc服务器
-func NewRpcServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option) (t *RpcServer, err error) {
-	t = &RpcServer{conf: conf}
+func NewRpcServer(name string, address string, routers []*conf.Router, opts ...Option) (t *RpcServer, err error) {
+	t = &RpcServer{conf: &conf.MetadataConf{
+		Name: name,
+	}}
+	t.addr = t.getAddress(address)
 	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)
 	}
 	if t.Logger == nil {
-		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
+		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 	t.engine = grpc.NewServer()
 	if routers != nil {
@@ -45,23 +48,17 @@ func NewRpcServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option)
 			return
 		}
 	}
-	//else {
-	//t.Processor = NewProcessor()
-	//}
-
 	return
 }
 
 // Run the http server
-func (s *RpcServer) Run(address ...interface{}) error {
+func (s *RpcServer) Run() error {
 	pb.RegisterRPCServer(s.engine, s.Processor)
-	addr := s.getAddress(address...)
 	s.proto = "tcp"
-	s.addr = addr
 	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
-		lis, err := net.Listen("tcp", addr)
+		lis, err := net.Listen("tcp", s.addr)
 		if err != nil {
 			ch <- err
 			return
@@ -85,7 +82,7 @@ func (s *RpcServer) Shutdown(timeout time.Duration) {
 		s.running = servers.ST_STOP
 		s.engine.GracefulStop()
 		time.Sleep(time.Second)
-		s.Infof("%s:已关闭", s.conf.GetFullName())
+		s.Infof("%s:已关闭", s.conf.Name)
 
 	}
 }

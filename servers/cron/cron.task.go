@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/utility"

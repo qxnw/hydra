@@ -12,7 +12,6 @@ import (
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/utility"
 )
 
 func getUUID(c *gin.Context) string {
@@ -93,16 +92,9 @@ func getResponse(c *gin.Context) context.Response {
 }
 
 //ContextHandler api请求处理程序
-func ContextHandler(handler servers.IExecuter, name string, engine string, service string, setting string) gin.HandlerFunc {
+func ContextHandler(handler servers.IExecuter, name string, engine string, service string, mSetting map[string]string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		//处理输入参数
-		mSetting, err := utility.GetMapWithQuery(setting)
-		if err != nil {
-			resp := context.GetStandardResponse()
-			resp.SetContent(500, err)
-			setResponse(c, resp)
-			return
-		}
 		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c), getLogger(c))
 		defer ctx.Close()
 		defer setServiceName(c, ctx.Request.Translate(service, false))

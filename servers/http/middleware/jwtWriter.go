@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
-func JwtWriter(cnf *conf.ServerConf) gin.HandlerFunc {
+func JwtWriter(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Next()
 		if response := getResponse(ctx); response != nil {

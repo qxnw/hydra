@@ -1,7 +1,6 @@
 package component
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -25,15 +24,15 @@ func NewStandardConf(c IContainer) *StandardConf {
 }
 
 //GetConf 获取置信息
-func (s *StandardConf) GetConf(conf interface{}) (c interface{}, err error) {
+func (s *StandardConf) GetConf(obj interface{}) (c interface{}, err error) {
 	name := s.IContainer.GetServerName()
 	_, v, err := s.confCache.SetIfAbsentCb(name, func(input ...interface{}) (interface{}, error) {
 		name := input[0].(string)
-		content, err := s.IContainer.GetVarParam("conf", name)
+		conf, err := s.IContainer.GetVarConf("conf", name)
 		if err != nil {
 			return nil, err
 		}
-		err = json.Unmarshal([]byte(content), conf)
+		err = conf.Unmarshal(&obj)
 		if err != nil {
 			err = fmt.Errorf("conf配置文件错误:%v", err)
 			return nil, err

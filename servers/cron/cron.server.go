@@ -4,30 +4,31 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/net"
 )
 
 //CronServer cron服务器
 type CronServer struct {
 	*option
-	conf *conf.ServerConf
+	conf *conf.MetadataConf
 	*Processor
 	running string
 	addr    string
 }
 
 //NewCronServer 创建mqc服务器
-func NewCronServer(conf *conf.ServerConf, redisSetting string, tasks []*conf.Task, opts ...Option) (t *CronServer, err error) {
-	t = &CronServer{conf: conf}
+func NewCronServer(name string, redisSetting string, tasks []*conf.Task, opts ...Option) (t *CronServer, err error) {
+	t = &CronServer{conf: &conf.MetadataConf{Name: name}}
 	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)
 	}
 	if t.Logger == nil {
-		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
+		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 	if tasks != nil && len(tasks) > 0 {
 		err = t.SetTasks(redisSetting, tasks)
@@ -63,8 +64,7 @@ func (s *CronServer) Shutdown(time.Duration) {
 	if s.Processor != nil {
 		s.running = servers.ST_STOP
 		s.Processor.Close()
-		s.Warnf("%s:已关闭", s.conf.GetFullName())
-
+		s.Warnf("%s:已关闭", s.conf.Name)
 	}
 }
 
@@ -88,7 +88,7 @@ func (s *CronServer) Resume() error {
 
 //GetAddress 获取当前服务地址
 func (s *CronServer) GetAddress() string {
-	return fmt.Sprintf("cron://%s", s.conf.IP)
+	return fmt.Sprintf("cron://%s", net.GetLocalIPAddress())
 }
 
 //GetStatus 获取当前服务器状态

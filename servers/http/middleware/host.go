@@ -5,19 +5,20 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
 //Host 处理服务器的主机头
-func Host(conf *conf.ServerConf) gin.HandlerFunc {
+func Host(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if len(conf.Hosts) == 0 {
+		hosts, ok := cnf.GetMetadata("hosts").(conf.Hosts)
+		if !ok {
 			ctx.Next()
 			return
 		}
-		correct := checkHost(conf.Hosts, ctx)
+		correct := checkHost(hosts, ctx)
 		if !correct {
-			getLogger(ctx).Errorf("host:必须使用:%v访问", conf.Hosts)
+			getLogger(ctx).Errorf("host:必须使用:%v访问", hosts)
 			ctx.AbortWithStatus(x.StatusNotAcceptable)
 			return
 		}

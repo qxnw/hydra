@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) {
@@ -18,7 +18,7 @@ func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) 
 	}
 	engine := gin.New()
 	if s.views, err = s.loadHTMLGlob(engine); err != nil {
-		s.Logger.Warnf("%s未找到模板:%v", s.conf.GetFullName(), err)
+		s.Logger.Warnf("%s未找到模板:%v", s.conf.Name, err)
 		return nil, err
 	}
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
@@ -64,7 +64,7 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err er
 		engine.LoadHTMLFiles(viewFiles...)
 	}
 	s.conf.SetMetadata("viewFiles", viewFiles)
-	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Warnf, s.conf.GetFullName(),
+	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Warnf, s.conf.Name,
 		getEnableName(len(viewFiles) > 0), "view模板", strings.Join(viewFiles, "\n"))
 	return nil, nil
 }

@@ -3,7 +3,7 @@ package circuit
 import (
 	"sync"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
 type NamedCircuitBreakers struct {
@@ -34,7 +34,7 @@ func (c *NamedCircuitBreakers) getBreakerConf(url string) *conf.Breaker {
 
 //GetBreaker 获取当前URL的熔断信息
 func (c *NamedCircuitBreakers) GetBreaker(url string) *CircuitBreaker {
-	if !c.conf.Enable {
+	if c.conf.Disable {
 		return c.closedBreaker
 	}
 	if c.conf.ForceBreak {
@@ -57,6 +57,6 @@ func (c *NamedCircuitBreakers) GetBreaker(url string) *CircuitBreaker {
 
 //Close 关闭熔断配置
 func (c *NamedCircuitBreakers) Close() {
-	c.conf.Enable = false
+	c.conf.Disable = true
 	c.conf.ForceBreak = false
 }

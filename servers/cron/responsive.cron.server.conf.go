@@ -1,53 +1,53 @@
 package cron
 
 import (
-	"errors"
 	"fmt"
 
-	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/responsive"
 )
 
 //Notify 服务器配置变更通知
-func (w *CronResponsiveServer) Notify(conf xconf.Conf) error {
+func (w *CronResponsiveServer) Notify(conf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	nConf := w.currentConf.CopyNew(conf)
-	if !nConf.IsChanged() {
-		return nil
-	}
+
 	//检查是否需要重启服务器
-	restart, err := w.NeedRestart(nConf)
+	restart, err := w.NeedRestart(conf)
 	if err != nil {
 		return err
 	}
 	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
-		servers.Tracef(w.Infof, "%s:重启服务", nConf.GetFullName())
-		w.currentConf = nConf
-		return w.Restart(nConf)
+		servers.Tracef(w.Infof, "%s:重启服务", conf.GetServerName())
+		w.currentConf = conf
+		return w.Restart(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
-	if err = w.SetConf(false, nConf); err != nil {
+	if err = w.SetConf(false, conf); err != nil {
 		return err
 	}
-	w.currentConf = nConf
+	w.engine.UpdateVarConf(conf)
+	w.currentConf = conf
 	return nil
 }
 
 //NeedRestart 检查配置判断是否需要重启服务器
-func (w *CronResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (bool, error) {
-	if conf.IsValueChanged("status", "engines", "sharding") {
+func (w *CronResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
+	comparer := conf.NewComparer(w.currentConf, cnf)
+	if !comparer.IsChanged() {
+		return false, nil
+	}
+	if comparer.IsValueChanged("status", "engines", "sharding") {
 		return true, nil
 	}
-	ok, err := conf.IsRequiredNodeChanged("task")
+	ok, err := comparer.IsRequiredSubConfChanged("task")
 	if ok {
 		return ok, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", conf.GetFullName(), err)
+		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
 	}
-	if ok := conf.IsNodeChanged("redis"); ok {
+	if ok := comparer.IsSubConfChanged("redis"); ok {
 		return true, nil
 	}
 	return false, nil
@@ -55,23 +55,14 @@ func (w *CronResponsiveServer) NeedRestart(conf *responsive.ResponsiveConf) (boo
 }
 
 //SetConf 设置配置参数
-func (w *CronResponsiveServer) SetConf(restart bool, conf *responsive.ResponsiveConf) (err error) {
-	//检查版本号
-	if !conf.IsChanged() {
-		return nil
-	}
-	//检查服务器状态
-	if conf.IsStoped() {
-		return errors.New("配置为:stop")
-	}
-
+func (w *CronResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err error) {
 	//设置分片数量
 	w.shardingCount = conf.GetInt("sharding", 0)
 
 	var ok bool
 	//设置task
-	if ok, err = conf.IsRequiredNodeChanged("task"); restart || (err == nil && ok) {
-		if _, err := conf.SetTasks(w.engine, w.server, map[string]interface{}{
+	if restart {
+		if _, err := SetTasks(w.engine, w.server, conf, map[string]interface{}{
 			"__get_sharding_index_": func() (int, int) {
 				return w.shardingIndex, w.shardingCount
 			},
@@ -84,10 +75,10 @@ func (w *CronResponsiveServer) SetConf(restart bool, conf *responsive.Responsive
 	}
 
 	//设置metric
-	if ok, err = conf.SetMetric(w.server); err != nil {
+	if ok, err = SetMetric(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetFullName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetServerName(), getEnableName(ok), "metric设置")
 	return nil
 }
 func getEnableName(b bool) string {

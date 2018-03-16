@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/qxnw/hydra/engines"
-	registry "github.com/qxnw/hydra/registry.v2"
-	"github.com/qxnw/hydra/registry.v2/conf"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/logger"
 
@@ -26,12 +25,11 @@ type server struct {
 
 	startTime time.Time
 	logger    *logger.Logger
-	engine    engines.IServiceEngine
 	server    servers.IRegistryServer
 }
 
 //newServer 初始化服务器
-func newServer(cnf conf.IServerConf, registry registry.IRegistry) *server {
+func newServer(cnf conf.IServerConf, registryAddr string, registry registry.IRegistry) *server {
 	return &server{
 		registry: registry,
 		cnf:      cnf,
@@ -43,14 +41,8 @@ func (h *server) Start() (err error) {
 	h.logger = logger.New(h.cnf.GetPlatName())
 	h.logger.Infof("开始启动:%s", h.cnf.GetPlatName())
 
-	// 启动执行引擎
-	h.engine, err = engines.NewServiceEngine(h.cnf.GetPlatName(), h.cnf.GetSysName(), h.cnf.GetServerType(), h.registryAddr, h.logger, h.cnf.GetStrings("engines", "go", "rpc")...)
-	if err != nil {
-		return fmt.Errorf("%s:engine启动失败%v", h.cnf.GetPlatName(), err)
-	}
-
 	//构建服务器
-	h.server, err = servers.NewRegistryServer(h.cnf.GetServerType(), h.engine, h.cnf, h.logger)
+	h.server, err = servers.NewRegistryServer(h.cnf.GetServerType(), h.registryAddr, h.cnf, h.logger)
 	if err != nil {
 		return fmt.Errorf("server初始化失败:%s", h.cnf.GetServerName())
 	}
@@ -76,8 +68,5 @@ func (h *server) GetStatus() string {
 func (h *server) Shutdown() {
 	if h.server != nil {
 		h.server.Shutdown()
-	}
-	if h.engine != nil {
-		h.engine.Close()
 	}
 }

@@ -10,12 +10,12 @@ import (
 	"github.com/qxnw/lib4go/registry"
 )
 
-//Registry 注册中心接口,通过扩展支持zookeeper,consul,etcd
-type Registry interface {
+//IRegistry 注册中心接口,通过扩展支持zookeeper,consul,etcd
+type IRegistry interface {
 	Exists(path string) (bool, error)
 	WatchChildren(path string) (data chan registry.ChildrenWatcher, err error)
 	WatchValue(path string) (data chan registry.ValueWatcher, err error)
-	GetChildren(path string) (data []string, version int32, err error)
+	GetChildren(path string) (paths []string, version int32, err error)
 	GetValue(path string) (data []byte, version int32, err error)
 	CreatePersistentNode(path string, data string) (err error)
 	CreateTempNode(path string, data string) (err error)
@@ -24,15 +24,6 @@ type Registry interface {
 	Delete(path string) error
 	Close() error
 }
-
-const (
-	//ADD 新增节点
-	ADD = iota + 1
-	//CHANGE 节点变更
-	CHANGE
-	//DEL 删除节点
-	DEL
-)
 
 //GetRegistry 获取注册中心
 var registryMap cmap.ConcurrentMap
@@ -43,7 +34,7 @@ func init() {
 
 //RegistryResolver 定义配置文件转换方法
 type RegistryResolver interface {
-	Resolve(servers []string, log *logger.Logger) (Registry, error)
+	Resolve(servers []string, log *logger.Logger) (IRegistry, error)
 }
 
 var registryResolvers = make(map[string]RegistryResolver)
@@ -59,8 +50,8 @@ func Register(name string, resolver RegistryResolver) {
 	registryResolvers[name] = resolver
 }
 
-//NewRegistry 创建注册中心
-func NewRegistry(name string, servers []string, log logger.ILogger) (r Registry, err error) {
+//newRegistry 创建注册中心
+func newRegistry(name string, servers []string, log logger.ILogger) (r IRegistry, err error) {
 	resolver, ok := registryResolvers[name]
 	if !ok {
 		return nil, fmt.Errorf("registry: unknown adapter name %q (forgotten import?)", name)
@@ -75,23 +66,23 @@ func NewRegistry(name string, servers []string, log logger.ILogger) (r Registry,
 	if err != nil {
 		return
 	}
-	r = value.(Registry)
+	r = value.(IRegistry)
 	return
 }
 
 //NewRegistryWithAddress 根据协议地址创建注册中心
-func NewRegistryWithAddress(address string, log logger.ILogger) (r Registry, err error) {
+func NewRegistryWithAddress(address string, log logger.ILogger) (r IRegistry, err error) {
 	proto, addrss, err := ResolveAddress(address)
 	if err != nil {
 		return nil, err
 	}
-	return NewRegistry(proto, addrss, log)
+	return newRegistry(proto, addrss, log)
 }
 
 //Close 关闭注册中心的服务
 func Close() {
 	registryMap.RemoveIterCb(func(key string, value interface{}) bool {
-		if v, ok := value.(Registry); ok {
+		if v, ok := value.(IRegistry); ok {
 			v.Close()
 		}
 		return true

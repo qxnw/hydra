@@ -3,6 +3,7 @@ package component
 import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/influxdb"
@@ -11,11 +12,11 @@ import (
 
 type IContainer interface {
 	context.RPCInvoker
-	GetVarParam(tp string, name string) (string, error)
-	GetDomainName() string
-	GetServerName() string
-	GetServerType() string
-	GetRegistry() registry.Registry
+
+	conf.ISystemConf
+	conf.IVarConf
+
+	GetRegistry() registry.IRegistry
 	GetDefaultCache() (c cache.ICache, err error)
 	GetCache(name string) (c cache.ICache, err error)
 	GetConf(conf interface{}) (c interface{}, err error)

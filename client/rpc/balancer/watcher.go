@@ -17,7 +17,7 @@ import (
 
 // Watcher is the implementaion of grpc.naming.Watcher
 type Watcher struct {
-	client        registry.Registry
+	client        registry.IRegistry
 	isInitialized bool
 	caches        map[string]bool
 	service       string

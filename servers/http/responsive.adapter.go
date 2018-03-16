@@ -9,15 +9,15 @@ import (
 type apiServerAdapter struct {
 }
 
-func (h *apiServerAdapter) Resolve(c servers.IRegistryEngine, conf conf.Conf, log *logger.Logger) (servers.IRegistryServer, error) {
-	return NewApiResponsiveServer(c, conf, log)
+func (h *apiServerAdapter) Resolve(registryAddr string, conf conf.IServerConf, log *logger.Logger) (servers.IRegistryServer, error) {
+	return NewApiResponsiveServer(registryAddr, conf, log)
 }
 
 type webServerAdapter struct {
 }
 
-func (h *webServerAdapter) Resolve(c servers.IRegistryEngine, conf conf.Conf, log *logger.Logger) (servers.IRegistryServer, error) {
-	return NewWebResponsiveServer(c, conf, log)
+func (h *webServerAdapter) Resolve(registryAddr string, conf conf.IServerConf, log *logger.Logger) (servers.IRegistryServer, error) {
+	return NewWebResponsiveServer(registryAddr, conf, log)
 }
 
 func init() {

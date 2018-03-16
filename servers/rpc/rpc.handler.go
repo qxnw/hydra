@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 )
@@ -57,6 +57,6 @@ func (r *Routers) Route(method string, name string, f servers.IExecuteHandler) {
 			Action:  strings.Split(method, ","),
 			Engine:  "*",
 			Service: name,
-			Handler: middleware.ContextHandler(f, name, "*", name, "", nil),
+			Handler: middleware.ContextHandler(f, name, "*", name, nil, nil),
 		})
 }

@@ -3,25 +3,27 @@ package micro
 import (
 	"sync"
 
-	registry "github.com/qxnw/hydra/registry.v2"
-	"github.com/qxnw/hydra/registry.v2/conf"
-	"github.com/qxnw/hydra/registry.v2/watcher"
+	"github.com/qxnw/hydra/registry"
+	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/registry/watcher"
 	"github.com/qxnw/lib4go/logger"
 )
 
 type responsiveServers struct {
-	servers  map[string]*server
-	mu       sync.Mutex
-	registry registry.IRegistry
-	logger   *logger.Logger
-	done     bool
+	servers      map[string]*server
+	mu           sync.Mutex
+	registry     registry.IRegistry
+	registryAddr string
+	logger       *logger.Logger
+	done         bool
 }
 
-func newResponsiveServers(registry registry.IRegistry, logger *logger.Logger) *responsiveServers {
+func newResponsiveServers(registryAddr string, registry registry.IRegistry, logger *logger.Logger) *responsiveServers {
 	return &responsiveServers{
-		registry: registry,
-		servers:  make(map[string]*server),
-		logger:   logger,
+		registry:     registry,
+		registryAddr: registryAddr,
+		servers:      make(map[string]*server),
+		logger:       logger,
 	}
 }
 
@@ -42,7 +44,7 @@ func (s *responsiveServers) Change(u *watcher.ContentChangeArgs) {
 		}
 		if _, ok := s.servers[u.Path]; !ok {
 			//添加新服务器
-			server := newServer(conf, s.registry)
+			server := newServer(conf, s.registryAddr, s.registry)
 			if err = server.Start(); err != nil {
 				s.logger.Errorf("%s启动失败:%v", conf.GetSysName(), err)
 				return

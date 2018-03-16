@@ -3,7 +3,7 @@ package cron
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 )
 
@@ -13,7 +13,7 @@ func (s *CronServer) getProcessor(redisSetting string, tasks []*conf.Task) (engi
 			err = fmt.Errorf("%v", err1)
 		}
 	}()
-	engine, err = NewProcessor(redisSetting, fmt.Sprintf("%s:tasks:%s", s.conf.GetFullName(), "%s"))
+	engine, err = NewProcessor(redisSetting, fmt.Sprintf("%s:tasks:%s", s.conf.Name, "%s"))
 	if err != nil {
 		return nil, err
 	}

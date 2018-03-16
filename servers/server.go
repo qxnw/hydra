@@ -38,7 +38,7 @@ type IServer interface {
 
 //IRegistryServer 基于注册中心的服务器
 type IRegistryServer interface {
-	Notify(conf.Conf) error
+	Notify(conf.IServerConf) error
 	Start() error
 	GetAddress() string
 	GetServices() []string
@@ -58,7 +58,8 @@ func (i IExecuteHandler) Execute(name string, engine string, service string, ctx
 
 //IRegistryEngine 基于注册中心的执行引擎
 type IRegistryEngine interface {
-	GetRegistry() registry.Registry
+	UpdateVarConf(conf conf.IVarConf)
+	GetRegistry() registry.IRegistry
 	GetServices() []string
 	Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error)
 	Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)
@@ -67,13 +68,13 @@ type IRegistryEngine interface {
 
 //IServerResolver 服务器生成器
 type IServerResolver interface {
-	Resolve(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error)
+	Resolve(registryAddr string, conf conf.IServerConf, log *logger.Logger) (IRegistryServer, error)
 }
-type IServerResolverHandler func(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error)
+type IServerResolverHandler func(registryAddr string, conf conf.IServerConf, log *logger.Logger) (IRegistryServer, error)
 
 //Resolve 创建服务器实例
-func (i IServerResolverHandler) Resolve(c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error) {
-	return i(c, conf, log)
+func (i IServerResolverHandler) Resolve(registryAddr string, conf conf.IServerConf, log *logger.Logger) (IRegistryServer, error) {
+	return i(registryAddr, conf, log)
 }
 
 var resolvers = make(map[string]IServerResolver)
@@ -87,9 +88,9 @@ func Register(identifier string, resolver IServerResolver) {
 }
 
 //NewRegistryServer 根据服务标识创建服务器
-func NewRegistryServer(identifier string, c IRegistryEngine, conf conf.Conf, log *logger.Logger) (IRegistryServer, error) {
+func NewRegistryServer(identifier string, registryAddr string, conf conf.IServerConf, log *logger.Logger) (IRegistryServer, error) {
 	if resolver, ok := resolvers[identifier]; ok {
-		return resolver.Resolve(c, conf, log)
+		return resolver.Resolve(registryAddr, conf, log)
 	}
 	return nil, fmt.Errorf("server: unknown identifier name %q (forgotten import?)", identifier)
 }

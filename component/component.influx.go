@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -38,29 +37,23 @@ func (s *StandardInfluxDB) GetDefaultInflux() (c *influxdb.InfluxClient, err err
 
 //GetInflux get influxdb
 func (s *StandardInfluxDB) GetInflux(name string) (*influxdb.InfluxClient, error) {
-	content, err := s.IContainer.GetVarParam("influxdb", name)
+	influxDbConf, err := s.IContainer.GetVarConf("influxdb", name)
 	if err != nil {
 		return nil, err
 	}
-	_, client, err := s.influxdbCache.SetIfAbsentCb(content, func(i ...interface{}) (interface{}, error) {
-		cnf, err := conf.NewJSONConfWithJson(content, 0, nil)
-		if err != nil {
-			return nil, fmt.Errorf("args配置错误无法解析:%s(err:%v)", content, err)
+	_, client, err := s.influxdbCache.SetIfAbsentCb(name, func(i ...interface{}) (interface{}, error) {
+		cnf := i[0].(*conf.JSONConf)
+		var metric *conf.Metric
+		if err := cnf.Unmarshal(&metric); err != nil {
+			err = fmt.Errorf("../influxdb/%s配置格式有误:%v", name, err)
+			return nil, err
 		}
-		host := cnf.String("host")
-		dataBase := cnf.String("dataBase")
-		if host == "" || dataBase == "" {
-			return nil, fmt.Errorf("配置错误:host 和 dataBase不能为空（host:%s，dataBase:%s）", host, dataBase)
-		}
-		if !strings.Contains(host, "://") {
-			host = "http://" + host
-		}
-		client, err := influxdb.NewInfluxClient(host, dataBase, cnf.String("userName"), cnf.String("password"))
+		client, err := influxdb.NewInfluxClient(metric.Host, metric.DataBase, metric.UserName, metric.Password)
 		if err != nil {
 			return nil, fmt.Errorf("初始化失败(err:%v)", err)
 		}
 		return client, err
-	})
+	}, influxDbConf)
 	if err != nil {
 		return nil, err
 	}

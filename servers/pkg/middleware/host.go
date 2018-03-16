@@ -4,20 +4,21 @@ import (
 	x "net/http"
 	"strings"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 )
 
 //Host 处理服务器的主机头
-func Host(conf *conf.ServerConf) dispatcher.HandlerFunc {
+func Host(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
-		if len(conf.Hosts) == 0 {
+		hosts, ok := cnf.GetMetadata("hosts").(conf.Hosts)
+		if !ok {
 			ctx.Next()
 			return
 		}
-		correct := checkHost(conf.Hosts, ctx)
+		correct := checkHost(hosts, ctx)
 		if !correct {
-			getLogger(ctx).Errorf("访问被拒绝,必须使用:%v访问", conf.Hosts)
+			getLogger(ctx).Errorf("访问被拒绝,必须使用:%v访问", hosts)
 			ctx.AbortWithStatus(x.StatusNotAcceptable)
 			return
 		}

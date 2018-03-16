@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/lib4go/logger"
 )
 
 //ApiServer api服务器
 type ApiServer struct {
 	*option
-	conf    *conf.ServerConf
+	conf    *conf.MetadataConf
 	engine  *x.Server
 	running string
 	proto   string
@@ -25,19 +25,22 @@ type ApiServer struct {
 }
 
 //NewApiServer 创建api服务器
-func NewApiServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option) (t *ApiServer, err error) {
-	t = &ApiServer{conf: conf}
+func NewApiServer(name string, addr string, routers []*conf.Router, opts ...Option) (t *ApiServer, err error) {
+	t = &ApiServer{conf: &conf.MetadataConf{
+		Name: name,
+	}}
 	t.option = &option{metric: middleware.NewMetric(t.conf), static: &middleware.StaticOptions{Enable: false}}
 	for _, opt := range opts {
 		opt(t.option)
 	}
 	if t.Logger == nil {
-		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
+		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 	t.engine = &x.Server{
-		ReadHeaderTimeout: time.Second * time.Duration(conf.GetInt("readHeaderTimeout", 3)),
-		ReadTimeout:       time.Second * time.Duration(conf.GetInt("readTimeout", 3)),
-		WriteTimeout:      time.Second * time.Duration(conf.GetInt("writeTimeout", 3)),
+		Addr:              t.getAddress(addr),
+		ReadHeaderTimeout: time.Second * time.Duration(t.option.readHeaderTimeout),
+		ReadTimeout:       time.Second * time.Duration(t.option.readTimeout),
+		WriteTimeout:      time.Second * time.Duration(t.option.writeTimeout),
 		MaxHeaderBytes:    1 << 20,
 	}
 	if routers != nil {
@@ -47,10 +50,8 @@ func NewApiServer(conf *conf.ServerConf, routers []*conf.Router, opts ...Option)
 }
 
 // Run the http server
-func (s *ApiServer) Run(address ...interface{}) error {
-	addr := s.getAddress(address...)
+func (s *ApiServer) Run() error {
 	s.proto = "http"
-	s.engine.Addr = addr
 	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
@@ -68,10 +69,8 @@ func (s *ApiServer) Run(address ...interface{}) error {
 }
 
 //RunTLS RunTLS server
-func (s *ApiServer) RunTLS(certFile, keyFile string, address ...interface{}) error {
-	addr := s.getAddress(address...)
+func (s *ApiServer) RunTLS(certFile, keyFile string) error {
 	s.proto = "https"
-	s.engine.Addr = addr
 	s.running = servers.ST_RUNNING
 	errChan := make(chan error, 1)
 	go func(ch chan error) {
@@ -97,10 +96,10 @@ func (s *ApiServer) Shutdown(timeout time.Duration) {
 		defer cannel()
 		if err := s.engine.Shutdown(ctx); err != nil {
 			if err == x.ErrServerClosed {
-				s.Infof("%s:已关闭", s.conf.GetFullName())
+				s.Infof("%s:已关闭", s.conf.Name)
 				return
 			}
-			s.Errorf("%s关闭出现错误:%v", s.conf.GetFullName(), err)
+			s.Errorf("%s关闭出现错误:%v", s.conf.Name, err)
 		}
 	}
 }

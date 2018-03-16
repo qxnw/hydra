@@ -1,7 +1,9 @@
 package rpc
 
 import (
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"fmt"
+
+	"github.com/qxnw/hydra/conf"
 )
 
 //SetRouters 设置路由配置
@@ -19,18 +21,19 @@ func (s *RpcServer) SetJWT(auth *conf.Auth) error {
 }
 
 //SetHosts 设置组件的host name
-func (s *RpcServer) SetHosts(hosts []string) error {
-	if len(hosts) == 0 {
-		s.conf.Hosts = make([]string, 0, 0)
-		return nil
-	}
-	s.conf.Hosts = hosts
+func (s *RpcServer) SetHosts(hosts conf.Hosts) error {
+	s.conf.SetMetadata("hosts", hosts)
 	return nil
 }
 
 //SetMetric 重置metric
-func (s *RpcServer) SetMetric(host string, dataBase string, userName string, password string, cron string) error {
-	return s.metric.Restart(host, dataBase, userName, password, cron, s.Logger)
+func (s *RpcServer) SetMetric(metric *conf.Metric) error {
+	s.metric.Stop()
+	if err := s.metric.Restart(metric.Host, metric.DataBase, metric.UserName, metric.Password, metric.Cron, s.Logger); err != nil {
+		err = fmt.Errorf("metric设置有误:%v", err)
+		return err
+	}
+	return nil
 }
 
 //StopMetric stop metric
@@ -40,7 +43,7 @@ func (s *RpcServer) StopMetric() error {
 }
 
 //SetHeader 设置http头
-func (s *RpcServer) SetHeader(headers map[string]string) error {
-	s.conf.Headers = headers
+func (s *RpcServer) SetHeader(headers conf.Headers) error {
+	s.conf.SetMetadata("headers", headers)
 	return nil
 }

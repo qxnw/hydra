@@ -4,30 +4,31 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/net"
 )
 
 //MqcServer mqc服务器
 type MqcServer struct {
 	*option
-	conf *conf.ServerConf
+	conf *conf.MetadataConf
 	*Processor
 	running string
 	addr    string
 }
 
 //NewMqcServer 创建mqc服务器
-func NewMqcServer(conf *conf.ServerConf, serverRaw string, queues []*conf.Queue, opts ...Option) (t *MqcServer, err error) {
-	t = &MqcServer{conf: conf}
+func NewMqcServer(name string, serverRaw string, queues []*conf.Queue, opts ...Option) (t *MqcServer, err error) {
+	t = &MqcServer{conf: &conf.MetadataConf{Name: name}}
 	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)
 	}
 	if t.Logger == nil {
-		t.Logger = logger.GetSession(conf.GetFullName(), logger.CreateSession())
+		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 	if queues != nil && len(queues) > 0 {
 		err = t.SetQueues(serverRaw, queues)
@@ -65,7 +66,7 @@ func (s *MqcServer) Shutdown(timeout time.Duration) {
 		s.running = servers.ST_STOP
 		s.Processor.Close()
 		time.Sleep(time.Second)
-		s.Warnf("%s:已关闭", s.conf.GetFullName())
+		s.Warnf("%s:已关闭", s.conf.Name)
 
 	}
 }
@@ -81,7 +82,7 @@ func (s *MqcServer) Pause(timeout time.Duration) {
 
 //GetAddress 获取当前服务地址
 func (s *MqcServer) GetAddress() string {
-	return fmt.Sprintf("mqc://%s", s.conf.IP)
+	return fmt.Sprintf("mqc://%s", net.GetLocalIPAddress())
 }
 
 //GetStatus 获取当前服务器状态

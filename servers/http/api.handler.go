@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
-	"github.com/qxnw/hydra/servers/pkg/conf"
 )
 
 func (s *ApiServer) getHandler(routers []*conf.Router) (x.Handler, error) {
@@ -67,6 +67,6 @@ func (r *Routers) Route(method string, name string, f servers.IExecuteHandler) {
 			Action:  strings.Split(method, ","),
 			Engine:  "*",
 			Service: name,
-			Handler: middleware.ContextHandler(f, name, "*", name, ""),
+			Handler: middleware.ContextHandler(f, name, "*", name, nil), //??
 		})
 }

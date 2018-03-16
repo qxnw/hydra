@@ -3,10 +3,9 @@ package component
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/db"
-	"github.com/qxnw/lib4go/jsons"
-	"github.com/qxnw/lib4go/types"
 )
 
 //IComponentDB Component DB
@@ -40,26 +39,17 @@ func (s *StandardDB) GetDefaultDB() (c *db.DB, err error) {
 func (s *StandardDB) GetDB(name string) (d *db.DB, err error) {
 	_, dbc, err := s.dbMap.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
 		name := input[0].(string)
-		content, err := s.IContainer.GetVarParam("db", name)
+		dbJsonConf, err := s.IContainer.GetVarConf("db", name)
 		if err != nil {
 			return nil, err
 		}
-		configMap, err := jsons.Unmarshal([]byte(content))
-		if err != nil {
+		var dbConf conf.DBConf
+		if err = dbJsonConf.Unmarshal(&dbConf); err != nil {
 			return nil, err
 		}
-		provider, ok := configMap["provider"]
-		if !ok {
-			return nil, fmt.Errorf("db配置文件错误，未包含provider节点:var/db/%s", name)
-		}
-		connString, ok := configMap["connString"]
-		if !ok {
-			return nil, fmt.Errorf("db配置文件错误，未包含connString节点:var/db/%s", name)
-		}
-		p, c, m := provider.(string), connString.(string), types.ToInt(configMap["max"], 2)
-		d, err = db.NewDB(p, c, m)
+		d, err = db.NewDB(dbConf.Provider, dbConf.ConnString, dbConf.Max)
 		if err != nil {
-			err = fmt.Errorf("创建DB失败:%s,%s,%d,err:%v", p, c, m, err)
+			err = fmt.Errorf("创建DB失败:%s,err:%v", string(dbJsonConf.GetRaw()), err)
 			return
 		}
 		return

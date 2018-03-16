@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
-	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/queue"
 )
 
@@ -39,21 +38,13 @@ func (s *StandardQueue) GetDefaultQueue() (c queue.IQueue, err error) {
 func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
 	_, iqueue, err := s.queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
 		name := input[0].(string)
-		content, err := s.IContainer.GetVarParam("queue", name)
+		queueJSONConf, err := s.IContainer.GetVarConf("queue", name)
 		if err != nil {
 			return nil, err
 		}
-		configMap, err := jsons.Unmarshal([]byte(content))
+		d, err = queue.NewQueue(queueJSONConf.GetString("address"), string(queueJSONConf.GetRaw()))
 		if err != nil {
-			return nil, err
-		}
-		address, ok := configMap["address"]
-		if !ok {
-			return nil, fmt.Errorf("queue配置文件错误，未包含address节点:var/queue/%s", name)
-		}
-		d, err = queue.NewQueue(address.(string), content)
-		if err != nil {
-			err = fmt.Errorf("创建queue失败:%s,err:%v", content, err)
+			err = fmt.Errorf("创建queue失败:%s,err:%v", string(queueJSONConf.GetRaw()), err)
 			fmt.Println("queue.err:", err)
 			return
 		}

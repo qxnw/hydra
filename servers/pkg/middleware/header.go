@@ -1,15 +1,19 @@
 package middleware
 
 import (
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 )
 
 //Header 头设置
-func Header(conf *conf.ServerConf) dispatcher.HandlerFunc {
+func Header(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		ctx.Next()
-		for k, v := range conf.Headers {
+		headers, ok := cnf.GetMetadata("headers").(conf.Headers)
+		if !ok {
+			return
+		}
+		for k, v := range headers {
 			ctx.Header(k, v)
 		}
 		response := getResponse(ctx)

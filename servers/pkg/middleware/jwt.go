@@ -5,16 +5,16 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/lib4go/security/jwt"
 )
 
 //JwtAuth jwt
-func JwtAuth(cnf *conf.ServerConf) dispatcher.HandlerFunc {
+func JwtAuth(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
-		if !ok || jwtAuth == nil || !jwtAuth.Enable {
+		if !ok || jwtAuth == nil || jwtAuth.Disable {
 			ctx.Next()
 			return
 		}
@@ -43,7 +43,7 @@ func JwtAuth(cnf *conf.ServerConf) dispatcher.HandlerFunc {
 
 	}
 }
-func setJwtResponse(ctx *dispatcher.Context, cnf *conf.ServerConf, data interface{}) {
+func setJwtResponse(ctx *dispatcher.Context, cnf *conf.MetadataConf, data interface{}) {
 	if data == nil {
 		data = getJWTRaw(ctx)
 	}

@@ -1,12 +1,13 @@
 package cron
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
-	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/engines"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/responsive"
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -14,11 +15,12 @@ import (
 type CronResponsiveServer struct {
 	server        *CronServer
 	engine        servers.IRegistryEngine
+	registryAddr  string
 	pubs          []string
 	shardingIndex int
 	shardingCount int
 	master        bool
-	currentConf   *responsive.ResponsiveConf
+	currentConf   conf.IServerConf
 	closeChan     chan struct{}
 	once          sync.Once
 	done          bool
@@ -28,14 +30,20 @@ type CronResponsiveServer struct {
 }
 
 //NewCronResponsiveServer 创建rpc服务器
-func NewCronResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logger *logger.Logger) (h *CronResponsiveServer, err error) {
-	h = &CronResponsiveServer{engine: engine,
-		closeChan:   make(chan struct{}),
-		currentConf: responsive.NewResponsiveConfBy(xconf.NewJSONConfWithEmpty(), cnf),
-		Logger:      logger,
-		pubs:        make([]string, 0, 2),
+func NewCronResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *logger.Logger) (h *CronResponsiveServer, err error) {
+	h = &CronResponsiveServer{
+		closeChan:    make(chan struct{}),
+		currentConf:  cnf,
+		Logger:       logger,
+		pubs:         make([]string, 0, 2),
+		registryAddr: registryAddr,
 	}
-	h.server, err = NewCronServer(h.currentConf.ServerConf, "", nil, WithIP(h.currentConf.IP), WithLogger(logger))
+	// 启动执行引擎
+	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	h.server, err = NewCronServer(h.currentConf.GetServerName(), "", nil, WithLogger(logger))
 	if err != nil {
 		return
 	}
@@ -47,14 +55,19 @@ func NewCronResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, log
 }
 
 //Restart 重启服务器
-func (w *CronResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error) {
+func (w *CronResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.closeChan = make(chan struct{})
 	w.done = false
 	w.currentConf = cnf
 	w.once = sync.Once{}
-	w.server, err = NewCronServer(w.currentConf.ServerConf, "", nil, WithIP(w.currentConf.IP), WithLogger(w.Logger))
+	// 启动执行引擎
+	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	w.server, err = NewCronServer(w.currentConf.GetServerName(), "", nil, WithLogger(w.Logger))
 	if err != nil {
 		return
 	}
@@ -85,6 +98,9 @@ func (w *CronResponsiveServer) Shutdown() {
 	})
 	w.unpublish()
 	w.server.Shutdown(time.Second)
+	if w.engine != nil {
+		w.engine.Close()
+	}
 }
 
 //GetAddress 获取服务器地址

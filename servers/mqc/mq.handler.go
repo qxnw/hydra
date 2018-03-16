@@ -3,7 +3,7 @@ package mqc
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
 )
 

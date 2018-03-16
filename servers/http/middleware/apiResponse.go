@@ -4,11 +4,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
 //APIResponse 处理api返回值
-func APIResponse(conf *conf.ServerConf) gin.HandlerFunc {
+func APIResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Next()
 		response := getResponse(ctx)

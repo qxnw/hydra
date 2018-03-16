@@ -12,10 +12,10 @@ import (
 func (w *CronResponsiveServer) publish() (err error) {
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s_", w.currentConf.ServerNode, ipPort)
+	pubPath := fmt.Sprintf("%s/%s_", w.currentConf.GetServerType(), ipPort)
 	data := map[string]string{
-		"service":        addr,
-		"health-checker": w.currentConf.GetHealthChecker(),
+		"service": addr,
+		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)
@@ -25,7 +25,7 @@ func (w *CronResponsiveServer) publish() (err error) {
 		return
 	}
 	w.pubs = []string{npath}
-	if err = w.watchMasterChange(w.currentConf.ServerNode, npath); err != nil {
+	if err = w.watchMasterChange(w.currentConf.GetServerType(), npath); err != nil {
 		return
 	}
 	go w.publishCheck(nodeData)

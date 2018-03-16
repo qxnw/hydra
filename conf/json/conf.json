@@ -1,7 +1,0 @@
-{
-    "status": "start",
-    "address":":8800",
-    "metric": "#@path/metric",
-    "limiter": "#@path/limiter",
-    "router": "#@path/router"
-}

@@ -12,20 +12,20 @@ import (
 func (w *MqcResponsiveServer) publish() (err error) {
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s_", w.currentConf.ServerNode, ipPort)
+	pubPath := fmt.Sprintf("%s/%s_", w.currentConf.GetServerType(), ipPort)
 	data := map[string]string{
-		"service":        addr,
-		"health-checker": w.currentConf.GetHealthChecker(),
+		"service": addr,
+		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)
 	npath, err := w.engine.GetRegistry().CreateSeqNode(pubPath, nodeData)
 	if err != nil {
-		err = fmt.Errorf("%s:服务发布失败:(%s)[%v]", w.currentConf.GetFullName(), pubPath, err)
+		err = fmt.Errorf("%s:服务发布失败:(%s)[%v]", w.currentConf.GetServerName(), pubPath, err)
 		return
 	}
 	w.pubs = []string{npath}
-	if err = w.watchMasterChange(w.currentConf.ServerNode, npath); err != nil {
+	if err = w.watchMasterChange(w.currentConf.GetServerType(), npath); err != nil {
 		return
 	}
 	go w.publishCheck(nodeData)

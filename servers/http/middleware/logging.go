@@ -4,12 +4,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/logger"
 )
 
 //Logging 记录日志
-func Logging(conf *conf.ServerConf) gin.HandlerFunc {
+func Logging(conf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		start := time.Now()
 		setStartTime(ctx)
@@ -19,7 +19,7 @@ func Logging(conf *conf.ServerConf) gin.HandlerFunc {
 		}
 		uuid := getUUID(ctx)
 		setUUID(ctx, uuid)
-		log := logger.GetSession(conf.GetFullName(), uuid)
+		log := logger.GetSession(conf.Name, uuid)
 		log.Info(conf.Type+".request:", conf.Name, ctx.Request.Method, p, "from", ctx.ClientIP())
 		setLogger(ctx, log)
 		ctx.Next()

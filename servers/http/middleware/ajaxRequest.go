@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
 //AjaxRequest ajax请求限制
-func AjaxRequest(cnf *conf.ServerConf) gin.HandlerFunc {
+func AjaxRequest(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		b, ok := cnf.GetMetadata("ajax-request").(bool)
 		if ok && b && ctx.GetHeader("X-Requested-With") != "XMLHttpRequest" {

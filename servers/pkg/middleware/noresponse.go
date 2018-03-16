@@ -3,12 +3,12 @@ package middleware
 import (
 	"fmt"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 )
 
 //NoResponse 处理无响应的返回结果
-func NoResponse(conf *conf.ServerConf) dispatcher.HandlerFunc {
+func NoResponse(conf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		ctx.Next()
 		response := getResponse(ctx)

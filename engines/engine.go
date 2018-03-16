@@ -6,6 +6,7 @@ import (
 
 	"github.com/qxnw/hydra/client/rpc"
 	"github.com/qxnw/hydra/component"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"
@@ -13,7 +14,7 @@ import (
 
 //IServiceEngine 服务引擎接口
 type IServiceEngine interface {
-	GetRegistry() registry.Registry
+	GetRegistry() registry.IRegistry
 	GetServices() []string
 	Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error)
 	Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)
@@ -23,15 +24,12 @@ type IServiceEngine interface {
 //ServiceEngine 服务引擎
 type ServiceEngine struct {
 	*component.StandardComponent
-	domain       string
-	serverName   string
-	serverType   string
+	conf.IServerConf
 	registryAddr string
 	engines      []string
 	*rpc.Invoker
 	logger   *logger.Logger
-	registry registry.Registry
-	*varParamWatcher
+	registry registry.IRegistry
 	component.IComponentCache
 	component.IComponentConf
 	component.IComponentDB
@@ -40,10 +38,10 @@ type ServiceEngine struct {
 }
 
 //NewServiceEngine 构建服务引擎
-func NewServiceEngine(domain string, serverName string, serverType string, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
-	e = &ServiceEngine{domain: domain, serverName: serverName, serverType: serverType, registryAddr: registryAddr, logger: logger, engines: engines}
+func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
+	e = &ServiceEngine{IServerConf: conf, registryAddr: registryAddr, logger: logger, engines: engines}
 	e.StandardComponent = component.NewStandardComponent("sys.engine", e)
-	e.Invoker = rpc.NewInvoker(domain, serverName, registryAddr)
+	e.Invoker = rpc.NewInvoker(conf.GetPlatName(), conf.GetSysName(), registryAddr)
 	e.IComponentCache = component.NewStandardCache(e, "cache")
 	e.IComponentConf = component.NewStandardConf(e)
 	e.IComponentDB = component.NewStandardDB(e, "db")
@@ -52,11 +50,11 @@ func NewServiceEngine(domain string, serverName string, serverType string, regis
 	if e.registry, err = registry.NewRegistryWithAddress(registryAddr, logger); err != nil {
 		return
 	}
-	e.varParamWatcher = newVarParamWatcher(domain, e.registry)
+
 	e.loadEngineServices()
-	if err = e.LoadComponents(fmt.Sprintf("./%s.so", domain),
-		fmt.Sprintf("./%s.so", serverName),
-		fmt.Sprintf("./%s_%s.so", domain, serverName)); err != nil {
+	if err = e.LoadComponents(fmt.Sprintf("./%s.so", conf.GetPlatName()),
+		fmt.Sprintf("./%s.so", conf.GetServerName()),
+		fmt.Sprintf("./%s_%s.so", conf.GetPlatName(), conf.GetServerName())); err != nil {
 		return
 	}
 	e.StandardComponent.AddRPCProxy(e.RPCProxy())
@@ -64,9 +62,14 @@ func NewServiceEngine(domain string, serverName string, serverType string, regis
 	return
 }
 
+//UpdateVarConf 更新var配置参数
+func (r *ServiceEngine) UpdateVarConf(conf conf.IVarConf) {
+	r.SetVarConf(conf.GetVarConfClone())
+}
+
 //GetServices 获取组件提供的所有服务
 func (r *ServiceEngine) GetServices() []string {
-	return r.GetGroupServices(component.GetGroupName(r.serverType))
+	return r.GetGroupServices(component.GetGroupName(r.GetServerType()))
 }
 
 //Execute 执行外部请求
@@ -106,12 +109,12 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	case "rpc":
 		return nil, nil
 	case "", "*":
-		if r.IsCustomerService(component.GetGroupName(r.serverType), service) {
+		if r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
 			return nil, nil
 		}
 	default:
 		for _, e := range r.engines {
-			if e == engine && r.CheckTag(service, engine) && r.IsCustomerService(component.GetGroupName(r.serverType), service) {
+			if e == engine && r.CheckTag(service, engine) && r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
 				return nil, nil
 			}
 		}
@@ -122,28 +125,13 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 }
 func (r *ServiceEngine) getServiceMeta(engine string, service string) string {
 	return fmt.Sprintf(`engine:[%s]-%v
-		group:[%s]-%s`, engine, r.GetTags(service), component.GetGroupName(r.serverType),
+		group:[%s]-%s`, engine, r.GetTags(service), component.GetGroupName(r.GetServerType()),
 		r.GetGroups(service))
 }
 
 //GetRegistry 获取注册中心
-func (r *ServiceEngine) GetRegistry() registry.Registry {
+func (r *ServiceEngine) GetRegistry() registry.IRegistry {
 	return r.registry
-}
-
-//GetDomainName 获取域信息
-func (r *ServiceEngine) GetDomainName() string {
-	return r.domain
-}
-
-//GetServerName 获取服务器名称
-func (r *ServiceEngine) GetServerName() string {
-	return r.serverName
-}
-
-//GetServerType 获取服务器类型
-func (r *ServiceEngine) GetServerType() string {
-	return r.serverType
 }
 
 //Close 关闭引擎
@@ -154,7 +142,6 @@ func (r *ServiceEngine) Close() error {
 	r.IComponentDB.Close()
 	r.IComponentInfluxDB.Close()
 	r.IComponentQueue.Close()
-	r.varParamWatcher.Close()
 	return nil
 }
 func formatName(name string) string {

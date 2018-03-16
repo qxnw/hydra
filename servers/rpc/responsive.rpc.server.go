@@ -1,38 +1,46 @@
 package rpc
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
-	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/engines"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/responsive"
 	"github.com/qxnw/lib4go/logger"
 )
 
 //RpcResponsiveServer rpc 响应式服务器
 type RpcResponsiveServer struct {
-	server      *RpcServer
-	engine      servers.IRegistryEngine
-	pubs        []string
-	currentConf *responsive.ResponsiveConf
-	closeChan   chan struct{}
-	once        sync.Once
-	done        bool
-	pubLock     sync.Mutex
+	server       *RpcServer
+	engine       servers.IRegistryEngine
+	registryAddr string
+	pubs         []string
+	currentConf  conf.IServerConf
+	closeChan    chan struct{}
+	once         sync.Once
+	done         bool
+	pubLock      sync.Mutex
 	*logger.Logger
 	mu sync.Mutex
 }
 
 //NewRpcResponsiveServer 创建rpc服务器
-func NewRpcResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logger *logger.Logger) (h *RpcResponsiveServer, err error) {
-	h = &RpcResponsiveServer{engine: engine,
-		closeChan:   make(chan struct{}),
-		currentConf: responsive.NewResponsiveConfBy(xconf.NewJSONConfWithEmpty(), cnf),
-		Logger:      logger,
-		pubs:        make([]string, 0, 2),
+func NewRpcResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *logger.Logger) (h *RpcResponsiveServer, err error) {
+	h = &RpcResponsiveServer{
+		closeChan:    make(chan struct{}),
+		currentConf:  cnf,
+		Logger:       logger,
+		pubs:         make([]string, 0, 2),
+		registryAddr: registryAddr,
 	}
-	if h.server, err = NewRpcServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
+	// 启动执行引擎
+	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	if h.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8080"), nil, WithLogger(logger)); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {
@@ -42,14 +50,19 @@ func NewRpcResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 }
 
 //Restart 重启服务器
-func (w *RpcResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error) {
+func (w *RpcResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.done = false
 	w.closeChan = make(chan struct{})
 	w.currentConf = cnf
 	w.once = sync.Once{}
-	if w.server, err = NewRpcServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
+	// 启动执行引擎
+	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	if w.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8080"), nil, WithLogger(w.Logger)); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {
@@ -64,7 +77,7 @@ func (w *RpcResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 
 //Start 启用服务
 func (w *RpcResponsiveServer) Start() (err error) {
-	if err = w.server.Run(w.currentConf.GetString("address", ":81")); err != nil {
+	if err = w.server.Run(); err != nil {
 		return
 	}
 	return w.publish()
@@ -79,6 +92,9 @@ func (w *RpcResponsiveServer) Shutdown() {
 	w.unpublish()
 	timeout := w.currentConf.GetInt("timeout", 10)
 	w.server.Shutdown(time.Duration(timeout) * time.Second)
+	if w.engine != nil {
+		w.engine.Close()
+	}
 }
 
 //GetAddress 获取服务器地址
@@ -100,6 +116,6 @@ func (w *RpcResponsiveServer) GetServices() []string {
 			nsevice = append(nsevice, sv)
 		}
 	}
-	servers.Trace(w.Infof, w.currentConf.GetFullName(), "发布服务：", nsevice)
+	servers.Trace(w.Infof, w.currentConf.GetServerName(), "发布服务：", nsevice)
 	return nsevice
 }

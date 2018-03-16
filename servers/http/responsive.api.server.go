@@ -1,18 +1,18 @@
 package http
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
-	xconf "github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/engines"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
-	"github.com/qxnw/hydra/servers/pkg/conf"
-	"github.com/qxnw/hydra/servers/pkg/responsive"
 	"github.com/qxnw/lib4go/logger"
 )
 
 type IServer interface {
-	Run(address ...interface{}) error
+	Run() error
 	Shutdown(timeout time.Duration)
 	GetStatus() string
 	GetAddress() string
@@ -22,36 +22,44 @@ type IServer interface {
 	SetRouters(routers []*conf.Router) (err error)
 	SetJWT(auth *conf.Auth) error
 	SetAjaxRequest(allow bool) error
-	SetHosts(hosts []string) error
-	SetStatic(enable bool, prefix string, dir string, listDir bool, exts []string) error
-	SetMetric(host string, dataBase string, userName string, password string, cron string) error
-	SetHeader(headers map[string]string) error
+	SetHosts(conf.Hosts) error
+	SetStatic(*conf.Static) error
+	SetMetric(*conf.Metric) error
+	SetHeader(conf.Headers) error
 	StopMetric() error
 }
 
 //ApiResponsiveServer api 响应式服务器
 type ApiResponsiveServer struct {
-	server      IServer
-	engine      servers.IRegistryEngine
-	pubs        []string
-	currentConf *responsive.ResponsiveConf
-	closeChan   chan struct{}
-	once        sync.Once
-	done        bool
-	pubLock     sync.Mutex
+	server       IServer
+	engine       servers.IRegistryEngine
+	registryAddr string
+	pubs         []string
+	currentConf  conf.IServerConf
+	closeChan    chan struct{}
+	once         sync.Once
+	done         bool
+	pubLock      sync.Mutex
 	*logger.Logger
 	mu sync.Mutex
 }
 
 //NewApiResponsiveServer 创建API服务器
-func NewApiResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logger *logger.Logger) (h *ApiResponsiveServer, err error) {
-	h = &ApiResponsiveServer{engine: engine,
-		closeChan:   make(chan struct{}),
-		currentConf: responsive.NewResponsiveConfBy(xconf.NewJSONConfWithEmpty(), cnf),
-		Logger:      logger,
-		pubs:        make([]string, 0, 2),
+func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *logger.Logger) (h *ApiResponsiveServer, err error) {
+	h = &ApiResponsiveServer{
+		closeChan:    make(chan struct{}),
+		currentConf:  cnf,
+		Logger:       logger,
+		pubs:         make([]string, 0, 2),
+		registryAddr: registryAddr,
 	}
-	if h.server, err = NewApiServer(h.currentConf.ServerConf, nil, WithIP(h.currentConf.IP), WithLogger(logger)); err != nil {
+	// 启动执行引擎
+	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+
+	if h.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil, WithLogger(logger)); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {
@@ -61,13 +69,19 @@ func NewApiResponsiveServer(engine servers.IRegistryEngine, cnf xconf.Conf, logg
 }
 
 //Restart 重启服务器
-func (w *ApiResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error) {
+func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.Shutdown()
 	time.Sleep(time.Second)
 	w.done = false
 	w.closeChan = make(chan struct{})
 	w.once = sync.Once{}
-	if w.server, err = NewApiServer(w.currentConf.ServerConf, nil, WithIP(w.currentConf.IP), WithLogger(w.Logger)); err != nil {
+	// 启动执行引擎
+	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	if err != nil {
+		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+
+	if w.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil, WithLogger(w.Logger)); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {
@@ -82,7 +96,7 @@ func (w *ApiResponsiveServer) Restart(cnf *responsive.ResponsiveConf) (err error
 
 //Start 启用服务
 func (w *ApiResponsiveServer) Start() (err error) {
-	if err = w.server.Run(w.currentConf.GetString("address", ":80")); err != nil {
+	if err = w.server.Run(); err != nil {
 		return
 	}
 	return w.publish()
@@ -95,7 +109,10 @@ func (w *ApiResponsiveServer) Shutdown() {
 		close(w.closeChan)
 	})
 	w.unpublish()
-	w.server.Shutdown(time.Duration(w.currentConf.GetInt("timeout", 10)) * time.Second)
+	w.server.Shutdown(10 * time.Second)
+	if w.engine != nil {
+		w.engine.Close()
+	}
 }
 
 //GetAddress 获取服务器地址

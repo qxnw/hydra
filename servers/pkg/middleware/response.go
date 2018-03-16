@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 )
 
 //Response 处理api返回值
-func Response(conf *conf.ServerConf) dispatcher.HandlerFunc {
+func Response(conf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		ctx.Next()
 		response := getResponse(ctx)

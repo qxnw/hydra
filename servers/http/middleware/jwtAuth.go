@@ -6,16 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/security/jwt"
 )
 
 //JwtAuth jwt
-func JwtAuth(cnf *conf.ServerConf) gin.HandlerFunc {
+func JwtAuth(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
-		if !ok || jwtAuth == nil || !jwtAuth.Enable {
+		if !ok || jwtAuth == nil || jwtAuth.Disable {
 			ctx.Next()
 			return
 		}
@@ -43,7 +43,7 @@ func JwtAuth(cnf *conf.ServerConf) gin.HandlerFunc {
 
 	}
 }
-func setJwtResponse(ctx *gin.Context, cnf *conf.ServerConf, data interface{}) {
+func setJwtResponse(ctx *gin.Context, cnf *conf.MetadataConf, data interface{}) {
 	if data == nil {
 		data = getJWTRaw(ctx)
 	}
@@ -51,7 +51,7 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.ServerConf, data interface{}) {
 		return
 	}
 	jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
-	if !ok || !jwtAuth.Enable {
+	if !ok || jwtAuth.Disable {
 		return
 	}
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)

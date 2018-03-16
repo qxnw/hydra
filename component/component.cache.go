@@ -5,7 +5,6 @@ import (
 
 	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/concurrent/cmap"
-	"github.com/qxnw/lib4go/jsons"
 )
 
 //IComponentCache Component Cache
@@ -39,20 +38,11 @@ func (s *StandardCache) GetDefaultCache() (c cache.ICache, err error) {
 func (s *StandardCache) GetCache(name string) (c cache.ICache, err error) {
 	_, cached, err := s.cacheMap.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
 		name := input[0].(string)
-		conf, err := s.IContainer.GetVarParam("cache", name)
+		conf, err := s.IContainer.GetVarConf("cache", name)
 		if err != nil {
 			return nil, err
 		}
-		configMap, err := jsons.Unmarshal([]byte(conf))
-		if err != nil {
-			return nil, err
-		}
-		server, ok := configMap["server"]
-		if !ok {
-			err = fmt.Errorf("cache[%s]配置文件错误，未包含server节点:%s", name, conf)
-			return nil, err
-		}
-		c, err = cache.NewCache(server.(string), conf)
+		c, err = cache.NewCache(conf.GetString("server"), string(conf.GetRaw()))
 		if err != nil {
 			return nil, err
 		}

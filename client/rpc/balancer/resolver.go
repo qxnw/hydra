@@ -3,10 +3,9 @@ package balancer
 import (
 	"time"
 
-	"github.com/qxnw/hydra/registry"
-
 	"fmt"
 
+	"github.com/qxnw/hydra/registry"
 	"google.golang.org/grpc/naming"
 )
 

@@ -4,11 +4,11 @@ import (
 	"github.com/qxnw/hydra/servers/pkg/circuit"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/servers/pkg/conf"
+	"github.com/qxnw/hydra/conf"
 )
 
 //CircuitBreak 熔断处理
-func CircuitBreak(conf *conf.ServerConf) gin.HandlerFunc {
+func CircuitBreak(conf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		circuitBreaker, ok := conf.GetMetadata("__circuit-breaker_").(*circuit.NamedCircuitBreakers)
 		if !ok {
