@@ -1,0 +1,1 @@
+[{"type":"file","level":"All","path":"/home/wanghj/work/src/github.com/qxnw/hydra/servers/logs/%date.log","layout":"[%datetime.%ms][%l][%session] %content%n"},{"type":"stdout","level":"All","layout":"[%datetime.%ms][%l][%session]%content"}]
