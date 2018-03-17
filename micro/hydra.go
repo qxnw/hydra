@@ -33,11 +33,11 @@ type Hydra struct {
 	registry registry.IRegistry
 	watcher  *watcher.ConfWatcher
 	notify   chan *watcher.ContentChangeArgs
-	servers  *responsiveServers
+	rspServer  *rspServer
 	trace    string
 	done     bool
 }
-
+//NewHydra 创建hydra服务器
 func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, isDebug bool) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
@@ -88,7 +88,7 @@ LOOP:
 			break LOOP
 		}
 	}
-	h.servers.Shutdown()
+	h.rspServer.Shutdown()
 	h.logger.Warnf("hydra 已安全退出")
 	return nil
 }
@@ -110,7 +110,7 @@ func (h *Hydra) startWatch() (err error) {
 	}
 
 	//创建服务管理器
-	h.servers = newResponsiveServers(h.registryAddr, h.registry, h.logger)
+	h.rspServer = newRspServer(h.registryAddr, h.registry, h.logger)
 
 	//循环接收服务变更新通知
 	go h.loopRecvNotify()
@@ -140,7 +140,7 @@ LOOP:
 			if h.done {
 				break LOOP
 			}
-			h.servers.Change(u)
+			h.rspServer.Change(u)
 		}
 	}
 }
