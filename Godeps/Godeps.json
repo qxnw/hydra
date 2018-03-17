@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/qxnw/hydra",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/mattn/go-oci8",
+			"Rev": "189d69fa2d3bde6c4b93f2b601e5a21b6c52334a"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "9dfe39835686865bff950a07b394c12a98ddc811"
+		}
+	]
+}
