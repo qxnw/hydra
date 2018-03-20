@@ -2,10 +2,9 @@ package micro
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/logger"
 
@@ -31,24 +30,24 @@ type server struct {
 //newServer 初始化服务器
 func newServer(cnf conf.IServerConf, registryAddr string, registry registry.IRegistry) *server {
 	return &server{
-		registry: registry,
-		cnf:      cnf,
+		cnf:          cnf,
+		registryAddr: registryAddr,
+		registry:     registry,
 	}
 }
 
 //Start 启用服务器
 func (h *server) Start() (err error) {
 	h.logger = logger.New(h.cnf.GetPlatName())
-	h.logger.Infof("开始启动:%s", h.cnf.GetPlatName())
 
 	//构建服务器
 	h.server, err = servers.NewRegistryServer(h.cnf.GetServerType(), h.registryAddr, h.cnf, h.logger)
 	if err != nil {
-		return fmt.Errorf("server初始化失败:%s", h.cnf.GetServerName())
+		return err
 	}
 	err = h.server.Start()
 	if err != nil {
-		return fmt.Errorf("server启动失败:%s", h.cnf.GetServerName())
+		return err
 	}
 	h.startTime = time.Now()
 	return nil

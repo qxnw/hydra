@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -29,14 +30,15 @@ type Hydra struct {
 	clusterName  string
 	registryAddr string
 
-	mu       sync.Mutex
-	registry registry.IRegistry
-	watcher  *watcher.ConfWatcher
-	notify   chan *watcher.ContentChangeArgs
-	rspServer  *rspServer
-	trace    string
-	done     bool
+	mu        sync.Mutex
+	registry  registry.IRegistry
+	watcher   *watcher.ConfWatcher
+	notify    chan *watcher.ContentChangeArgs
+	rspServer *rspServer
+	trace     string
+	done      bool
 }
+
 //NewHydra 创建hydra服务器
 func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, isDebug bool) *Hydra {
 	servers.IsDebug = isDebug
@@ -56,19 +58,15 @@ func NewHydra(platName string, systemName string, serverTypes []string, clusterN
 
 //Start 启动hydra服务器
 func (h *Hydra) Start() (err error) {
-
 	//非调试模式时设置日志写协程数为50个
 	if !h.isDebug {
 		logger.AddWriteThread(49)
-	}
-	//创建注册中心
-	if h.registry, err = registry.NewRegistryWithAddress(h.registryAddr, h.logger); err != nil {
-		return
 	}
 	//创建trace性能跟踪
 	if err = startTrace(h.trace); err != nil {
 		return
 	}
+
 	//开始监控服务器配置变更
 	if err = h.startWatch(); err != nil {
 		return err
@@ -83,24 +81,31 @@ LOOP:
 	for {
 		select {
 		case <-h.interrupt:
-			h.logger.Warnf("hydra 正在安全退出")
 			h.done = true
 			break LOOP
 		}
 	}
 	h.rspServer.Shutdown()
 	h.logger.Warnf("hydra 已安全退出")
+	logger.Close()
 	return nil
 }
 
 //startWatch 启动服务器配置监控
 func (h *Hydra) startWatch() (err error) {
+
+	//创建注册中心
+	if h.registry, err = registry.NewRegistryWithAddress(h.registryAddr, h.logger); err != nil {
+		err = fmt.Errorf("注册中心初始化失败:%s(%v)", h.registryAddr, err)
+		return
+	}
+
 	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, h.logger)
 	if err != nil {
 		err = fmt.Errorf("watcher初始化失败 %s,%+v", filepath.Join(h.platName, h.systemName), err)
 		return
 	}
-	h.logger.Infof("启动 hydra server(%s)...", filepath.Join(h.platName, h.systemName))
+	h.logger.Infof("启动 %s", filepath.Join("/", h.platName, h.systemName, strings.Join(h.serverTypes, "-"), h.clusterName))
 	if h.notify, err = h.watcher.Notify(); err != nil {
 		return err
 	}

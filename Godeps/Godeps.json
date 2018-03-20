@@ -9,6 +9,11 @@
 			"Rev": "4b3d68f87f176641ffc147420296013aff66ea32"
 		},
 		{
+			"ImportPath": "github.com/bradfitz/gomemcache/memcache",
+			"Comment": "release.r60-41-gfb1f79c",
+			"Rev": "fb1f79c6b65acda83063cbc69f6bba1522558bfc"
+		},
+		{
 			"ImportPath": "github.com/gin-contrib/sse",
 			"Rev": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
 		},
@@ -118,100 +123,137 @@
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/cache",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/cache/memcache",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/cache/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/concurrent/cmap",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/db",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/db/tpl",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/encoding",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/file",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/influxdb",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/influxdb/escape",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/influxdb/models",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/jsons",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/logger",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/metrics",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/mq",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/xmq",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/net",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/queue",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/redis",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/registry",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/rpc",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/security/jwt",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/security/md5",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/transform",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/types",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		},
 		{
 			"ImportPath": "github.com/qxnw/lib4go/utility",
-			"Rev": "6f4c1e968330839ed1074b8e64935077e6b168e9"
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/zk",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-zookeeper/zk",
+			"Rev": "1d7be4effb13d2d908342d349d71a284a7542693"
 		},
 		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Comment": "v1.1",
 			"Rev": "9831f2c3ac1068a78f50999a30db84270f647af6"
+		},
+		{
+			"ImportPath": "github.com/urfave/cli",
+			"Comment": "v1.20.0-73-g8e01ec4",
+			"Rev": "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff"
 		},
 		{
 			"ImportPath": "github.com/zkfy/cron",
@@ -230,6 +272,10 @@
 		{
 			"ImportPath": "github.com/zkfy/log",
 			"Rev": "b2704c3ef8960f03712f350344e9232326286b31"
+		},
+		{
+			"ImportPath": "github.com/zkfy/stompngo",
+			"Rev": "9378e70ca4813277a83cfd0c36531f6101b5b484"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
@@ -430,6 +476,154 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/concurrent/cmap",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/logger",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/mq",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/zkfy/stompngo",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis/internal",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis/internal/consistenthash",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis/internal/hashtag",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis/internal/pool",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/go-redis/redis/internal/proto",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/file",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/jsons",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/net",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/utility",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/zkfy/log",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/types",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/redis/vendor/github.com/qxnw/lib4go/security/md5",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/concurrent/cmap",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/logger",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/mq",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/zkfy/stompngo",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/file",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/jsons",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/net",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/utility",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/zkfy/log",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/mq/stomp/vendor/github.com/qxnw/lib4go/security/md5",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/qxnw/lib4go/queue",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/qxnw/lib4go/redis",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis/internal",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis/internal/consistenthash",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis/internal/hashtag",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis/internal/pool",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/go-redis/redis/internal/proto",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
+		},
+		{
+			"ImportPath": "github.com/qxnw/lib4go/queue/redis/vendor/github.com/qxnw/lib4go/types",
+			"Rev": "48c5c759eebafad5b65ea66c8fa703ab0a3dc7d8"
 		}
 	]
 }

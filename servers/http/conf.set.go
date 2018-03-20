@@ -59,6 +59,7 @@ func SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, cnf conf.IS
 		return false, err
 	}
 	if err != nil {
+		err = fmt.Errorf("路由2:%v", err)
 		return false, err
 	}
 

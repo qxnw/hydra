@@ -70,7 +70,7 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		sysName:      sections[1],
 		serverType:   sections[2],
 		clusterName:  sections[3],
-		varConfPath:  filepath.Join(sections[0], "var"),
+		varConfPath:  filepath.Join("/", sections[0], "var"),
 		registry:     rgst,
 		subNodeConfs: make(map[string]JSONConf),
 		varNodeConfs: make(map[string]JSONConf),
@@ -156,7 +156,7 @@ func (c *ServerConf) GetSubObject(name string, v interface{}) (int32, error) {
 	if err != nil {
 		return 0, err
 	}
-	if err := conf.Unmarshal(&v); err != nil {
+	if err := conf.Unmarshal(v); err != nil {
 		return 0, err
 	}
 	return conf.version, nil

@@ -71,10 +71,9 @@ type Breaker struct {
 	Disable          bool   `json:"disable"`
 }
 type Static struct {
-	Path    string `json:"path" valid:"ascii,required"`
-	Left    string `json:"left" valid:"ascii"`
-	Right   string `json:"right" valid:"ascii"`
-	Files   []string
+	Dir     string `json:"dir" valid:"ascii,required"`
+	Prefix  string `json:"prefix" valid:"ascii"`
+	Exts    string `json:"exts" valid:"ascii"`
 	Disable bool
 }
 type Tasks struct {
@@ -110,4 +109,3 @@ type Queue struct {
 	Concurrency int               `json:"concurrency"`
 	Handler     interface{}
 }
-

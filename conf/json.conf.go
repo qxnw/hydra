@@ -3,6 +3,7 @@ package conf
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -44,17 +45,21 @@ func NewJSONConf(message []byte, version int32) (c *JSONConf, err error) {
 		version: version,
 	}
 	if err = json.Unmarshal(message, &c.data); err != nil {
-		return
+		return nil, err
 	}
 	return c, nil
 }
 
 //Unmarshal 将当前[]byte反序列化为对象
 func (j *JSONConf) Unmarshal(v interface{}) error {
-	if err := json.Unmarshal(j.raw, &v); err != nil {
+	if err := json.Unmarshal(j.raw, v); err != nil {
 		return err
 	}
-	if b, err := govalidator.ValidateStruct(&v); !b {
+	if reflect.ValueOf(v).Kind() != reflect.Struct {
+		return nil
+	}
+	if b, err := govalidator.ValidateStruct(v); !b {
+		err = fmt.Errorf("validate(%v):%v", reflect.TypeOf(v), err)
 		return err
 	}
 	return nil
@@ -103,8 +108,10 @@ func (j *JSONConf) GetInt(key string, def ...int) int {
 
 //GetStrings 获取字符串数组
 func (j *JSONConf) GetStrings(key string, def ...string) (r []string) {
-	if r = strings.Split(j.GetString(key), ";"); len(r) > 0 {
-		return r
+	if v := j.GetString(key); v != "" {
+		if r = strings.Split(v, ";"); len(r) > 0 {
+			return r
+		}
 	}
 	if len(def) > 0 {
 		return def
@@ -153,7 +160,7 @@ func (j *JSONConf) GeJSON(section string) (r []byte, version int32, err error) {
 
 //HasSection 是否存在节点
 func (j *JSONConf) HasSection(section string) bool {
-	_, ok := j.data[section]
+	_, ok := j.data[section].(map[string]interface{})
 	return ok
 }
 

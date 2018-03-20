@@ -37,7 +37,7 @@ func NewConfWatcher(platName string, systemName string, serverTypes []string, cl
 	}
 	w.paths = make([]string, 0, len(serverTypes))
 	for _, tp := range serverTypes {
-		w.paths = append(w.paths, filepath.Join(platName, systemName, tp, clusterName, "conf"))
+		w.paths = append(w.paths, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
 	}
 
 	w.watchers = make([]*Watcher, 0, len(w.paths))
@@ -51,7 +51,8 @@ func NewConfWatcher(platName string, systemName string, serverTypes []string, cl
 //Notify 服务器变更通知
 func (c *ConfWatcher) Notify() (chan *ContentChangeArgs, error) {
 	for _, watcher := range c.watchers {
-		if err := watcher.Start(); err != nil {
+		watcher.notifyChan = c.notifyChan
+		if _, err := watcher.Start(); err != nil {
 			return nil, err
 		}
 	}

@@ -46,7 +46,7 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 		return true, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("路由未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
+		return false, fmt.Errorf("路由未配置或配置有误:%v", err)
 	}
 	if ok := comparer.IsSubConfChanged("header"); ok {
 		return ok, nil
@@ -67,7 +67,7 @@ func (w *ApiResponsiveServer) SetConf(restart bool, cnf conf.IServerConf) (err e
 	var ok bool
 	//设置路由
 	if restart {
-		if _, err := SetHttpRouters(w.engine, w.server, nil); err != nil {
+		if _, err := SetHttpRouters(w.engine, w.server, cnf); err != nil {
 			return err
 		}
 	}

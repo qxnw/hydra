@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/profile"
 )
 
+var traces = []string{"cpu", "mem", "block"}
+
 //startTrace 启用项目性能跟踪
 func startTrace(trace string) error {
 	switch trace {

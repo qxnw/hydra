@@ -43,7 +43,7 @@ func NewWatcher(path string, timeSpan time.Duration, registry registry.IRegistry
 }
 
 //Start 监控配置项变化，当发生错误时持续监控节点变化，只有明确节点不存在时才会通知关闭
-func (w *Watcher) Start() (err error) {
+func (w *Watcher) Start() (c chan *ContentChangeArgs, err error) {
 	errChan := make(chan error, 1)
 	go func() {
 		err := w.watch()
@@ -53,9 +53,9 @@ func (w *Watcher) Start() (err error) {
 	}()
 	select {
 	case err = <-errChan:
-		return
+		return nil, err
 	case <-time.After(time.Microsecond * 500):
-		return nil
+		return w.notifyChan, nil
 	}
 }
 
