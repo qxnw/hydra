@@ -9,6 +9,7 @@ import (
 	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/net"
 )
 
 type IServer interface {
@@ -62,6 +63,7 @@ func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	if h.server, err = NewApiServer(cnf.GetServerName(),
 		cnf.GetString("address", ":8080"),
 		nil,
+		WithIP(net.GetLocalIPAddress(cnf.GetString("ipMask"))),
 		WithLogger(logger),
 		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3))); err != nil {
 		return
@@ -86,6 +88,7 @@ func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	}
 
 	if w.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil,
+		WithIP(net.GetLocalIPAddress(cnf.GetString("ipMask"))),
 		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3)),
 		WithLogger(w.Logger)); err != nil {
 		return
@@ -105,7 +108,11 @@ func (w *ApiResponsiveServer) Start() (err error) {
 	if err = w.server.Run(); err != nil {
 		return
 	}
-	return w.publish()
+	if err = w.publish(); err != nil {
+		w.Shutdown()
+		return err
+	}
+	return nil
 }
 
 //Shutdown 关闭服务器

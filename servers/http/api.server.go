@@ -156,7 +156,12 @@ func (s *ApiServer) getAddress(args ...interface{}) string {
 		port = 8000
 	}
 	s.port = port
-	s.host = host
+	switch host {
+	case s.ip, "0.0.0.0":
+		s.host = s.ip
+	default:
+		s.host = host
+	}
 	addr := host + ":" + fmt.Sprint(s.port)
 	return addr
 }

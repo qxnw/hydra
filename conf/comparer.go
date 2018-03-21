@@ -41,10 +41,7 @@ func (s *Comparer) IsSubConfChanged(name string) (isChanged bool) {
 //IsRequiredSubConfChanged 检查必须节点是否发生变化
 func (s *Comparer) IsRequiredSubConfChanged(name string) (isChanged bool, err error) {
 	oldConf, _ := s.Oconf.GetSubConf(name)
-	newConf, err := s.Nconf.GetSubConf(name)
-	if err != nil {
-		return true, err
-	}
+	newConf, _ := s.Nconf.GetSubConf(name)
 	if oldConf == nil {
 		oldConf = &JSONConf{version: 0}
 	}
