@@ -59,7 +59,11 @@ func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 		return nil, fmt.Errorf("engine启动失败%v", err)
 	}
 
-	if h.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil, WithLogger(logger)); err != nil {
+	if h.server, err = NewApiServer(cnf.GetServerName(),
+		cnf.GetString("address", ":8080"),
+		nil,
+		WithLogger(logger),
+		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3))); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {
@@ -81,7 +85,9 @@ func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 		return fmt.Errorf("engine启动失败%v", err)
 	}
 
-	if w.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil, WithLogger(w.Logger)); err != nil {
+	if w.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil,
+		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3)),
+		WithLogger(w.Logger)); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {
@@ -109,10 +115,11 @@ func (w *ApiResponsiveServer) Shutdown() {
 		close(w.closeChan)
 	})
 	w.unpublish()
-	w.server.Shutdown(10 * time.Second)
 	if w.engine != nil {
 		w.engine.Close()
 	}
+	w.server.Shutdown(10 * time.Second)
+
 }
 
 //GetAddress 获取服务器地址

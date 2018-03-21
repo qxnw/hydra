@@ -76,7 +76,7 @@ func (h *Hydra) Start() (err error) {
 	go h.freeMemory()
 
 	//堵塞当前进程，等服务结束
-	signal.Notify(h.interrupt, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGUSR1) //9:kill/SIGKILL,15:SIGTEM,20,SIGTOP 2:interrupt/syscall.SIGINT
+	signal.Notify(h.interrupt, os.Interrupt, os.Kill, syscall.SIGTERM) //, syscall.SIGUSR1) //9:kill/SIGKILL,15:SIGTEM,20,SIGTOP 2:interrupt/syscall.SIGINT
 LOOP:
 	for {
 		select {

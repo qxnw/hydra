@@ -35,6 +35,15 @@ func WithIP(ip string) Option {
 	}
 }
 
+//WithTimeout 设置服务器超时时长
+func WithTimeout(readTimeout int, writeTimeout int, readHeaderTimeout int) Option {
+	return func(o *option) {
+		o.readTimeout = readTimeout
+		o.writeTimeout = writeTimeout
+		o.readHeaderTimeout = readHeaderTimeout
+	}
+}
+
 //WithMetric 设置基于influxdb的系统监控组件
 func WithMetric(host string, dataBase string, userName string, password string, cron string) Option {
 	return func(o *option) {

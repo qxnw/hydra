@@ -42,7 +42,7 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 			//初始化服务器配置
 			conf, err := conf.NewServerConf(u.Path, u.Content, u.Version, s.registry)
 			if err != nil {
-				s.logger.Errorf("%s配置有误:%v", u.Path, err)
+				s.logger.Error(err)
 				return
 			}
 			if _, ok := s.servers[u.Path]; !ok {

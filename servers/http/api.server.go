@@ -31,7 +31,11 @@ func NewApiServer(name string, addr string, routers []*conf.Router, opts ...Opti
 		Name: name,
 		Type: "api",
 	}}
-	t.option = &option{metric: middleware.NewMetric(t.conf)}
+	t.option = &option{
+		metric:            middleware.NewMetric(t.conf),
+		readHeaderTimeout: 6,
+		readTimeout:       6,
+		writeTimeout:      6}
 	for _, opt := range opts {
 		opt(t.option)
 	}

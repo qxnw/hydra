@@ -39,7 +39,7 @@ type ServiceEngine struct {
 //NewServiceEngine 构建服务引擎
 func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
 	e = &ServiceEngine{IServerConf: conf, registryAddr: registryAddr, logger: logger, engines: engines}
-	e.engines = append(e.engines, "go", "rpc")
+	e.engines = appendEngines(e.engines, "go", "rpc")
 	e.StandardComponent = component.NewStandardComponent("sys.engine", e)
 	e.Invoker = rpc.NewInvoker(conf.GetPlatName(), conf.GetSysName(), registryAddr)
 	e.IComponentCache = component.NewStandardCache(e, "cache")
@@ -151,4 +151,16 @@ func formatName(name string) string {
 	//return strings.ToLower(text)
 	//}
 	//return strings.ToLower(text[0:index])
+}
+func appendEngines(engines []string, ext ...string) []string {
+	addEngine := make([]string, 0, len(ext))
+	for _, n := range ext {
+		for _, en := range engines {
+			if en == n {
+				continue
+			}
+		}
+		addEngine = append(addEngine, n)
+	}
+	return append(engines, addEngine...)
 }
