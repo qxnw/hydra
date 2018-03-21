@@ -20,39 +20,40 @@ import (
 
 //Hydra  hydra app
 type Hydra struct {
-	logger       *logger.Logger
-	closeChan    chan struct{}
-	interrupt    chan os.Signal
-	isDebug      bool
-	platName     string
-	systemName   string
-	serverTypes  []string
-	clusterName  string
-	registryAddr string
-
-	mu        sync.Mutex
-	registry  registry.IRegistry
-	watcher   *watcher.ConfWatcher
-	notify    chan *watcher.ContentChangeArgs
-	rspServer *rspServer
-	trace     string
-	done      bool
+	logger         *logger.Logger
+	closeChan      chan struct{}
+	interrupt      chan os.Signal
+	isDebug        bool
+	platName       string
+	systemName     string
+	serverTypes    []string
+	clusterName    string
+	registryAddr   string
+	systemRootName string
+	mu             sync.Mutex
+	registry       registry.IRegistry
+	watcher        *watcher.ConfWatcher
+	notify         chan *watcher.ContentChangeArgs
+	rspServer      *rspServer
+	trace          string
+	done           bool
 }
 
 //NewHydra 创建hydra服务器
 func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, isDebug bool) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
-		logger:       logger.New("hydra"),
-		closeChan:    make(chan struct{}),
-		interrupt:    make(chan os.Signal, 1),
-		isDebug:      isDebug,
-		platName:     platName,
-		systemName:   systemName,
-		serverTypes:  serverTypes,
-		clusterName:  clusterName,
-		registryAddr: registryAddr,
-		trace:        trace,
+		logger:         logger.New("hydra"),
+		systemRootName: filepath.Join("/", platName, systemName, strings.Join(serverTypes, "-"), clusterName),
+		closeChan:      make(chan struct{}),
+		interrupt:      make(chan os.Signal, 1),
+		isDebug:        isDebug,
+		platName:       platName,
+		systemName:     systemName,
+		serverTypes:    serverTypes,
+		clusterName:    clusterName,
+		registryAddr:   registryAddr,
+		trace:          trace,
 	}
 }
 
@@ -105,7 +106,7 @@ func (h *Hydra) startWatch() (err error) {
 		err = fmt.Errorf("watcher初始化失败 %s,%+v", filepath.Join(h.platName, h.systemName), err)
 		return
 	}
-	h.logger.Infof("初始化 %s", filepath.Join("/", h.platName, h.systemName, strings.Join(h.serverTypes, "-"), h.clusterName))
+	h.logger.Infof("初始化 %s", h.systemRootName)
 	if h.notify, err = h.watcher.Notify(); err != nil {
 		return err
 	}
@@ -136,6 +137,15 @@ func (h *Hydra) freeMemory() {
 
 //循环接收服务器配置变化通知
 func (h *Hydra) loopRecvNotify() {
+	notify := make(chan struct{}, 1)
+	go func() {
+		select {
+		case <-time.After(time.Second * 3):
+			h.logger.Warnf("%s 未配置", h.systemRootName)
+		case <-notify:
+			break
+		}
+	}()
 LOOP:
 	for {
 		select {
@@ -146,6 +156,10 @@ LOOP:
 				break LOOP
 			}
 			h.rspServer.Change(u)
+			select {
+			case notify <- struct{}{}:
+			default:
+			}
 		}
 	}
 }
