@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/qxnw/hydra/conf"
@@ -12,23 +11,24 @@ import (
 func (w *ApiResponsiveServer) Notify(conf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-
+	//if !conf.HasSubConf("router", "static") {
+	//return errors.New("路由或静态文件未配置,未启动更新")
+	//	}
 	//检查是否需要重启服务器
 	restart, err := w.NeedRestart(conf)
 	if err != nil {
 		return err
 	}
 	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
-		servers.Tracef(w.Infof, "%s:重启服务", conf.GetServerName())
-		w.currentConf = conf
+		servers.Trace(w.Infof, "关键配置发生变化，准备重启服务器")
 		return w.Restart(conf)
 	}
 	//服务器地址未变化，更新服务器当前配置，并立即生效
+	servers.Trace(w.Infof, "配置发生变化，准备更新")
 	if err = w.SetConf(false, conf); err != nil {
 		return err
 	}
 	w.engine.UpdateVarConf(conf)
-	w.currentConf = conf
 	return nil
 }
 
@@ -59,10 +59,6 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 
 //SetConf 设置配置参数
 func (w *ApiResponsiveServer) SetConf(restart bool, cnf conf.IServerConf) (err error) {
-	if !cnf.HasSubConf("router", "static") {
-		err = errors.New("路由或静态文件未配置")
-		return err
-	}
 
 	var ok bool
 	//设置路由
@@ -75,44 +71,44 @@ func (w *ApiResponsiveServer) SetConf(restart bool, cnf conf.IServerConf) (err e
 	if ok, err = SetStatic(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "静态文件")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "静态文件")
 
 	//设置请求头
 	if ok, err = SetHeaders(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "header设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "header设置")
 
 	//设置熔断配置
 	if ok, err = SetCircuitBreaker(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "熔断设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "熔断设置")
 
 	//设置jwt安全认证
 	if ok, err = SetJWT(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "jwt设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "jwt设置")
 
 	//设置ajax请求
 	if ok, err = SetAjaxRequest(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "ajax请求限制设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "ajax请求限制设置")
 
 	//设置metric
 	if ok, err = SetMetric(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "metric设置")
 
 	//设置host
 	if ok, err = SetHosts(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, cnf.GetServerName(), getEnableName(ok), "host设置")
-
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "host设置")
+	w.currentConf = cnf
 	return nil
 }
 func getEnableName(b bool) string {

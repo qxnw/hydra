@@ -38,6 +38,6 @@ func (w *WebResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err 
 	if ok, err = SetView(w.webServer, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetServerName(), getEnableName(ok), "view设置")
+	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "view设置")
 	return nil
 }

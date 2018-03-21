@@ -23,13 +23,16 @@ func NewNamedCircuitBreakers(conf *conf.CircuitBreaker) *NamedCircuitBreakers {
 	return n
 }
 func (c *NamedCircuitBreakers) getBreakerConf(url string) *conf.Breaker {
-	if breakerConf, ok := c.conf.CircuitBreakers[url]; ok {
-		return breakerConf
+	var defBreaker *conf.Breaker
+	for _, breakerConf := range c.conf.CircuitBreakers {
+		if breakerConf.URL == url {
+			return breakerConf
+		}
+		if breakerConf.URL == "*" {
+			defBreaker = breakerConf
+		}
 	}
-	if breakerConf, ok := c.conf.CircuitBreakers["*"]; ok {
-		return breakerConf
-	}
-	return nil
+	return defBreaker
 }
 
 //GetBreaker 获取当前URL的熔断信息

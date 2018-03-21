@@ -409,7 +409,11 @@ func (r *StandardComponent) AddFallbackHandlers(f map[string]interface{}) {
 
 //CheckTag 检查服务标签是否匹配
 func (r *StandardComponent) CheckTag(service string, tagName string) bool {
-	for _, v := range r.ServicesTags[service] {
+	tags := r.ServicesTags[service]
+	if len(tags) == 0 {
+		return true
+	}
+	for _, v := range tags {
 		if v == tagName {
 			return true
 		}

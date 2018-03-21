@@ -1,9 +1,9 @@
 package component
 
 import (
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/registry"
-	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/cache"
 	"github.com/qxnw/lib4go/db"
 	"github.com/qxnw/lib4go/influxdb"
@@ -19,7 +19,6 @@ type IContainer interface {
 	GetRegistry() registry.IRegistry
 	GetDefaultCache() (c cache.ICache, err error)
 	GetCache(name string) (c cache.ICache, err error)
-	GetConf(conf interface{}) (c interface{}, err error)
 	GetDefaultDB() (c *db.DB, err error)
 	GetDB(name string) (d *db.DB, err error)
 	GetDefaultInflux() (c *influxdb.InfluxClient, err error)

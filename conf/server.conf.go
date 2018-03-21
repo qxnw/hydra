@@ -19,13 +19,20 @@ type ISystemConf interface {
 	GetServerType() string
 	GetClusterName() string
 	GetServerName() string
+	GetAppConf(v interface{}) error
 }
 type IMainConf interface {
 	IConf
+	GetSystemRootfPath() string
+	GetMainConfPath() string
+	GetServicePubRootPath(name string) string
+	GetServerPubRootPath() string
 	IsStop() bool
 	GetSubObject(name string, v interface{}) (int32, error)
 	GetSubConf(name string) (*JSONConf, error)
 	HasSubConf(name ...string) bool
+	GetSubConfClone() map[string]JSONConf
+	SetSubConf(data map[string]JSONConf)
 }
 type IVarConf interface {
 	GetVarConf(tp string, name string) (*JSONConf, error)
@@ -55,6 +62,7 @@ type ServerConf struct {
 	varNodeConfs map[string]JSONConf
 	registry     registry.IRegistry
 	varLock      sync.RWMutex
+	subLock      sync.RWMutex
 }
 
 //NewServerConf 构建服务器配置缓存
@@ -113,6 +121,11 @@ func (c *ServerConf) loadChildNodeConf() error {
 
 //初始化子节点配置
 func (c *ServerConf) loadVarNodeConf() error {
+
+	//检查跟路径是否存在
+	if b, err := c.registry.Exists(c.varConfPath); err == nil && !b {
+		return nil
+	}
 	//获取第一级目录
 	varfirstNodes, _, err := c.registry.GetChildren(c.varConfPath)
 	if err != nil {
@@ -150,6 +163,32 @@ func (c *ServerConf) IsStop() bool {
 	return c.GetString("status") == "stop"
 }
 
+//GetMainConfPath 获取主配置文件路径
+func (c *ServerConf) GetMainConfPath() string {
+	return filepath.Join("/", c.mainConfpath)
+}
+
+//GetSystemRootfPath 获取系统根路径
+func (c *ServerConf) GetSystemRootfPath() string {
+	return filepath.Join("/", c.platName, c.sysName, c.serverType, c.clusterName)
+}
+
+//GetServicePubRootPath 获取服务发布跟路径
+func (c *ServerConf) GetServicePubRootPath(svName string) string {
+	return filepath.Join("/", c.platName, "services", c.serverType, svName, "providers")
+}
+
+//GetServerPubRootPath 获取服务器发布的跟路径
+func (c *ServerConf) GetServerPubRootPath() string {
+	return filepath.Join("/", c.GetSystemRootfPath(), "servers")
+}
+
+//GetAppConf 获取系统配置
+func (c *ServerConf) GetAppConf(v interface{}) error {
+	_, err := c.GetSubObject("app", v)
+	return err
+}
+
 //GetSubObject 获取子系统配置
 func (c *ServerConf) GetSubObject(name string, v interface{}) (int32, error) {
 	conf, err := c.GetSubConf(name)
@@ -164,14 +203,36 @@ func (c *ServerConf) GetSubObject(name string, v interface{}) (int32, error) {
 
 //GetSubConf 指定配置文件名称，获取系统配置信息
 func (c *ServerConf) GetSubConf(name string) (*JSONConf, error) {
+	c.subLock.RLock()
+	defer c.subLock.RUnlock()
 	if v, ok := c.subNodeConfs[name]; ok {
 		return &v, nil
 	}
 	return nil, ErrNoSetting
 }
 
+//GetSubConfClone 获取sub配置拷贝
+func (c *ServerConf) GetSubConfClone() map[string]JSONConf {
+	c.subLock.RLock()
+	defer c.subLock.RUnlock()
+	data := make(map[string]JSONConf)
+	for k, v := range c.subNodeConfs {
+		data[k] = v
+	}
+	return data
+}
+
+//SetSubConf 获取sub配置参数
+func (c *ServerConf) SetSubConf(data map[string]JSONConf) {
+	c.subLock.Lock()
+	defer c.subLock.Unlock()
+	c.subNodeConfs = data
+}
+
 //HasSubConf 是否存在子级配置
 func (c *ServerConf) HasSubConf(names ...string) bool {
+	c.subLock.RLock()
+	defer c.subLock.RUnlock()
 	for _, name := range names {
 		_, ok := c.subNodeConfs[name]
 		if ok {
@@ -249,5 +310,6 @@ func (c *ServerConf) GetClusterName() string {
 
 //GetServerName 获取服务器名称
 func (c *ServerConf) GetServerName() string {
-	return fmt.Sprintf("%s.%s(%s,%s)", c.sysName, c.platName, c.serverType, c.clusterName)
+	return fmt.Sprintf("%s-%s(%s)", c.sysName, c.clusterName, c.serverType)
+	//return filepath.Join("/", c.platName, c.sysName, c.serverType, c.clusterName)
 }

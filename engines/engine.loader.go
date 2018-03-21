@@ -11,8 +11,8 @@ type ServiceLoader func(r *component.StandardComponent, i component.IContainer)
 
 var serviceLoaders = make(map[string]ServiceLoader)
 
-//AddGoLoader 添加go引擎的服务加载器
-func AddGoLoader(f ServiceLoader) {
+//AddServiceLoader 添加引擎加载器
+func AddServiceLoader(f ServiceLoader) {
 	AddLoader("go", f)
 }
 
@@ -25,6 +25,7 @@ func AddLoader(name string, f ServiceLoader) {
 }
 
 func (r *ServiceEngine) loadEngineServices() {
+	fmt.Println("loadEngineServices:", len(serviceLoaders), r.engines)
 	for _, engine := range r.engines {
 		if loader, ok := serviceLoaders[engine]; ok {
 			loader(r.StandardComponent, r)

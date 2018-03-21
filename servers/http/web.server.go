@@ -29,8 +29,9 @@ type WebServer struct {
 func NewWebServer(name string, addr string, routers []*conf.Router, opts ...Option) (t *WebServer, err error) {
 	t = &WebServer{conf: &conf.MetadataConf{
 		Name: name,
+		Type: "web",
 	}}
-	t.option = &option{metric: middleware.NewMetric(t.conf), static: &middleware.StaticOptions{Enable: false}}
+	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)
 	}

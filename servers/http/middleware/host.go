@@ -12,7 +12,7 @@ import (
 func Host(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		hosts, ok := cnf.GetMetadata("hosts").(conf.Hosts)
-		if !ok {
+		if !ok || len(hosts) == 0 {
 			ctx.Next()
 			return
 		}

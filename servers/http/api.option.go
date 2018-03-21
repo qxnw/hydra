@@ -16,7 +16,6 @@ type option struct {
 	writeTimeout      int
 	readHeaderTimeout int
 	metric            *middleware.Metric
-	static            *middleware.StaticOptions
 }
 
 //Option 配置选项
@@ -40,24 +39,5 @@ func WithIP(ip string) Option {
 func WithMetric(host string, dataBase string, userName string, password string, cron string) Option {
 	return func(o *option) {
 		o.metric.Restart(host, dataBase, userName, password, cron, o.Logger)
-	}
-}
-
-//WithStatic 设置静态文件目录
-func WithStatic(enable bool, prefix string, dir string, listDir bool, exts []string) Option {
-	return func(o *option) {
-		if o.static == nil {
-			o.static = &middleware.StaticOptions{
-				Enable:   enable,
-				Prefix:   prefix,
-				RootPath: dir,
-				Exts:     exts,
-			}
-			return
-		}
-		o.static.Enable = enable
-		o.static.Prefix = prefix
-		o.static.RootPath = dir
-		o.static.Exts = exts
 	}
 }

@@ -32,7 +32,7 @@ func (s *ApiServer) SetHosts(hosts conf.Hosts) error {
 }
 
 //SetStatic 设置静态文件路由
-func (s *ApiServer) SetStatic(static *conf.Static) error {
+func (s *ApiServer) SetStatic(static *conf.Static) error {	
 	s.conf.SetMetadata("static", static)
 	return nil
 }

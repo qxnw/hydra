@@ -1,10 +1,13 @@
 package main
 
 import (
-	"github.com/qxnw/hydra/micro"
+	"github.com/qxnw/hydra/hydra"
 )
 
 func main() {
-	app := micro.NewApp(micro.WithDebug())
+	app := hydra.NewApp(hydra.WithPlatName("hydrav4"),
+		hydra.WithSystemName("collector"),
+		hydra.WithServerTypes("api"),
+		hydra.WithDebug())
 	app.Start()
 }

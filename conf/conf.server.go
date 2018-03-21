@@ -1,6 +1,9 @@
 package conf
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type metadata struct {
 	data map[string]interface{}
@@ -8,18 +11,23 @@ type metadata struct {
 }
 
 func (m *metadata) Get(key string) interface{} {
-	m.lock.RLock()
+	fmt.Println("rlock")
+	m.lock.RLocker().Lock()
+	defer fmt.Println("runlock")
+	defer m.lock.RLocker().Unlock()
+
 	data := m.data[key]
-	m.lock.RUnlock()
-	return &data
+	return data
 }
 func (m *metadata) Set(key string, value interface{}) {
+	fmt.Println("lock")
 	m.lock.Lock()
+	defer fmt.Println("unlock")
+	defer m.lock.Unlock()
 	if m.data == nil {
 		m.data = make(map[string]interface{})
 	}
 	m.data[key] = value
-	m.lock.Unlock()
 }
 
 type MetadataConf struct {

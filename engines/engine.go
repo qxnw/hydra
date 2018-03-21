@@ -31,7 +31,6 @@ type ServiceEngine struct {
 	logger   *logger.Logger
 	registry registry.IRegistry
 	component.IComponentCache
-	component.IComponentConf
 	component.IComponentDB
 	component.IComponentInfluxDB
 	component.IComponentQueue
@@ -40,10 +39,10 @@ type ServiceEngine struct {
 //NewServiceEngine 构建服务引擎
 func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
 	e = &ServiceEngine{IServerConf: conf, registryAddr: registryAddr, logger: logger, engines: engines}
+	e.engines = append(e.engines, "go", "rpc")
 	e.StandardComponent = component.NewStandardComponent("sys.engine", e)
 	e.Invoker = rpc.NewInvoker(conf.GetPlatName(), conf.GetSysName(), registryAddr)
 	e.IComponentCache = component.NewStandardCache(e, "cache")
-	e.IComponentConf = component.NewStandardConf(e)
 	e.IComponentDB = component.NewStandardDB(e, "db")
 	e.IComponentInfluxDB = component.NewStandardInfluxDB(e, "influx")
 	e.IComponentQueue = component.NewStandardQueue(e, "queue")
@@ -53,8 +52,8 @@ func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger
 
 	e.loadEngineServices()
 	if err = e.LoadComponents(fmt.Sprintf("./%s.so", conf.GetPlatName()),
-		fmt.Sprintf("./%s.so", conf.GetServerName()),
-		fmt.Sprintf("./%s_%s.so", conf.GetPlatName(), conf.GetServerName())); err != nil {
+		fmt.Sprintf("./%s.so", conf.GetSysName()),
+		fmt.Sprintf("./%s_%s.so", conf.GetPlatName(), conf.GetSysName())); err != nil {
 		return
 	}
 	e.StandardComponent.AddRPCProxy(e.RPCProxy())
@@ -63,8 +62,9 @@ func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger
 }
 
 //UpdateVarConf 更新var配置参数
-func (r *ServiceEngine) UpdateVarConf(conf conf.IVarConf) {
+func (r *ServiceEngine) UpdateVarConf(conf conf.IServerConf) {
 	r.SetVarConf(conf.GetVarConfClone())
+	r.SetSubConf(conf.GetSubConfClone())
 }
 
 //GetServices 获取组件提供的所有服务
@@ -124,8 +124,8 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	return response, fmt.Errorf("%s未找到服务:%s %v", r.Name, service, r.getServiceMeta(engine, service))
 }
 func (r *ServiceEngine) getServiceMeta(engine string, service string) string {
-	return fmt.Sprintf(`engine:[%s]-%v
-		group:[%s]-%s`, engine, r.GetTags(service), component.GetGroupName(r.GetServerType()),
+	return fmt.Sprintf(`services：%v engine:[%s]-%v
+		group:[%s]-%s`, r.GetServices(), engine, r.GetTags(service), component.GetGroupName(r.GetServerType()),
 		r.GetGroups(service))
 }
 
@@ -138,7 +138,6 @@ func (r *ServiceEngine) GetRegistry() registry.IRegistry {
 func (r *ServiceEngine) Close() error {
 	r.Invoker.Close()
 	r.IComponentCache.Close()
-	r.IComponentConf.Close()
 	r.IComponentDB.Close()
 	r.IComponentInfluxDB.Close()
 	r.IComponentQueue.Close()

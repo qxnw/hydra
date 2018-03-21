@@ -24,7 +24,7 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 		return false, err
 	}
 	err = set.SetMetric(&metric)
-	return enable, err
+	return !metric.Disable, err
 }
 
 type ISetStatic interface {
@@ -43,7 +43,7 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 		return false, err
 	}
 	err = set.SetStatic(&static)
-	return enable, err
+	return !static.Disable, err
 }
 
 //ISetRouterHandler 设置路由列表
@@ -55,14 +55,14 @@ type ISetRouterHandler interface {
 func SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, cnf conf.IServerConf) (enable bool, err error) {
 	var routers conf.Routers
 	if _, err = cnf.GetSubObject("router", &routers); err == conf.ErrNoSetting {
+		routers = conf.Routers{}
+		routers.Routers = make([]*conf.Router, 0, 1)
+		routers.Routers = append(routers.Routers, &conf.Router{Action: []string{"GET", "POST", "PUT", "DELETE", "HEAD"}, Name: "/*name", Service: "/@name", Engine: "*"})
+	}
+	if err != conf.ErrNoSetting && err != nil {
 		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
-	if err != nil {
-		err = fmt.Errorf("路由2:%v", err)
-		return false, err
-	}
-
 	for _, router := range routers.Routers {
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting)
 	}

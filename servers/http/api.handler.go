@@ -18,16 +18,16 @@ func (s *ApiServer) getHandler(routers []*conf.Router) (x.Handler, error) {
 	engine := gin.New()
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
 	engine.Use(gin.Recovery())
-	engine.Use(s.option.metric.Handle())           //生成metric报表
-	engine.Use(middleware.Host(s.conf))            // 检查主机头是否合法
-	engine.Use(middleware.Static(s.option.static)) //处理静态文件
-	engine.Use(middleware.AjaxRequest(s.conf))     //过滤非ajax请求
-	engine.Use(middleware.JwtAuth(s.conf))         //jwt安全认证
-	engine.Use(middleware.CircuitBreak(s.conf))    //服务熔断配置
-	engine.Use(middleware.Body())                  //处理请求form
-	engine.Use(middleware.APIResponse(s.conf))     //处理返回值
-	engine.Use(middleware.Header(s.conf))          //设置请求头
-	engine.Use(middleware.JwtWriter(s.conf))       //设置jwt回写
+	engine.Use(s.option.metric.Handle())        //生成metric报表
+	engine.Use(middleware.Host(s.conf))         // 检查主机头是否合法
+	engine.Use(middleware.Static(s.conf))       //处理静态文件
+	engine.Use(middleware.AjaxRequest(s.conf))  //过滤非ajax请求
+	engine.Use(middleware.JwtAuth(s.conf))      //jwt安全认证
+	engine.Use(middleware.CircuitBreak(s.conf)) //服务熔断配置
+	engine.Use(middleware.Body())               //处理请求form
+	engine.Use(middleware.APIResponse(s.conf))  //处理返回值
+	engine.Use(middleware.Header(s.conf))       //设置请求头
+	engine.Use(middleware.JwtWriter(s.conf))    //设置jwt回写
 	err := setRouters(engine, routers)
 	return engine, err
 }

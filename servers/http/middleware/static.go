@@ -7,17 +7,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/qxnw/hydra/conf"
 )
 
-type StaticOptions struct {
-	Enable   bool
-	RootPath string
-	Prefix   string
-	Exclude  []string
-	Exts     []string
-}
-
-func (s *StaticOptions) checkExt(rPath string) bool {
+func checkExt(s *conf.Static, rPath string) bool {
 	name := filepath.Base(rPath)
 	for _, v := range s.Exclude {
 		if name == v {
@@ -40,18 +33,18 @@ func (s *StaticOptions) checkExt(rPath string) bool {
 }
 
 //MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
-func (s *StaticOptions) MustStatic(rPath string) (b bool, xname string) {
+func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
 	if len(rPath) < len(s.Prefix) {
-		return s.checkExt(rPath), rPath
+		return checkExt(s, rPath), rPath
 	}
 	if strings.HasPrefix(rPath, s.Prefix) {
 		return true, strings.TrimPrefix(rPath, s.Prefix)
 	}
-	b = s.checkExt(rPath)
+	b = checkExt(s, rPath)
 	xname = strings.TrimPrefix(rPath, s.Prefix)
 	return
 }
-func (s *StaticOptions) getDefPath(p string) string {
+func getDefPath(p string) string {
 	if p == "" || p == "/" {
 		return "index.html"
 	}
@@ -59,17 +52,19 @@ func (s *StaticOptions) getDefPath(p string) string {
 }
 
 //Static 静态文件处理插件
-func Static(opt *StaticOptions) gin.HandlerFunc {
+func Static(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if !opt.Enable || ctx.Request.Method != "GET" && ctx.Request.Method != "HEAD" {
+		opt, ok := cnf.GetMetadata("static").(*conf.Static)
+		if !ok || opt.Disable || ctx.Request.Method != "GET" && ctx.Request.Method != "HEAD" {
 			ctx.Next()
 			return
 		}
+
 		var rPath = ctx.Request.URL.Path
-		s, xname := opt.MustStatic(rPath)
+		s, xname := MustStatic(opt, rPath)
 		if s {
 			setExt(ctx, "static")
-			fPath, _ := filepath.Abs(filepath.Join(opt.RootPath, opt.getDefPath(xname)))
+			fPath, _ := filepath.Abs(filepath.Join(opt.Dir, getDefPath(xname)))
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if os.IsNotExist(err) {

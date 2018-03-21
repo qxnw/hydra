@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 func (w *ApiResponsiveServer) publish() (err error) {
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s", w.currentConf.GetServerType(), ipPort)
+	pubPath := filepath.Join(w.currentConf.GetServerPubRootPath(), ipPort)
 	data := map[string]string{
 		"service": addr,
 		//"health-checker": w.currentConf.GetHealthChecker(),
@@ -32,7 +33,7 @@ func (w *ApiResponsiveServer) publish() (err error) {
 		names = append(names, w.currentConf.GetSysName())
 	}
 	for _, host := range names {
-		servicePath := path.Join(w.currentConf.GetServerType(), host, "providers", ipPort)
+		servicePath := path.Join(w.currentConf.GetServicePubRootPath(host), ipPort)
 		err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
 		if err != nil {
 			err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)

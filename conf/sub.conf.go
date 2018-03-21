@@ -37,8 +37,7 @@ type Auth struct {
 	Disable  bool     `json:"disable"`
 }
 type Routers struct {
-	Setting map[string]string `json:"args"`
-	Routers []*Router         `json:"routers"`
+	Routers []*Router `json:"routers"`
 }
 type Router struct {
 	Name    string            `json:"name" valid:"ascii,required"`
@@ -58,10 +57,10 @@ type View struct {
 }
 
 type CircuitBreaker struct {
-	ForceBreak      bool                `json:"force-break"`
-	Disable         bool                `json:"disable"`
-	SwitchWindow    int                 `json:"swith-window" valid:"int"`
-	CircuitBreakers map[string]*Breaker `json:"circuit-breakers"`
+	ForceBreak      bool       `json:"force-break"`
+	Disable         bool       `json:"disable"`
+	SwitchWindow    int        `json:"swith-window" valid:"int"`
+	CircuitBreakers []*Breaker `json:"circuit-breakers"`
 }
 type Breaker struct {
 	URL              string `json:"url" valid:"ascii,required"`
@@ -71,9 +70,10 @@ type Breaker struct {
 	Disable          bool   `json:"disable"`
 }
 type Static struct {
-	Dir     string `json:"dir" valid:"ascii,required"`
-	Prefix  string `json:"prefix" valid:"ascii"`
-	Exts    string `json:"exts" valid:"ascii"`
+	Dir     string   `json:"dir" valid:"ascii,required"`
+	Prefix  string   `json:"prefix" valid:"ascii"`
+	Exts    []string `json:"exts" valid:"ascii"`
+	Exclude []string `json:"exclude" valid:"ascii"`
 	Disable bool
 }
 type Tasks struct {

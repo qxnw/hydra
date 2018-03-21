@@ -21,6 +21,7 @@ type ApiServer struct {
 	engine  *x.Server
 	running string
 	proto   string
+	host    string
 	port    int
 }
 
@@ -28,8 +29,9 @@ type ApiServer struct {
 func NewApiServer(name string, addr string, routers []*conf.Router, opts ...Option) (t *ApiServer, err error) {
 	t = &ApiServer{conf: &conf.MetadataConf{
 		Name: name,
+		Type: "api",
 	}}
-	t.option = &option{metric: middleware.NewMetric(t.conf), static: &middleware.StaticOptions{Enable: false}}
+	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)
 	}
@@ -99,14 +101,14 @@ func (s *ApiServer) Shutdown(timeout time.Duration) {
 				s.Infof("%s:已关闭", s.conf.Name)
 				return
 			}
-			s.Errorf("%s关闭出现错误:%v", s.conf.Name, err)
+			s.Errorf("关闭出现错误:%v", err)
 		}
 	}
 }
 
 //GetAddress 获取当前服务地址
 func (s *ApiServer) GetAddress() string {
-	return fmt.Sprintf("%s://%s:%d", s.proto, s.ip, s.port)
+	return fmt.Sprintf("%s://%s:%d", s.proto, s.host, s.port)
 }
 
 //GetStatus 获取当前服务器状态
@@ -150,6 +152,7 @@ func (s *ApiServer) getAddress(args ...interface{}) string {
 		port = 8000
 	}
 	s.port = port
-	addr := host + ":" + strconv.FormatInt(int64(port), 10)
+	s.host = host
+	addr := host + ":" + fmt.Sprint(s.port)
 	return addr
 }
