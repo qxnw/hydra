@@ -1,11 +1,15 @@
 package main
 
 import (
+	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/hydra"
 )
 
 func main() {
-	hydra := hydra.New(loader())
-	defer hydra.Close()
-	hydra.Start()
+	engines.AddServiceLoader(loader())
+	app := hydra.NewApp(hydra.WithPlatName("hydrav4"),
+		hydra.WithSystemName("collector"),
+		hydra.WithServerTypes("api-rpc"),
+		hydra.WithDebug())
+	app.Start()
 }

@@ -7,18 +7,15 @@ import (
 
 type QueryHandler struct {
 	container component.IContainer
+	Name      string
 }
 
 func NewQueryHandler(container component.IContainer) (u *QueryHandler) {
-	return &QueryHandler{container: container}
+	return &QueryHandler{container: container, Name: "QueryHandler"}
 }
 func (u *QueryHandler) Handle(name string, engine string, service string, ctx *context.Context) (r context.Response, err error) {
-	response := context.GetStandardResponse()
-	response.SetContent(200, "hello world")
-	_, err = u.container.GetDB("db")
-	if err != nil {
-		response.SetContent(0, err)
-	}
+	response := context.GetObjectResponse()
+	response.SetContent(200, "success")
 	return response, nil
 }
 
