@@ -45,9 +45,12 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 				s.logger.Error(err)
 				return
 			}
-
 			if _, ok := s.servers[u.Path]; !ok {
 				//添加新服务器
+				if conf.IsStop() {
+					s.logger.Warnf("服务器(%s)配置为:stop", u.Path)
+					return
+				}
 				server := newServer(conf, s.registryAddr, s.registry)
 				server.logger.Infof("开始启动...")
 				if err = server.Start(); err != nil {
@@ -65,10 +68,12 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 					} else {
 						server.logger.Info("配置更新成功")
 					}
+				} else {
+					server.logger.Warnf("服务器配置为:stop")
 				}
 
 				if conf.IsStop() || server.GetStatus() != servers.ST_RUNNING {
-					server.logger.Info("关闭服务器")
+					server.logger.Warnf("关闭服务器")
 					server.Shutdown()
 					delete(s.servers, u.Path)
 					return
