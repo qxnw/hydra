@@ -155,12 +155,16 @@ func formatName(name string) string {
 func appendEngines(engines []string, ext ...string) []string {
 	addEngine := make([]string, 0, len(ext))
 	for _, n := range ext {
+		var b bool
 		for _, en := range engines {
 			if en == n {
+				b = true
 				continue
 			}
 		}
-		addEngine = append(addEngine, n)
+		if !b {
+			addEngine = append(addEngine, n)
+		}
 	}
 	return append(engines, addEngine...)
 }
