@@ -83,7 +83,6 @@ func (r *ServiceEngine) LoadComponents(files ...string) error {
 		}
 		services := cmp.GetGroupServices(component.GetGroupName(r.GetServerType()))
 		groupName := component.GetGroupName(r.GetServerType())
-		r.logger.Infof("加载组件:%s[%d] %v", file, len(services), services)
 		for _, srv := range services {
 			tags := cmp.GetTags(srv)
 			if len(tags) == 0 {
