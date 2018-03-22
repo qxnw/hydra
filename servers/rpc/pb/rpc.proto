@@ -3,16 +3,16 @@ syntax = "proto3";
 package pb;
 
 message RequestContext{  
-    string service=1;
-    string method=2;
-    map<string,string> header=3;
-    map<string,string> input=4;
+    string service=1; //服务名称
+    string method=2;  //请求方法,参考 http method
+    map<string,string> header=3; //请求头信息 ，参考http header
+    map<string,string> input=4; //请求参数
    
 }
 message ResponseContext{
-    int32 status=1;
-    map<string,string> header=2;
-    string result=3;
+    int32 status=1; //状态码
+    map<string,string> header=2; //返回头信息，参考http header
+    string result=3; //返回结果，json,或xml,可通过头定义
 }
 
 
