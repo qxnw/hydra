@@ -160,7 +160,7 @@ func (c *ServerConf) loadVarNodeConf() error {
 
 //IsStop 当前服务是否已停止
 func (c *ServerConf) IsStop() bool {
-	return c.GetString("status") == "stop"
+	return c.GetString("status") != "start"
 }
 
 //GetMainConfPath 获取主配置文件路径
