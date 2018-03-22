@@ -17,7 +17,7 @@ func Host(cnf *conf.MetadataConf) gin.HandlerFunc {
 			return
 		}
 		if !checkHost(hosts, ctx) {
-			getLogger(ctx).Errorf("必须使用host:%v访问", hosts)
+			getLogger(ctx).Errorf("必须使用host:%v访问", strings.Join(hosts, "或"))
 			ctx.AbortWithStatus(x.StatusNotAcceptable)
 			return
 		}
