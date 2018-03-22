@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,6 +36,9 @@ type local struct {
 }
 
 func newLocal(prefix string) (*local, error) {
+	if err := checkPrivileges(); err != nil {
+		return nil, err
+	}
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -178,7 +183,7 @@ func (l *local) CreatePersistentNode(path string, data string) (err error) {
 		return err
 	}
 	defer f.Close()
-	if _, err = f.WriteString(rpath); err != nil {
+	if _, err = f.WriteString(data); err != nil {
 		return err
 	}
 	return nil
@@ -197,7 +202,9 @@ func (l *local) CreateSeqNode(path string, data string) (rpath string, err error
 	rpath = filepath.Join(l.formatPath(path), fmt.Sprint(nid))
 	return rpath, l.CreateTempNode(rpath, data)
 }
-
+func (l *local) CanWirteDataInDir() bool {
+	return false
+}
 func (l *local) Close() error {
 	l.tempNodeLock.Lock()
 	defer l.tempNodeLock.Unlock()
@@ -240,3 +247,17 @@ func (v *valuesEntity) GetError() error {
 func (v *valuesEntity) GetPath() string {
 	return v.path
 }
+func checkPrivileges() error {
+	if output, err := exec.Command("id", "-g").Output(); err == nil {
+		if gid, parseErr := strconv.ParseUint(strings.TrimSpace(string(output)), 10, 32); parseErr == nil {
+			if gid == 0 {
+				return nil
+			}
+			return ErrRootPrivileges
+		}
+	}
+	return ErrUnsupportedSystem
+}
+
+var ErrUnsupportedSystem = errors.New("Unsupported system")
+var ErrRootPrivileges = errors.New("You must have root user privileges. Possibly using 'sudo' command should help")

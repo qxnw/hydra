@@ -28,7 +28,7 @@ type ConfWatcher struct {
 }
 
 //NewConfWatcher 初始化服务器监控程序
-func NewConfWatcher(platName string, systemName string, serverTypes []string, clusterName string, rgst registry.IRegistry, logger *logger.Logger) (w *ConfWatcher, err error) {
+func NewConfWatcher(platName string, systemName string, serverTypes []string, clusterName string, rgst registry.IRegistry, autoCreate bool, logger *logger.Logger) (w *ConfWatcher, err error) {
 	w = &ConfWatcher{
 		timeSpan:   time.Second,
 		registry:   rgst,
@@ -38,6 +38,17 @@ func NewConfWatcher(platName string, systemName string, serverTypes []string, cl
 	w.paths = make([]string, 0, len(serverTypes))
 	for _, tp := range serverTypes {
 		w.paths = append(w.paths, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
+	}
+	if autoCreate {
+		extPath := ""
+		if !w.registry.CanWirteDataInDir() {
+			extPath = ".init"
+		}
+		for _, path := range w.paths {
+			if err := w.registry.CreatePersistentNode(filepath.Join(path, extPath), "{}"); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	w.watchers = make([]*Watcher, 0, len(w.paths))

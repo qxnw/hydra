@@ -101,7 +101,7 @@ func (h *Hydra) startWatch() (err error) {
 		return
 	}
 
-	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, h.logger)
+	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, true, h.logger)
 	if err != nil {
 		err = fmt.Errorf("watcher初始化失败 %s,%+v", filepath.Join(h.platName, h.systemName), err)
 		return

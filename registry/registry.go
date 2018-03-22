@@ -13,6 +13,7 @@ import (
 //IRegistry 注册中心接口,通过扩展支持zookeeper,consul,etcd
 type IRegistry interface {
 	Exists(path string) (bool, error)
+	CanWirteDataInDir() bool
 	WatchChildren(path string) (data chan registry.ChildrenWatcher, err error)
 	WatchValue(path string) (data chan registry.ValueWatcher, err error)
 	GetChildren(path string) (paths []string, version int32, err error)

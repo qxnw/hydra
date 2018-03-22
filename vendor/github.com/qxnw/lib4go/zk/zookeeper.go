@@ -96,6 +96,11 @@ func (client *ZookeeperClient) Reconnect() (err error) {
 	return client.Connect()
 }
 
+//CanWirteDataInDir 目录中能否写入数据
+func (client *ZookeeperClient) CanWirteDataInDir() bool {
+	return true
+}
+
 //Close 关闭服务器
 func (client *ZookeeperClient) Close() error {
 	atomic.AddInt32(&client.useCount, -1)
