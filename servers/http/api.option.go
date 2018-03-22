@@ -10,7 +10,6 @@ type Handler interface {
 	Handle(*gin.Context)
 }
 type option struct {
-	ip string
 	*logger.Logger
 	readTimeout       int
 	writeTimeout      int
@@ -25,13 +24,6 @@ type Option func(*option)
 func WithLogger(logger *logger.Logger) Option {
 	return func(o *option) {
 		o.Logger = logger
-	}
-}
-
-//WithIP 设置ip地址
-func WithIP(ip string) Option {
-	return func(o *option) {
-		o.ip = ip
 	}
 }
 

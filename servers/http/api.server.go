@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	x "net/http"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/qxnw/lib4go/net"
 )
 
 //ApiServer api服务器
@@ -22,7 +23,7 @@ type ApiServer struct {
 	running string
 	proto   string
 	host    string
-	port    int
+	port    string
 }
 
 //NewApiServer 创建api服务器
@@ -42,8 +43,12 @@ func NewApiServer(name string, addr string, routers []*conf.Router, opts ...Opti
 	if t.Logger == nil {
 		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
+	naddr, err := t.getAddress(addr)
+	if err != nil {
+		return nil, err
+	}
 	t.engine = &x.Server{
-		Addr:              t.getAddress(addr),
+		Addr:              naddr,
 		ReadHeaderTimeout: time.Second * time.Duration(t.option.readHeaderTimeout),
 		ReadTimeout:       time.Second * time.Duration(t.option.readTimeout),
 		WriteTimeout:      time.Second * time.Duration(t.option.writeTimeout),
@@ -112,7 +117,7 @@ func (s *ApiServer) Shutdown(timeout time.Duration) {
 
 //GetAddress 获取当前服务地址
 func (s *ApiServer) GetAddress() string {
-	return fmt.Sprintf("%s://%s:%d", s.proto, s.host, s.port)
+	return fmt.Sprintf("%s://%s:%s", s.proto, s.host, s.port)
 }
 
 //GetStatus 获取当前服务器状态
@@ -120,48 +125,42 @@ func (s *ApiServer) GetStatus() string {
 	return s.running
 }
 
-func (s *ApiServer) getAddress(args ...interface{}) string {
-	var host string
-	var port int
-
-	if len(args) == 1 {
-		switch arg := args[0].(type) {
-		case string:
-			addrs := strings.Split(args[0].(string), ":")
-			if len(addrs) == 1 {
-				host = addrs[0]
-			} else if len(addrs) >= 2 {
-				host = addrs[0]
-				_port, _ := strconv.ParseInt(addrs[1], 10, 0)
-				port = int(_port)
-			}
-		case int:
-			port = arg
+func (s *ApiServer) getAddress(addr string) (string, error) {
+	host := "0.0.0.0"
+	port := "8081"
+	args := strings.Split(addr, ":")
+	l := len(args)
+	switch l {
+	case 0:
+	case 1:
+		if govalidator.IsPort(args[0]) {
+			port = args[0]
+		} else {
+			host = args[0]
 		}
-	} else if len(args) >= 2 {
-		if arg, ok := args[0].(string); ok {
-			host = arg
-		}
-		if arg, ok := args[1].(int); ok {
-			port = arg
-		}
-	}
-
-	if len(host) == 0 {
-		if host == "" {
-			host = "0.0.0.0"
-		}
-	}
-	if port == 0 {
-		port = 8000
-	}
-	s.port = port
-	switch host {
-	case s.ip, "0.0.0.0":
-		s.host = s.ip
+	case 2:
+		host = args[0]
+		port = args[1]
 	default:
+		return "", fmt.Errorf("%s地址不合法", addr)
+	}
+
+	switch host {
+	case "0.0.0.0":
+		s.host = net.GetLocalIPAddress()
+	case "127.0.0.1", "localhost":
+		s.host = host
+	default:
+		if net.GetLocalIPAddress(host) != host {
+			return "", fmt.Errorf("%s地址不合法", addr)
+		}
 		s.host = host
 	}
-	addr := host + ":" + fmt.Sprint(s.port)
-	return addr
+
+	if !govalidator.IsPort(port) {
+		return "", fmt.Errorf("%s端口不合法", addr)
+	}
+	s.port = port
+	return fmt.Sprintf("%s:%s", host, s.port), nil
+
 }
