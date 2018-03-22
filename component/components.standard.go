@@ -422,18 +422,18 @@ func (r *StandardComponent) CheckTag(service string, tagName string) bool {
 }
 
 //Handling 每次handle执行前执行
-func (r *StandardComponent) Handling(name string, engine string, service string, c *context.Context) (rs context.Response, err error) {
+func (r *StandardComponent) Handling(name string, method string, service string, c *context.Context) (rs context.Response, err error) {
 	return nil, nil
 }
 
 //Handled 每次handle执行后执行
-func (r *StandardComponent) Handled(name string, engine string, service string, c *context.Context) (rs context.Response, err error) {
+func (r *StandardComponent) Handled(name string, method string, service string, c *context.Context) (rs context.Response, err error) {
 	return nil, nil
 }
 
 //GetHandler 获取服务的处理函数
 func (r *StandardComponent) GetHandler(engine string, service string, method string) (interface{}, bool) {
-	switch engine {
+	switch method {
 	case "rpc":
 		r, ok := r.Handlers["__rpc_"]
 		return r, ok

@@ -26,7 +26,6 @@ type ServiceEngine struct {
 	*component.StandardComponent
 	conf.IServerConf
 	registryAddr string
-	engines      []string
 	*rpc.Invoker
 	logger   *logger.Logger
 	registry registry.IRegistry
@@ -37,9 +36,8 @@ type ServiceEngine struct {
 }
 
 //NewServiceEngine 构建服务引擎
-func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger.Logger, engines ...string) (e *ServiceEngine, err error) {
-	e = &ServiceEngine{IServerConf: conf, registryAddr: registryAddr, logger: logger, engines: engines}
-	e.engines = appendEngines(e.engines, "go", "rpc")
+func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger.Logger) (e *ServiceEngine, err error) {
+	e = &ServiceEngine{IServerConf: conf, registryAddr: registryAddr, logger: logger}
 	e.StandardComponent = component.NewStandardComponent("sys.engine", e)
 	e.Invoker = rpc.NewInvoker(conf.GetPlatName(), conf.GetSysName(), registryAddr)
 	e.IComponentCache = component.NewStandardCache(e, "cache")
@@ -113,11 +111,10 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 			return nil, nil
 		}
 	default:
-		for _, e := range r.engines {
-			if e == engine && r.CheckTag(service, engine) && r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
-				return nil, nil
-			}
+		if r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
+			return nil, nil
 		}
+
 	}
 	response := context.GetStandardResponse()
 	response.SetStatus(404)
@@ -146,11 +143,6 @@ func (r *ServiceEngine) Close() error {
 func formatName(name string) string {
 	text := "/" + strings.Trim(strings.Trim(name, " "), "/")
 	return strings.ToLower(text)
-	//index := strings.LastIndex(text, "#")
-	//if index < 0 {
-	//return strings.ToLower(text)
-	//}
-	//return strings.ToLower(text[0:index])
 }
 func appendEngines(engines []string, ext ...string) []string {
 	addEngine := make([]string, 0, len(ext))

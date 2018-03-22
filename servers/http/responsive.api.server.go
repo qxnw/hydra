@@ -54,7 +54,7 @@ func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 		registryAddr: registryAddr,
 	}
 	// 启动执行引擎
-	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("engine启动失败%v", err)
 	}
@@ -80,7 +80,7 @@ func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.closeChan = make(chan struct{})
 	w.once = sync.Once{}
 	// 启动执行引擎
-	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger)
 	if err != nil {
 		return fmt.Errorf("engine启动失败%v", err)
 	}

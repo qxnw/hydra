@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/logger"
 )
@@ -39,7 +39,7 @@ func NewCronResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *
 		registryAddr: registryAddr,
 	}
 	// 启动执行引擎
-	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	h.engine, err = engines.NewServiceEngine(cnf, registryAddr, h.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
 	}
@@ -63,7 +63,7 @@ func (w *CronResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.currentConf = cnf
 	w.once = sync.Once{}
 	// 启动执行引擎
-	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger, cnf.GetStrings("engines", "go", "rpc")...)
+	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger)
 	if err != nil {
 		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
 	}
