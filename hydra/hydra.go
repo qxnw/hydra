@@ -64,7 +64,7 @@ func (h *Hydra) Start() (err error) {
 		logger.AddWriteThread(49)
 	}
 	//创建trace性能跟踪
-	if err = startTrace(h.trace); err != nil {
+	if err = startTrace(h.trace, h.logger); err != nil {
 		return
 	}
 

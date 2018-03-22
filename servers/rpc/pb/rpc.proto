@@ -5,22 +5,14 @@ package pb;
 message RequestContext{  
     string service=1;
     string method=2;
-    map<string,string> form=3;
-    map<string,string> header=4;
+    map<string,string> header=3;
+    map<string,string> input=4;
+   
 }
 message ResponseContext{
     int32 status=1;
     map<string,string> header=2;
     string result=3;
-}
-message ResponseNoResultContext{
-    int32 status=1;
-}
-message HBRequest{
-    int32 Ping=1;
-}
-message HBResponse{
-    int32 Pong=1;
 }
 
 

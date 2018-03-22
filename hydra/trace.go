@@ -8,12 +8,13 @@ import (
 	"runtime/trace"
 
 	"github.com/pkg/profile"
+	"github.com/qxnw/lib4go/logger"
 )
 
 var supportTraces = []string{"cpu", "mem", "block", "mutex", "web"}
 
 //startTrace 启用项目性能跟踪
-func startTrace(trace string) error {
+func startTrace(trace string, logger *logger.Logger) error {
 	switch trace {
 	case "cpu":
 		defer profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
@@ -24,7 +25,7 @@ func startTrace(trace string) error {
 	case "mutex":
 		defer profile.Start(profile.MutexProfile, profile.ProfilePath("."), profile.NoShutdownHook).Stop()
 	case "web":
-		go startTraceServer()
+		go startTraceServer(logger)
 	case "":
 		return nil
 	default:
@@ -32,7 +33,7 @@ func startTrace(trace string) error {
 	}
 	return nil
 }
-func startTraceServer() error {
+func startTraceServer(logger *logger.Logger) error {
 	f, err := os.Create("trace.out")
 	if err != nil {
 		return err
@@ -44,6 +45,6 @@ func startTraceServer() error {
 	}
 	defer trace.Stop()
 	addr := "0.0.0.0:19999"
-	fmt.Println("启动成功:pprof-trace.web(addr:http://0.0.0.0:19999/debug/pprof/)")
+	logger.Debug("启动成功:pprof.web(addr:http://0.0.0.0:19999/debug/pprof/)")
 	return http.ListenAndServe(addr, nil)
 }
