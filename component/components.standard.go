@@ -329,7 +329,6 @@ func (r *StandardComponent) callFuncType(name string, h interface{}) (i interfac
 			}
 		}
 	}
-	fmt.Printf("%s:%+v\n", name, rvalue[0].Interface())
 	return rvalue[0].Interface(), nil
 }
 

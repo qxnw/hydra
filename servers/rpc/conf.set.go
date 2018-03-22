@@ -53,15 +53,16 @@ type ISetRouterHandler interface {
 
 func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
 	var routers conf.Routers
-	_, err = cnf.GetSubObject("router", &routers)
-	if err == conf.ErrNoSetting {
+
+	if _, err = cnf.GetSubObject("router", &routers); err == conf.ErrNoSetting || len(routers.Routers) == 0 {
+		routers = conf.Routers{}
+		routers.Routers = make([]*conf.Router, 0, 1)
+		routers.Routers = append(routers.Routers, &conf.Router{Action: []string{"GET", "POST", "PUT", "DELETE", "HEAD"}, Name: "/*name", Service: "/@name", Engine: "*"})
+	}
+	if err != conf.ErrNoSetting && err != nil {
 		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
-	if err != nil {
-		return false, err
-	}
-
 	for _, router := range routers.Routers {
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting, ext)
 	}

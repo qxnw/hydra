@@ -40,7 +40,7 @@ func NewRpcResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	if err != nil {
 		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
 	}
-	if h.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8080"), nil, WithLogger(logger)); err != nil {
+	if h.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8081"), nil, WithLogger(logger)); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {

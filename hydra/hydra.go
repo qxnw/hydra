@@ -37,10 +37,11 @@ type Hydra struct {
 	rspServer      *rspServer
 	trace          string
 	done           bool
+	autoCreateNode bool
 }
 
 //NewHydra 创建hydra服务器
-func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, isDebug bool) *Hydra {
+func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
 		logger:         logger.New("hydra"),
@@ -53,6 +54,7 @@ func NewHydra(platName string, systemName string, serverTypes []string, clusterN
 		serverTypes:    serverTypes,
 		clusterName:    clusterName,
 		registryAddr:   registryAddr,
+		autoCreateNode: autoCreateNode,
 		trace:          trace,
 	}
 }
@@ -101,7 +103,7 @@ func (h *Hydra) startWatch() (err error) {
 		return
 	}
 
-	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, true, h.logger)
+	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, h.autoCreateNode, h.logger)
 	if err != nil {
 		err = fmt.Errorf("watcher初始化失败 %s,%+v", filepath.Join(h.platName, h.systemName), err)
 		return

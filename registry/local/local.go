@@ -124,13 +124,18 @@ func (l *local) GetChildren(path string) (paths []string, version int32, err err
 
 func (l *local) WatchValue(path string) (data chan registry.ValueWatcher, err error) {
 	rpath := l.formatPath(path)
+	absPath := rpath
+	fs, _ := os.Stat(rpath)
+	if fs != nil && fs.IsDir() {
+		absPath = filepath.Join(rpath, ".init")
+	}
 	l.watchLock.Lock()
 	defer l.watchLock.Unlock()
-	v, ok := l.watcherMaps[rpath]
+	v, ok := l.watcherMaps[absPath]
 	if ok {
 		return v.watcher, nil
 	}
-	l.watcherMaps[rpath] = &eventWatcher{
+	l.watcherMaps[absPath] = &eventWatcher{
 		event:   make(chan fsnotify.Event),
 		watcher: make(chan registry.ValueWatcher),
 	}
@@ -151,8 +156,8 @@ func (l *local) WatchValue(path string) (data chan registry.ValueWatcher, err er
 				v.watcher <- &valueEntity{path: rpath, Err: fmt.Errorf("文件发生变化:%v", event.Op)}
 			}
 		}
-	}(rpath, l.watcherMaps[rpath])
-	return l.watcherMaps[rpath].watcher, nil
+	}(rpath, l.watcherMaps[absPath])
+	return l.watcherMaps[absPath].watcher, nil
 }
 func (l *local) WatchChildren(path string) (data chan registry.ChildrenWatcher, err error) {
 	return nil, nil

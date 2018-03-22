@@ -39,7 +39,6 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 		return false, nil
 	}
 	if comparer.IsValueChanged("status", "address", "engines", "host", "readTimeout", "writeTimeout", "readHeaderTimeout") {
-		fmt.Println("IsValueChanged")
 		return true, nil
 	}
 	ok, err := comparer.IsRequiredSubConfChanged("router")

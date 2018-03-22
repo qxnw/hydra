@@ -40,14 +40,8 @@ func NewConfWatcher(platName string, systemName string, serverTypes []string, cl
 		w.paths = append(w.paths, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
 	}
 	if autoCreate {
-		extPath := ""
-		if !w.registry.CanWirteDataInDir() {
-			extPath = ".init"
-		}
-		for _, path := range w.paths {
-			if err := w.registry.CreatePersistentNode(filepath.Join(path, extPath), "{}"); err != nil {
-				return nil, err
-			}
+		if err = w.createMainConf(); err != nil {
+			return nil, err
 		}
 	}
 
@@ -75,4 +69,23 @@ func (c *ConfWatcher) Close() {
 	for _, wacher := range c.watchers {
 		wacher.Close()
 	}
+}
+func (c *ConfWatcher) createMainConf() error {
+	extPath := ""
+	if !c.registry.CanWirteDataInDir() {
+		extPath = ".init"
+	}
+	for _, path := range c.paths {
+		rpath := filepath.Join(path, extPath)
+		b, err := c.registry.Exists(rpath)
+		if err != nil {
+			return err
+		}
+		if !b {
+			if err := c.registry.CreatePersistentNode(rpath, "{}"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

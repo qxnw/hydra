@@ -63,7 +63,7 @@ func SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, cnf conf.IS
 		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
-	for _, router := range routers.Routers {		
+	for _, router := range routers.Routers {
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting)
 	}
 	if err = set.SetRouters(routers.Routers); err != nil {
