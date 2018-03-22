@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/circuit"
 )
@@ -27,12 +28,17 @@ func (s *ApiServer) SetAjaxRequest(allow bool) error {
 
 //SetHosts 设置组件的host name
 func (s *ApiServer) SetHosts(hosts conf.Hosts) error {
+	for _, host := range hosts {
+		if !govalidator.IsDNSName(host) {
+			return fmt.Errorf("%s不是有效的dns名称", host)
+		}
+	}
 	s.conf.SetMetadata("hosts", hosts)
 	return nil
 }
 
 //SetStatic 设置静态文件路由
-func (s *ApiServer) SetStatic(static *conf.Static) error {	
+func (s *ApiServer) SetStatic(static *conf.Static) error {
 	s.conf.SetMetadata("static", static)
 	return nil
 }
