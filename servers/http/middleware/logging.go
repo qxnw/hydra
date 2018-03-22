@@ -20,15 +20,15 @@ func Logging(conf *conf.MetadataConf) gin.HandlerFunc {
 		uuid := getUUID(ctx)
 		setUUID(ctx, uuid)
 		log := logger.GetSession(conf.Name, uuid)
-		log.Info(conf.Type+".request:", ctx.Request.Method, p, "from", ctx.ClientIP())
+		log.Info(conf.Type+".request", ctx.Request.Method, p, "from", ctx.ClientIP())
 		setLogger(ctx, log)
 		ctx.Next()
 
 		statusCode := ctx.Writer.Status()
 		if statusCode >= 200 && statusCode < 400 {
-			log.Info(conf.Type+".response:", ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
+			log.Info(conf.Type+".response", ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
 		} else {
-			log.Error(conf.Type+".response:", ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
+			log.Error(conf.Type+".response", ctx.Request.Method, p, statusCode, getExt(ctx), time.Since(start))
 		}
 	}
 
