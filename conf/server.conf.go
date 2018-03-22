@@ -88,6 +88,10 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		err = fmt.Errorf("%s配置有误:%v", mainConfpath, err)
 		return nil, err
 	}
+	if s.GetString("status") != "start" && s.GetString("status") != "stop" {
+		err = fmt.Errorf("%s配置有误:status的值只能是‘start’或‘stop’", mainConfpath)
+		return nil, err
+	}
 	if err = s.loadChildNodeConf(); err != nil {
 		return
 	}
