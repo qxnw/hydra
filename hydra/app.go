@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/qxnw/hydra/client/rpc"
 	_ "github.com/qxnw/hydra/engines"
+	_ "github.com/qxnw/hydra/registry/local"
 	_ "github.com/qxnw/hydra/registry/zookeeper"
 	_ "github.com/qxnw/hydra/servers/cron"
 	_ "github.com/qxnw/hydra/servers/http"

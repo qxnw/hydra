@@ -25,9 +25,9 @@ type eventWatcher struct {
 type local struct {
 	watcher      *fsnotify.Watcher
 	watcherMaps  map[string]*eventWatcher
-	watchLock    sync.Locker
+	watchLock    sync.Mutex
 	tempNode     []string
-	tempNodeLock sync.Locker
+	tempNodeLock sync.Mutex
 	seqNode      int32
 	closeCh      chan struct{}
 	prefix       string
@@ -83,14 +83,14 @@ func (l *local) GetValue(path string) (data []byte, version int32, err error) {
 	rpath := l.formatPath(path)
 	fs, err := os.Stat(rpath)
 	if os.IsNotExist(err) {
-		return nil, 0, errors.New(path + "不存在")
+		return nil, 0, errors.New(rpath + "不存在")
 	}
 	if !fs.IsDir() {
 		data, err = ioutil.ReadFile(rpath)
 		version = int32(fs.ModTime().Unix())
 		return
 	}
-	return l.GetValue(filepath.Join(path, "_init"))
+	return l.GetValue(filepath.Join(path, ".init"))
 }
 func (l *local) Update(path string, data string, version int32) (err error) {
 	if b, _ := l.Exists(path); !b {
@@ -153,10 +153,11 @@ func (l *local) WatchChildren(path string) (data chan registry.ChildrenWatcher, 
 	return nil, nil
 }
 func (l *local) Delete(path string) error {
+
 	if b, _ := l.Exists(path); !b {
 		return nil
 	}
-	return os.Remove(path)
+	return os.Remove(l.formatPath(path))
 }
 
 func (l *local) CreatePersistentNode(path string, data string) (err error) {
@@ -165,7 +166,14 @@ func (l *local) CreatePersistentNode(path string, data string) (err error) {
 	if err == nil || os.IsExist(err) {
 		return fmt.Errorf("%s已存在", rpath)
 	}
+	if err = os.MkdirAll(filepath.Dir(rpath), 0777); err != nil {
+		return err
+	}
 	f, err := os.Create(rpath) //创建文件
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(rpath, 0777)
 	if err != nil {
 		return err
 	}

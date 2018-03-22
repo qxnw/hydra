@@ -130,6 +130,9 @@ func (s *ApiServer) getAddress(addr string) (string, error) {
 	port := "8081"
 	args := strings.Split(addr, ":")
 	l := len(args)
+	if addr == "" {
+		l = 0
+	}
 	switch l {
 	case 0:
 	case 1:
@@ -144,9 +147,8 @@ func (s *ApiServer) getAddress(addr string) (string, error) {
 	default:
 		return "", fmt.Errorf("%s地址不合法", addr)
 	}
-
 	switch host {
-	case "0.0.0.0":
+	case "0.0.0.0", "":
 		s.host = net.GetLocalIPAddress()
 	case "127.0.0.1", "localhost":
 		s.host = host

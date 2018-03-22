@@ -88,7 +88,7 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		err = fmt.Errorf("%s配置有误:%v", mainConfpath, err)
 		return nil, err
 	}
-	if s.GetString("status") != "start" && s.GetString("status") != "stop" {
+	if s.GetString("status", "start") != "start" && s.GetString("status", "start") != "stop" {
 		err = fmt.Errorf("%s配置有误:status的值只能是‘start’或‘stop’", mainConfpath)
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *ServerConf) loadVarNodeConf() error {
 
 //IsStop 当前服务是否已停止
 func (c *ServerConf) IsStop() bool {
-	return c.GetString("status") != "start"
+	return c.GetString("status", "start") != "start"
 }
 
 //GetMainConfPath 获取主配置文件路径
