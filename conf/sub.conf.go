@@ -42,7 +42,7 @@ type Routers struct {
 type Router struct {
 	Name    string            `json:"name" valid:"ascii,required"`
 	Action  []string          `json:"action" valid:"uppercase,in(GET|POST|PUT|DELETE|HEAD|TRACE|OPTIONS)"`
-	Engine  string            `json:"engine" valid:"ascii"`
+	Engine  string            `json:"engine" valid:"ascii,uppercase,in(*|RPC)"`
 	Service string            `json:"service" valid:"ascii,required"`
 	Setting map[string]string `json:"args"`
 	Disable bool              `json:"disable"`
