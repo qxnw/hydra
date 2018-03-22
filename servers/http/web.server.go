@@ -119,7 +119,7 @@ func (s *WebServer) GetAddress() string {
 
 //GetStatus 获取当前服务器状态
 func (s *WebServer) GetStatus() string {
-	return servers.ST_RUNNING
+	return s.running
 }
 
 func (s *WebServer) getAddress(addr string) (string, error) {
