@@ -11,8 +11,6 @@ import (
 	_ "github.com/qxnw/hydra/servers/http"
 	_ "github.com/qxnw/hydra/servers/mqc"
 	_ "github.com/qxnw/hydra/servers/rpc"
-
-	_ "github.com/qxnw/hydra/servers/http"
 	_ "github.com/qxnw/lib4go/cache/memcache"
 	_ "github.com/qxnw/lib4go/cache/redis"
 	_ "github.com/qxnw/lib4go/mq/redis"
