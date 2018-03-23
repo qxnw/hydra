@@ -93,6 +93,13 @@ type Task struct {
 	Last    string            `json:"last"`
 	Handler interface{}       `json:"handler,omitempty"`
 }
+
+type Package struct {
+	URL     string `json:"url" valid:"requrl,required"`
+	Version string `json:"version" valid:"ascii,required"`
+	CRC32   uint32 `json:"crc32" valid:"numeric,required"`
+}
+
 type Headers map[string]string
 type Hosts []string
 

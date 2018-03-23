@@ -63,6 +63,7 @@ func (l *local) Start() {
 				break LOOP
 			case event := <-l.watcher.Events:
 				func(event fsnotify.Event) {
+					//fmt.Println("event:", event.Name, event.Op, event.String())
 					l.watchLock.Lock()
 					watcher, ok := l.watcherMaps[event.Name]
 					l.watchLock.Unlock()
@@ -121,6 +122,9 @@ func (l *local) GetChildren(path string) (paths []string, version int32, err err
 	}
 	paths = make([]string, 0, len(rf))
 	for _, f := range rf {
+		if strings.HasSuffix(f.Name(), ".swp") || strings.HasPrefix(f.Name(), "~") {
+			continue
+		}
 		paths = append(paths, f.Name())
 	}
 	return paths, version, nil

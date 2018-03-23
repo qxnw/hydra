@@ -6,10 +6,13 @@ import (
 	"github.com/urfave/cli"
 )
 
+//VERSION 版本号
+var VERSION string = "2.0.0"
+
 func (m *MicroApp) getCliApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "hydra"
-	app.Version = "2.0.0"
+	app.Version = VERSION
 	app.Usage = "hydra微服务"
 	cli.HelpFlag = cli.BoolFlag{
 		Name:  "help,h",

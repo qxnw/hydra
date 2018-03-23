@@ -20,7 +20,7 @@ type option struct {
 	ServerTypes     []string `valid:"ascii,required"`
 	ClusterName     string   `valid:"ascii,required"`
 	IsDebug         bool
-	AutoCreateNode  bool
+	AutoCreateConf  bool
 	Trace           string
 }
 
@@ -48,10 +48,10 @@ func WithSystemName(systemName string) Option {
 	}
 }
 
-//WithAutoCreateNode 自动创建配置节点
-func WithAutoCreateNode(b bool) Option {
+//WithAutoCreateConf 自动创建配置节点
+func WithAutoCreateConf(b bool) Option {
 	return func(o *option) {
-		o.AutoCreateNode = b
+		o.AutoCreateConf = b
 	}
 }
 

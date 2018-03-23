@@ -63,15 +63,19 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 				//修改服务器
 				server := s.servers[u.Path]
 				if !conf.IsStop() {
+					addr := server.GetAddress()
 					if err = server.Notify(conf); err != nil {
 						server.logger.Errorf("未完成更新 %v", err)
 					} else {
-						server.logger.Info("配置更新成功")
+						if addr != server.GetAddress() {
+							server.logger.Infof("配置更新成功(%s,%d)", server.GetAddress(), len(server.GetServices()))
+						} else {
+							server.logger.Info("配置更新成功")
+						}
 					}
 				} else {
 					server.logger.Warnf("服务器配置为:stop")
 				}
-
 				if conf.IsStop() || server.GetStatus() != servers.ST_RUNNING {
 					server.logger.Warnf("关闭服务器")
 					server.Shutdown()
