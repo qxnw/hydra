@@ -29,12 +29,13 @@ type Metric struct {
 type Authes map[string]*Auth
 
 type Auth struct {
-	Name     string   `json:"name" valid:"ascii,required"`
-	ExpireAt int64    `json:"expireAt" valid:"int,required"`
-	Mode     string   `json:"mode" valid:"in(HS256|HS384|HS512|RS256|ES256|ES384|ES512|RS384|RS512|PS256|PS384|PS512),required"`
-	Secret   string   `json:"secret" valid:"ascii,required"`
-	Exclude  []string `json:"exclude"`
-	Disable  bool     `json:"disable"`
+	Name       string   `json:"name" valid:"ascii,required"`
+	ExpireAt   int64    `json:"expireAt" valid:"int,required"`
+	Mode       string   `json:"mode" valid:"in(HS256|HS384|HS512|RS256|ES256|ES384|ES512|RS384|RS512|PS256|PS384|PS512),required"`
+	Secret     string   `json:"secret" valid:"ascii,required"`
+	Exclude    []string `json:"exclude"`
+	FailedCode string   `json:"failed-code" valid:"numeric,range(400|999)"`
+	Disable    bool     `json:"disable"`
 }
 type Routers struct {
 	Routers []*Router `json:"routers"`
