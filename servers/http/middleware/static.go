@@ -46,6 +46,9 @@ func checkExt(s *conf.Static, rPath string) bool {
 
 //MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
 func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
+	if rPath == "/favicon.ico" || rPath == "robots.txt" {
+		return true, rPath
+	}
 	if !checkExclude(s.Exclude, rPath) && checkPrefix(s, rPath) && checkExt(s, rPath) {
 		return true, strings.TrimPrefix(rPath, s.Prefix)
 	}
