@@ -45,6 +45,12 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 				s.logger.Error(err)
 				return
 			}
+			//检查更新
+			if err := s.update(conf); err != nil {
+				s.logger.Error(err)
+				return
+			}
+
 			if _, ok := s.servers[u.Path]; !ok {
 				//添加新服务器
 				if conf.IsStop() {
@@ -99,6 +105,20 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 			}
 		}()
 	}
+}
+func (s *rspServer) update(cnf conf.IServerConf) error {
+	b, pkg, err := NeedUpdate(cnf)
+	if err != nil {
+		return err
+	}
+	if b {
+		if err = UpdateNow(pkg, s.logger, func() {
+			s.Shutdown()
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //Change 服务器发生变更

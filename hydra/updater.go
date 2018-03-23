@@ -146,15 +146,11 @@ func NeedUpdate(cnf conf.IServerConf) (bool, *conf.Package, error) {
 func UpdateNow(pkg *conf.Package, logger *logger.Logger, closeFunc func()) (err error) {
 	logger.Info("开始下载更新包:", pkg.URL)
 	resp, err := http.Get(pkg.URL)
-	if err != nil {
+	if err != nil || resp == nil {
 		err = fmt.Errorf("无法下载更新包:%s", pkg.URL)
 		return
 	}
 	defer resp.Body.Close()
-	if err != nil {
-		err = fmt.Errorf("无法读取更新包:%v", pkg.URL)
-		return
-	}
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("无法读取更新包,状态码:%d", resp.StatusCode)
 		return
