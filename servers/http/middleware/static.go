@@ -26,7 +26,7 @@ func checkExclude(all []string, rPath string) bool {
 			return false
 		}
 	}
-	return false
+	return true
 }
 
 func checkExt(s *conf.Static, rPath string) bool {
