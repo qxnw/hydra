@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/osext"
 	"github.com/qxnw/lib4go/security/crc32"
 	"github.com/zkfy/archiver"
 )
 
-type Updater struct {
+type updater struct {
 	targetPath   string
 	currentDir   string
 	newDir       string
@@ -26,8 +27,8 @@ type Updater struct {
 	needRollback bool
 }
 
-func NewUpdater() (u *Updater, err error) {
-	u = &Updater{}
+func newUpdater() (u *updater, err error) {
+	u = &updater{}
 	u.targetPath, err = osext.Executable()
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func NewUpdater() (u *Updater, err error) {
 }
 
 //Apply 更新文件
-func (u *Updater) Apply(update io.Reader, opts UpdaterOptions) (err error) {
+func (u *updater) Apply(update io.Reader, opts updaterOptions) (err error) {
 	//读取文件内容
 	var newBytes []byte
 	if newBytes, err = ioutil.ReadAll(update); err != nil {
@@ -100,7 +101,7 @@ func (u *Updater) Apply(update io.Reader, opts UpdaterOptions) (err error) {
 }
 
 //Rollback 回滚当前更新
-func (u *Updater) Rollback() error {
+func (u *updater) Rollback() error {
 	if !u.needRollback {
 		return nil
 	}
@@ -122,7 +123,7 @@ func (u *Updater) Rollback() error {
 }
 
 //UpdaterOptions 文件更新选项
-type UpdaterOptions struct {
+type updaterOptions struct {
 	CRC32      uint32
 	TargetName string
 }
@@ -142,7 +143,7 @@ func NeedUpdate(cnf conf.IServerConf) (bool, *conf.Package, error) {
 }
 
 //UpdateNow 更新当前服务
-func UpdateNow(pkg *conf.Package) (err error) {
+func UpdateNow(pkg *conf.Package, logger *logger.Logger) (err error) {
 	resp, err := http.Get(pkg.URL)
 	if err != nil {
 		err = fmt.Errorf("无法下载更新包:%s", pkg.URL)
@@ -161,12 +162,12 @@ func UpdateNow(pkg *conf.Package) (err error) {
 		err = fmt.Errorf("无法读取更新包长度:%d", resp.ContentLength)
 		return
 	}
-	updater, err := NewUpdater()
+	updater, err := newUpdater()
 	if err != nil {
 		err = fmt.Errorf("无法创建updater:%v", err)
 		return
 	}
-	err = updater.Apply(resp.Body, UpdaterOptions{CRC32: pkg.CRC32, TargetName: filepath.Base(pkg.URL)})
+	err = updater.Apply(resp.Body, updaterOptions{CRC32: pkg.CRC32, TargetName: filepath.Base(pkg.URL)})
 	if err != nil {
 		if err1 := updater.Rollback(); err1 != nil {
 			err = fmt.Errorf("更新失败%+v,回滚失败%v", err, err1)
