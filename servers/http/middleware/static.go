@@ -53,7 +53,7 @@ func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
 	if rPath == "/favicon.ico" || rPath == "robots.txt" {
 		return true, rPath
 	}
-	if !checkExclude(s.Exclude, rPath) && checkPrefix(s, rPath) && checkExt(s, rPath) {
+	if checkExclude(s.Exclude, rPath) && checkPrefix(s, rPath) && checkExt(s, rPath) {
 		return true, strings.TrimPrefix(rPath, s.Prefix)
 	}
 	return false, ""
