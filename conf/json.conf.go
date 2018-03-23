@@ -57,9 +57,9 @@ func (j *JSONConf) Unmarshal(v interface{}) error {
 	}
 
 	fmt.Printf("validate(%v):%v\n", reflect.TypeOf(v), reflect.ValueOf(v).Kind())
-	//if reflect.ValueOf(v).Kind() != reflect.Struct {
-	//return nil
-	//}
+	if reflect.ValueOf(v).Kind() != reflect.Struct {
+		return nil
+	}
 
 	if b, err := govalidator.ValidateStruct(v); !b {
 		err = fmt.Errorf("validate(%v):%v", reflect.TypeOf(v), err)
