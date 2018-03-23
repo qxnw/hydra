@@ -42,6 +42,7 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	static.Exclude = append(static.Exclude, "favicon.ico", "robots.txt")
 	err = set.SetStatic(&static)
 	return !static.Disable, err
 }

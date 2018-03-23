@@ -44,8 +44,11 @@ func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
 	xname = strings.TrimPrefix(rPath, s.Prefix)
 	return
 }
-func getDefPath(p string) string {
+func getDefPath(s *conf.Static, p string) string {
 	if p == "" || p == "/" {
+		if s.FirstPage != "" {
+			return s.FirstPage
+		}
 		return "index.html"
 	}
 	return p
@@ -64,18 +67,21 @@ func Static(cnf *conf.MetadataConf) gin.HandlerFunc {
 		s, xname := MustStatic(opt, rPath)
 		if s {
 			setExt(ctx, "static")
-			fPath, _ := filepath.Abs(filepath.Join(opt.Dir, getDefPath(xname)))
+			fPath := filepath.Join(opt.Dir, getDefPath(opt, xname))
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if os.IsNotExist(err) {
-					ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
+					getLogger(ctx).Error(fmt.Errorf("找不到文件:%s", fPath))
+					ctx.AbortWithStatus(404)
 					return
 				}
-				ctx.AbortWithError(500, fmt.Errorf("%s,err:%v", fPath, err))
+				getLogger(ctx).Error(fmt.Errorf("%s,err:%v", fPath, err))
+				ctx.AbortWithStatus(500)
 				return
 			}
 			if finfo.IsDir() {
-				ctx.AbortWithError(404, fmt.Errorf("找不到文件:%s", fPath))
+				getLogger(ctx).Error(fmt.Errorf("找不到文件:%s", fPath))
+				ctx.AbortWithStatus(404)
 				return
 			}
 			//文件已存在，则返回文件

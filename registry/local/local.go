@@ -62,13 +62,17 @@ func (l *local) Start() {
 			case <-l.closeCh:
 				break LOOP
 			case event := <-l.watcher.Events:
-				l.watchLock.Lock()
-				watcher, ok := l.watcherMaps[event.Name]
-				l.watchLock.Unlock()
-				if !ok {
-					continue
-				}
-				watcher.event <- event
+				func(event fsnotify.Event) {
+					l.watchLock.Lock()
+					watcher, ok := l.watcherMaps[event.Name]
+					l.watchLock.Unlock()
+					if !ok {
+						return
+					}
+					watcher.event <- event
+					delete(l.watcherMaps, event.Name)
+				}(event)
+
 			}
 		}
 		l.watcher.Close()

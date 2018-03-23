@@ -70,11 +70,12 @@ type Breaker struct {
 	Disable          bool   `json:"disable"`
 }
 type Static struct {
-	Dir     string   `json:"dir" valid:"ascii,required"`
-	Prefix  string   `json:"prefix" valid:"ascii"`
-	Exts    []string `json:"exts" valid:"ascii"`
-	Exclude []string `json:"exclude" valid:"ascii"`
-	Disable bool
+	Dir       string   `json:"dir" valid:"ascii,required"`
+	Prefix    string   `json:"prefix" valid:"ascii"`
+	Exts      []string `json:"exts" valid:"ascii"`
+	Exclude   []string `json:"exclude" valid:"ascii"`
+	FirstPage string   `json:"first-page" valid:"ascii"`
+	Disable   bool
 }
 type Tasks struct {
 	Setting map[string]string `json:"args"`
