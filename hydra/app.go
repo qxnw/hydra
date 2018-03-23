@@ -57,7 +57,6 @@ func (m *MicroApp) Start() {
 }
 
 func (m *MicroApp) action(c *cli.Context) error {
-	fmt.Println("args:", os.Args)
 	if err := m.checkInput(); err != nil {
 		cli.ErrWriter.Write([]byte("  " + err.Error() + "\n\n"))
 		cli.ShowCommandHelp(c, c.Command.Name)

@@ -42,7 +42,6 @@ func checkExt(s *conf.Static, rPath string) bool {
 				return true
 			}
 		}
-		fmt.Println("exit:", rPath, pExt, s.Exts)
 		return false
 	}
 	return true
