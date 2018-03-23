@@ -18,12 +18,15 @@ func checkPrefix(s *conf.Static, rPath string) bool {
 }
 
 func checkExclude(all []string, rPath string) bool {
+	if len(all) == 0 {
+		return true
+	}
 	for _, v := range all {
 		if strings.Contains(rPath, v) {
 			return false
 		}
 	}
-	return true
+	return false
 }
 
 func checkExt(s *conf.Static, rPath string) bool {
@@ -39,6 +42,7 @@ func checkExt(s *conf.Static, rPath string) bool {
 				return true
 			}
 		}
+		fmt.Println("exit:", rPath, pExt, s.Exts)
 		return false
 	}
 	return true
@@ -57,9 +61,9 @@ func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
 func getDefPath(s *conf.Static, p string) string {
 	if p == "" || p == "/" {
 		if s.FirstPage != "" {
-			return s.FirstPage
+			return filepath.Join("/", s.FirstPage)
 		}
-		return "index.html"
+		return "/index.html"
 	}
 	return p
 }
@@ -74,10 +78,10 @@ func Static(cnf *conf.MetadataConf) gin.HandlerFunc {
 		}
 
 		var rPath = ctx.Request.URL.Path
-		s, xname := MustStatic(opt, rPath)
+		s, xname := MustStatic(opt, getDefPath(opt, rPath))
 		if s {
 			setExt(ctx, "static")
-			fPath := filepath.Join(opt.Dir, getDefPath(opt, xname))
+			fPath := filepath.Join(opt.Dir, xname)
 			finfo, err := os.Stat(fPath)
 			if err != nil {
 				if os.IsNotExist(err) {
