@@ -8,6 +8,7 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/security/jwt"
+	"github.com/qxnw/lib4go/types"
 )
 
 //JwtAuth jwt
@@ -21,7 +22,7 @@ func JwtAuth(cnf *conf.MetadataConf) gin.HandlerFunc {
 		}
 
 		//检查jwt.token是否正确
-		data, err := checkJWT(ctx, jwtAuth.Name, jwtAuth.Secret)
+		data, err := checkJWT(ctx, jwtAuth)
 		if err == nil {
 			setJWTRaw(ctx, data)
 			ctx.Next()
@@ -64,17 +65,17 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.MetadataConf, data interface{}) 
 }
 
 // CheckJWT 检查jwk参数是否合法
-func checkJWT(ctx *gin.Context, name string, secret string) (data interface{}, err context.Error) {
-	token := getToken(ctx, name)
+func checkJWT(ctx *gin.Context, auth *conf.Auth) (data interface{}, err context.Error) {
+	token := getToken(ctx, auth.Name)
 	if token == "" {
-		return nil, context.NewError(403, fmt.Errorf("获取%s失败或未传入该参数", name))
+		return nil, context.NewError(types.ToInt(auth.FailedCode, 403), fmt.Errorf("获取%s失败或未传入该参数", auth.Name))
 	}
-	data, er := jwt.Decrypt(token, secret)
+	data, er := jwt.Decrypt(token, auth.Secret)
 	if er != nil {
 		if strings.Contains(er.Error(), "Token is expired") {
-			return nil, context.NewError(401, er)
+			return nil, context.NewError(types.ToInt(auth.FailedCode, 401), er)
 		}
-		return data, context.NewError(403, er)
+		return data, context.NewError(types.ToInt(auth.FailedCode, 403), er)
 	}
 	return data, nil
 }
