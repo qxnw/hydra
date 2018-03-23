@@ -39,8 +39,9 @@ func getNetConnectNum() (v int, err error) {
 	return
 }
 func serverLoader() ServiceLoader {
-	return func(component *component.StandardComponent, container component.IContainer) {
+	return func(component *component.StandardComponent, container component.IContainer) error {
 		component.AddMicroService("/_server/health/check", healthCheck)
+		return nil
 	}
 }
 func init() {

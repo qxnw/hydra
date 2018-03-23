@@ -199,7 +199,7 @@ func (c *ServerConf) GetSubObject(name string, v interface{}) (int32, error) {
 	if err != nil {
 		return 0, err
 	}
-	if err := conf.Unmarshal(v); err != nil {
+	if err := conf.Unmarshal(&v); err != nil {
 		return 0, err
 	}
 	return conf.version, nil

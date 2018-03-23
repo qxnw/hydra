@@ -48,7 +48,9 @@ func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger
 		return
 	}
 
-	e.loadEngineServices()
+	if err = e.loadEngineServices(); err != nil {
+		return nil, err
+	}
 	if err = e.LoadComponents(fmt.Sprintf("./%s.so", conf.GetPlatName()),
 		fmt.Sprintf("./%s.so", conf.GetSysName()),
 		fmt.Sprintf("./%s_%s.so", conf.GetPlatName(), conf.GetSysName())); err != nil {

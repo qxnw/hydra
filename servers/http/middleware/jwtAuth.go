@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/lib4go/security/jwt"
 )
 
@@ -37,8 +37,8 @@ func JwtAuth(cnf *conf.MetadataConf) gin.HandlerFunc {
 			}
 		}
 		//jwt.token错误，返回错误码
-		ctx.AbortWithError(err.Code(), err)
-		getLogger(ctx).Errorf("jwt:%v", err)
+		getLogger(ctx).Error(err)
+		ctx.AbortWithStatus(err.Code())
 		return
 
 	}
@@ -56,7 +56,8 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.MetadataConf, data interface{}) 
 	}
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)
 	if err != nil {
-		ctx.AbortWithError(500, fmt.Errorf("jwt配置出错：%v", err))
+		getLogger(ctx).Errorf("jwt配置出错：%v", err)
+		ctx.AbortWithStatus(500)
 		return
 	}
 	ctx.Header("Set-Cookie", fmt.Sprintf("%s=%s;path=/;", jwtAuth.Name, jwtToken))
