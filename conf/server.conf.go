@@ -200,8 +200,10 @@ func (c *ServerConf) GetSubObject(name string, v interface{}) (int32, error) {
 		return 0, err
 	}
 	if err := conf.Unmarshal(&v); err != nil {
+		err = fmt.Errorf("获取%s配置失败:%v", name, err)
 		return 0, err
 	}
+
 	return conf.version, nil
 }
 
@@ -281,6 +283,7 @@ func (c *ServerConf) GetVarObject(tp string, name string, v interface{}) (int32,
 		return 0, err
 	}
 	if err := conf.Unmarshal(&v); err != nil {
+		err = fmt.Errorf("获取/%s/%s配置失败:%v", tp, name, err)
 		return 0, err
 	}
 	return conf.version, nil

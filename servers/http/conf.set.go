@@ -3,8 +3,6 @@ package http
 import (
 	"fmt"
 
-	"github.com/asaskevich/govalidator"
-
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
@@ -44,7 +42,6 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	fmt.Println(govalidator.ValidateStruct(&static))
 	static.Exclude = append(static.Exclude, "/bin/", "/conf/", "/views/", ".exe", ".so")
 	err = set.SetStatic(&static)
 	return !static.Disable, err
