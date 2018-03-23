@@ -10,13 +10,25 @@ import (
 	"github.com/qxnw/hydra/conf"
 )
 
-func checkExt(s *conf.Static, rPath string) bool {
+func checkPrefix(s *conf.Static, rPath string) bool {
+	if strings.HasPrefix(rPath, s.Prefix) {
+		return true
+	}
+	return false
+}
+
+func checkExclude(all []string, rPath string) bool {
 	name := filepath.Base(rPath)
-	for _, v := range s.Exclude {
+	for _, v := range all {
 		if name == v {
-			return true
+			return false
 		}
 	}
+	return true
+}
+
+func checkExt(s *conf.Static, rPath string) bool {
+	name := filepath.Base(rPath)
 	hasExt := strings.Contains(filepath.Ext(name), ".")
 	if len(s.Exts) > 0 {
 		if s.Exts[0] == "*" && (rPath == "/" || hasExt) {
@@ -28,21 +40,17 @@ func checkExt(s *conf.Static, rPath string) bool {
 				return true
 			}
 		}
+		return false
 	}
-	return false
+	return true
 }
 
 //MustStatic 判断当前文件是否一定是静态文件 0:非静态文件  1：是静态文件  2：未知
 func MustStatic(s *conf.Static, rPath string) (b bool, xname string) {
-	if len(rPath) < len(s.Prefix) {
-		return checkExt(s, rPath), rPath
-	}
-	if strings.HasPrefix(rPath, s.Prefix) {
+	if !checkExclude(s.Exclude, rPath) && checkPrefix(s, rPath) && checkExt(s, rPath) {
 		return true, strings.TrimPrefix(rPath, s.Prefix)
 	}
-	b = checkExt(s, rPath)
-	xname = strings.TrimPrefix(rPath, s.Prefix)
-	return
+	return false, ""
 }
 func getDefPath(s *conf.Static, p string) string {
 	if p == "" || p == "/" {

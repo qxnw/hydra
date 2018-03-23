@@ -143,7 +143,8 @@ func NeedUpdate(cnf conf.IServerConf) (bool, *conf.Package, error) {
 }
 
 //UpdateNow 更新当前服务
-func UpdateNow(pkg *conf.Package, logger *logger.Logger) (err error) {
+func UpdateNow(pkg *conf.Package, logger *logger.Logger, closeFunc func()) (err error) {
+	logger.Info("开始下载更新包:", pkg.URL)
 	resp, err := http.Get(pkg.URL)
 	if err != nil {
 		err = fmt.Errorf("无法下载更新包:%s", pkg.URL)
@@ -176,18 +177,15 @@ func UpdateNow(pkg *conf.Package, logger *logger.Logger) (err error) {
 		err = fmt.Errorf("更新失败,已回滚(err:%v)", err)
 		return
 	}
-	//h.Info("更新成功，停止所有服务，并准备重启")
-	//for _, server := range h.servers {
-	//server.Shutdown()
-	//}
+	logger.Info("更新成功，停止所有服务，并准备重启")
+	closeFunc()
 	return restart()
 }
 
 //Restart 重启当前服务
 func restart() (err error) {
-	//args := getExecuteParams(h.inputArgs)
+	args := getExecuteParams(os.Args)
 	//h.Info("准备重启：", args)
-	args := ""
 	go func() {
 		time.Sleep(time.Second * 5)
 		cmd1 := exec.Command("/bin/bash", "-c", args)
@@ -205,11 +203,15 @@ func restart() (err error) {
 }
 func getExecuteParams(input []string) string {
 	args := make([]string, 0, len(input))
-	for i, v := range input {
-		if i > 0 && strings.HasPrefix(input[i-1], "-") && !strings.HasPrefix(v, "-") {
-			args = append(args, fmt.Sprintf(`"%s"`, v))
+	for i := 0; i < len(input); i++ {
+		if strings.HasPrefix(input[i], "-") {
+			args = append(args, input[i])
+			if i+1 < len(input) && !strings.HasPrefix(input[i+1], "-") {
+				args = append(args, fmt.Sprintf(`"%s"`, input[i+1]))
+				i++
+			}
 		} else {
-			args = append(args, v)
+			args = append(args, input[i])
 		}
 	}
 	return strings.Join(args, " ")
