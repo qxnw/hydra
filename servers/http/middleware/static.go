@@ -18,9 +18,8 @@ func checkPrefix(s *conf.Static, rPath string) bool {
 }
 
 func checkExclude(all []string, rPath string) bool {
-	name := filepath.Base(rPath)
 	for _, v := range all {
-		if name == v {
+		if strings.Contains(rPath, v) {
 			return false
 		}
 	}
