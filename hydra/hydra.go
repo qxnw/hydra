@@ -169,6 +169,6 @@ LOOP:
 func (h *Hydra) Shutdown() {
 	h.done = true
 	close(h.closeChan)
-	h.interrupt <- syscall.SIGUSR1
+	h.interrupt <- syscall.SIGTERM
 
 }
