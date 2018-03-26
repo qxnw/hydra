@@ -36,9 +36,14 @@ func (s *StandardCache) GetDefaultCache() (c cache.ICache, err error) {
 
 //GetCache 获取缓存操作对象
 func (s *StandardCache) GetCache(name string) (c cache.ICache, err error) {
+	return s.GetCacheByTypeName("cache", name)
+}
+
+//GetCacheByTypeName 根据类型获取缓存数据
+func (s *StandardCache) GetCacheByTypeName(tpName string, name string) (c cache.ICache, err error) {
 	_, cached, err := s.cacheMap.SetIfAbsentCb(name, func(input ...interface{}) (c interface{}, err error) {
 		name := input[0].(string)
-		conf, err := s.IContainer.GetVarConf("cache", name)
+		conf, err := s.IContainer.GetVarConf(tpName, name)
 		if err != nil {
 			return nil, err
 		}

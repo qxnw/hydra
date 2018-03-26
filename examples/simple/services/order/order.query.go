@@ -11,6 +11,7 @@ type QueryHandler struct {
 }
 
 func NewQueryHandler(container component.IContainer) (u *QueryHandler) {
+
 	return &QueryHandler{container: container, Name: "QueryHandler"}
 }
 func (u *QueryHandler) Handle(name string, engine string, service string, ctx *context.Context) (r context.Response, err error) {
