@@ -3,11 +3,8 @@ package conf
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/asaskevich/govalidator"
 )
 
 type IConf interface {
@@ -53,13 +50,6 @@ func NewJSONConf(message []byte, version int32) (c *JSONConf, err error) {
 //Unmarshal 将当前[]byte反序列化为对象
 func (j *JSONConf) Unmarshal(v interface{}) error {
 	if err := json.Unmarshal(j.raw, v); err != nil {
-		return err
-	}
-	if reflect.ValueOf(v).Kind() != reflect.Struct && reflect.ValueOf(v).Kind() != reflect.Ptr {
-		return nil
-	}
-	if b, err := govalidator.ValidateStruct(v); !b {
-		err = fmt.Errorf("validate(%v) %v", reflect.TypeOf(v), err)
 		return err
 	}
 	return nil

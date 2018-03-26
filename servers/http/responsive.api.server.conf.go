@@ -38,7 +38,7 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if !comparer.IsChanged() {
 		return false, nil
 	}
-	if comparer.IsValueChanged("status", "address", "engines", "host", "readTimeout", "writeTimeout", "readHeaderTimeout") {
+	if comparer.IsValueChanged("status", "address", "host", "rTimeout", "wTimeout", "rhTimeout") {
 		return true, nil
 	}
 	ok, err := comparer.IsRequiredSubConfChanged("router")
@@ -50,7 +50,6 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 		return false, fmt.Errorf("路由未配置或配置有误:%v", err)
 	}
 	if ok := comparer.IsSubConfChanged("circuit"); ok {
-		fmt.Println("circuit")
 		return ok, nil
 	}
 	return false, nil

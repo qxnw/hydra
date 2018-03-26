@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/http/middleware"
@@ -42,6 +43,10 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	if b, err := govalidator.ValidateStruct(&static); !b {
+		err = fmt.Errorf("static配置有误:%v", err)
+		return false, err
+	}
 	static.Exclude = append(static.Exclude, "/bin/", "/conf/", "/views/", ".exe", ".so")
 	err = set.SetStatic(&static)
 	return !static.Disable, err
@@ -62,6 +67,10 @@ func SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, cnf conf.IS
 	}
 	if err != conf.ErrNoSetting && err != nil {
 		err = fmt.Errorf("路由:%v", err)
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&routers); !b {
+		err = fmt.Errorf("router配置有误:%v", err)
 		return false, err
 	}
 	for _, router := range routers.Routers {
@@ -92,6 +101,10 @@ func SetView(set ISetView, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	if b, err := govalidator.ValidateStruct(&view); !b {
+		err = fmt.Errorf("view配置有误:%v", err)
+		return false, err
+	}
 	err = set.SetView(&view)
 	return err == nil, err
 }
@@ -110,6 +123,10 @@ func SetCircuitBreaker(set ISetCircuitBreaker, cnf conf.IServerConf) (enable boo
 		return false, set.CloseCircuitBreaker()
 	}
 	if err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&breaker); !b {
+		err = fmt.Errorf("circuit配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetCircuitBreaker(&breaker)
@@ -192,6 +209,11 @@ func SetJWT(set ISetJwtAuth, cnf conf.IServerConf) (enable bool, err error) {
 	}
 	if jwt, enable = auths["jwt"]; !enable {
 		jwt = &conf.Auth{Disable: true}
+	} else {
+		if b, err := govalidator.ValidateStruct(jwt); !b {
+			err = fmt.Errorf("jwt配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetJWT(jwt)
 	return err == nil && !jwt.Disable, err

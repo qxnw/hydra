@@ -33,7 +33,11 @@ func NewWebServer(name string, addr string, routers []*conf.Router, opts ...Opti
 		Name: name,
 		Type: "web",
 	}}
-	t.option = &option{metric: middleware.NewMetric(t.conf)}
+	t.option = &option{
+		metric:            middleware.NewMetric(t.conf),
+		readHeaderTimeout: 6,
+		readTimeout:       6,
+		writeTimeout:      6}
 	for _, opt := range opts {
 		opt(t.option)
 	}
@@ -127,6 +131,9 @@ func (s *WebServer) getAddress(addr string) (string, error) {
 	port := "8081"
 	args := strings.Split(addr, ":")
 	l := len(args)
+	if addr == "" {
+		l = 0
+	}
 	switch l {
 	case 0:
 	case 1:
@@ -141,9 +148,8 @@ func (s *WebServer) getAddress(addr string) (string, error) {
 	default:
 		return "", fmt.Errorf("%s地址不合法", addr)
 	}
-
 	switch host {
-	case "0.0.0.0":
+	case "0.0.0.0", "":
 		s.host = net.GetLocalIPAddress()
 	case "127.0.0.1", "localhost":
 		s.host = host
@@ -157,7 +163,11 @@ func (s *WebServer) getAddress(addr string) (string, error) {
 	if !govalidator.IsPort(port) {
 		return "", fmt.Errorf("%s端口不合法", addr)
 	}
+	if port == "80" {
+		if err := checkPrivileges(); err != nil {
+			return "", err
+		}
+	}
 	s.port = port
 	return fmt.Sprintf("%s:%s", host, s.port), nil
-
 }

@@ -60,7 +60,7 @@ func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	}
 
 	if h.server, err = NewApiServer(cnf.GetServerName(),
-		cnf.GetString("address", ":8080"),
+		cnf.GetString("address", ":8090"),
 		nil,
 		WithLogger(logger),
 		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3))); err != nil {
@@ -85,9 +85,11 @@ func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 		return fmt.Errorf("engine启动失败%v", err)
 	}
 
-	if w.server, err = NewApiServer(cnf.GetServerName(), cnf.GetString("address", ":8080"), nil,
-		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3)),
-		WithLogger(w.Logger)); err != nil {
+	if w.server, err = NewApiServer(cnf.GetServerName(),
+		cnf.GetString("address", ":8090"),
+		nil,
+		WithLogger(w.Logger),
+		WithTimeout(cnf.GetInt("rTimeout", 3), cnf.GetInt("wTimeout", 3), cnf.GetInt("rhTimeout", 3))); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {

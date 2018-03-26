@@ -172,7 +172,6 @@ func (s *ApiServer) getAddress(addr string) (string, error) {
 	}
 	s.port = port
 	return fmt.Sprintf("%s:%s", host, s.port), nil
-
 }
 func checkPrivileges() error {
 	if output, err := exec.Command("id", "-g").Output(); err == nil {
