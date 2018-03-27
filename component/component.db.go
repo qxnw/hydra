@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/db"
@@ -10,8 +11,8 @@ import (
 
 //IComponentDB Component DB
 type IComponentDB interface {
-	GetDefaultDB() (c *db.DB, err error)
-	GetDB(name string) (d *db.DB, err error)
+	GetDefaultDB() (c db.IDB, err error)
+	GetDB(name string) (d db.IDB, err error)
 	Close() error
 }
 
@@ -31,33 +32,37 @@ func NewStandardDB(c IContainer, name ...string) *StandardDB {
 }
 
 //GetDefaultDB 获取默然配置DB
-func (s *StandardDB) GetDefaultDB() (c *db.DB, err error) {
+func (s *StandardDB) GetDefaultDB() (c db.IDB, err error) {
 	return s.GetDB(s.name)
 }
 
 //GetDB 获取数据库操作对象
-func (s *StandardDB) GetDB(name string) (d *db.DB, err error) {
-	_, dbc, err := s.dbMap.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
-		name := input[0].(string)
-		dbJsonConf, err := s.IContainer.GetVarConf("db", name)
-		if err != nil {
-			return nil, err
-		}
-		var dbConf conf.DBConf
-		if err = dbJsonConf.Unmarshal(&dbConf); err != nil {
-			return nil, err
-		}
-		d, err = db.NewDB(dbConf.Provider, dbConf.ConnString, dbConf.Max)
-		if err != nil {
-			err = fmt.Errorf("创建DB失败:%s,err:%v", string(dbJsonConf.GetRaw()), err)
-			return
-		}
-		return
-	}, name)
+func (s *StandardDB) GetDB(name string) (d db.IDB, err error) {
+	dbConf, err := s.IContainer.GetVarConf("db", name)
 	if err != nil {
+		return nil, fmt.Errorf("../var/db/%s %v", name, err)
+	}
+	key := fmt.Sprintf("%s:%d", name, dbConf.GetVersion())
+	_, dbc, err := s.dbMap.SetIfAbsentCb(key, func(input ...interface{}) (d interface{}, err error) {
+		jConf := input[0].(*conf.JSONConf)
+		var dbConf conf.DBConf
+		if err = jConf.Unmarshal(&dbConf); err != nil {
+			return nil, err
+		}
+		if b, err := govalidator.ValidateStruct(&dbConf); !b {
+			return nil, err
+		}
+		return db.NewDB(dbConf.Provider,
+			dbConf.ConnString,
+			dbConf.MaxOpen,
+			dbConf.MaxIdle,
+			dbConf.LefeTime)
+	}, dbConf)
+	if err != nil {
+		err = fmt.Errorf("创建db失败:%s,err:%v", string(dbConf.GetRaw()), err)
 		return
 	}
-	d = dbc.(*db.DB)
+	d = dbc.(db.IDB)
 	return
 }
 

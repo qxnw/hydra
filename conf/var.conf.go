@@ -1,7 +1,15 @@
 package conf
 
 type DBConf struct {
-	Provider   string `json:"provider"`
-	ConnString string `json:"connString"`
-	Max        int    `json:"max" valid:"range(1|1000)"`
+	Provider   string `json:"provider" valid:"required"`
+	ConnString string `json:"connString" valid:"required"`
+	MaxOpen    int    `json:"maxOpen" valid:"required"`
+	MaxIdle    int    `json:"maxIdle" valid:"required"`
+	LefeTime   int    `json:"lifeTime" valid:"required"`
+}
+type CacheConf struct {
+	Server string `json:"server" valid:"ascii,required"`
+}
+type QueueConf struct {
+	Address string `json:"address" valid:"ascii,required"`
 }

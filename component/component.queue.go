@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/queue"
 )
@@ -36,22 +38,27 @@ func (s *StandardQueue) GetDefaultQueue() (c queue.IQueue, err error) {
 
 //GetQueue GetQueue
 func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
-	_, iqueue, err := s.queueCache.SetIfAbsentCb(name, func(input ...interface{}) (d interface{}, err error) {
-		name := input[0].(string)
-		queueJSONConf, err := s.IContainer.GetVarConf("queue", name)
-		if err != nil {
+
+	queueConf, err := s.IContainer.GetVarConf("queue", name)
+	if err != nil {
+		return nil, fmt.Errorf("../var/queue/%s %v", name, err)
+	}
+	key := fmt.Sprintf("%s:%d", name, queueConf.GetVersion())
+
+	_, iqueue, err := s.queueCache.SetIfAbsentCb(key, func(input ...interface{}) (d interface{}, err error) {
+		queueConf := input[0].(*conf.JSONConf)
+		var qConf conf.QueueConf
+		if err = queueConf.Unmarshal(&qConf); err != nil {
 			return nil, err
 		}
-		d, err = queue.NewQueue(queueJSONConf.GetString("address"), string(queueJSONConf.GetRaw()))
-		if err != nil {
-			err = fmt.Errorf("创建queue失败:%s,err:%v", string(queueJSONConf.GetRaw()), err)
-			fmt.Println("queue.err:", err)
-			return
+		if b, err := govalidator.ValidateStruct(&qConf); !b {
+			return nil, err
 		}
-
-		return
-	}, name)
+		return queue.NewQueue(qConf.Address, string(queueConf.GetRaw()))
+	}, queueConf)
 	if err != nil {
+		err = fmt.Errorf("创建queue失败:%s,err:%v", string(queueConf.GetRaw()), err)
+		return
 		return
 	}
 	q = iqueue.(queue.IQueue)

@@ -10,6 +10,15 @@ import (
 	//"github.com/qxnw/lib4go/influxdb"
 )
 
+type IInfluxClient interface {
+	QueryResponse(sql string) (response *Response, err error)
+	QueryMaps(sql string) (rx [][]map[string]interface{}, err error)
+	Query(sql string) (result string, err error)
+	SendLineProto(data string) error
+	Send(measurement string, tags map[string]string, fileds map[string]interface{}) error
+	Close() error
+}
+
 type InfluxClient struct {
 	interval time.Duration
 	url      uurl.URL

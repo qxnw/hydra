@@ -100,7 +100,7 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 		defer setServiceName(c, ctx.Request.Translate(service, false))
 		//调用执行引擎进行逻辑处理
 		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, false), ctx)
-		if reflect.ValueOf(response).IsNil() {
+		if response == nil || reflect.ValueOf(response).IsNil() {
 			response = context.GetStandardResponse()
 		}
 		//处理错误err,5xx

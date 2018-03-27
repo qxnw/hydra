@@ -3,7 +3,7 @@
 package impt
 
 import (
-	_ "github.com/mattn/go-oci8"
+	_ "github.com/zkfy/go-oci8"
 
 	_ "github.com/qxnw/hydra/client/rpc"
 	_ "github.com/qxnw/hydra/engines"

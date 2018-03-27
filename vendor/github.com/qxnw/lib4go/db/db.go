@@ -1,6 +1,10 @@
 package db
 
-import "github.com/qxnw/lib4go/db/tpl"
+import (
+	"time"
+
+	"github.com/qxnw/lib4go/db/tpl"
+)
 
 //IDB 数据库操作接口,安装可需能需要执行export LD_LIBRARY_PATH=/usr/local/lib
 type IDB interface {
@@ -25,13 +29,13 @@ type DB struct {
 }
 
 //NewDB 创建DB实例
-func NewDB(provider string, connString string, max int) (obj *DB, err error) {
+func NewDB(provider string, connString string, maxOpen int, maxIdle int, maxLifeTime int) (obj *DB, err error) {
 	obj = &DB{}
 	obj.tpl, err = tpl.GetDBContext(provider)
 	if err != nil {
 		return
 	}
-	obj.db, err = NewSysDB(provider, connString, max)
+	obj.db, err = NewSysDB(provider, connString, maxOpen, maxIdle, time.Duration(maxLifeTime)*time.Second)
 	return
 }
 

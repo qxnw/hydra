@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	//_ "github.com/mattn/go-oci8"
 	//_ "github.com/mattn/go-sqlite3"
 	//_ "gopkg.in/rana/ora.v4"
@@ -50,7 +51,7 @@ type SysDB struct {
 }
 
 //NewSysDB 创建DB实例
-func NewSysDB(provider string, connString string, max int) (obj *SysDB, err error) {
+func NewSysDB(provider string, connString string, maxOpen int, maxIdle int, maxLifeTime time.Duration) (obj *SysDB, err error) {
 	if provider == "" || connString == "" {
 		err = errors.New("provider or connString not allow nil")
 		return
@@ -67,11 +68,9 @@ func NewSysDB(provider string, connString string, max int) (obj *SysDB, err erro
 	if err != nil {
 		return
 	}
-	if max > 0 {
-		obj.db.SetMaxIdleConns(max)
-		obj.db.SetMaxOpenConns(max)
-	}
-	obj.db.SetConnMaxLifetime(0)
+	obj.db.SetMaxIdleConns(maxIdle)
+	obj.db.SetMaxOpenConns(maxOpen)
+	obj.db.SetConnMaxLifetime(maxLifeTime)
 	err = obj.db.Ping()
 	return
 }

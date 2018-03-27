@@ -30,7 +30,7 @@ type Authes map[string]*Auth
 
 type Auth struct {
 	Name       string   `json:"name" valid:"ascii,required"`
-	ExpireAt   int64    `json:"expireAt" valid:"int,required"`
+	ExpireAt   int64    `json:"expireAt" valid:"required"`
 	Mode       string   `json:"mode" valid:"in(HS256|HS384|HS512|RS256|ES256|ES384|ES512|RS384|RS512|PS256|PS384|PS512),required"`
 	Secret     string   `json:"secret" valid:"ascii,required"`
 	Exclude    []string `json:"exclude"`
@@ -60,7 +60,7 @@ type View struct {
 type CircuitBreaker struct {
 	ForceBreak      bool       `json:"force-break"`
 	Disable         bool       `json:"disable"`
-	SwitchWindow    int        `json:"swith-window" valid:"int"`
+	SwitchWindow    int        `json:"swith-window"`
 	CircuitBreakers []*Breaker `json:"circuit-breakers"`
 }
 type Breaker struct {
@@ -98,7 +98,7 @@ type Task struct {
 type Package struct {
 	URL     string `json:"url" valid:"requrl,required"`
 	Version string `json:"version" valid:"ascii,required"`
-	CRC32   uint32 `json:"crc32" valid:"numeric,required"`
+	CRC32   uint32 `json:"crc32" valid:"required"`
 }
 
 type Headers map[string]string
