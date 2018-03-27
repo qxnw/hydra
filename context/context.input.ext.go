@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -32,6 +33,14 @@ func (w *extParams) GetHeader() map[string]string {
 		}
 	}
 	return header
+}
+
+func (w *extParams) GetBindingFunc() func(i interface{}) error {
+	v, ok := w.ext["__binding_"].(func(i interface{}) error)
+	if ok {
+		return v
+	}
+	panic(errors.New("不存在__binding_函数"))
 }
 
 //GetSharding 获取任务分片信息(分片索引[从1开始]，分片总数)

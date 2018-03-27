@@ -113,7 +113,6 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 			setResponse(c, response)
 			return
 		}
-
 		//处理跳转3xx
 		if url, ok := response.IsRedirect(); ok {
 			c.Redirect(response.GetStatus(), url)
@@ -147,6 +146,7 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Request.Response
+	input["__binding_"] = c.ShouldBind
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
 			return encoding.Convert(buff.([]byte), ch)

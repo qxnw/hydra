@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -130,6 +131,13 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 	input["__jwt_"] = getJWTRaw(c)
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Writer
+	input["__binding_"] = func(obj interface{}) error {
+		buffer, err := json.Marshal(c.Request.GetForm())
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(buffer, obj)
+	}
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
 			return encoding.Convert(buff.([]byte), ch)

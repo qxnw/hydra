@@ -45,10 +45,10 @@ func (r *StandardResponse) SetContent(status int, content interface{}) {
 
 	switch content.(type) {
 	case HydraError:
-		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Status = types.DecodeInt(status, 0, 400, status)
 		r.err = content.(HydraError).error
 	case error:
-		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Status = types.DecodeInt(status, 0, 400, status)
 		r.err = content.(error)
 	case string:
 		r.Status = types.DecodeInt(status, 0, 200, status)
@@ -58,7 +58,7 @@ func (r *StandardResponse) SetContent(status int, content interface{}) {
 			r.Status = types.DecodeInt(status, 0, 200, status)
 			return
 		}
-		r.Status = 500
+		r.Status = 400
 		r.err = fmt.Errorf("StandardResponse.content输入类型错误,必须为:string")
 	}
 	return

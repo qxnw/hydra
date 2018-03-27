@@ -41,6 +41,21 @@ const (
 	ORA = "ora"
 )
 
+type ISysDB interface {
+	Query(string, ...interface{}) ([]QueryRow, []string, error)
+	Execute(string, ...interface{}) (int64, error)
+	Begin() (ISysDBTrans, error)
+	Close()
+}
+
+//ISysDBTrans 数据库事务接口
+type ISysDBTrans interface {
+	Query(string, ...interface{}) ([]QueryRow, []string, error)
+	Execute(string, ...interface{}) (int64, error)
+	Rollback() error
+	Commit() error
+}
+
 //SysDB 数据库实体
 type SysDB struct {
 	provider   string
@@ -139,7 +154,7 @@ func (db *SysDB) Execute(query string, args ...interface{}) (affectedRow int64, 
 }
 
 //Begin 创建一个事务请求
-func (db *SysDB) Begin() (r IDBTrans, err error) {
+func (db *SysDB) Begin() (r ISysDBTrans, err error) {
 	t := &SysDBTransaction{}
 	t.tx, err = db.db.Begin()
 	return t, err

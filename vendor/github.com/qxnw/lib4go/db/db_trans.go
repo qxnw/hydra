@@ -5,7 +5,7 @@ import "github.com/qxnw/lib4go/db/tpl"
 //DBTrans 数据库事务操作类
 type DBTrans struct {
 	tpl tpl.ITPLContext
-	tx  IDBTrans
+	tx  ISysDBTrans
 }
 
 //Query 查询数据

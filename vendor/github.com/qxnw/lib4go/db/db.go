@@ -8,23 +8,25 @@ import (
 
 //IDB 数据库操作接口,安装可需能需要执行export LD_LIBRARY_PATH=/usr/local/lib
 type IDB interface {
-	Query(string, ...interface{}) ([]QueryRow, []string, error)
-	Execute(string, ...interface{}) (int64, error)
+	Query(sql string, input map[string]interface{}) (data []QueryRow, query string, args []interface{}, err error)
+	Scalar(sql string, input map[string]interface{}) (data interface{}, query string, args []interface{}, err error)
+	Execute(sql string, input map[string]interface{}) (row int64, query string, args []interface{}, err error)
 	Begin() (IDBTrans, error)
 	Close()
 }
 
 //IDBTrans 数据库事务接口
 type IDBTrans interface {
-	Query(string, ...interface{}) ([]QueryRow, []string, error)
-	Execute(string, ...interface{}) (int64, error)
+	Query(sql string, input map[string]interface{}) (data []QueryRow, query string, args []interface{}, err error)
+	Scalar(sql string, input map[string]interface{}) (data interface{}, query string, args []interface{}, err error)
+	Execute(sql string, input map[string]interface{}) (row int64, query string, args []interface{}, err error)
 	Rollback() error
 	Commit() error
 }
 
 //DB 数据库操作类
 type DB struct {
-	db  IDB
+	db  ISysDB
 	tpl tpl.ITPLContext
 }
 
@@ -82,7 +84,7 @@ func (db *DB) Replace(sql string, args []interface{}) string {
 }
 
 //Begin 创建事务
-func (db *DB) Begin() (t *DBTrans, err error) {
+func (db *DB) Begin() (t IDBTrans, err error) {
 	tt := &DBTrans{}
 	tt.tx, err = db.db.Begin()
 	if err != nil {

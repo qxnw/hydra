@@ -11,6 +11,7 @@ func loader() engines.ServiceLoader {
 	return func(component *component.StandardComponent, container component.IContainer) error {
 		component.AddMicroService("/user/login", user.NewLoginHandler)
 		component.AddMicroService("/order/query", order.NewQueryHandler)
+		component.AddMicroService("/order/bind", order.NewBindHandler)
 		return nil
 	}
 }

@@ -43,15 +43,14 @@ func (r *ObjectResponse) SetContent(status int, content interface{}) {
 	}
 	switch content.(type) {
 	case HydraError:
-		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Status = types.DecodeInt(status, 0, 400, status)
 		r.err = content.(HydraError).error
 	case error:
-		r.Status = types.DecodeInt(status, 0, 500, status)
+		r.Status = types.DecodeInt(status, 0, 400, status)
 		r.err = content.(error)
 	default:
 		r.Status = types.DecodeInt(status, 0, 200, status)
 	}
-	r.Status = types.DecodeInt(status, 0, 200, status)
 	r.Content = content
 	return
 }

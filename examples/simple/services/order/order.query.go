@@ -7,12 +7,10 @@ import (
 
 type QueryHandler struct {
 	container component.IContainer
-	Name      string
 }
 
 func NewQueryHandler(container component.IContainer) (u *QueryHandler) {
-
-	return &QueryHandler{container: container, Name: "QueryHandler"}
+	return &QueryHandler{container: container}
 }
 func (u *QueryHandler) Handle(name string, engine string, service string, ctx *context.Context) (r context.Response, err error) {
 	response := context.GetObjectResponse()

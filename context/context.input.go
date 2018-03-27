@@ -3,6 +3,8 @@ package context
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
+
 	"github.com/qxnw/lib4go/utility"
 )
 
@@ -45,6 +47,16 @@ func (r *Request) reset(queryString IData, form IData, param IData, setting IDat
 	r.Ext.ext = ext
 	r.Http.ext = ext
 
+}
+
+//Bind 根据输入参数绑定对象
+func (r *Request) Bind(obj interface{}) error {
+	f := r.Ext.GetBindingFunc()
+	if err := f(obj); err != nil {
+		return err
+	}
+	_, err := govalidator.ValidateStruct(obj)
+	return err
 }
 
 //Check 检查输入参数和配置参数是否为空
