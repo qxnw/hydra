@@ -5,10 +5,10 @@ import "github.com/qxnw/hydra/context"
 //IComponent 提供一组或多组服务的组件
 type IComponent interface {
 	AddCustomerService(service string, h interface{}, groupNames ...string)
-	AddTagPageService(service string, h interface{}, tag string, pages ...string)
+	AddTagPageService(service string, h interface{}, pages ...string)
 	AddPageService(service string, h interface{}, pages ...string)
-	AddAutoflowService(service string, h interface{}, tags ...string)
-	AddMicroService(service string, h interface{}, tags ...string)
+	AddAutoflowService(service string, h interface{})
+	AddMicroService(service string, h interface{})
 	IsMicroService(service string) bool
 	IsAutoflowService(service string) bool
 	IsPageService(service string) bool
@@ -18,75 +18,74 @@ type IComponent interface {
 	LoadServices() error
 
 	GetGroupServices(group string) []string
-	GetTagServices(tag string) []string
 	GetServices() []string
 
 	GetGroups(service string) []string
 	GetPages(service string) []string
-	GetTagPages(service string, tagName string) []string
-	GetTags(service string) []string
-	CheckTag(service string, tagName string) bool
 
-	Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error)
-	Handling(name string, mode string, service string, c *context.Context) (rs context.Response, err error)
-	Handled(name string, mode string, service string, c *context.Context) (rs context.Response, err error)
-	Handle(name string, mode string, service string, c *context.Context) (context.Response, error)
+	Fallback(name string, engine string, service string, c *context.Context) (rs interface{})
+	Handling(name string, mode string, service string, c *context.Context) (rs interface{})
+	Handled(name string, mode string, service string, c *context.Context) (rs interface{})
+	Handle(name string, mode string, service string, c *context.Context) interface{}
+	Close() error
+}
+
+type CloseHandler interface {
 	Close() error
 }
 
 //Handler context handler
 type Handler interface {
-	Handle(name string, mode string, service string, c *context.Context) (context.Response, error)
-	Close() error
+	Handle(name string, mode string, service string, c *context.Context) interface{}
 }
 
 type GetHandler interface {
-	GetHandle(name string, mode string, service string, c *context.Context) (context.Response, error)
+	GetHandle(name string, mode string, service string, c *context.Context) interface{}
 }
 type PostHandler interface {
-	PostHandle(name string, mode string, service string, c *context.Context) (context.Response, error)
+	PostHandle(name string, mode string, service string, c *context.Context) interface{}
 }
 type DeleteHandler interface {
-	DeleteHandle(name string, mode string, service string, c *context.Context) (context.Response, error)
+	DeleteHandle(name string, mode string, service string, c *context.Context) interface{}
 }
 type PutHandler interface {
-	PutHandle(name string, mode string, service string, c *context.Context) (context.Response, error)
+	PutHandle(name string, mode string, service string, c *context.Context) interface{}
 }
 
 //FallbackHandler context handler
 type FallbackHandler interface {
-	Fallback(name string, mode string, service string, c *context.Context) (context.Response, error)
+	Fallback(name string, mode string, service string, c *context.Context) interface{}
 }
 
 //GetFallbackHandler context handler
 type GetFallbackHandler interface {
-	GetFallback(name string, mode string, service string, c *context.Context) (context.Response, error)
+	GetFallback(name string, mode string, service string, c *context.Context) interface{}
 }
 
 //PostFallbackHandler context handler
 type PostFallbackHandler interface {
-	PostFallback(name string, mode string, service string, c *context.Context) (context.Response, error)
+	PostFallback(name string, mode string, service string, c *context.Context) interface{}
 }
 
 //PutFallbackHandler context handler
 type PutFallbackHandler interface {
-	PutFallback(name string, mode string, service string, c *context.Context) (context.Response, error)
+	PutFallback(name string, mode string, service string, c *context.Context) interface{}
 }
 
 //DeleteFallbackHandler context handler
 type DeleteFallbackHandler interface {
-	DeleteFallback(name string, mode string, service string, c *context.Context) (context.Response, error)
+	DeleteFallback(name string, mode string, service string, c *context.Context) interface{}
 }
 
-type FallbackServiceFunc func(name string, mode string, service string, c *context.Context) (rs context.Response, err error)
+type FallbackServiceFunc func(name string, mode string, service string, c *context.Context) (rs interface{})
 
-func (h FallbackServiceFunc) Fallback(name string, mode string, service string, c *context.Context) (rs context.Response, err error) {
+func (h FallbackServiceFunc) Fallback(name string, mode string, service string, c *context.Context) (rs interface{}) {
 	return h(name, mode, service, c)
 }
 
-type ServiceFunc func(name string, mode string, service string, c *context.Context) (rs context.Response, err error)
+type ServiceFunc func(name string, mode string, service string, c *context.Context) (rs interface{})
 
-func (h ServiceFunc) Handle(name string, mode string, service string, c *context.Context) (rs context.Response, err error) {
+func (h ServiceFunc) Handle(name string, mode string, service string, c *context.Context) (rs interface{}) {
 	return h(name, mode, service, c)
 }
 func (h ServiceFunc) Close() error {

@@ -38,8 +38,8 @@ func JwtAuth(cnf *conf.MetadataConf) gin.HandlerFunc {
 			}
 		}
 		//jwt.token错误，返回错误码
-		getLogger(ctx).Error(err)
-		ctx.AbortWithStatus(err.Code())
+		getLogger(ctx).Error(err.GetError())
+		ctx.AbortWithStatus(err.GetCode())
 		return
 
 	}
@@ -65,7 +65,7 @@ func setJwtResponse(ctx *gin.Context, cnf *conf.MetadataConf, data interface{}) 
 }
 
 // CheckJWT 检查jwk参数是否合法
-func checkJWT(ctx *gin.Context, auth *conf.Auth) (data interface{}, err context.Error) {
+func checkJWT(ctx *gin.Context, auth *conf.Auth) (data interface{}, err context.IError) {
 	token := getToken(ctx, auth.Name)
 	if token == "" {
 		return nil, context.NewError(types.ToInt(auth.FailedCode, 403), fmt.Errorf("获取%s失败或未传入该参数", auth.Name))

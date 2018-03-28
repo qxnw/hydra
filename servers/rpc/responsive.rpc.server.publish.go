@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,12 +12,12 @@ import (
 
 //publish 将当前服务器的节点信息发布到注册中心
 func (w *RpcResponsiveServer) publish() (err error) {
+
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s", w.currentConf.GetServerType(), ipPort)
+	pubPath := filepath.Join(w.currentConf.GetServerPubRootPath(), ipPort)
 	data := map[string]string{
 		"service": addr,
-		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)
@@ -34,7 +35,7 @@ func (w *RpcResponsiveServer) publish() (err error) {
 	srvs := w.GetServices()
 	for _, host := range names {
 		for _, srv := range srvs {
-			servicePath := path.Join(w.currentConf.GetServerType(), host, srv, "providers", ipPort)
+			servicePath := path.Join(w.currentConf.GetServicePubRootPath(filepath.Join(host,srv)), ipPort)
 			err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
 			if err != nil {
 				err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)

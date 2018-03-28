@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -57,15 +56,15 @@ func getServiceName(c *dispatcher.Context) string {
 func setServiceName(c *dispatcher.Context, v string) {
 	c.Set("__service_", v)
 }
-func setResponse(c *dispatcher.Context, r context.Response) {
-	c.Set("__response_", r)
+func setCTX(c *dispatcher.Context, r *context.Context) {
+	c.Set("__context_", r)
 }
-func getResponse(c *dispatcher.Context) context.Response {
-	result, _ := c.Get("__response_")
+func getCTX(c *dispatcher.Context) *context.Context {
+	result, _ := c.Get("__context_")
 	if result == nil {
 		return nil
 	}
-	return result.(context.Response)
+	return result.(*context.Context)
 }
 
 //ContextHandler api请求处理程序
@@ -73,36 +72,27 @@ func ContextHandler(handler servers.IExecuter, name string, engine string, servi
 	return func(c *dispatcher.Context) {
 		//处理输入参数
 		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext), getLogger(c))
-		defer ctx.Close()
-		defer setServiceName(c, ctx.Request.Translate(service, false))
 
+		defer setServiceName(c, ctx.Request.Translate(service, false))
+		defer setCTX(c, ctx)
 		//调用执行引擎进行逻辑处理
-		response, err := handler.Execute(name, engine, ctx.Request.Translate(service, false), ctx)
-		if response == nil || reflect.ValueOf(response).IsNil() {
-			response = context.GetStandardResponse()
+		result := handler.Execute(name, engine, ctx.Request.Translate(service, false), ctx)
+		if result != nil {
+			ctx.Response.ShouldContent(result)
 		}
 		//处理错误err,5xx
-		if err != nil || response.GetError() != nil {
-			if response.GetError() != nil {
-				err = response.GetError()
-			}
+		if err := ctx.Response.GetError(); err != nil {
 			err = fmt.Errorf("error:%v", err)
 			if !servers.IsDebug {
-				err = errors.New("error:Internal Server Error(工作引擎发生异常)")
+				err = errors.New("error:Internal Server Error")
 			}
-			response.SetContent(0, err)
-			setResponse(c, response)
 			return
 		}
-
 		//处理跳转3xx
-		if url, ok := response.IsRedirect(); ok {
-			c.Redirect(response.GetStatus(), url)
+		if url, ok := ctx.Response.IsRedirect(); ok {
+			c.Redirect(ctx.Response.GetStatus(), url)
 			return
 		}
-
-		//处理4xx,2xx
-		setResponse(c, response)
 
 	}
 }

@@ -11,18 +11,18 @@ import (
 func NoResponse(conf *conf.MetadataConf) dispatcher.HandlerFunc {
 	return func(ctx *dispatcher.Context) {
 		ctx.Next()
-		response := getResponse(ctx)
-		if response == nil {
+		context := getCTX(ctx)
+		if context == nil {
 			return
 		}
-		defer response.Close()
-		if response.GetError() != nil {
-			getLogger(ctx).Error(response.GetError())
+		defer context.Close()
+		if err := context.Response.GetError(); err != nil {
+			getLogger(ctx).Error(err)
 		}
 		if ctx.Writer.Written() {
 			return
 		}
-		ctx.Writer.WriteHeader(response.GetStatus())
-		ctx.Writer.WriteString(fmt.Sprint(response.GetContent()))
+		ctx.Writer.WriteHeader(context.Response.GetStatus())
+		ctx.Writer.WriteString(fmt.Sprint(context.Response.GetContent()))
 	}
 }

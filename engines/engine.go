@@ -16,8 +16,8 @@ import (
 type IServiceEngine interface {
 	GetRegistry() registry.IRegistry
 	GetServices() []string
-	Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error)
-	Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error)
+	Fallback(name string, engine string, service string, c *context.Context) (rs interface{})
+	Execute(name string, engine string, service string, ctx *context.Context) (rs interface{})
 	Close() error
 }
 
@@ -73,59 +73,40 @@ func (r *ServiceEngine) GetServices() []string {
 }
 
 //Execute 执行外部请求
-func (r *ServiceEngine) Execute(name string, engine string, service string, ctx *context.Context) (rs context.Response, err error) {
+func (r *ServiceEngine) Execute(name string, engine string, service string, ctx *context.Context) (rs interface{}) {
 	service = formatName(service)
 	if ctx.Request.CircuitBreaker.IsOpen() { //熔断开关打开，则自动降级
-		response := context.GetStandardResponse()
-		rf, err := r.StandardComponent.Fallback(name, engine, service, ctx)
-		if rf != nil {
-			if err == nil {
-				return rf, nil
-			}
-			if err != component.ErrNotFoundService {
-				return rf, err
-			}
+		rf := r.StandardComponent.Fallback(name, engine, service, ctx)
+		if r, ok := rf.(error); ok && r == component.ErrNotFoundService {
+			ctx.Response.MustContent(ctx.Request.CircuitBreaker.GetDefStatus(), ctx.Request.CircuitBreaker.GetDefContent())
 		}
-		response.SetContent(ctx.Request.CircuitBreaker.GetDefStatus(), ctx.Request.CircuitBreaker.GetDefContent())
-		return response, err
+		return rf
 	}
-	if rh, err := r.Handling(name, engine, service, ctx); err != nil {
-		return rh, err
+	if rh := r.Handling(name, engine, service, ctx); ctx.Response.HasError(rh) {
+		return rh
 	}
-	rx, err := r.Handle(name, engine, service, ctx)
-	if err != nil {
-		return rx, err
+	if rs = r.Handle(name, engine, service, ctx); ctx.Response.HasError(rs) {
+		return rs
 	}
-	if rd, err := r.Handled(name, engine, service, ctx); err != nil {
-		return rd, err
+	if rd := r.Handled(name, engine, service, ctx); ctx.Response.HasError(rd) {
+		return rd
 	}
-	return rx, nil
+	return rs
 }
 
 //Handling 每次handle执行前执行
-func (r *ServiceEngine) Handling(name string, engine string, service string, c *context.Context) (rs context.Response, err error) {
+func (r *ServiceEngine) Handling(name string, engine string, service string, c *context.Context) (rs interface{}) {
 	c.SetRPC(r.Invoker)
 	switch engine {
 	case "rpc":
-		return nil, nil
-	case "", "*":
-		if r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
-			return nil, nil
-		}
+		return nil
 	default:
 		if r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
-			return nil, nil
+			return nil
 		}
-
 	}
-	response := context.GetStandardResponse()
-	response.SetStatus(404)
-	return response, fmt.Errorf("%s未找到服务:%s %v", r.Name, service, r.getServiceMeta(engine, service))
-}
-func (r *ServiceEngine) getServiceMeta(engine string, service string) string {
-	return fmt.Sprintf(`services：%v engine:[%s]-%v
-		group:[%s]-%s`, r.GetServices(), engine, r.GetTags(service), component.GetGroupName(r.GetServerType()),
-		r.GetGroups(service))
+	c.Response.SetStatus(404)
+	return fmt.Errorf("%s未找到服务:%s", r.Name, service)
 }
 
 //GetRegistry 获取注册中心
@@ -135,6 +116,7 @@ func (r *ServiceEngine) GetRegistry() registry.IRegistry {
 
 //Close 关闭引擎
 func (r *ServiceEngine) Close() error {
+	r.StandardComponent.Close()
 	r.Invoker.Close()
 	r.IComponentCache.Close()
 	r.IComponentDB.Close()

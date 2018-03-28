@@ -3,6 +3,7 @@ package rpc
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
@@ -21,6 +22,10 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 		return false, nil
 	}
 	if err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&metric); !b {
+		err = fmt.Errorf("metric配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetMetric(&metric)
@@ -42,6 +47,10 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	if b, err := govalidator.ValidateStruct(&static); !b {
+		err = fmt.Errorf("static配置有误:%v", err)
+		return false, err
+	}
 	err = set.SetStatic(&static)
 	return enable, err
 }
@@ -53,7 +62,6 @@ type ISetRouterHandler interface {
 
 func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
 	var routers conf.Routers
-
 	if _, err = cnf.GetSubObject("router", &routers); err == conf.ErrNoSetting || len(routers.Routers) == 0 {
 		routers = conf.Routers{}
 		routers.Routers = make([]*conf.Router, 0, 1)
@@ -61,6 +69,10 @@ func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHa
 	}
 	if err != conf.ErrNoSetting && err != nil {
 		err = fmt.Errorf("路由:%v", err)
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&routers); !b {
+		err = fmt.Errorf("router配置有误:%v", err)
 		return false, err
 	}
 	for _, router := range routers.Routers {
@@ -71,29 +83,6 @@ func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHa
 		return false, err
 	}
 	return len(routers.Routers) > 0, nil
-}
-
-//---------------------------------------------------------------------------
-//-------------------------------view---------------------------------------
-//---------------------------------------------------------------------------
-
-//ISetView 设置view
-type ISetView interface {
-	SetView(*conf.View) error
-}
-
-//SetView 设置view
-func SetView(set ISetView, cnf conf.IServerConf) (enable bool, err error) {
-	//设置jwt安全认证参数
-	var view conf.View
-	if _, err = cnf.GetSubObject("view", &view); err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	err = set.SetView(&view)
-	return err == nil, err
 }
 
 //ISetCircuitBreaker 设置CircuitBreaker
@@ -110,6 +99,10 @@ func SetCircuitBreaker(set ISetCircuitBreaker, cnf conf.IServerConf) (enable boo
 		return false, set.CloseCircuitBreaker()
 	}
 	if err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&breaker); !b {
+		err = fmt.Errorf("circuit配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetCircuitBreaker(&breaker)
@@ -137,23 +130,6 @@ func SetHeaders(set ISetHeaderHandler, cnf conf.IServerConf) (enable bool, err e
 		return false, err
 	}
 	return len(header) > 0, set.SetHeader(header)
-}
-
-//---------------------------------------------------------------------------
-//-------------------------------ajax---------------------------------------
-//---------------------------------------------------------------------------
-
-//IAjaxRequest 设置ajax
-type IAjaxRequest interface {
-	SetAjaxRequest(bool) error
-}
-
-//SetAjaxRequest 设置ajax
-func SetAjaxRequest(set IAjaxRequest, cnf conf.IServerConf) (enable bool, err error) {
-	if enable, err = cnf.GetBool("onlyAllowAjaxRequest", false); err != nil {
-		return false, err
-	}
-	return enable, set.SetAjaxRequest(enable)
 }
 
 //---------------------------------------------------------------------------
@@ -192,6 +168,11 @@ func SetJWT(set ISetJwtAuth, cnf conf.IServerConf) (enable bool, err error) {
 	}
 	if jwt, enable = auths["jwt"]; !enable {
 		jwt = &conf.Auth{Disable: true}
+	} else {
+		if b, err := govalidator.ValidateStruct(jwt); !b {
+			err = fmt.Errorf("jwt配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetJWT(jwt)
 	return err == nil && !jwt.Disable, err

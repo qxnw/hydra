@@ -25,10 +25,11 @@ func CircuitBreak(conf *conf.MetadataConf) gin.HandlerFunc {
 			return
 		}
 		ctx.Next()
-		if getResponse(ctx) == nil {
+		nctx := getCTX(ctx)
+		if nctx == nil {
 			return
 		}
-		success := getResponse(ctx).GetStatus() < 400
+		success := nctx.Response.GetStatus() < 400
 		if !isOpen {
 			if success {
 				breaker.ReportEvent(circuit.EventSuccess, 1)

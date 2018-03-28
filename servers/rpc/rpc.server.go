@@ -89,7 +89,6 @@ func (s *RpcServer) Shutdown(timeout time.Duration) {
 		s.running = servers.ST_STOP
 		s.engine.GracefulStop()
 		time.Sleep(time.Second)
-		s.Infof("%s:已关闭", s.conf.Name)
 
 	}
 }

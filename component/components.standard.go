@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/lib4go/types"
 )
 
 const (
@@ -23,6 +22,8 @@ const (
 	//CustomerService 自定义服务
 	CustomerService = "__customer_"
 )
+
+var _ IComponent = &StandardComponent{}
 
 //ErrNotFoundService 未找到服务
 var ErrNotFoundService = errors.New("未找到服务")
@@ -39,9 +40,7 @@ type StandardComponent struct {
 	GroupServices    map[string][]string               //每个分组包含的服务
 	ServiceGroup     map[string][]string               //每个服务对应的分组
 	ServicePages     map[string][]string               //每个服务对应的页面
-	ServiceTagPages  map[string]map[string][]string    //服务对应的tag,及每个tag对应的页面
-	ServicesTags     map[string][]string               //服务对应的tag列表
-	TagServices      map[string][]string               //tag对应的服务列表
+	CloseHandler     []interface{}                     //用于关闭所有handler
 }
 
 //NewStandardComponent 构建标准组件
@@ -55,22 +54,18 @@ func NewStandardComponent(componentName string, c IContainer) *StandardComponent
 	r.ServiceGroup = make(map[string][]string)
 	r.Services = make([]string, 0, 2)
 	r.ServicePages = make(map[string][]string)
-	r.ServiceTagPages = make(map[string]map[string][]string)
-	r.ServicesTags = make(map[string][]string)
-	r.TagServices = make(map[string][]string)
+	r.CloseHandler = make([]interface{}, 0, 2)
 	return r
 }
 
 //AddMicroService 添加微服务(供http,rpc方式调用)
-func (r *StandardComponent) AddMicroService(service string, h interface{}, tags ...string) {
+func (r *StandardComponent) AddMicroService(service string, h interface{}) {
 	r.addService(MicroService, service, h)
-	r.addTags(service, tags...)
 }
 
 //AddAutoflowService 添加自动流程服务(供cron，mq方式调用)
-func (r *StandardComponent) AddAutoflowService(service string, h interface{}, tags ...string) {
+func (r *StandardComponent) AddAutoflowService(service string, h interface{}) {
 	r.addService(AutoflowService, service, h)
-	r.addTags(service, tags...)
 }
 
 //AddPageService 添加页面服务
@@ -86,17 +81,9 @@ func (r *StandardComponent) AddRPCProxy(h interface{}) {
 }
 
 //AddTagPageService 添加带有标签的页面服务
-func (r *StandardComponent) AddTagPageService(service string, h interface{}, tag string, pages ...string) {
+func (r *StandardComponent) AddTagPageService(service string, h interface{}, pages ...string) {
 	r.addService(PageService, service, h)
 	r.ServicePages[service] = pages
-	if _, ok := r.ServiceTagPages[tag]; !ok {
-		r.ServiceTagPages[tag] = make(map[string][]string)
-	}
-	if _, ok := r.ServiceTagPages[tag][service]; !ok {
-		r.ServiceTagPages[tag][service] = make([]string, 0, 2)
-	}
-	r.ServiceTagPages[tag][service] = pages
-	r.addTags(service, tag)
 }
 
 //AddCustomerService 添加自定义分组服务
@@ -110,15 +97,13 @@ func (r *StandardComponent) AddCustomerService(service string, h interface{}, gr
 }
 
 //AddCustomerTagService 添加自定义分组服务
-func (r *StandardComponent) AddCustomerTagService(service string, h interface{}, tag string, groupNames ...string) {
+func (r *StandardComponent) AddCustomerTagService(service string, h interface{}, groupNames ...string) {
 	r.AddCustomerService(service, h, groupNames...)
-	r.addTags(service, tag)
 }
 
 //AddCustomerTagsService 添加自定义分组服务
-func (r *StandardComponent) AddCustomerTagsService(service string, h interface{}, tags []string, groupNames ...string) {
+func (r *StandardComponent) AddCustomerTagsService(service string, h interface{}, groupNames ...string) {
 	r.AddCustomerService(service, h, groupNames...)
-	r.addTags(service, tags...)
 }
 
 //IsMicroService 是否是微服务
@@ -146,15 +131,7 @@ func (r *StandardComponent) IsCustomerService(group string, service string) bool
 	}
 	return false
 }
-func (r *StandardComponent) addTags(service string, tags ...string) {
-	r.ServicesTags[service] = append(r.ServicesTags[service], tags...)
-	for _, tag := range tags {
-		if _, ok := r.TagServices[tag]; !ok {
-			r.TagServices[tag] = make([]string, 0, 2)
-		}
-		r.TagServices[tag] = append(r.TagServices[tag], service)
-	}
-}
+
 func (r *StandardComponent) addToCache(group string, service string, handler interface{}) {
 	if _, ok := r.HandlerCache[group]; !ok {
 		r.HandlerCache[group] = make(map[string]interface{})
@@ -237,6 +214,12 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 		r.funcs[group][name] = h
 	}
 
+	//close handler
+	switch h.(type) {
+	case CloseHandler:
+		r.CloseHandler = append(r.CloseHandler, h)
+	}
+
 	//处理降级服务
 
 	//get降级服务
@@ -286,7 +269,6 @@ func (r *StandardComponent) register(group string, name string, h interface{}) {
 			r.FallbackHandlers[name] = handler
 		}
 	}
-
 }
 func (r *StandardComponent) checkFuncType(name string, h interface{}) {
 	fv := reflect.ValueOf(h)
@@ -361,11 +343,6 @@ func (r *StandardComponent) GetGroupServices(group string) []string {
 	return r.GroupServices[group]
 }
 
-//GetTagServices 根据tag获取服务列表
-func (r *StandardComponent) GetTagServices(tag string) []string {
-	return r.TagServices[tag]
-}
-
 //GetGroups 获取服务的分组列表
 func (r *StandardComponent) GetGroups(service string) []string {
 	return r.ServiceGroup[service]
@@ -374,16 +351,6 @@ func (r *StandardComponent) GetGroups(service string) []string {
 //GetPages 获取服务的页面列表
 func (r *StandardComponent) GetPages(service string) []string {
 	return r.ServicePages[service]
-}
-
-//GetTagPages 获取服务的页面列表
-func (r *StandardComponent) GetTagPages(service string, tagName string) []string {
-	return r.ServiceTagPages[tagName][service]
-}
-
-//GetTags 获取服务的标签
-func (r *StandardComponent) GetTags(service string) []string {
-	return r.ServicesTags[service]
 }
 
 //GetFallbackHandlers 获取fallback处理程序
@@ -406,28 +373,14 @@ func (r *StandardComponent) AddFallbackHandlers(f map[string]interface{}) {
 	}
 }
 
-//CheckTag 检查服务标签是否匹配
-func (r *StandardComponent) CheckTag(service string, tagName string) bool {
-	tags := r.ServicesTags[service]
-	if len(tags) == 0 {
-		return true
-	}
-	for _, v := range tags {
-		if v == tagName {
-			return true
-		}
-	}
-	return false
-}
-
 //Handling 每次handle执行前执行
-func (r *StandardComponent) Handling(name string, method string, service string, c *context.Context) (rs context.Response, err error) {
-	return nil, nil
+func (r *StandardComponent) Handling(name string, method string, service string, c *context.Context) (rs interface{}) {
+	return nil
 }
 
 //Handled 每次handle执行后执行
-func (r *StandardComponent) Handled(name string, method string, service string, c *context.Context) (rs context.Response, err error) {
-	return nil, nil
+func (r *StandardComponent) Handled(name string, method string, service string, c *context.Context) (rs interface{}) {
+	return nil
 }
 
 //GetHandler 获取服务的处理函数
@@ -446,26 +399,19 @@ func (r *StandardComponent) GetHandler(engine string, service string, method str
 }
 
 //Handle 组件服务执行
-func (r *StandardComponent) Handle(name string, engine string, service string, c *context.Context) (rs context.Response, err error) {
-	response := context.GetStandardResponse()
-	response.SetStatus(404)
+func (r *StandardComponent) Handle(name string, engine string, service string, c *context.Context) (rs interface{}) {
 	method := c.Request.Ext.GetMethod()
 	h, ok := r.GetHandler(engine, service, method)
 	if !ok {
-		return response, fmt.Errorf("%s:未找到服务:%s", r.Name, service)
+		c.Response.SetStatus(404)
+		return fmt.Errorf("%s:未找到服务:%s", r.Name, service)
 	}
 	switch handler := h.(type) {
 	case Handler:
-		rs, err = handler.Handle(name, engine, service, c)
+		rs = handler.Handle(name, engine, service, c)
 	default:
-		rs, err = response, fmt.Errorf("未找到服务:%s", service)
-	}
-	if err != nil {
-		status := 500
-		if rs != nil && !reflect.ValueOf(rs).IsNil() {
-			status = rs.GetStatus()
-		}
-		err = fmt.Errorf("%s:status:%d,err:%v", r.Name, types.DecodeInt(status, 0, 500, status), err)
+		c.Response.SetStatus(404)
+		rs = fmt.Errorf("未找到服务:%s", service)
 	}
 	return
 }
@@ -481,25 +427,17 @@ func (r *StandardComponent) GetFallbackHandler(engine string, service string, me
 }
 
 //Fallback 降级处理
-func (r *StandardComponent) Fallback(name string, engine string, service string, c *context.Context) (rs context.Response, err error) {
-	response := context.GetStandardResponse()
-	response.SetStatus(404)
+func (r *StandardComponent) Fallback(name string, engine string, service string, c *context.Context) (rs interface{}) {
+	c.Response.SetStatus(404)
 	h, ok := r.GetFallbackHandler(engine, service, c.Request.Ext.GetMethod())
 	if !ok {
-		return response, ErrNotFoundService
+		return ErrNotFoundService
 	}
 	switch handler := h.(type) {
 	case FallbackHandler:
-		rs, err = handler.Fallback(name, engine, service, c)
+		rs = handler.Fallback(name, engine, service, c)
 	default:
-		rs, err = response, fmt.Errorf("未找到服务:%s", service)
-	}
-	if err != nil {
-		status := 500
-		if rs != nil && !reflect.ValueOf(rs).IsNil() {
-			status = rs.GetStatus()
-		}
-		err = fmt.Errorf("%s:status:%d,err:%v", r.Name, types.DecodeInt(status, 0, 500, status), err)
+		rs = fmt.Errorf("未找到服务:%s", service)
 	}
 	return
 }
@@ -512,9 +450,10 @@ func (r *StandardComponent) Close() error {
 	r.ServiceGroup = nil
 	r.Services = nil
 	r.ServicePages = nil
-	r.ServiceTagPages = nil
-	r.ServicesTags = nil
-	r.TagServices = nil
+	for _, handler := range r.CloseHandler {
+		h := handler.(CloseHandler)
+		h.Close()
+	}
 	return nil
 }
 

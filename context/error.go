@@ -7,28 +7,32 @@ import (
 
 var ERR_DataNotExist = errors.New("查询的数据不存在")
 
-type Error interface {
-	error
-	Code() int
+type IError interface {
+	GetError() error
+	GetCode() int
 }
-type HydraError struct {
+type Error struct {
 	code int
 	error
 }
 
-func (a *HydraError) Code() int {
+func (a *Error) GetCode() int {
 	return a.code
 }
-
-func NewError(code int, err ...interface{}) *HydraError {
-	r := &HydraError{code: code}
-	if len(err) == 0 {
-		return r
+func (a *Error) GetError() error {
+	return a
+}
+func NewError(code int, err interface{}) IError {
+	r := &Error{code: code}
+	switch v := err.(type) {
+	case string:
+		r.error = errors.New(v)
+	case error:
+		r.error = v
+	case IError:
+		r.error = v.GetError()
+	default:
+		r.error = errors.New(fmt.Sprint(err))
 	}
-	if er, ok := err[0].(error); ok {
-		r.error = er
-		return r
-	}
-	r.error = errors.New(fmt.Sprint(err))
 	return r
 }

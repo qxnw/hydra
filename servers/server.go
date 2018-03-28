@@ -33,12 +33,12 @@ type IRegistryServer interface {
 }
 
 type IExecuter interface {
-	Execute(name string, method string, service string, ctx *context.Context) (rs context.Response, err error)
+	Execute(name string, method string, service string, ctx *context.Context) (rs interface{})
 }
 
-type IExecuteHandler func(name string, method string, service string, ctx *context.Context) (rs context.Response, err error)
+type IExecuteHandler func(name string, method string, service string, ctx *context.Context) (rs interface{})
 
-func (i IExecuteHandler) Execute(name string, method string, service string, ctx *context.Context) (rs context.Response, err error) {
+func (i IExecuteHandler) Execute(name string, method string, service string, ctx *context.Context) (rs interface{}) {
 	return i(name, method, service, ctx)
 }
 
@@ -47,8 +47,8 @@ type IRegistryEngine interface {
 	UpdateVarConf(conf conf.IServerConf)
 	GetRegistry() registry.IRegistry
 	GetServices() []string
-	Fallback(name string, method string, service string, c *context.Context) (rs context.Response, err error)
-	Execute(name string, method string, service string, ctx *context.Context) (rs context.Response, err error)
+	Fallback(name string, method string, service string, c *context.Context) (rs interface{})
+	Execute(name string, method string, service string, ctx *context.Context) (rs interface{})
 	Close() error
 }
 

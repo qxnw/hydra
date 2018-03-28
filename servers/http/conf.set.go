@@ -24,6 +24,10 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	if b, err := govalidator.ValidateStruct(&metric); !b {
+		err = fmt.Errorf("metric配置有误:%v", err)
+		return false, err
+	}
 	err = set.SetMetric(&metric)
 	return !metric.Disable, err
 }

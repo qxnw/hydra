@@ -14,8 +14,7 @@ import (
 )
 
 func healthCheck(c component.IContainer) component.ServiceFunc {
-	return func(name string, mode string, service string, ctx *context.Context) (response context.Response, err error) {
-		response = context.GetMapResponse()
+	return func(name string, mode string, service string, ctx *context.Context) (response interface{}) {
 		data := make(map[string]interface{})
 		data["cpu_used_precent"] = fmt.Sprintf("%.2f", cpu.GetInfo(time.Millisecond*200).UsedPercent)
 		data["mem_used_precent"] = fmt.Sprintf("%.2f", memory.GetInfo().UsedPercent)
@@ -26,8 +25,7 @@ func healthCheck(c component.IContainer) component.ServiceFunc {
 		data["server-type"] = c.GetServerType()
 		data["cluster-name"] = c.GetClusterName()
 		data["net-conn-cnt"], _ = getNetConnectNum()
-		response.SetContent(200, data)
-		return
+		return data
 	}
 }
 func getNetConnectNum() (v int, err error) {

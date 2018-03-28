@@ -55,8 +55,11 @@ func (r *Request) Bind(obj interface{}) error {
 	if err := f(obj); err != nil {
 		return err
 	}
-	_, err := govalidator.ValidateStruct(obj)
-	return err
+	if _, err := govalidator.ValidateStruct(obj); err != nil {
+		err = fmt.Errorf("输入参数有误 %v", err)
+		return err
+	}
+	return nil
 }
 
 //Check 检查输入参数和配置参数是否为空

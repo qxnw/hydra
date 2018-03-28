@@ -16,11 +16,11 @@ func Header(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 		for k, v := range headers {
 			ctx.Header(k, v)
 		}
-		response := getResponse(ctx)
-		if response == nil {
+		context := getCTX(ctx)
+		if context == nil {
 			return
 		}
-		header := response.GetHeaders()
+		header := context.Response.GetHeaders()
 		for k, v := range header {
 			ctx.Header(k, v)
 		}

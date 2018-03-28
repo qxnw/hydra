@@ -3,63 +3,29 @@ package context
 import (
 	"bytes"
 	"fmt"
-	"sync"
 	"time"
-
-	"github.com/qxnw/lib4go/types"
 )
 
-var webResponsePool *sync.Pool
-
-func init() {
-	webResponsePool = &sync.Pool{
-		New: func() interface{} {
-			return &WebResponse{baseResponse: &baseResponse{Params: make(map[string]interface{})}}
-		},
-	}
-}
-
-type WebResponse struct {
-	Content interface{}
-	ctx     *Context
-	err     error
-	*baseResponse
-}
-
-func GetWebResponse(ctx *Context) *WebResponse {
-	response := webResponsePool.Get().(*WebResponse)
-	response.ctx = ctx
-	return response
-}
-
-//Redirect 设置页面转跳
-func (r *WebResponse) Redirect(code int, url string) {
-	r.Params["Status"] = code
-	r.Params["Location"] = url
-	r.Status = code
-	return
-}
-
 //SetView 设置view
-func (r *WebResponse) SetView(name string) {
+func (r *Response) SetView(name string) {
 	r.Params["__view"] = name
 }
 
 //NoView 设置view
-func (r *WebResponse) NoView() {
+func (r *Response) NoView() {
 	r.Params["__view"] = "NONE"
 }
 
 //SetCookie 设置cookie
-func (c *WebResponse) SetCookie(name string, value string, timeout int, domain string) {
+func (r *Response) SetCookie(name string, value string, timeout int, domain string) {
 	list := make([]string, 0, 2)
-	if v, ok := c.Params["Set-Cookie"]; ok {
+	if v, ok := r.Params["Set-Cookie"]; ok {
 		list = v.([]string)
 	}
-	list = append(list, c.getSetCookie(name, value, timeout, domain))
-	c.Params["Set-Cookie"] = list
+	list = append(list, r.getSetCookie(name, value, timeout, domain))
+	r.Params["Set-Cookie"] = list
 }
-func (c *WebResponse) getSetCookie(name string, value string, timeout interface{}, domain string) string {
+func (r *Response) getSetCookie(name string, value string, timeout interface{}, domain string) string {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "%s=%s", name, value)
 	var maxAge int64
@@ -85,38 +51,9 @@ func (c *WebResponse) getSetCookie(name string, value string, timeout interface{
 	return b.String()
 }
 
-func (r *WebResponse) GetContent() interface{} {
-	return r.Content
-}
-
-func (r *WebResponse) Success(v string) {
+func (r *Response) Success(v interface{}) {
 	r.Status = 200
 	r.Content = v
 	return
 
-}
-func (r *WebResponse) SetContent(status int, content interface{}) {
-	if status == 0 {
-		status = r.Status
-	}
-	switch content.(type) {
-	case HydraError:
-		r.Status = types.DecodeInt(status, 0, 400, status)
-		r.err = content.(HydraError).error
-	case error:
-		r.Status = types.DecodeInt(status, 0, 400, status)
-		r.err = content.(error)
-	default:
-		r.Status = types.DecodeInt(status, 0, 200, status)
-		r.Content = content
-	}
-	return
-}
-func (r *WebResponse) GetError() error {
-	return r.err
-}
-func (r *WebResponse) Close() {
-	r.Content = nil
-	r.Params = make(map[string]interface{})
-	webResponsePool.Put(r)
 }

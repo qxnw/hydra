@@ -35,9 +35,13 @@ func (w *ApiResponsiveServer) Notify(conf conf.IServerConf) error {
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	comparer := conf.NewComparer(w.currentConf, cnf)
+	if cnf.ForceRestart() {
+		return true, nil
+	}
 	if !comparer.IsChanged() {
 		return false, nil
 	}
+
 	if comparer.IsValueChanged("status", "address", "host", "rTimeout", "wTimeout", "rhTimeout") {
 		return true, nil
 	}

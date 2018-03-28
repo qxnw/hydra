@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/context"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,35 +15,39 @@ func WebResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		ctx.Next()
-		response := getResponse(ctx)
-		if response == nil {
+		nctx := getCTX(ctx)
+		if nctx == nil {
 			return
 		}
-		defer response.Close()
-		if response.GetError() != nil {
-			getLogger(ctx).Error(response.GetError())
-			ctx.AbortWithError(response.GetStatus(), response.GetError())
+		defer nctx.Close()
+		if err := nctx.Response.GetError(); err != nil {
+			getLogger(ctx).Error(err)
+			ctx.AbortWithStatus(nctx.Response.GetStatus())
 			return
 		}
 		if ctx.Writer.Written() {
 			return
 		}
-		switch response.GetContentType() {
-		case 1:
-			ctx.SecureJSON(response.GetStatus(), response.GetContent())
-		case 2:
-			ctx.XML(response.GetStatus(), response.GetContent())
-		case 3:
-			ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
+		switch nctx.Response.GetContentType() {
+		case context.CT_JSON:
+			ctx.SecureJSON(nctx.Response.GetStatus(), nctx.Response.GetContent())
+		case context.CT_XML:
+			ctx.XML(nctx.Response.GetStatus(), nctx.Response.GetContent())
+		case context.CT_YMAL:
+			ctx.YAML(nctx.Response.GetStatus(), nctx.Response.GetContent())
+		case context.CT_PLAIN:
+			ctx.Data(nctx.Response.GetStatus(), "text/plain", []byte(nctx.Response.GetContent().(string)))
+		case context.CT_HTML:
+			ctx.Data(nctx.Response.GetStatus(), "text/html", []byte(nctx.Response.GetContent().(string)))
 		default:
-			if renderHTML(ctx, response, conf) {
+			if renderHTML(ctx, nctx.Response, conf) {
 				return
 			}
-			ctx.Data(response.GetStatus(), "text/plain", []byte(response.GetContent().(string)))
+			ctx.Data(nctx.Response.GetStatus(), "text/plain", []byte(nctx.Response.GetContent().(string)))
 		}
 	}
 }
-func renderHTML(ctx *gin.Context, response context.Response, cnf *conf.MetadataConf) bool {
+func renderHTML(ctx *gin.Context, response context.IResponse, cnf *conf.MetadataConf) bool {
 	files, ok := cnf.GetMetadata("viewFiles").([]string)
 	if !ok {
 		return false

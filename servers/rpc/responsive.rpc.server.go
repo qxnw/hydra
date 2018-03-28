@@ -116,6 +116,6 @@ func (w *RpcResponsiveServer) GetServices() []string {
 			nsevice = append(nsevice, sv)
 		}
 	}
-	servers.Trace(w.Infof, w.currentConf.GetServerName(), "发布服务：", nsevice)
+	//servers.Trace(w.Infof, w.currentConf.GetServerName(), "发布服务：", nsevice)
 	return nsevice
 }

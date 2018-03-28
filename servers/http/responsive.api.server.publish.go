@@ -17,7 +17,6 @@ func (w *ApiResponsiveServer) publish() (err error) {
 	pubPath := filepath.Join(w.currentConf.GetServerPubRootPath(), ipPort)
 	data := map[string]string{
 		"service": addr,
-		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)

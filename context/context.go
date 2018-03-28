@@ -8,10 +8,11 @@ import (
 
 //Context 引擎执行上下文
 type Context struct {
-	Server  *server
-	Request *Request
-	RPC     *ContextRPC
-	Log     logger.ILogger
+	Server   *server
+	Request  *Request
+	Response *Response
+	RPC      *ContextRPC
+	Log      logger.ILogger
 }
 
 //GetContext 从缓存池中获取一个context
@@ -33,8 +34,9 @@ func init() {
 	contextPool = &sync.Pool{
 		New: func() interface{} {
 			return &Context{
-				RPC:     &ContextRPC{},
-				Request: newRequest(),
+				RPC:      &ContextRPC{},
+				Request:  newRequest(),
+				Response: NewResponse(),
 			}
 		},
 	}
@@ -43,5 +45,6 @@ func init() {
 //Close 回收context
 func (c *Context) Close() {
 	c.Request.clear()
+	c.Response.clear()
 	contextPool.Put(c)
 }

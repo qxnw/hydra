@@ -28,6 +28,7 @@ type IMainConf interface {
 	GetServicePubRootPath(name string) string
 	GetServerPubRootPath() string
 	IsStop() bool
+	ForceRestart() bool
 	GetSubObject(name string, v interface{}) (int32, error)
 	GetSubConf(name string) (*JSONConf, error)
 	HasSubConf(name ...string) bool
@@ -88,8 +89,8 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		err = fmt.Errorf("%s配置有误:%v", mainConfpath, err)
 		return nil, err
 	}
-	if s.GetString("status", "start") != "start" && s.GetString("status", "start") != "stop" {
-		err = fmt.Errorf("%s配置有误:status的值只能是‘start’或‘stop’", mainConfpath)
+	if s.GetString("status", "start") != "start" && s.GetString("status", "start") != "stop" && s.GetString("status", "start") != "restart" {
+		err = fmt.Errorf("%s配置有误:status的值只能是'start','stop'或 'restart'", mainConfpath)
 		return nil, err
 	}
 	if err = s.loadChildNodeConf(); err != nil {
@@ -164,7 +165,12 @@ func (c *ServerConf) loadVarNodeConf() error {
 
 //IsStop 当前服务是否已停止
 func (c *ServerConf) IsStop() bool {
-	return c.GetString("status", "start") != "start"
+	return c.GetString("status", "start") != "start" && c.GetString("status", "start") != "restart"
+}
+
+//ForceRestart 强制重启
+func (c *ServerConf) ForceRestart() bool {
+	return c.GetString("status", "start") == "restart"
 }
 
 //GetMainConfPath 获取主配置文件路径

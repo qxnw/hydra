@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/lib4go/security/jwt"
 )
@@ -24,8 +24,11 @@ func JwtAuth(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 		if err == nil {
 			setJWTRaw(ctx, data)
 			ctx.Next()
-			response := getResponse(ctx)
-			setJwtResponse(ctx, cnf, response.GetParams()["__jwt_"])
+			context := getCTX(ctx)
+			if context == nil {
+				return
+			}
+			setJwtResponse(ctx, cnf, context.Response.GetParams()["__jwt_"])
 			return
 		}
 
@@ -38,7 +41,8 @@ func JwtAuth(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 			}
 		}
 		//jwt.token错误，返回错误码
-		ctx.AbortWithError(err.Code(), err)
+		getLogger(ctx).Error(err.GetError())
+		ctx.AbortWithStatus(err.GetCode())
 		return
 
 	}
@@ -60,7 +64,7 @@ func setJwtResponse(ctx *dispatcher.Context, cnf *conf.MetadataConf, data interf
 }
 
 // CheckJWT 检查jwk参数是否合法
-func checkJWT(ctx *dispatcher.Context, name string, secret string) (data interface{}, err context.Error) {
+func checkJWT(ctx *dispatcher.Context, name string, secret string) (data interface{}, err context.IError) {
 	token := getToken(ctx, name)
 	if token == "" {
 		return nil, context.NewError(403, fmt.Errorf("%s未传入jwt.token", name))

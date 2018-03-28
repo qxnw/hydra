@@ -8,8 +8,11 @@ import (
 func JwtWriter(cnf *conf.MetadataConf) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ctx.Next()
-		if response := getResponse(ctx); response != nil {
-			setJwtResponse(ctx, cnf, response.GetParams()["__jwt_"])
+		context := getCTX(ctx)
+		if context == nil {
+			return
 		}
+		setJwtResponse(ctx, cnf, context.Response.GetParams()["__jwt_"])
+
 	}
 }
