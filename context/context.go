@@ -8,7 +8,6 @@ import (
 
 //Context 引擎执行上下文
 type Context struct {
-	Server   *server
 	Request  *Request
 	Response *Response
 	RPC      *ContextRPC

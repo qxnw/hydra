@@ -11,8 +11,7 @@ import (
 
 //IComponentQueue Component Queue
 type IComponentQueue interface {
-	GetDefaultQueue() (c queue.IQueue, err error)
-	GetQueue(name string) (q queue.IQueue, err error)
+	GetQueue(names ...string) (q queue.IQueue, err error)
 	Close() error
 }
 
@@ -31,14 +30,12 @@ func NewStandardQueue(c IContainer, name ...string) *StandardQueue {
 	return &StandardQueue{IContainer: c, name: "queue", queueCache: cmap.New(2)}
 }
 
-//GetDefaultQueue 获取默然Queue
-func (s *StandardQueue) GetDefaultQueue() (c queue.IQueue, err error) {
-	return s.GetQueue(s.name)
-}
-
 //GetQueue GetQueue
-func (s *StandardQueue) GetQueue(name string) (q queue.IQueue, err error) {
-
+func (s *StandardQueue) GetQueue(names ...string) (q queue.IQueue, err error) {
+	name := s.name
+	if len(names) > 0 {
+		name = names[0]
+	}
 	queueConf, err := s.IContainer.GetVarConf("queue", name)
 	if err != nil {
 		return nil, fmt.Errorf("../var/queue/%s %v", name, err)

@@ -11,8 +11,7 @@ import (
 
 //IComponentInfluxDB Component DB
 type IComponentInfluxDB interface {
-	GetDefaultInflux() (c influxdb.IInfluxClient, err error)
-	GetInflux(name string) (d influxdb.IInfluxClient, err error)
+	GetInflux(names ...string) (d influxdb.IInfluxClient, err error)
 	Close() error
 }
 
@@ -31,13 +30,12 @@ func NewStandardInfluxDB(c IContainer, name ...string) *StandardInfluxDB {
 	return &StandardInfluxDB{IContainer: c, name: "influxdb", influxdbCache: cmap.New(2)}
 }
 
-//GetDefaultInflux 获取默认influxdb
-func (s *StandardInfluxDB) GetDefaultInflux() (c influxdb.IInfluxClient, err error) {
-	return s.GetInflux(s.name)
-}
-
 //GetInflux get influxdb
-func (s *StandardInfluxDB) GetInflux(name string) (influxdb.IInfluxClient, error) {
+func (s *StandardInfluxDB) GetInflux(names ...string) (influxdb.IInfluxClient, error) {
+	name := s.name
+	if len(names) > 0 {
+		name = names[0]
+	}
 	influxDbConf, err := s.IContainer.GetVarConf("influxdb", name)
 	if err != nil {
 		return nil, err

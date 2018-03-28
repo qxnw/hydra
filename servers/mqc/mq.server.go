@@ -21,7 +21,7 @@ type MqcServer struct {
 }
 
 //NewMqcServer 创建mqc服务器
-func NewMqcServer(name string, serverRaw string, queues []*conf.Queue, opts ...Option) (t *MqcServer, err error) {
+func NewMqcServer(name string, config string, queues []*conf.Queue, opts ...Option) (t *MqcServer, err error) {
 	t = &MqcServer{conf: &conf.MetadataConf{Name: name}}
 	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
@@ -31,7 +31,7 @@ func NewMqcServer(name string, serverRaw string, queues []*conf.Queue, opts ...O
 		t.Logger = logger.GetSession(name, logger.CreateSession())
 	}
 	if queues != nil && len(queues) > 0 {
-		err = t.SetQueues(serverRaw, queues)
+		err = t.SetQueues(config, queues)
 	}
 	return
 }
@@ -66,8 +66,6 @@ func (s *MqcServer) Shutdown(timeout time.Duration) {
 		s.running = servers.ST_STOP
 		s.Processor.Close()
 		time.Sleep(time.Second)
-		s.Warnf("%s:已关闭", s.conf.Name)
-
 	}
 }
 

@@ -18,11 +18,11 @@ func (w *MqcResponsiveServer) Notify(nConf conf.IServerConf) error {
 		return err
 	}
 	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
-		servers.Tracef(w.Infof, "%s:重启服务", nConf.GetServerName())
-		w.currentConf = nConf
+		servers.Trace(w.Infof, "关键配置发生变化，准备重启服务器")
 		return w.Restart(nConf)
 	}
-	//服务器地址未变化，更新服务器当前配置，并立即生效
+
+	servers.Trace(w.Infof, "配置发生变化，准备更新")
 	if err = w.SetConf(false, nConf); err != nil {
 		return err
 	}
@@ -33,11 +33,14 @@ func (w *MqcResponsiveServer) Notify(nConf conf.IServerConf) error {
 
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *MqcResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
+	if cnf.ForceRestart() {
+		return true, nil
+	}
 	comparer := conf.NewComparer(w.currentConf, cnf)
 	if !comparer.IsChanged() {
 		return false, nil
 	}
-	if comparer.IsValueChanged("status", "engines", "sharding") {
+	if comparer.IsValueChanged("status", "sharding") {
 		return true, nil
 	}
 	if ok, err := comparer.IsRequiredSubConfChanged("server"); err != nil || ok {

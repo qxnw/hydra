@@ -3,6 +3,7 @@ package cron
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
@@ -21,6 +22,10 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 		return false, nil
 	}
 	if err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&metric); !b {
+		err = fmt.Errorf("metric配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetMetric(&metric)
@@ -47,7 +52,10 @@ func SetTasks(engine servers.IExecuter, set ITasks, cnf conf.IServerConf, ext ma
 	if err != nil {
 		return false, err
 	}
-
+	if b, err := govalidator.ValidateStruct(&tasks); !b {
+		err = fmt.Errorf("task配置有误:%v", err)
+		return false, err
+	}
 	for _, task := range tasks.Tasks {
 		task.Handler = middleware.ContextHandler(engine, task.Name, task.Engine, task.Service, task.Setting, ext)
 	}

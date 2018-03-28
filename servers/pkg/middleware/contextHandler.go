@@ -128,6 +128,14 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 		}
 		return json.Unmarshal(buffer, obj)
 	}
+	input["__binding_with_"] = func(v interface{}, ct string) error {
+		buffer, err := json.Marshal(c.Request.GetForm())
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(buffer, v)
+
+	}
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
 			return encoding.Convert(buff.([]byte), ch)

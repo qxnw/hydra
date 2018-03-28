@@ -2,6 +2,7 @@ package mqc
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,10 +13,9 @@ import (
 func (w *MqcResponsiveServer) publish() (err error) {
 	addr := w.server.GetAddress()
 	ipPort := strings.Split(addr, "://")[1]
-	pubPath := fmt.Sprintf("%s/%s_", w.currentConf.GetServerType(), ipPort)
+	pubPath := filepath.Join(w.currentConf.GetServerPubRootPath(), ipPort)
 	data := map[string]string{
 		"service": addr,
-		//"health-checker": w.currentConf.GetHealthChecker(),
 	}
 	jsonData, _ := jsons.Marshal(data)
 	nodeData := string(jsonData)

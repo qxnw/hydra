@@ -13,7 +13,7 @@ func NewQueryHandler(container component.IContainer) (u *QueryHandler) {
 	return &QueryHandler{container: container}
 }
 func (u *QueryHandler) Handle(name string, engine string, service string, ctx *context.Context) (r interface{}) {
-	db, err := u.container.GetDB("db")
+	db, err := u.container.GetDB()
 	if err != nil {
 		return err
 	}

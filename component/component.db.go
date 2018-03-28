@@ -11,8 +11,7 @@ import (
 
 //IComponentDB Component DB
 type IComponentDB interface {
-	GetDefaultDB() (c db.IDB, err error)
-	GetDB(name string) (d db.IDB, err error)
+	GetDB(names ...string) (d db.IDB, err error)
 	Close() error
 }
 
@@ -31,13 +30,12 @@ func NewStandardDB(c IContainer, name ...string) *StandardDB {
 	return &StandardDB{IContainer: c, name: "db", dbMap: cmap.New(2)}
 }
 
-//GetDefaultDB 获取默然配置DB
-func (s *StandardDB) GetDefaultDB() (c db.IDB, err error) {
-	return s.GetDB(s.name)
-}
-
 //GetDB 获取数据库操作对象
-func (s *StandardDB) GetDB(name string) (d db.IDB, err error) {
+func (s *StandardDB) GetDB(names ...string) (d db.IDB, err error) {
+	name := s.name
+	if len(names) > 0 {
+		name = names[0]
+	}
 	dbConf, err := s.IContainer.GetVarConf("db", name)
 	if err != nil {
 		return nil, fmt.Errorf("../var/db/%s %v", name, err)

@@ -3,6 +3,7 @@ package mqc
 import (
 	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/middleware"
@@ -21,6 +22,10 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 		return false, nil
 	}
 	if err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&metric); !b {
+		err = fmt.Errorf("metric配置有误:%v", err)
 		return false, err
 	}
 	err = set.SetMetric(&metric)
@@ -52,7 +57,10 @@ func SetQueues(engine servers.IExecuter, set IQueues, cnf conf.IServerConf, ext 
 	if err != nil {
 		return false, err
 	}
-
+	if b, err := govalidator.ValidateStruct(&queues); !b {
+		err = fmt.Errorf("queue配置有误:%v", err)
+		return false, err
+	}
 	for _, queue := range queues.Queues {
 		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
 	}

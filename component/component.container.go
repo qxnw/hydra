@@ -17,13 +17,9 @@ type IContainer interface {
 	conf.IVarConf
 
 	GetRegistry() registry.IRegistry
-	GetDefaultCache() (c cache.ICache, err error)
-	GetCache(name string) (c cache.ICache, err error)
-	GetDefaultDB() (c db.IDB, err error)
-	GetDB(name string) (d db.IDB, err error)
-	GetDefaultInflux() (c influxdb.IInfluxClient, err error)
-	GetInflux(name string) (d influxdb.IInfluxClient, err error)
-	GetDefaultQueue() (c queue.IQueue, err error)
-	GetQueue(name string) (q queue.IQueue, err error)
+	GetCache(names ...string) (c cache.ICache, err error)
+	GetDB(names ...string) (d db.IDB, err error)
+	GetInflux(names ...string) (d influxdb.IInfluxClient, err error)
+	GetQueue(names ...string) (q queue.IQueue, err error)
 	Close() error
 }

@@ -14,7 +14,7 @@ func NewRequestHandler(container component.IContainer) (u *RequestHandler) {
 }
 func (u *RequestHandler) Handle(name string, engine string, service string, ctx *context.Context) (r interface{}) {
 
-	db, err := u.container.GetDB("db")
+	db, err := u.container.GetDB()
 	if err != nil {
 		return err
 	}

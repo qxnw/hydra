@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/lib4go/encoding"
@@ -142,6 +143,10 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 	input["__func_http_request_"] = c.Request
 	input["__func_http_response_"] = c.Request.Response
 	input["__binding_"] = c.ShouldBind
+	input["__binding_with_"] = func(v interface{}, ct string) error {
+		return c.BindWith(v, binding.Default(c.Request.Method, ct))
+
+	}
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
 			return encoding.Convert(buff.([]byte), ch)

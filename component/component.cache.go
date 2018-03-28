@@ -11,8 +11,7 @@ import (
 
 //IComponentCache Component Cache
 type IComponentCache interface {
-	GetDefaultCache() (c cache.ICache, err error)
-	GetCache(name string) (c cache.ICache, err error)
+	GetCache(names ...string) (c cache.ICache, err error)
 	Close() error
 }
 
@@ -31,13 +30,12 @@ func NewStandardCache(c IContainer, name ...string) *StandardCache {
 	return &StandardCache{IContainer: c, name: "cache", cacheMap: cmap.New(2)}
 }
 
-//GetDefaultCache 获取默然配置cache
-func (s *StandardCache) GetDefaultCache() (c cache.ICache, err error) {
-	return s.GetCache(s.name)
-}
-
 //GetCache 获取缓存操作对象
-func (s *StandardCache) GetCache(name string) (c cache.ICache, err error) {
+func (s *StandardCache) GetCache(names ...string) (c cache.ICache, err error) {
+	name := s.name
+	if len(names) > 0 {
+		name = names[0]
+	}
 	return s.GetCacheBy("cache", name)
 }
 
