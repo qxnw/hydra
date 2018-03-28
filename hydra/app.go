@@ -26,7 +26,6 @@ func NewApp(opts ...Option) (m *MicroApp) {
 		opt(m.option)
 	}
 	m.logger = logger.GetSession("micro", logger.CreateSession())
-
 	return m
 }
 
