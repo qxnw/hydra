@@ -22,6 +22,8 @@ type option struct {
 	IsDebug         bool
 	AutoCreateConf  bool
 	Trace           string
+	remoteLogger    bool
+	RemoteLogger    bool
 }
 
 //Option 配置选项
@@ -101,6 +103,13 @@ func WithDebug() Option {
 func WithProduct() Option {
 	return func(o *option) {
 		o.IsDebug = false
+	}
+}
+
+//WithRemoteLogger 设置产品模式
+func WithRemoteLogger() Option {
+	return func(o *option) {
+		o.RemoteLogger = true
 	}
 }
 func parsePath(p string) (platName string, systemName string, serverTypes []string, clusterName string, err error) {

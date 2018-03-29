@@ -86,10 +86,11 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 		Destination: &m.Trace,
 		Usage:       fmt.Sprintf("性能跟踪%v", supportTraces),
 	})
-	//flags = append(flags, cli.BoolFlag{
-	//Name:  "debug，d",
-	//Usage: "启用调试模式",
-	//})
+	flags = append(flags, cli.BoolFlag{
+		Name:        "remote-logger,l",
+		Destination: &m.remoteLogger,
+		Usage:       "启用远程日志",
+	})
 
 	return flags
 }

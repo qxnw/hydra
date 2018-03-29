@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/qxnw/hydra/hydra/log"
 	"github.com/qxnw/hydra/servers"
 
 	"github.com/qxnw/hydra/registry"
@@ -38,10 +39,11 @@ type Hydra struct {
 	trace          string
 	done           bool
 	autoCreateNode bool
+	remoteLogger   bool
 }
 
 //NewHydra 创建hydra服务器
-func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool) *Hydra {
+func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool, remoteLogger bool) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
 		logger:         logger.New("hydra"),
@@ -55,6 +57,7 @@ func NewHydra(platName string, systemName string, serverTypes []string, clusterN
 		clusterName:    clusterName,
 		registryAddr:   registryAddr,
 		autoCreateNode: autoCreateNode,
+		remoteLogger:   remoteLogger,
 		trace:          trace,
 	}
 }
@@ -64,6 +67,11 @@ func (h *Hydra) Start() (err error) {
 	//非调试模式时设置日志写协程数为50个
 	if !h.isDebug {
 		logger.AddWriteThread(49)
+	}
+	if h.remoteLogger {
+		if err := log.ConfigRemoteLogger(h.platName, h.systemName, h.registryAddr, h.logger); err != nil {
+			return err
+		}
 	}
 	//创建trace性能跟踪
 	if err = startTrace(h.trace, h.logger); err != nil {

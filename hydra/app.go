@@ -39,13 +39,16 @@ func (m *MicroApp) Start() {
 }
 
 func (m *MicroApp) action(c *cli.Context) error {
+	if m.remoteLogger {
+		m.RemoteLogger = m.remoteLogger
+	}
 	if err := m.checkInput(); err != nil {
 		cli.ErrWriter.Write([]byte("  " + err.Error() + "\n\n"))
 		cli.ShowCommandHelp(c, c.Command.Name)
 		return nil
 	}
 	m.hydra = NewHydra(m.PlatName, m.SystemName, m.ServerTypes, m.ClusterName, m.Trace,
-		m.RegistryAddr, m.AutoCreateConf, m.IsDebug)
+		m.RegistryAddr, m.AutoCreateConf, m.IsDebug, m.RemoteLogger)
 	if err := m.hydra.Start(); err != nil {
 		m.logger.Error(err)
 		return err
