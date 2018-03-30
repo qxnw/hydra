@@ -62,7 +62,7 @@ type ISetRouterHandler interface {
 }
 
 //SetHttpRouters 设置路由
-func SetHttpRouters(engine servers.IExecuter, set ISetRouterHandler, cnf conf.IServerConf) (enable bool, err error) {
+func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf conf.IServerConf) (enable bool, err error) {
 	var routers conf.Routers
 	if _, err = cnf.GetSubObject("router", &routers); err == conf.ErrNoSetting || len(routers.Routers) == 0 {
 		routers = conf.Routers{}

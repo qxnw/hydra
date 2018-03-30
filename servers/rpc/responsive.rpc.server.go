@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/servers"
@@ -40,6 +41,9 @@ func NewRpcResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	if err != nil {
 		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
 	}
+	if err = h.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return nil, err
+	}
 	if h.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8081"), nil, WithLogger(logger)); err != nil {
 		return
 	}
@@ -61,6 +65,9 @@ func (w *RpcResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger)
 	if err != nil {
 		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	if err = w.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return err
 	}
 	if w.server, err = NewRpcServer(cnf.GetServerName(), cnf.GetString("address", "8080"), nil, WithLogger(w.Logger)); err != nil {
 		return

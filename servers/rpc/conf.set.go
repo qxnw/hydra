@@ -60,7 +60,7 @@ type ISetRouterHandler interface {
 	SetRouters([]*conf.Router) error
 }
 
-func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
+func SetRouters(engine servers.IRegistryEngine, cnf conf.IServerConf, set ISetRouterHandler, ext map[string]interface{}) (enable bool, err error) {
 	var routers conf.Routers
 	if _, err = cnf.GetSubObject("router", &routers); err == conf.ErrNoSetting || len(routers.Routers) == 0 {
 		routers = conf.Routers{}
@@ -76,7 +76,7 @@ func SetRouters(engine servers.IExecuter, cnf conf.IServerConf, set ISetRouterHa
 		return false, err
 	}
 	for _, router := range routers.Routers {
-		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting, ext)
+		router.Handler = middleware.ContextHandler(engine, engine, router.Name, router.Engine, router.Service, router.Setting, ext)
 	}
 	err = set.SetRouters(routers.Routers)
 	if err != nil {

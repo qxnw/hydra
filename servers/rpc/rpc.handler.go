@@ -50,13 +50,13 @@ func GetRouters() *Routers {
 func (r *Routers) Get() []*conf.Router {
 	return r.routers
 }
-func (r *Routers) Route(method string, name string, f servers.IExecuteHandler) {
+func (r *Routers) Route(method string, name string, f servers.IRegistryEngine) {
 	r.routers = append(r.routers,
 		&conf.Router{
 			Name:    name,
 			Action:  strings.Split(method, ","),
 			Engine:  "*",
 			Service: name,
-			Handler: middleware.ContextHandler(f, name, "*", name, nil, nil),
+			Handler: middleware.ContextHandler(f, f, name, "*", name, nil, nil),
 		})
 }

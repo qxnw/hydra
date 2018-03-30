@@ -58,7 +58,7 @@ func GetRouters() *Routers {
 func (r *Routers) Get() []*conf.Router {
 	return r.routers
 }
-func (r *Routers) Route(method string, name string, f servers.IExecuteHandler) {
+func (r *Routers) Route(method string, name string, f interface{}) {
 	r.routers = append(r.routers,
 		&conf.Router{
 			Name:    name,

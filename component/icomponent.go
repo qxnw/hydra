@@ -24,9 +24,9 @@ type IComponent interface {
 	GetPages(service string) []string
 
 	Fallback(name string, engine string, service string, c *context.Context) (rs interface{})
-	Handling(name string, mode string, service string, c *context.Context) (rs interface{})
-	Handled(name string, mode string, service string, c *context.Context) (rs interface{})
-	Handle(name string, mode string, service string, c *context.Context) interface{}
+	Handling(name string, engine string, service string, c *context.Context) (rs interface{})
+	Handled(name string, engine string, service string, c *context.Context) (rs interface{})
+	Handle(name string, engine string, service string, c *context.Context) interface{}
 	Close() error
 }
 
@@ -36,58 +36,55 @@ type CloseHandler interface {
 
 //Handler context handler
 type Handler interface {
-	Handle(name string, mode string, service string, c *context.Context) interface{}
+	Handle(name string, engine string, service string, c *context.Context) interface{}
 }
 
 type GetHandler interface {
-	GetHandle(name string, mode string, service string, c *context.Context) interface{}
+	GetHandle(name string, engine string, service string, c *context.Context) interface{}
 }
 type PostHandler interface {
-	PostHandle(name string, mode string, service string, c *context.Context) interface{}
+	PostHandle(name string, engine string, service string, c *context.Context) interface{}
 }
 type DeleteHandler interface {
-	DeleteHandle(name string, mode string, service string, c *context.Context) interface{}
+	DeleteHandle(name string, engine string, service string, c *context.Context) interface{}
 }
 type PutHandler interface {
-	PutHandle(name string, mode string, service string, c *context.Context) interface{}
+	PutHandle(name string, engine string, service string, c *context.Context) interface{}
 }
 
 //FallbackHandler context handler
 type FallbackHandler interface {
-	Fallback(name string, mode string, service string, c *context.Context) interface{}
+	Fallback(name string, engine string, service string, c *context.Context) interface{}
 }
 
 //GetFallbackHandler context handler
 type GetFallbackHandler interface {
-	GetFallback(name string, mode string, service string, c *context.Context) interface{}
+	GetFallback(name string, engine string, service string, c *context.Context) interface{}
 }
 
 //PostFallbackHandler context handler
 type PostFallbackHandler interface {
-	PostFallback(name string, mode string, service string, c *context.Context) interface{}
+	PostFallback(name string, engine string, service string, c *context.Context) interface{}
 }
 
 //PutFallbackHandler context handler
 type PutFallbackHandler interface {
-	PutFallback(name string, mode string, service string, c *context.Context) interface{}
+	PutFallback(name string, engine string, service string, c *context.Context) interface{}
 }
 
 //DeleteFallbackHandler context handler
 type DeleteFallbackHandler interface {
-	DeleteFallback(name string, mode string, service string, c *context.Context) interface{}
+	DeleteFallback(name string, engine string, service string, c *context.Context) interface{}
 }
 
-type FallbackServiceFunc func(name string, mode string, service string, c *context.Context) (rs interface{})
+type FallbackServiceFunc func(name string, engine string, service string, c *context.Context) (rs interface{})
 
-func (h FallbackServiceFunc) Fallback(name string, mode string, service string, c *context.Context) (rs interface{}) {
-	return h(name, mode, service, c)
+func (h FallbackServiceFunc) Fallback(name string, engine string, service string, c *context.Context) (rs interface{}) {
+	return h(name, engine, service, c)
 }
 
-type ServiceFunc func(name string, mode string, service string, c *context.Context) (rs interface{})
+type ServiceFunc func(name string, engine string, service string, c *context.Context) (rs interface{})
 
-func (h ServiceFunc) Handle(name string, mode string, service string, c *context.Context) (rs interface{}) {
-	return h(name, mode, service, c)
-}
-func (h ServiceFunc) Close() error {
-	return nil
+func (h ServiceFunc) Handle(name string, engine string, service string, c *context.Context) (rs interface{}) {
+	return h(name, engine, service, c)
 }

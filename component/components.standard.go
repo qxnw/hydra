@@ -96,16 +96,6 @@ func (r *StandardComponent) AddCustomerService(service string, h interface{}, gr
 	}
 }
 
-//AddCustomerTagService 添加自定义分组服务
-func (r *StandardComponent) AddCustomerTagService(service string, h interface{}, groupNames ...string) {
-	r.AddCustomerService(service, h, groupNames...)
-}
-
-//AddCustomerTagsService 添加自定义分组服务
-func (r *StandardComponent) AddCustomerTagsService(service string, h interface{}, groupNames ...string) {
-	r.AddCustomerService(service, h, groupNames...)
-}
-
 //IsMicroService 是否是微服务
 func (r *StandardComponent) IsMicroService(service string) bool {
 	return r.IsCustomerService(MicroService, service)
@@ -277,7 +267,7 @@ func (r *StandardComponent) checkFuncType(name string, h interface{}) {
 	}
 	tp := reflect.TypeOf(h)
 	if tp.NumIn() > 2 || tp.NumOut() == 0 || tp.NumOut() > 2 {
-		panic(fmt.Sprintf("服务:%s只能包含最多1个输入参数，最多2个返回值", name))
+		panic(fmt.Sprintf("服务:%s只能包含最多1个输入参数(%d)，最多2个返回值(%d)", name, tp.NumIn(), tp.NumOut()))
 	}
 	if tp.NumIn() == 1 {
 		if tp.In(0).Name() != "IContainer" {

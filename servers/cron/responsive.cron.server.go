@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/servers"
@@ -43,6 +44,9 @@ func NewCronResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *
 	if err != nil {
 		return nil, fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
 	}
+	if err = h.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return nil, err
+	}
 	h.server, err = NewCronServer(h.currentConf.GetServerName(), "", nil, WithLogger(logger))
 	if err != nil {
 		return
@@ -66,6 +70,9 @@ func (w *CronResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	w.engine, err = engines.NewServiceEngine(cnf, w.registryAddr, w.Logger)
 	if err != nil {
 		return fmt.Errorf("%s:engine启动失败%v", cnf.GetServerName(), err)
+	}
+	if err = w.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return err
 	}
 	w.server, err = NewCronServer(w.currentConf.GetServerName(), "", nil, WithLogger(w.Logger))
 	if err != nil {

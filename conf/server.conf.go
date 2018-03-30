@@ -20,6 +20,8 @@ type ISystemConf interface {
 	GetClusterName() string
 	GetServerName() string
 	GetAppConf(v interface{}) error
+	Get(key string) interface{}
+	Set(key string, value interface{})
 }
 type IMainConf interface {
 	IConf
@@ -59,6 +61,7 @@ type ServerConf struct {
 	clusterName  string
 	mainConfpath string
 	varConfPath  string
+	*metadata
 	subNodeConfs map[string]JSONConf
 	varNodeConfs map[string]JSONConf
 	registry     registry.IRegistry
@@ -74,6 +77,7 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		return
 	}
 	s = &ServerConf{
+		metadata:     &metadata{},
 		mainConfpath: mainConfpath,
 		platName:     sections[0],
 		sysName:      sections[1],

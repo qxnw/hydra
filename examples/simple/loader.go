@@ -1,17 +1,13 @@
 package main
 
 import (
-	"github.com/qxnw/hydra/component"
-	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/examples/simple/services/order"
 	"github.com/qxnw/hydra/examples/simple/services/user"
+	"github.com/qxnw/hydra/hydra"
 )
 
-func loader() engines.ServiceLoader {
-	return func(component *component.StandardComponent, container component.IContainer) error {
-		component.AddMicroService("/user/login", user.NewLoginHandler)
-		component.AddMicroService("/order/query", order.NewQueryHandler)
-		component.AddMicroService("/order/bind", order.NewBindHandler)
-		return nil
-	}
+func AddServices(app *hydra.MicroApp) {
+	app.Micro("/user/login", user.NewLoginHandler)
+	app.Micro("/order/query", order.NewQueryHandler)
+	app.Micro("/order/bind", order.NewBindHandler)
 }

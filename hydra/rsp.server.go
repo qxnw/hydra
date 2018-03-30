@@ -3,6 +3,8 @@ package hydra
 import (
 	"sync"
 
+	"github.com/qxnw/hydra/component"
+
 	"github.com/qxnw/hydra/servers"
 
 	"github.com/qxnw/hydra/conf"
@@ -17,14 +19,16 @@ type rspServer struct {
 	registry     registry.IRegistry
 	registryAddr string
 	logger       *logger.Logger
+	handler      component.IComponentHandler
 	done         bool
 }
 
-func newRspServer(registryAddr string, registry registry.IRegistry, logger *logger.Logger) *rspServer {
+func newRspServer(registryAddr string, registry registry.IRegistry, handler component.IComponentHandler, logger *logger.Logger) *rspServer {
 	return &rspServer{
 		registry:     registry,
 		registryAddr: registryAddr,
 		servers:      make(map[string]*server),
+		handler:      handler,
 		logger:       logger,
 	}
 }
@@ -45,6 +49,7 @@ func (s *rspServer) Change(u *watcher.ContentChangeArgs) {
 				s.logger.Error(err)
 				return
 			}
+			conf.Set("__component_handler_", s.handler)
 			//检查更新
 			if err := s.update(conf); err != nil {
 				s.logger.Error(err)

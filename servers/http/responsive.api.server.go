@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/qxnw/hydra/component"
+
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/servers"
@@ -58,7 +60,9 @@ func NewApiResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	if err != nil {
 		return nil, fmt.Errorf("engine启动失败%v", err)
 	}
-
+	if err = h.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return nil, err
+	}
 	if h.server, err = NewApiServer(cnf.GetServerName(),
 		cnf.GetString("address", ":8090"),
 		nil,
@@ -84,7 +88,9 @@ func (w *ApiResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	if err != nil {
 		return fmt.Errorf("engine启动失败%v", err)
 	}
-
+	if err = w.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
+		return err
+	}
 	if w.server, err = NewApiServer(cnf.GetServerName(),
 		cnf.GetString("address", ":8090"),
 		nil,

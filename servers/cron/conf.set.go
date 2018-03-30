@@ -38,7 +38,7 @@ type ITasks interface {
 }
 
 //SetTasks 设置tasks
-func SetTasks(engine servers.IExecuter, set ITasks, cnf conf.IServerConf, ext map[string]interface{}) (enable bool, err error) {
+func SetTasks(engine servers.IRegistryEngine, set ITasks, cnf conf.IServerConf, ext map[string]interface{}) (enable bool, err error) {
 	reidsConf, err := cnf.GetSubConf("redis")
 	if err != nil && err != conf.ErrNoSetting {
 		return false, err
@@ -57,7 +57,7 @@ func SetTasks(engine servers.IExecuter, set ITasks, cnf conf.IServerConf, ext ma
 		return false, err
 	}
 	for _, task := range tasks.Tasks {
-		task.Handler = middleware.ContextHandler(engine, task.Name, task.Engine, task.Service, task.Setting, ext)
+		task.Handler = middleware.ContextHandler(engine, engine, task.Name, task.Engine, task.Service, task.Setting, ext)
 	}
 	if err = set.SetTasks(string(reidsConf.GetRaw()), tasks.Tasks); err != nil {
 		return false, err

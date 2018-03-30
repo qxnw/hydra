@@ -38,7 +38,7 @@ type IQueues interface {
 }
 
 //SetQueues 设置queue
-func SetQueues(engine servers.IExecuter, set IQueues, cnf conf.IServerConf, ext map[string]interface{}) (enable bool, err error) {
+func SetQueues(engine servers.IRegistryEngine, set IQueues, cnf conf.IServerConf, ext map[string]interface{}) (enable bool, err error) {
 
 	serverConf, err := cnf.GetSubConf("server")
 	if err == conf.ErrNoSetting {
@@ -62,7 +62,7 @@ func SetQueues(engine servers.IExecuter, set IQueues, cnf conf.IServerConf, ext 
 		return false, err
 	}
 	for _, queue := range queues.Queues {
-		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
+		queue.Handler = middleware.ContextHandler(engine, engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
 	}
 	if err = set.SetQueues(string(serverConf.GetRaw()), queues.Queues); err != nil {
 		return false, err

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/hydra/log"
 	"github.com/qxnw/hydra/servers"
 
@@ -35,6 +36,7 @@ type Hydra struct {
 	registry       registry.IRegistry
 	watcher        *watcher.ConfWatcher
 	notify         chan *watcher.ContentChangeArgs
+	cHandler       component.IComponentHandler
 	rspServer      *rspServer
 	trace          string
 	done           bool
@@ -43,9 +45,10 @@ type Hydra struct {
 }
 
 //NewHydra 创建hydra服务器
-func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool, remoteLogger bool) *Hydra {
+func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool, remoteLogger bool, r component.IComponentHandler) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
+		cHandler:       r,
 		logger:         logger.New("hydra"),
 		systemRootName: filepath.Join("/", platName, systemName, strings.Join(serverTypes, "-"), clusterName),
 		closeChan:      make(chan struct{}),
@@ -105,7 +108,6 @@ LOOP:
 
 //startWatch 启动服务器配置监控
 func (h *Hydra) startWatch() (err error) {
-
 	//创建注册中心
 	if h.registry, err = registry.NewRegistryWithAddress(h.registryAddr, h.logger); err != nil {
 		err = fmt.Errorf("注册中心初始化失败:%s(%v)", h.registryAddr, err)
@@ -127,7 +129,7 @@ func (h *Hydra) startWatch() (err error) {
 	}
 
 	//创建服务管理器
-	h.rspServer = newRspServer(h.registryAddr, h.registry, h.logger)
+	h.rspServer = newRspServer(h.registryAddr, h.registry, h.cHandler, h.logger)
 
 	//循环接收服务变更新通知
 	go h.loopRecvNotify()

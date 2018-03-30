@@ -24,6 +24,7 @@ type IServiceEngine interface {
 //ServiceEngine 服务引擎
 type ServiceEngine struct {
 	*component.StandardComponent
+	cHandler component.IComponentHandler
 	conf.IServerConf
 	registryAddr string
 	*rpc.Invoker
@@ -61,6 +62,21 @@ func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger
 	return
 }
 
+//SetHandler 设置handler
+func (r *ServiceEngine) SetHandler(h component.IComponentHandler) error {
+	if h == nil {
+		return nil
+	}
+	r.cHandler = h
+	svs := h.GetServices()
+	for group, handlers := range svs {
+		for name, handler := range handlers {
+			r.StandardComponent.AddCustomerService(name, handler, group)
+		}
+	}
+	return r.StandardComponent.LoadServices()
+}
+
 //UpdateVarConf 更新var配置参数
 func (r *ServiceEngine) UpdateVarConf(conf conf.IServerConf) {
 	r.SetVarConf(conf.GetVarConfClone())
@@ -85,8 +101,20 @@ func (r *ServiceEngine) Execute(name string, engine string, service string, ctx 
 	if rh := r.Handling(name, engine, service, ctx); ctx.Response.HasError(rh) {
 		return rh
 	}
+
+	if r.cHandler != nil && r.cHandler.GetHandling() != nil {
+		if rh := r.cHandler.GetHandling()(name, engine, service, ctx); ctx.Response.HasError(rh) {
+			return rh
+		}
+	}
+
 	if rs = r.Handle(name, engine, service, ctx); ctx.Response.HasError(rs) {
 		return rs
+	}
+	if r.cHandler != nil && r.cHandler.GetHandled() != nil {
+		if rh := r.cHandler.GetHandled()(name, engine, service, ctx); ctx.Response.HasError(rh) {
+			return rh
+		}
 	}
 	if rd := r.Handled(name, engine, service, ctx); ctx.Response.HasError(rd) {
 		return rd

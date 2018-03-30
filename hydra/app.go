@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/qxnw/hydra/component"
 	_ "github.com/qxnw/hydra/hydra/impt"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/urfave/cli"
@@ -17,11 +18,12 @@ type MicroApp struct {
 	logger *logger.Logger
 	hydra  *Hydra
 	*option
+	component.IComponentRegistry
 }
 
 //NewApp 创建微服务应用
 func NewApp(opts ...Option) (m *MicroApp) {
-	m = &MicroApp{option: &option{}}
+	m = &MicroApp{option: &option{}, IComponentRegistry: component.NewServiceRegistry()}
 	for _, opt := range opts {
 		opt(m.option)
 	}
@@ -38,6 +40,10 @@ func (m *MicroApp) Start() {
 	}
 }
 
+//Use 注册所有服务
+func (m *MicroApp) Use(r func(r component.IServiceRegistry)) {
+	r(m.IComponentRegistry)
+}
 func (m *MicroApp) action(c *cli.Context) error {
 	if m.remoteLogger {
 		m.RemoteLogger = m.remoteLogger
@@ -48,7 +54,7 @@ func (m *MicroApp) action(c *cli.Context) error {
 		return nil
 	}
 	m.hydra = NewHydra(m.PlatName, m.SystemName, m.ServerTypes, m.ClusterName, m.Trace,
-		m.RegistryAddr, m.AutoCreateConf, m.IsDebug, m.RemoteLogger)
+		m.RegistryAddr, m.AutoCreateConf, m.IsDebug, m.RemoteLogger, m.IComponentRegistry)
 	if err := m.hydra.Start(); err != nil {
 		m.logger.Error(err)
 		return err

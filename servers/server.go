@@ -3,9 +3,9 @@ package servers
 import (
 	"fmt"
 
+	"github.com/qxnw/hydra/component"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
-	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -44,12 +44,12 @@ func (i IExecuteHandler) Execute(name string, method string, service string, ctx
 
 //IRegistryEngine 基于注册中心的执行引擎
 type IRegistryEngine interface {
+	context.IContainer
+	IExecuter
+	SetHandler(h component.IComponentHandler) error
 	UpdateVarConf(conf conf.IServerConf)
-	GetRegistry() registry.IRegistry
 	GetServices() []string
 	Fallback(name string, method string, service string, c *context.Context) (rs interface{})
-	Execute(name string, method string, service string, ctx *context.Context) (rs interface{})
-	Close() error
 }
 
 //IServerResolver 服务器生成器

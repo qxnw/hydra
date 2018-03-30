@@ -68,10 +68,16 @@ func getCTX(c *dispatcher.Context) *context.Context {
 }
 
 //ContextHandler api请求处理程序
-func ContextHandler(handler servers.IExecuter, name string, engine string, service string, mSetting map[string]string, ext map[string]interface{}) dispatcher.HandlerFunc {
+func ContextHandler(exhandler interface{}, handler servers.IExecuter, name string, engine string, service string, mSetting map[string]string, ext map[string]interface{}) dispatcher.HandlerFunc {
+
+	handler, ok := exhandler.(servers.IExecuter)
+	if !ok {
+		panic("不是有效的servers.IExecuter接口")
+	}
+
 	return func(c *dispatcher.Context) {
 		//处理输入参数
-		ctx := context.GetContext(makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext), getLogger(c))
+		ctx := context.GetContext(exhandler.(context.IContainer), makeQueyStringData(c), makeFormData(c), makeParamsData(c), makeSettingData(c, mSetting), makeExtData(c, ext), getLogger(c))
 
 		defer setServiceName(c, ctx.Request.Translate(service, false))
 		defer setCTX(c, ctx)
