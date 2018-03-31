@@ -81,7 +81,7 @@ func (w *CronResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err
 	if ok, err = SetMetric(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, conf.GetServerName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "metric设置")
 	return nil
 }
 func getEnableName(b bool) string {

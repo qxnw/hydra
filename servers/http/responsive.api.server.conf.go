@@ -73,43 +73,43 @@ func (w *ApiResponsiveServer) SetConf(restart bool, cnf conf.IServerConf) (err e
 	if ok, err = SetStatic(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "静态文件")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "静态文件")
 
 	//设置请求头
 	if ok, err = SetHeaders(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "header设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "header设置")
 
 	//设置熔断配置
 	if ok, err = SetCircuitBreaker(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "熔断设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "熔断设置")
 
 	//设置jwt安全认证
 	if ok, err = SetJWT(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "jwt设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "jwt设置")
 
 	//设置ajax请求
 	if ok, err = SetAjaxRequest(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "ajax请求限制设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "ajax请求限制设置")
 
 	//设置metric
 	if ok, err = SetMetric(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "metric设置")
 
 	//设置host
 	if ok, err = SetHosts(w.server, cnf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Warnf, getEnableName(ok), "host设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "host设置")
 	w.currentConf = cnf
 	return nil
 }
