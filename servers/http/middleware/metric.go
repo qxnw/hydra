@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/servers/pkg/timer"
 	"github.com/qxnw/lib4go/concurrent/cmap"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/qxnw/lib4go/metrics"
@@ -30,6 +31,9 @@ type Metric struct {
 	currentRegistry metrics.Registry
 	conf            *conf.MetadataConf
 	ip              string
+	timer           *timer.Timer
+	done            bool
+	closeChan       chan struct{}
 }
 
 //NewMetric new metric
@@ -38,6 +42,7 @@ func NewMetric(conf *conf.MetadataConf) *Metric {
 		conf:            conf,
 		currentRegistry: metrics.NewRegistry(),
 		ip:              net.GetLocalIPAddress(),
+		closeChan:       make(chan struct{}),
 	}
 }
 
@@ -45,30 +50,46 @@ func NewMetric(conf *conf.MetadataConf) *Metric {
 func (m *Metric) Stop() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if !m.done {
+		close(m.closeChan)
+	}
+	m.done = true
 	if m.reporter != nil && m.reporter.reporter != nil {
 		m.reporter.reporter.Close()
 	}
+	if m.timer != nil {
+		m.timer.Close()
+	}
+
 }
 
 //Restart restart metric
-func (m *Metric) Restart(host string, dataBase string, userName string, password string, cron string,
+func (m *Metric) Restart(host string, dataBase string, userName string, password string, c string,
 	lg *logger.Logger) (err error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.reporter != nil && m.reporter.reporter != nil {
-		m.reporter.reporter.Close()
+	m.Stop()
+
+	m.done = false
+	m.closeChan = make(chan struct{})
+	m.timer, err = timer.NewTimer(c)
+	if err != nil {
+		return err
 	}
 	m.logger = lg
-	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, cron: cron}
+	m.reporter = &reporter{Host: host, Database: dataBase, username: userName, password: password, cron: c}
 	m.reporter.reporter, err = metrics.InfluxDB(m.currentRegistry,
-		cron,
+		c,
 		m.reporter.Host, m.reporter.Database,
 		m.reporter.username,
 		m.reporter.password, m.logger)
 	if err != nil {
 		return
 	}
+
 	go m.reporter.reporter.Run()
+	go m.loopCollectCPU()
+	go m.loopCollectDisk()
+	go m.loopCollectMem()
+	m.timer.Start()
 	return nil
 }
 
@@ -91,5 +112,4 @@ func (m *Metric) Handle() gin.HandlerFunc {
 			"url", url, "status", fmt.Sprintf("%d", statusCode)) //完成数
 		metrics.GetOrRegisterMeter(responseName, m.currentRegistry).Mark(1)
 	}
-
 }

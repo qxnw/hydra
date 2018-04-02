@@ -47,7 +47,6 @@ func (w *ApiResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	}
 	ok, err := comparer.IsRequiredSubConfChanged("router")
 	if ok {
-		fmt.Println("router")
 		return true, nil
 	}
 	if err != nil {

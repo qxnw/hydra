@@ -15,6 +15,7 @@ import (
 
 func healthCheck(c component.IContainer) component.ServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response interface{}) {
+		ctx.Response.SeTextJSON()
 		data := make(map[string]interface{})
 		data["cpu_used_precent"] = fmt.Sprintf("%.2f", cpu.GetInfo(time.Millisecond*200).UsedPercent)
 		data["mem_used_precent"] = fmt.Sprintf("%.2f", memory.GetInfo().UsedPercent)
@@ -37,8 +38,8 @@ func getNetConnectNum() (v int, err error) {
 	return
 }
 func serverLoader() ServiceLoader {
-	return func(component *component.StandardComponent, container component.IContainer) error {
-		component.AddMicroService("/_server/health/check", healthCheck)
+	return func(c *component.StandardComponent, container component.IContainer) error {
+		c.AddCustomerService("/_server/health/check", healthCheck, component.GetGroupName(container.GetServerType()))
 		return nil
 	}
 }

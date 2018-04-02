@@ -8,9 +8,9 @@ import (
 
 func main() {
 	app := hydra.NewApp(
-		hydra.WithPlatName("hydrav4"),
+		hydra.WithPlatName("hydra-20"),
 		hydra.WithSystemName("collector"),
-		hydra.WithServerTypes("api"),
+		//hydra.WithServerTypes("api"),
 		hydra.WithAutoCreateConf(true),
 		hydra.WithDebug())
 

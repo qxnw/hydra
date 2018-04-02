@@ -63,6 +63,9 @@ func (m *MicroApp) action(c *cli.Context) error {
 }
 
 func (m *MicroApp) checkInput() (err error) {
+	if m.ServerTypeNames != "" {
+		WithServerTypes(m.ServerTypeNames)(m.option)
+	}
 	if b, err := govalidator.ValidateStruct(m.option); !b {
 		err = fmt.Errorf("validate(%v) %v", reflect.TypeOf(m.option), err)
 		return err

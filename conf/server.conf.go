@@ -327,6 +327,6 @@ func (c *ServerConf) GetClusterName() string {
 
 //GetServerName 获取服务器名称
 func (c *ServerConf) GetServerName() string {
-	return fmt.Sprintf("%s-%s(%s)", c.sysName, c.clusterName, c.serverType)
+	return fmt.Sprintf("%s.%s(%s)", c.sysName, c.clusterName, c.serverType)
 	//return filepath.Join("/", c.platName, c.sysName, c.serverType, c.clusterName)
 }

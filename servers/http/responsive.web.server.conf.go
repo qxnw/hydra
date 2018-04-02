@@ -7,6 +7,31 @@ import (
 	"github.com/qxnw/hydra/servers"
 )
 
+//Notify 服务器配置变更通知
+func (w *WebResponsiveServer) Notify(conf conf.IServerConf) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	//if !conf.HasSubConf("router", "static") {
+	//return errors.New("路由或静态文件未配置,未启动更新")
+	//	}
+	//检查是否需要重启服务器
+	restart, err := w.NeedRestart(conf)
+	if err != nil {
+		return err
+	}
+	if restart { //服务器地址已变化，则重新启动新的server,并停止当前server
+		servers.Trace(w.Infof, "关键配置发生变化，准备重启服务器")
+		return w.Restart(conf)
+	}
+	//服务器地址未变化，更新服务器当前配置，并立即生效
+	servers.Trace(w.Infof, "配置发生变化，准备更新")
+	if err = w.SetConf(false, conf); err != nil {
+		return err
+	}
+	w.engine.UpdateVarConf(conf)
+	return nil
+}
+
 //NeedRestart 检查配置判断是否需要重启服务器
 func (w *WebResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if cnf.ForceRestart() {
@@ -20,11 +45,12 @@ func (w *WebResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if comparer.IsValueChanged("status", "address", "host", "rTimeout", "wTimeout", "rhTimeout") {
 		return true, nil
 	}
-	if ok, err := comparer.IsRequiredSubConfChanged("router"); err != nil || ok {
-		return ok, fmt.Errorf("路由未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
-	}
-	if ok := comparer.IsSubConfChanged("header"); ok {
+	ok, err := comparer.IsRequiredSubConfChanged("router")
+	if ok {
 		return ok, nil
+	}
+	if err != nil {
+		return ok, fmt.Errorf("路由未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
 	}
 	if ok := comparer.IsSubConfChanged("view"); ok {
 		return ok, nil

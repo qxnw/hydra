@@ -51,7 +51,7 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 		err = fmt.Errorf("static配置有误:%v", err)
 		return false, err
 	}
-	static.Exclude = append(static.Exclude, "/bin/", "/conf/", "/views/", ".exe", ".so")
+	static.Exclude = append(static.Exclude, "/views/", ".exe", ".so")
 	err = set.SetStatic(&static)
 	return !static.Disable, err
 }
@@ -78,6 +78,12 @@ func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf c
 		return false, err
 	}
 	for _, router := range routers.Routers {
+		if len(router.Action) == 0 {
+			router.Action = []string{"GET", "POST", "PUT", "DELETE", "HEAD"}
+		}
+		if router.Engine == "" {
+			router.Engine = "*"
+		}
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting)
 	}
 	if err = set.SetRouters(routers.Routers); err != nil {
