@@ -37,7 +37,6 @@ func (w *WebResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if cnf.ForceRestart() {
 		return true, nil
 	}
-
 	comparer := conf.NewComparer(w.currentConf, cnf)
 	if !comparer.IsChanged() {
 		return false, nil

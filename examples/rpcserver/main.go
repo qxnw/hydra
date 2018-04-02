@@ -1,18 +1,16 @@
 package main
 
 import (
-	"github.com/qxnw/hydra/engines"
 	"github.com/qxnw/hydra/examples/rpcserver/services/order"
 	"github.com/qxnw/hydra/examples/rpcserver/services/user"
 	"github.com/qxnw/hydra/hydra"
 )
 
 func main() {
-	engines.AddServiceLoader(loader())
 	app := hydra.NewApp(
-		hydra.WithPlatName("hydrav4"),
+		hydra.WithPlatName("hydra-20"),
 		hydra.WithSystemName("collector"),
-		hydra.WithServerTypes("rpc"),
+		hydra.WithServerTypes("rpc-api"),
 		hydra.WithAutoCreateConf(true),
 		hydra.WithDebug())
 

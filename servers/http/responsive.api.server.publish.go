@@ -51,7 +51,7 @@ LOOP:
 		select {
 		case <-w.closeChan:
 			break LOOP
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 10):
 			if w.done {
 				break LOOP
 			}

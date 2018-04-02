@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
@@ -24,18 +27,24 @@ func APIResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 			return
 		}
 		switch nctx.Response.GetContentType() {
-		case context.CT_JSON:
-			ctx.SecureJSON(nctx.Response.GetStatus(), nctx.Response.GetContent())
 		case context.CT_XML:
 			ctx.XML(nctx.Response.GetStatus(), nctx.Response.GetContent())
 		case context.CT_YMAL:
 			ctx.YAML(nctx.Response.GetStatus(), nctx.Response.GetContent())
 		case context.CT_PLAIN:
-			ctx.Data(nctx.Response.GetStatus(), "text/plain", []byte(nctx.Response.GetContent().(string)))
+			ctx.Data(nctx.Response.GetStatus(), "text/plain", []byte(fmt.Sprint(nctx.Response.GetContent())))
 		case context.CT_HTML:
-			ctx.Data(nctx.Response.GetStatus(), "text/html", []byte(nctx.Response.GetContent().(string)))
+			ctx.Data(nctx.Response.GetStatus(), "text/html", []byte(fmt.Sprint(nctx.Response.GetContent())))
 		default:
-			ctx.SecureJSON(nctx.Response.GetStatus(), nctx.Response.GetContent())
+			ctx.SecureJSON(nctx.Response.GetStatus(), getJsonMessage(nctx.Response.GetContent()))
 		}
+	}
+}
+func getJsonMessage(i interface{}) interface{} {
+	switch i.(type) {
+	case string:
+		return json.RawMessage(i.(string))
+	default:
+		return i
 	}
 }

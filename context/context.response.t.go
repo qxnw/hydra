@@ -60,6 +60,7 @@ func (r *Response) GetContentType() int {
 func (r *Response) GetContent() interface{} {
 	return r.Content
 }
+
 func (r *Response) ShouldContent(content interface{}) {
 	switch v := content.(type) {
 	case IError:

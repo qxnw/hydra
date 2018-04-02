@@ -12,12 +12,9 @@ import (
 //RPCProxy rpc 代理服务
 func (r *ServiceEngine) RPCProxy() component.ServiceFunc {
 	return func(name string, mode string, service string, ctx *context.Context) (response interface{}) {
-		header, err := ctx.Request.Http.GetHeader()
-		if err != nil {
-			ctx.Response.MustContent(500, err)
-			return
-		}
-		status, result, params, err := ctx.RPC.Request(service, strings.ToUpper(ctx.Request.Ext.GetMethod()), header, ctx.Request.Ext.GetBodyMap(), true)
+		header, _ := ctx.Request.Http.GetHeader()
+		input := ctx.Request.Ext.GetBodyMap()
+		status, result, params, err := ctx.RPC.Request(service, strings.ToUpper(ctx.Request.Ext.GetMethod()), header, input, true)
 		if err != nil {
 			err = fmt.Errorf("rpc执行错误status：%d,result:%v,err:%v", status, result, err)
 		}
@@ -27,6 +24,6 @@ func (r *ServiceEngine) RPCProxy() component.ServiceFunc {
 			return err
 		}
 		ctx.Response.SetStatus(status)
-		return response
+		return result
 	}
 }

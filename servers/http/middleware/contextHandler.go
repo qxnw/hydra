@@ -152,6 +152,30 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 		return c.BindWith(v, binding.Default(c.Request.Method, ct))
 
 	}
+	input["__get_request_values_"] = func() map[string]string {
+		c.Request.ParseForm()
+		data := make(map[string]string)
+		query := c.Request.URL.Query()
+		for k, v := range query {
+			switch len(v) {
+			case 1:
+				data[k] = v[0]
+			default:
+				data[k] = strings.Join(v, ",")
+			}
+		}
+		forms := c.Request.PostForm
+		for k, v := range forms {
+			switch len(v) {
+			case 1:
+				data[k] = v[0]
+			default:
+				data[k] = strings.Join(v, ",")
+			}
+		}
+		return data
+	}
+
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
 			return encoding.Convert(buff.([]byte), ch)

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/qxnw/hydra/client/rpc"
+	"github.com/qxnw/hydra/rpc"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"

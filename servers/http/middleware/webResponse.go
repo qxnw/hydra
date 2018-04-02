@@ -30,7 +30,7 @@ func WebResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 		}
 		switch nctx.Response.GetContentType() {
 		case context.CT_JSON:
-			ctx.SecureJSON(nctx.Response.GetStatus(), nctx.Response.GetContent())
+			ctx.SecureJSON(nctx.Response.GetStatus(), getJsonMessage(nctx.Response.GetContent()))
 		case context.CT_XML:
 			ctx.XML(nctx.Response.GetStatus(), nctx.Response.GetContent())
 		case context.CT_YMAL:

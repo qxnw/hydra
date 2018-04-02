@@ -375,7 +375,7 @@ func (r *StandardComponent) Handled(name string, method string, service string, 
 
 //GetHandler 获取服务的处理函数
 func (r *StandardComponent) GetHandler(engine string, service string, method string) (interface{}, bool) {
-	switch method {
+	switch engine {
 	case "rpc":
 		r, ok := r.Handlers["__rpc_"]
 		return r, ok

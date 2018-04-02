@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/qxnw/hydra/client/rpc"
+	"github.com/qxnw/hydra/rpc"
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"

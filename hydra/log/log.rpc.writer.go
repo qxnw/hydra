@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/golang/snappy"
-	"github.com/qxnw/hydra/client/rpc"
+	"github.com/qxnw/hydra/rpc"
 	"github.com/qxnw/lib4go/logger"
 )
 

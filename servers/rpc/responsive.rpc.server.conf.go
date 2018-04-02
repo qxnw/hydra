@@ -28,7 +28,6 @@ func (w *RpcResponsiveServer) Notify(nConf conf.IServerConf) error {
 		return err
 	}
 	w.engine.UpdateVarConf(nConf)
-	w.currentConf = nConf
 	return nil
 }
 
@@ -44,11 +43,12 @@ func (w *RpcResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if comparer.IsValueChanged("status", "address", "host") {
 		return true, nil
 	}
-	if ok, err := comparer.IsRequiredSubConfChanged("router"); err != nil || ok {
-		return ok, fmt.Errorf("路由未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
-	}
-	if ok := comparer.IsSubConfChanged("header"); ok {
+	ok, err := comparer.IsRequiredSubConfChanged("router")
+	if ok {
 		return ok, nil
+	}
+	if err != nil {
+		return ok, fmt.Errorf("路由未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
 	}
 	return false, nil
 

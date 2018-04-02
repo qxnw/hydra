@@ -63,7 +63,7 @@ func (m *MicroApp) action(c *cli.Context) error {
 }
 
 func (m *MicroApp) checkInput() (err error) {
-	if m.ServerTypeNames != "" {
+	if m.ServerTypeNames != "" && len(m.ServerTypes) == 0 {
 		WithServerTypes(m.ServerTypeNames)(m.option)
 	}
 	if b, err := govalidator.ValidateStruct(m.option); !b {

@@ -35,7 +35,7 @@ func (w *RpcResponsiveServer) publish() (err error) {
 	srvs := w.GetServices()
 	for _, host := range names {
 		for _, srv := range srvs {
-			servicePath := path.Join(w.currentConf.GetServicePubRootPath(filepath.Join(host,srv)), ipPort)
+			servicePath := path.Join(w.currentConf.GetServicePubRootPath(filepath.Join(host, srv)), ipPort)
 			err := w.engine.GetRegistry().CreateTempNode(servicePath, nodeData)
 			if err != nil {
 				err = fmt.Errorf("服务发布失败:(%s)[%v]", servicePath, err)
@@ -56,7 +56,7 @@ LOOP:
 		select {
 		case <-w.closeChan:
 			break LOOP
-		case <-time.After(time.Second * 30):
+		case <-time.After(time.Second * 10):
 			if w.done {
 				break LOOP
 			}
