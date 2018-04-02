@@ -19,7 +19,8 @@ func (s *RpcServer) getProcessor(routers []*conf.Router) (*Processor, error) {
 	engine.Use(middleware.JwtAuth(s.conf)) //jwt安全认证
 	engine.Use(middleware.Body())          //处理请求form
 	engine.Use(middleware.Response(s.conf))
-	engine.Use(middleware.Header(s.conf)) //设置请求头
+	engine.Use(middleware.Header(s.conf))    //设置请求头
+	engine.Use(middleware.JwtWriter(s.conf)) //设置jwt回写
 	err := setRouters(engine, routers)
 	return engine, err
 }

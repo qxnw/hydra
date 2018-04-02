@@ -37,6 +37,11 @@ func (r *Result) GetResult() string {
 	return r.Result
 }
 
+//GetParams 获取执行结果
+func (r *Result) GetParams() map[string]string {
+	return r.Params
+}
+
 //GetErr 获取执行错误信息
 func (r *Result) GetErr() error {
 	return r.Err
@@ -48,16 +53,21 @@ func NewResponse(service string) *Response {
 }
 
 //Wait 等待请求返回
-func (r *Response) Wait(timeout time.Duration) (int, string, error) {
+func (r *Response) Wait(timeout time.Duration) (int, string, map[string]string, error) {
 	select {
 	case <-time.After(timeout):
-		return 500, "", fmt.Errorf("rpc(%s) 请求等待超时", r.Service)
+		return 504, "", nil, fmt.Errorf("%s请求超时(%v)", r.Service, timeout)
 	case value := <-r.Result:
-		return value.GetStatus(), value.GetResult(), value.GetErr()
+		return value.GetStatus(), value.GetResult(), value.GetParams(), value.GetErr()
 	}
 }
 
 //GetResult 获取响应的近观回结果
 func (r *Response) GetResult() chan rpc.IRPCResult {
 	return r.Result
+}
+
+//GetService 获取服务
+func (r *Response) GetService() string {
+	return r.Service
 }

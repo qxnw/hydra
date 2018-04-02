@@ -104,9 +104,9 @@ func (r *Invoker) Request(service string, method string, header map[string]strin
 	status, result, params, err = client.Request(rservice, method, header, form, failFast)
 	if status != 200 || err != nil {
 		if err != nil {
-			err = fmt.Errorf("rpc request error:%d,%s err:%v", status, result, err)
+			err = fmt.Errorf("%s请求失败:%v(%d)", service, err, status)
 		} else {
-			err = fmt.Errorf("rpc request error:%d,%s", status, result)
+			err = fmt.Errorf("%s请求失败:%d)", service, status)
 		}
 	}
 	return

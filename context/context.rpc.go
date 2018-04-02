@@ -41,6 +41,17 @@ func (cr *ContextRPC) PreInit(services ...string) error {
 	return cr.rpc.PreInit()
 }
 
+//AsyncRequest 异步请求
+func (cr *ContextRPC) AsyncRequest(service string, method string, header map[string]string, form map[string]string, failFast bool) rpc.IRPCResponse {
+	if _, ok := header["__hydra_sid_"]; !ok {
+		header["__hydra_sid_"] = cr.ctx.Request.Ext.GetUUID()
+	}
+	if _, ok := header["__body"]; !ok {
+		header["__body"], _ = cr.ctx.Request.Ext.GetBody()
+	}
+	return cr.rpc.AsyncRequest(service, method, header, form, failFast)
+}
+
 //RequestFailRetry RPC请求
 func (cr *ContextRPC) RequestFailRetry(service string, method string, header map[string]string, form map[string]string, times int) (status int, r string, param map[string]string, err error) {
 	if _, ok := header["__hydra_sid_"]; !ok {

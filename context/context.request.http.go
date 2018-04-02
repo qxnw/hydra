@@ -22,6 +22,17 @@ func (c *httpRequest) GetHeader() (map[string]string, error) {
 	}
 	return header, nil
 }
+func (c *httpRequest) GetCookies() (map[string]string, error) {
+	request, err := c.Get()
+	if err != nil {
+		return nil, err
+	}
+	cookies := make(map[string]string)
+	for _, ck := range request.Cookies() {
+		cookies[ck.Name] = ck.Value
+	}
+	return cookies, nil
+}
 
 //Get 获和取http.request对象
 func (c *httpRequest) Get() (request *http.Request, err error) {

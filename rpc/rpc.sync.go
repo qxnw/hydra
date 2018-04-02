@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -34,8 +33,8 @@ func (r *Invoker) WaitWithFailFast(callback func(string, int, string, error), ti
 			case <-closeCh:
 				return
 			case <-time.After(timeout):
-				errChan <- &Result{Err: fmt.Errorf("rpc(%v) 请求等待超时", r)}
-				results = append(results, &Result{Status: 500, Err: fmt.Errorf("rpc(%v) 请求等待超时", r)})
+				errChan <- &Result{Err: fmt.Errorf("%s请求超时(%v)", v.GetService(), timeout)}
+				results = append(results, &Result{Status: 504, Err: fmt.Errorf("%s请求超时(%v)", v.GetService(), timeout)})
 			case value := <-r.GetResult():
 				if value.GetErr() != nil {
 					errChan <- value
@@ -64,7 +63,7 @@ func (r *Invoker) WaitWithFailFast(callback func(string, int, string, error), ti
 		close(closeCh)
 	case <-time.After(timeout):
 		close(closeCh)
-		callback("", 500, "", errors.New("rpc 请求等待超时"))
+		callback("", 504, "", fmt.Errorf("rpc请求超时(%v)", timeout))
 	case v := <-errChan:
 		close(closeCh)
 		callback(v.GetService(), v.GetStatus(), v.GetResult(), v.GetErr())

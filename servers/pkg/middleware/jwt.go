@@ -24,11 +24,6 @@ func JwtAuth(cnf *conf.MetadataConf) dispatcher.HandlerFunc {
 		if err == nil {
 			setJWTRaw(ctx, data)
 			ctx.Next()
-			context := getCTX(ctx)
-			if context == nil {
-				return
-			}
-			setJwtResponse(ctx, cnf, context.Response.GetParams()["__jwt_"])
 			return
 		}
 
@@ -51,8 +46,11 @@ func setJwtResponse(ctx *dispatcher.Context, cnf *conf.MetadataConf, data interf
 	if data == nil {
 		data = getJWTRaw(ctx)
 	}
+	if data == nil {
+		return
+	}
 	jwtAuth, ok := cnf.GetMetadata("jwt").(*conf.Auth)
-	if !ok {
+	if !ok || jwtAuth.Disable {
 		return
 	}
 	jwtToken, err := jwt.Encrypt(jwtAuth.Secret, jwtAuth.Mode, data, jwtAuth.ExpireAt)
