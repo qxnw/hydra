@@ -12,7 +12,6 @@ func main() {
 		hydra.WithServerTypes("api"),
 		hydra.WithAutoCreateConf(true),
 		hydra.WithDebug())
-
 	app.Micro("/order/query", order.NewQueryHandler)
 	app.Micro("/order/request", order.NewRequestHandler)
 	app.Start()
