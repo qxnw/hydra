@@ -15,7 +15,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 		return err
 	}
 	s.master = s.isMaster(path, cldrs)
-	servers.Tracef(s.Debugf, "%s", types.DecodeString(s.master, true, "master cron server", "slave cron server"))
+	servers.Tracef(s.Infof, "%s", types.DecodeString(s.master, true, "master cron server", "slave cron server"))
 	if err = s.notifyConsumer(s.master); err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 				cldrs, _ = cldWatcher.GetValue()
 				master := s.isMaster(path, cldrs)
 				if master != s.master {
-					servers.Tracef(s.Debugf, "%s", types.DecodeString(master, true, "master cron server", "slave cron server"))
+					servers.Tracef(s.Infof, "%s", types.DecodeString(master, true, "master cron server", "slave cron server"))
 					s.notifyConsumer(master)
 					s.master = master
 				}
