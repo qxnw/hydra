@@ -43,6 +43,9 @@ func (cr *ContextRPC) PreInit(services ...string) error {
 
 //AsyncRequest 异步请求
 func (cr *ContextRPC) AsyncRequest(service string, method string, header map[string]string, form map[string]string, failFast bool) rpc.IRPCResponse {
+	if header == nil {
+		header = make(map[string]string)
+	}
 	if _, ok := header["__hydra_sid_"]; !ok {
 		header["__hydra_sid_"] = cr.ctx.Request.Ext.GetUUID()
 	}

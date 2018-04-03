@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/asaskevich/govalidator"
@@ -18,18 +19,19 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var metric conf.Metric
 	_, err = cnf.GetSubObject("metric", &metric)
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&metric); !b {
-		err = fmt.Errorf("metric配置有误:%v", err)
-		return false, err
+		metric.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&metric); !b {
+			err = fmt.Errorf("metric配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetMetric(&metric)
-	return enable, err
+	return !metric.Disable && err == nil, err
 }
 
 //ITasks 设置tasks
@@ -52,15 +54,32 @@ func SetTasks(engine servers.IRegistryEngine, set ITasks, cnf conf.IServerConf, 
 	if err != nil {
 		return false, err
 	}
+	if len(tasks.Tasks) == 0 {
+		err = errors.New("task:未配置")
+		return false, err
+	}
+
 	if b, err := govalidator.ValidateStruct(&tasks); !b {
 		err = fmt.Errorf("task配置有误:%v", err)
 		return false, err
 	}
+	ntasks := make([]*conf.Task, 0, len(tasks.Tasks))
 	for _, task := range tasks.Tasks {
-		task.Handler = middleware.ContextHandler(engine, engine, task.Name, task.Engine, task.Service, task.Setting, ext)
+		if task.Disable {
+			continue
+		}
+		if task.Name == "" {
+			task.Name = task.Service
+		}
+		task.Handler = middleware.ContextHandler(engine, task.Name, task.Engine, task.Service, task.Setting, ext)
+		ntasks = append(ntasks, task)
 	}
-	if err = set.SetTasks(string(reidsConf.GetRaw()), tasks.Tasks); err != nil {
+	var raw string
+	if reidsConf != nil {
+		raw = string(reidsConf.GetRaw())
+	}
+	if err = set.SetTasks(raw, ntasks); err != nil {
 		return false, err
 	}
-	return len(tasks.Tasks) > 0, nil
+	return len(ntasks) > 0, nil
 }

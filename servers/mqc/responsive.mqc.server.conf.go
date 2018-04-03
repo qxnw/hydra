@@ -11,7 +11,7 @@ import (
 func (w *MqcResponsiveServer) Notify(nConf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-
+	w.restarted = false
 	//检查是否需要重启服务器
 	restart, err := w.NeedRestart(nConf)
 	if err != nil {
@@ -43,11 +43,20 @@ func (w *MqcResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 	if comparer.IsValueChanged("status", "sharding") {
 		return true, nil
 	}
-	if ok, err := comparer.IsRequiredSubConfChanged("server"); err != nil || ok {
-		return ok, fmt.Errorf("server未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
+	ok, err := comparer.IsRequiredSubConfChanged("server")
+	if ok {
+		return true, nil
 	}
-	if ok, err := comparer.IsRequiredSubConfChanged("queue"); err != nil || ok {
-		return ok, fmt.Errorf("queue未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
+	if err != nil {
+		return false, fmt.Errorf("server未配置或配置有误:%v", err)
+	}
+
+	ok, err = comparer.IsRequiredSubConfChanged("queue")
+	if ok {
+		return ok, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("queue未配置或配置有误:%v", err)
 	}
 	return false, nil
 
@@ -58,11 +67,14 @@ func (w *MqcResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err 
 
 	//设置分片数量
 	w.shardingCount = conf.GetInt("sharding", 0)
-
 	var ok bool
 	//设置task
 	if restart {
-		if _, err := SetQueues(w.engine, w.server, conf, nil); err != nil {
+		if _, err := SetQueues(w.engine, w.server, conf, map[string]interface{}{
+			"__get_sharding_index_": func() (int, int) {
+				return w.shardingIndex, w.shardingCount
+			},
+		}); err != nil {
 			return err
 		}
 	}
@@ -73,7 +85,7 @@ func (w *MqcResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err 
 	if ok, err = SetMetric(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "metric设置")
 
 	return nil
 }

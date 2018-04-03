@@ -11,7 +11,7 @@ import (
 func (w *CronResponsiveServer) Notify(conf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-
+	w.restarted = false
 	//检查是否需要重启服务器
 	restart, err := w.NeedRestart(conf)
 	if err != nil {
@@ -48,7 +48,7 @@ func (w *CronResponsiveServer) NeedRestart(cnf conf.IServerConf) (bool, error) {
 		return ok, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("task未配置或配置有误:%s(%+v)", cnf.GetServerName(), err)
+		return false, fmt.Errorf("task未配置或配置有误:%v", err)
 	}
 	if ok := comparer.IsSubConfChanged("redis"); ok {
 		return true, nil
@@ -81,7 +81,7 @@ func (w *CronResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err
 	if ok, err = SetMetric(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "metric设置")
 	return nil
 }
 func getEnableName(b bool) string {

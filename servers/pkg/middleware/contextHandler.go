@@ -68,7 +68,7 @@ func getCTX(c *dispatcher.Context) *context.Context {
 }
 
 //ContextHandler api请求处理程序
-func ContextHandler(exhandler interface{}, handler servers.IExecuter, name string, engine string, service string, mSetting map[string]string, ext map[string]interface{}) dispatcher.HandlerFunc {
+func ContextHandler(exhandler interface{}, name string, engine string, service string, mSetting map[string]string, ext map[string]interface{}) dispatcher.HandlerFunc {
 
 	handler, ok := exhandler.(servers.IExecuter)
 	if !ok {
@@ -148,6 +148,9 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 		}
 		return "", errors.New("body读取错误")
 
+	}
+	input["__get_request_values_"] = func() map[string]string {
+		return c.Request.GetForm()
 	}
 	return input
 }

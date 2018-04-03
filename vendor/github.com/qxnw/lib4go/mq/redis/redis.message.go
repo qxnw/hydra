@@ -36,7 +36,7 @@ func NewRedisMessage(cmd *redis.StringSliceCmd) *RedisMessage {
 	hasData := err == nil && len(msg) > 0
 	ndata := ""
 	if hasData {
-		ndata = msg[0]
+		ndata = msg[len(msg)-1]
 	}
 	return &RedisMessage{Message: ndata, HasData: hasData}
 }

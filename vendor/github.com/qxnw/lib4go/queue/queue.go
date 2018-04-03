@@ -47,14 +47,18 @@ func NewQueue(address string, conf string) (IQueue, error) {
 }
 
 func getNames(address string) (proto string, raddr []string, err error) {
-	addr := strings.SplitN(address, "://", 2)
-	if len(addr) != 2 {
-		return "", nil, fmt.Errorf("queue地址配置错误%s，格式:redis://192.168.0.1:11211", addr)
+	addr := strings.Split(address, "://")
+	if len(addr) > 2 {
+		return "", nil, fmt.Errorf("MQ地址配置错误%s，格式:redis://192.168.0.1:61613", addr)
 	}
 	if len(addr[0]) == 0 {
-		return "", nil, fmt.Errorf("queue地址配置错误%s，格式:redis://192.168.0.1:11211", addr)
+		return "", nil, fmt.Errorf("MQ地址配置错误%s，格式:redis://192.168.0.1:61613", addr)
 	}
 	proto = addr[0]
-	raddr = strings.Split(addr[1], ",")
+	if len(addr) > 1 {
+		raddr = strings.Split(addr[1], ",")
+	} else {
+		raddr = append(raddr, "")
+	}
 	return
 }

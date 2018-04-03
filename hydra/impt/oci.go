@@ -3,8 +3,6 @@
 package impt
 
 import (
-	_ "github.com/zkfy/go-oci8"
-
 	_ "github.com/qxnw/hydra/engines"
 	_ "github.com/qxnw/hydra/registry/local"
 	_ "github.com/qxnw/hydra/registry/zookeeper"
@@ -20,4 +18,5 @@ import (
 	_ "github.com/qxnw/lib4go/mq/xmq"
 	_ "github.com/qxnw/lib4go/queue"
 	_ "github.com/qxnw/lib4go/queue/redis"
+	_ "github.com/zkfy/go-oci8"
 )

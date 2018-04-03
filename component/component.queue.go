@@ -51,7 +51,7 @@ func (s *StandardQueue) GetQueue(names ...string) (q queue.IQueue, err error) {
 		if b, err := govalidator.ValidateStruct(&qConf); !b {
 			return nil, err
 		}
-		return queue.NewQueue(qConf.Address, string(queueConf.GetRaw()))
+		return queue.NewQueue(qConf.Proto, string(queueConf.GetRaw()))
 	}, queueConf)
 	if err != nil {
 		err = fmt.Errorf("创建queue失败:%s,err:%v", string(queueConf.GetRaw()), err)

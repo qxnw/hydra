@@ -188,7 +188,6 @@ func (r *Invoker) resolvePath(address string) (service string, domain string, se
 		return "", "", "", fmt.Errorf("%s错误，服务名，域不能为空", address)
 	}
 	service = "/" + strings.Trim(strings.Replace(addrs[0], ".", "/", -1), "/")
-
 	raddr := strings.Split(strings.TrimRight(addrs[1], "."), ".")
 	if len(raddr) >= 2 && raddr[0] != "" && raddr[1] != "" {
 		domain = raddr[len(raddr)-1]

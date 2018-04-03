@@ -51,10 +51,11 @@ type Router struct {
 }
 
 type View struct {
-	Path  string `json:"path" valid:"ascii,required"`
-	Left  string `json:"left" valid:"ascii"`
-	Right string `json:"right" valid:"ascii"`
-	Files []string
+	Path    string `json:"path" valid:"ascii,required"`
+	Left    string `json:"left" valid:"ascii"`
+	Right   string `json:"right" valid:"ascii"`
+	Files   []string
+	Disable bool `json:"disable"`
 }
 
 type CircuitBreaker struct {
@@ -76,23 +77,23 @@ type Static struct {
 	Exts      []string `json:"exts" valid:"ascii"`
 	Exclude   []string `json:"exclude" valid:"ascii"`
 	FirstPage string   `json:"first-page" valid:"ascii"`
-	Disable   bool
+	Disable   bool     `json:"disable"`
 }
 type Tasks struct {
 	Setting map[string]string `json:"args"`
 	Tasks   []*Task           `json:"tasks"`
 }
 type Task struct {
-	Name    string            `json:"name" valid:"ascii,required"`
+	Name    string            `json:"name" valid:"ascii"`
 	Cron    string            `json:"cron" valid:"ascii,required"`
-	Input   string            `json:"input,omitempty" valid:"ascii"`
-	Body    string            `json:"body,omitempty" valid:"ascii"`
-	Engine  string            `json:"engine,omitempty"  valid:"ascii"`
-	Service string            `json:"service"  valid:"ascii"`
+	Input   map[string]string `json:"input,omitempty"`
+	Engine  string            `json:"engine,omitempty"  valid:"ascii,uppercase,in(*|RPC)"`
+	Service string            `json:"service"  valid:"ascii,required"`
 	Setting map[string]string `json:"args"`
 	Next    string            `json:"next"`
 	Last    string            `json:"last"`
 	Handler interface{}       `json:"handler,omitempty"`
+	Disable bool              `json:"disable"`
 }
 
 type Package struct {
@@ -106,15 +107,18 @@ type Hosts []string
 
 type Queues struct {
 	Setting map[string]string `json:"args"`
-	Queues  []*Queue          `json:"queue"`
+	Queues  []*Queue          `json:"queues"`
 }
-
+type Server struct {
+	Proto string `json:"proto" valid:"ascii,required"`
+}
 type Queue struct {
-	Name        string            `json:"name" valid:"ascii,required"`
-	Queue       string            `json:"queueue" valid:"ascii,required"`
-	Engine      string            `json:"engine,omitempty"  valid:"ascii"`
+	Name        string            `json:"name" valid:"ascii"`
+	Queue       string            `json:"queue" valid:"ascii,required"`
+	Engine      string            `json:"engine,omitempty"  valid:"ascii,uppercase,in(*|RPC)"`
 	Service     string            `json:"service" valid:"ascii,required"`
 	Setting     map[string]string `json:"args"`
 	Concurrency int               `json:"concurrency"`
+	Disable     bool              `json:"disable"`
 	Handler     interface{}
 }

@@ -11,5 +11,5 @@ type CacheConf struct {
 	Server string `json:"server" valid:"ascii,required"`
 }
 type QueueConf struct {
-	Address string `json:"address" valid:"ascii,required"`
+	Proto string `json:"proto" valid:"ascii,required"`
 }

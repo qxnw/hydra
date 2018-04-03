@@ -12,11 +12,12 @@ type httpRequest struct {
 }
 
 func (c *httpRequest) GetHeader() (map[string]string, error) {
+	header := make(map[string]string)
 	request, err := c.Get()
 	if err != nil {
-		return nil, err
+		return header, err
 	}
-	header := make(map[string]string)
+
 	for k, v := range request.Header {
 		header[k] = strings.Join(v, ",")
 	}

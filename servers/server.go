@@ -28,6 +28,7 @@ type IRegistryServer interface {
 	Start() error
 	GetAddress() string
 	GetServices() []string
+	Restarted() bool
 	GetStatus() string
 	Shutdown()
 }
@@ -84,7 +85,7 @@ func NewRegistryServer(identifier string, registryAddr string, conf conf.IServer
 //Trace 打印跟踪信息
 func Trace(print func(f string, args ...interface{}), args ...interface{}) {
 	if !IsDebug {
-	return
+		return
 	}
 	print("%s", args)
 }
@@ -92,7 +93,7 @@ func Trace(print func(f string, args ...interface{}), args ...interface{}) {
 //Tracef 根据格式打印跟踪信息
 func Tracef(print func(f string, args ...interface{}), format string, args ...interface{}) {
 	if !IsDebug {
-	return
+		return
 	}
 	print(format, args...)
 }
@@ -100,7 +101,7 @@ func Tracef(print func(f string, args ...interface{}), format string, args ...in
 //TraceIf 根据条件打印跟踪信息
 func TraceIf(b bool, okPrint func(f string, args ...interface{}), print func(f string, args ...interface{}), args ...interface{}) {
 	if !IsDebug {
-	return
+		return
 	}
 	if b {
 		okPrint("%s", args)

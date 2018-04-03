@@ -26,6 +26,7 @@ type CronResponsiveServer struct {
 	once          sync.Once
 	done          bool
 	pubLock       sync.Mutex
+	restarted     bool
 	*logger.Logger
 	mu sync.Mutex
 }
@@ -83,6 +84,7 @@ func (w *CronResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	}
 	if err = w.Start(); err == nil {
 		w.currentConf = cnf
+		w.restarted = true
 		return
 	}
 	return err
@@ -123,4 +125,9 @@ func (w *CronResponsiveServer) GetStatus() string {
 //GetServices 获取服务列表
 func (w *CronResponsiveServer) GetServices() []string {
 	return w.engine.GetServices()
+}
+
+//Restarted 服务器是否已重启
+func (w *CronResponsiveServer) Restarted() bool {
+	return w.restarted
 }

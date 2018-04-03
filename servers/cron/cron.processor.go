@@ -93,6 +93,7 @@ func (s *Processor) handle(task iCronTask) error {
 		}
 		task.SetResult(rw.Status(), rw.Data())
 		s.saveHistory(task)
+
 	}
 	_, _, err := s.Add(task, false)
 	if err != nil {

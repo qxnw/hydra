@@ -18,18 +18,20 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var metric conf.Metric
 	_, err = cnf.GetSubObject("metric", &metric)
+
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&metric); !b {
-		err = fmt.Errorf("metric配置有误:%v", err)
-		return false, err
+		metric.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&metric); !b {
+			err = fmt.Errorf("metric配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetMetric(&metric)
-	return !metric.Disable, err
+	return !metric.Disable && err == nil, err
 }
 
 type ISetStatic interface {
@@ -41,19 +43,20 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var static conf.Static
 	_, err = cnf.GetSubObject("static", &static)
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&static); !b {
-		err = fmt.Errorf("static配置有误:%v", err)
-		return false, err
+		static.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&static); !b {
+			err = fmt.Errorf("static配置有误:%v", err)
+			return false, err
+		}
 	}
 	static.Exclude = append(static.Exclude, "/views/", ".exe", ".so")
 	err = set.SetStatic(&static)
-	return !static.Disable, err
+	return !static.Disable && err == nil, err
 }
 
 //ISetRouterHandler 设置路由列表
@@ -69,7 +72,7 @@ func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf c
 		routers.Routers = make([]*conf.Router, 0, 1)
 		routers.Routers = append(routers.Routers, &conf.Router{Action: []string{"GET", "POST", "PUT", "DELETE", "HEAD"}, Name: "/*name", Service: "/@name", Engine: "*"})
 	}
-	if err != conf.ErrNoSetting && err != nil {
+	if err != nil && err != conf.ErrNoSetting {
 		err = fmt.Errorf("路由:%v", err)
 		return false, err
 	}
@@ -86,10 +89,8 @@ func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf c
 		}
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting)
 	}
-	if err = set.SetRouters(routers.Routers); err != nil {
-		return false, err
-	}
-	return len(routers.Routers) > 0, nil
+	err = set.SetRouters(routers.Routers)
+	return len(routers.Routers) > 0 && err == nil, err
 }
 
 //---------------------------------------------------------------------------
@@ -105,18 +106,20 @@ type ISetView interface {
 func SetView(set ISetView, cnf conf.IServerConf) (enable bool, err error) {
 	//设置jwt安全认证参数
 	var view conf.View
-	if _, err = cnf.GetSubObject("view", &view); err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
+	_, err = cnf.GetSubObject("view", &view)
+	if err != nil && err != conf.ErrNoSetting {
 		return false, err
 	}
-	if b, err := govalidator.ValidateStruct(&view); !b {
-		err = fmt.Errorf("view配置有误:%v", err)
-		return false, err
+	if err == conf.ErrNoSetting {
+		view.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&view); !b {
+			err = fmt.Errorf("view配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetView(&view)
-	return err == nil, err
+	return err == nil && !view.Disable, err
 }
 
 //ISetCircuitBreaker 设置CircuitBreaker
@@ -156,14 +159,13 @@ type ISetHeaderHandler interface {
 func SetHeaders(set ISetHeaderHandler, cnf conf.IServerConf) (enable bool, err error) {
 	//设置通用头信息
 	var header conf.Headers
-	if _, err = cnf.GetSubObject("header", &header); err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
+	_, err = cnf.GetSubObject("header", &header)
+	if err != nil && err != conf.ErrNoSetting {
 		err = fmt.Errorf("header配置有误:%v", err)
 		return false, err
 	}
-	return len(header) > 0, set.SetHeader(header)
+	err = set.SetHeader(header)
+	return len(header) > 0 && err == nil, err
 }
 
 //---------------------------------------------------------------------------
@@ -180,7 +182,8 @@ func SetAjaxRequest(set IAjaxRequest, cnf conf.IServerConf) (enable bool, err er
 	if enable, err = cnf.GetBool("onlyAllowAjaxRequest", false); err != nil {
 		return false, err
 	}
-	return enable, set.SetAjaxRequest(enable)
+	err = set.SetAjaxRequest(enable)
+	return enable && err == nil, err
 }
 
 //---------------------------------------------------------------------------
@@ -196,7 +199,8 @@ type ISetHosts interface {
 func SetHosts(set ISetHosts, cnf conf.IServerConf) (enable bool, err error) {
 	var hosts conf.Hosts
 	hosts = cnf.GetStrings("host")
-	return len(hosts) > 0, set.SetHosts(hosts)
+	err = set.SetHosts(hosts)
+	return len(hosts) > 0 && err == nil, err
 }
 
 //---------------------------------------------------------------------------

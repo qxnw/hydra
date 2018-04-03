@@ -22,7 +22,7 @@ type CronServer struct {
 
 //NewCronServer 创建mqc服务器
 func NewCronServer(name string, config string, tasks []*conf.Task, opts ...Option) (t *CronServer, err error) {
-	t = &CronServer{conf: &conf.MetadataConf{Name: name}}
+	t = &CronServer{conf: &conf.MetadataConf{Name: name, Type: "cron"}}
 	t.option = &option{metric: middleware.NewMetric(t.conf)}
 	for _, opt := range opts {
 		opt(t.option)

@@ -11,7 +11,7 @@ import (
 func (w *RpcResponsiveServer) Notify(nConf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-
+	w.restarted = false
 	//检查是否需要重启服务器
 	restart, err := w.NeedRestart(nConf)
 	if err != nil {
@@ -28,6 +28,7 @@ func (w *RpcResponsiveServer) Notify(nConf conf.IServerConf) error {
 		return err
 	}
 	w.engine.UpdateVarConf(nConf)
+	w.currentConf = nConf
 	return nil
 }
 

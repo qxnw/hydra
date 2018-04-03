@@ -10,7 +10,6 @@ import (
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
 	"github.com/qxnw/lib4go/logger"
-	"github.com/qxnw/lib4go/utility"
 	"github.com/zkfy/cron"
 )
 
@@ -35,6 +34,7 @@ type cronTask struct {
 	round    int
 	method   string
 	form     map[string]string
+	header   map[string]string
 	logger.ILogger
 	status int
 	result []byte
@@ -44,21 +44,16 @@ func newCronTask(t *conf.Task) (r *cronTask, err error) {
 	r = &cronTask{
 		Task:    t,
 		method:  "GET",
+		header:  make(map[string]string),
 		ILogger: logger.GetSession(t.Name, logger.CreateSession()),
 	}
 	r.schedule, err = cron.ParseStandard(t.Cron)
 	if err != nil {
 		return nil, fmt.Errorf("%s的cron表达式(%s)配置有误", t.Name, t.Cron)
 	}
-	if t.Input != "" {
-		r.form, _ = utility.GetMapWithQuery(t.Input)
-		if r.form == nil {
-			r.form = make(map[string]string)
-		}
-		r.form["__body_"] = t.Input
-	}
-	if t.Body != "" {
-		r.form["__body_"] = t.Body
+	r.form = t.Input
+	if r.form == nil {
+		r.form = make(map[string]string)
 	}
 	return
 }
@@ -101,7 +96,7 @@ func (m *cronTask) GetForm() map[string]string {
 	return m.form
 }
 func (m *cronTask) GetHeader() map[string]string {
-	return nil
+	return m.header
 }
 func (m *cronTask) SetResult(status int, result []byte) {
 	m.status = status

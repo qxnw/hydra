@@ -1,6 +1,7 @@
 package mqc
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/asaskevich/govalidator"
@@ -18,23 +19,24 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var metric conf.Metric
 	_, err = cnf.GetSubObject("metric", &metric)
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&metric); !b {
-		err = fmt.Errorf("metric配置有误:%v", err)
-		return false, err
+		metric.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&metric); !b {
+			err = fmt.Errorf("metric配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetMetric(&metric)
-	return enable, err
+	return !metric.Disable && err == nil, err
 }
 
 //IQueues 设置queue
 type IQueues interface {
-	SetQueues(string, []*conf.Queue) error
+	SetQueues(string, string, []*conf.Queue) error
 }
 
 //SetQueues 设置queue
@@ -48,7 +50,14 @@ func SetQueues(engine servers.IRegistryEngine, set IQueues, cnf conf.IServerConf
 	if err != nil {
 		return false, err
 	}
-
+	var server conf.Server
+	if err = serverConf.Unmarshal(&server); err != nil {
+		return false, err
+	}
+	if b, err := govalidator.ValidateStruct(&server); !b {
+		err = fmt.Errorf("server配置有误:%v", err)
+		return false, err
+	}
 	var queues conf.Queues
 	if _, err = cnf.GetSubObject("queue", &queues); err == conf.ErrNoSetting {
 		err = fmt.Errorf("queue:%v", err)
@@ -57,15 +66,26 @@ func SetQueues(engine servers.IRegistryEngine, set IQueues, cnf conf.IServerConf
 	if err != nil {
 		return false, err
 	}
+	if len(queues.Queues) == 0 {
+		return false, errors.New("queue:未配置")
+	}
 	if b, err := govalidator.ValidateStruct(&queues); !b {
 		err = fmt.Errorf("queue配置有误:%v", err)
 		return false, err
 	}
+	nqueues := make([]*conf.Queue, 0, len(queues.Queues))
 	for _, queue := range queues.Queues {
-		queue.Handler = middleware.ContextHandler(engine, engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
+		if queue.Disable {
+			continue
+		}
+		if queue.Name == "" {
+			queue.Name = queue.Service
+		}
+		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
+		nqueues = append(nqueues, queue)
 	}
-	if err = set.SetQueues(string(serverConf.GetRaw()), queues.Queues); err != nil {
+	if err = set.SetQueues(server.Proto, string(serverConf.GetRaw()), nqueues); err != nil {
 		return false, err
 	}
-	return len(queues.Queues) > 0, nil
+	return len(nqueues) > 0, nil
 }

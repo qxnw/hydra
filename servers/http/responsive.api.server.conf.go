@@ -11,9 +11,7 @@ import (
 func (w *ApiResponsiveServer) Notify(conf conf.IServerConf) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	//if !conf.HasSubConf("router", "static") {
-	//return errors.New("路由或静态文件未配置,未启动更新")
-	//	}
+	w.restarted = false
 	//检查是否需要重启服务器
 	restart, err := w.NeedRestart(conf)
 	if err != nil {
@@ -29,6 +27,7 @@ func (w *ApiResponsiveServer) Notify(conf conf.IServerConf) error {
 		return err
 	}
 	w.engine.UpdateVarConf(conf)
+	w.currentConf = conf
 	return nil
 }
 
@@ -109,7 +108,6 @@ func (w *ApiResponsiveServer) SetConf(restart bool, cnf conf.IServerConf) (err e
 		return err
 	}
 	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "host设置")
-	w.currentConf = cnf
 	return nil
 }
 func getEnableName(b bool) string {

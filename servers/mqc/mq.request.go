@@ -18,13 +18,16 @@ func newMQRequest(service, method, raw string) *mqRequest {
 	r := &mqRequest{
 		service: service,
 		method:  method,
+		header:  make(map[string]string),
+		form:    make(map[string]string),
 		raw:     raw,
 	}
-	json.Unmarshal([]byte(r.raw), &r.form)
-	r.form = map[string]string{
-		"__body_": r.raw,
+	var input map[string]interface{}
+	json.Unmarshal([]byte(r.raw), &input)
+	for k, v := range input {
+		r.form[k] = fmt.Sprint(v)
 	}
-
+	r.form["__body_"] = r.raw
 	return r
 }
 

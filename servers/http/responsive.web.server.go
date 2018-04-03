@@ -72,6 +72,8 @@ func (w *WebResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	}
 
 	if err = w.SetConf(true, cnf); err != nil {
+		w.currentConf = cnf
+		w.restarted = true
 		return
 	}
 	return w.Start()

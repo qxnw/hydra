@@ -10,7 +10,7 @@ type IRPCResponse interface {
 type IRPCResult interface {
 	GetService() string
 	GetStatus() int
-	GetParams() map[string]string
 	GetResult() string
+	GetParams() map[string]string
 	GetErr() error
 }

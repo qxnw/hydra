@@ -23,6 +23,7 @@ type RpcResponsiveServer struct {
 	once         sync.Once
 	done         bool
 	pubLock      sync.Mutex
+	restarted    bool
 	*logger.Logger
 	mu sync.Mutex
 }
@@ -77,6 +78,7 @@ func (w *RpcResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	}
 	if err = w.Start(); err == nil {
 		w.currentConf = cnf
+		w.restarted = true
 		return
 	}
 	return err
@@ -125,4 +127,9 @@ func (w *RpcResponsiveServer) GetServices() []string {
 	}
 	//servers.Trace(w.Infof, w.currentConf.GetServerName(), "发布服务：", nsevice)
 	return nsevice
+}
+
+//Restarted 服务器是否已重启
+func (w *RpcResponsiveServer) Restarted() bool {
+	return w.restarted
 }

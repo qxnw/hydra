@@ -18,18 +18,19 @@ func SetMetric(set ISetMetric, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var metric conf.Metric
 	_, err = cnf.GetSubObject("metric", &metric)
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&metric); !b {
-		err = fmt.Errorf("metric配置有误:%v", err)
-		return false, err
+		metric.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&metric); !b {
+			err = fmt.Errorf("metric配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetMetric(&metric)
-	return enable, err
+	return !metric.Disable && err == nil, err
 }
 
 type ISetStatic interface {
@@ -41,18 +42,19 @@ func SetStatic(set ISetStatic, cnf conf.IServerConf) (enable bool, err error) {
 	//设置静态文件路由
 	var static conf.Static
 	_, err = cnf.GetSubObject("static", &static)
+	if err != nil && err != conf.ErrNoSetting {
+		return false, err
+	}
 	if err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	if b, err := govalidator.ValidateStruct(&static); !b {
-		err = fmt.Errorf("static配置有误:%v", err)
-		return false, err
+		static.Disable = true
+	} else {
+		if b, err := govalidator.ValidateStruct(&static); !b {
+			err = fmt.Errorf("static配置有误:%v", err)
+			return false, err
+		}
 	}
 	err = set.SetStatic(&static)
-	return enable, err
+	return !static.Disable && err == nil, err
 }
 
 //ISetRouterHandler 设置路由列表
@@ -82,13 +84,10 @@ func SetRouters(engine servers.IRegistryEngine, cnf conf.IServerConf, set ISetRo
 		if router.Engine == "" {
 			router.Engine = "*"
 		}
-		router.Handler = middleware.ContextHandler(engine, engine, router.Name, router.Engine, router.Service, router.Setting, ext)
+		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting, ext)
 	}
 	err = set.SetRouters(routers.Routers)
-	if err != nil {
-		return false, err
-	}
-	return len(routers.Routers) > 0, nil
+	return len(routers.Routers) > 0 && err == nil, err
 }
 
 //ISetCircuitBreaker 设置CircuitBreaker
@@ -128,14 +127,13 @@ type ISetHeaderHandler interface {
 func SetHeaders(set ISetHeaderHandler, cnf conf.IServerConf) (enable bool, err error) {
 	//设置通用头信息
 	var header conf.Headers
-	if _, err = cnf.GetSubObject("header", &header); err == conf.ErrNoSetting {
-		return false, nil
-	}
-	if err != nil {
+	_, err = cnf.GetSubObject("header", &header)
+	if err != nil && err != conf.ErrNoSetting {
 		err = fmt.Errorf("header配置有误:%v", err)
 		return false, err
 	}
-	return len(header) > 0, set.SetHeader(header)
+	err = set.SetHeader(header)
+	return len(header) > 0 && err == nil, err
 }
 
 //---------------------------------------------------------------------------

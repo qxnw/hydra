@@ -26,6 +26,7 @@ type MqcResponsiveServer struct {
 	shardingCount int
 	master        bool
 	pubLock       sync.Mutex
+	restarted     bool
 	*logger.Logger
 	mu sync.Mutex
 }
@@ -47,7 +48,7 @@ func NewMqcResponsiveServer(registryAddr string, cnf conf.IServerConf, logger *l
 	if err = h.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
 		return nil, err
 	}
-	if h.server, err = NewMqcServer(cnf.GetServerName(), "", nil, WithLogger(logger)); err != nil {
+	if h.server, err = NewMqcServer(cnf.GetServerName(), "", "", nil, WithLogger(logger)); err != nil {
 		return
 	}
 	if err = h.SetConf(true, h.currentConf); err != nil {
@@ -71,7 +72,7 @@ func (w *MqcResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	if err = w.engine.SetHandler(cnf.Get("__component_handler_").(component.IComponentHandler)); err != nil {
 		return err
 	}
-	if w.server, err = NewMqcServer(cnf.GetServerName(), "", nil, WithLogger(w.Logger)); err != nil {
+	if w.server, err = NewMqcServer(cnf.GetServerName(), "", "", nil, WithLogger(w.Logger)); err != nil {
 		return
 	}
 	if err = w.SetConf(true, cnf); err != nil {
@@ -79,6 +80,7 @@ func (w *MqcResponsiveServer) Restart(cnf conf.IServerConf) (err error) {
 	}
 	if err = w.Start(); err == nil {
 		w.currentConf = cnf
+		w.restarted = true
 		return
 	}
 	return err
@@ -119,4 +121,9 @@ func (w *MqcResponsiveServer) GetStatus() string {
 //GetServices 获取服务列表
 func (w *MqcResponsiveServer) GetServices() []string {
 	return w.engine.GetServices()
+}
+
+//Restarted 服务器是否已重启
+func (w *MqcResponsiveServer) Restarted() bool {
+	return w.restarted
 }

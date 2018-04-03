@@ -15,7 +15,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 		return err
 	}
 	s.master = s.isMaster(path, cldrs)
-	servers.Tracef(s.Debugf, "%s是:%s", s.currentConf.GetServerName(), types.DecodeString(s.master, true, "master server", "slave server"))
+	servers.Tracef(s.Debugf, "%s", types.DecodeString(s.master, true, "master cron server", "slave cron server"))
 	if err = s.notifyConsumer(s.master); err != nil {
 		return err
 	}
@@ -29,10 +29,13 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 			case <-s.closeChan:
 				return
 			case cldWatcher := <-children:
+				if cldWatcher.GetError() != nil {
+					break
+				}
 				cldrs, _ = cldWatcher.GetValue()
 				master := s.isMaster(path, cldrs)
 				if master != s.master {
-					servers.Tracef(s.Debugf, "%s是:%s", s.currentConf.GetServerName(), types.DecodeString(master, true, "master server", "slave server"))
+					servers.Tracef(s.Debugf, "%s", types.DecodeString(master, true, "master cron server", "slave cron server"))
 					s.notifyConsumer(master)
 					s.master = master
 				}
@@ -40,7 +43,7 @@ func (s *CronResponsiveServer) watchMasterChange(root, path string) error {
 			LOOP:
 				children, err = s.engine.GetRegistry().WatchChildren(root)
 				if err != nil {
-					servers.Tracef(s.Errorf, "%s:监控服务节点发生错误:err:%v", s.currentConf.GetServerName(), err)
+					servers.Tracef(s.Errorf, "监控服务节点发生错误:err:%v", err)
 					if s.done {
 						return
 					}
@@ -60,7 +63,6 @@ func (s *CronResponsiveServer) isMaster(path string, cldrs []string) bool {
 		ncldrs = append(ncldrs, args[len(args)-1])
 	}
 	sort.Strings(ncldrs)
-	s.shardingCount = s.currentConf.GetInt("sharding", 0)
 	if s.shardingCount == 0 {
 		s.shardingCount = len(ncldrs)
 	}

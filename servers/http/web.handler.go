@@ -44,7 +44,7 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err er
 	}()
 	viewFiles = make([]string, 0, 8)
 	viewRoot := "../views"
-	if view, ok := s.conf.GetMetadata("view").(*conf.View); ok {
+	if view, ok := s.conf.GetMetadata("view").(*conf.View); ok && !view.Disable {
 		viewRoot = view.Path
 	} else {
 		s.conf.SetMetadata("view", &conf.View{Path: viewRoot})

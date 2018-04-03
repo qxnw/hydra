@@ -46,13 +46,13 @@ func (s *ApiServer) SetStatic(static *conf.Static) error {
 //SetMetric 重置metric
 func (s *ApiServer) SetMetric(metric *conf.Metric) error {
 	s.metric.Stop()
-	if !metric.Disable {
-		if err := s.metric.Restart(metric.Host, metric.DataBase, metric.UserName, metric.Password, metric.Cron, s.Logger); err != nil {
-			err = fmt.Errorf("metric设置有误:%v", err)
-			return err
-		}
+	if metric.Disable {
+		return nil
 	}
-
+	if err := s.metric.Restart(metric.Host, metric.DataBase, metric.UserName, metric.Password, metric.Cron, s.Logger); err != nil {
+		err = fmt.Errorf("metric设置有误:%v", err)
+		return err
+	}
 	return nil
 }
 

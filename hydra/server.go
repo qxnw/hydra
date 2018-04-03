@@ -72,6 +72,11 @@ func (h *server) GetServices() []string {
 	return h.server.GetServices()
 }
 
+//Restarted 服务器是否已重启
+func (h *server) Restarted() bool {
+	return h.server.Restarted()
+}
+
 //Shutdown 关闭服务器
 func (h *server) Shutdown() {
 	if h.server != nil {

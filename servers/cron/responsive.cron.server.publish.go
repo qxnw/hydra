@@ -25,7 +25,7 @@ func (w *CronResponsiveServer) publish() (err error) {
 		return
 	}
 	w.pubs = []string{npath}
-	if err = w.watchMasterChange(w.currentConf.GetServerType(), npath); err != nil {
+	if err = w.watchMasterChange(w.currentConf.GetServerPubRootPath(), npath); err != nil {
 		return
 	}
 	go w.publishCheck(nodeData)
