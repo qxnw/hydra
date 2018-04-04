@@ -24,17 +24,18 @@ var statusLocalPort = []int{10160, 10162, 10166, 10168}
 
 //RemoteQueryService 远程查询服务
 type RemoteQueryService struct {
-	server      *http.ApiServer
-	platName    string
-	systemName  string
-	serverTypes []string
-	clusterName string
-	closeChan   chan struct{}
-	registry    registry.IRegistry
-	logger      *logger.Logger
-	version     string
-	pubs        []string
-	done        bool
+	server        *http.ApiServer
+	platName      string
+	systemName    string
+	serverTypes   []string
+	clusterName   string
+	closeChan     chan struct{}
+	registry      registry.IRegistry
+	logger        *logger.Logger
+	version       string
+	pubs          []string
+	HydraShutdown func()
+	done          bool
 }
 
 //NewHRemoteQueryService 创建HRemoteQueryService
@@ -170,7 +171,7 @@ func (h *RemoteQueryService) queryHandler() servers.IExecuteHandler {
 	}
 }
 func (h *RemoteQueryService) updateHandler() servers.IExecuteHandler {
-	return func(name string, method string, service string, ctx *context.Context) (rs interface{}) {
+	return func(name string, method string, service string, ctx *context.Context) (rs interface{}) {		
 		ctx.Response.SeTextJSON()
 		v := ctx.Request.Param.GetString("v")
 		if v == "" {
@@ -182,6 +183,9 @@ func (h *RemoteQueryService) updateHandler() servers.IExecuteHandler {
 		}
 		if b {
 			if err = UpdateNow(pkg, h.logger, func() {
+				if h.HydraShutdown!=nil{
+					h.HydraShutdown()
+				}			
 				//关闭服务器
 			}); err != nil {
 				return err

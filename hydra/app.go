@@ -71,6 +71,7 @@ func (m *MicroApp) action(c *cli.Context) (err error) {
 			m.logger.Error(err)
 			return err
 		}
+		m.remoteQueryService.HydraShutdown = m.Shutdown
 		defer m.remoteQueryService.Shutdown()
 	}
 
@@ -92,4 +93,7 @@ func (m *MicroApp) checkInput() (err error) {
 		return err
 	}
 	return
+}
+func (m *MicroApp) Shutdown() {
+	m.hydra.Shutdown()
 }
