@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/context"
+	"github.com/qxnw/hydra/servers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,19 +24,22 @@ func WebResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 		defer nctx.Close()
 		if err := nctx.Response.GetError(); err != nil {
 			getLogger(ctx).Error(err)
-			ctx.AbortWithStatus(nctx.Response.GetStatus())
-			return
+			if !servers.IsDebug {
+				nctx.Response.ShouldContent(errors.New("请求发生错误"))
+			}
+			//ctx.AbortWithStatus(nctx.Response.GetStatus())
+			//return
 		}
 		if ctx.Writer.Written() {
 			return
 		}
 		switch nctx.Response.GetContentType() {
 		case context.CT_JSON:
-			ctx.SecureJSON(nctx.Response.GetStatus(), getJsonMessage(nctx.Response.GetContent()))
+			ctx.SecureJSON(nctx.Response.GetStatus(), getMessage(nctx.Response.GetContent()))
 		case context.CT_XML:
-			ctx.XML(nctx.Response.GetStatus(), nctx.Response.GetContent())
+			ctx.XML(nctx.Response.GetStatus(), getMessage(nctx.Response.GetContent()))
 		case context.CT_YMAL:
-			ctx.YAML(nctx.Response.GetStatus(), nctx.Response.GetContent())
+			ctx.YAML(nctx.Response.GetStatus(), getMessage(nctx.Response.GetContent()))
 		case context.CT_PLAIN:
 			ctx.Data(nctx.Response.GetStatus(), "text/plain", []byte(fmt.Sprint(nctx.Response.GetContent())))
 		case context.CT_HTML:

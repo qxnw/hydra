@@ -10,6 +10,7 @@ var ERR_DataNotExist = errors.New("查询的数据不存在")
 type IError interface {
 	GetError() error
 	GetCode() int
+	Error() string
 }
 type Error struct {
 	code int

@@ -8,6 +8,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/component"
 	_ "github.com/qxnw/hydra/hydra/impt"
+	"github.com/qxnw/hydra/hydra/rqs"
+	"github.com/qxnw/hydra/registry"
 	"github.com/qxnw/lib4go/logger"
 	"github.com/urfave/cli"
 )
@@ -18,6 +20,8 @@ type MicroApp struct {
 	logger *logger.Logger
 	hydra  *Hydra
 	*option
+	remoteQueryService *rqs.RemoteQueryService
+	registry           registry.IRegistry
 	component.IComponentRegistry
 }
 
@@ -27,7 +31,7 @@ func NewApp(opts ...Option) (m *MicroApp) {
 	for _, opt := range opts {
 		opt(m.option)
 	}
-	m.logger = logger.GetSession("micro", logger.CreateSession())
+	m.logger = logger.GetSession("hydra", logger.CreateSession())
 	return m
 }
 
@@ -44,7 +48,7 @@ func (m *MicroApp) Start() {
 func (m *MicroApp) Use(r func(r component.IServiceRegistry)) {
 	r(m.IComponentRegistry)
 }
-func (m *MicroApp) action(c *cli.Context) error {
+func (m *MicroApp) action(c *cli.Context) (err error) {
 	if m.remoteLogger {
 		m.RemoteLogger = m.remoteLogger
 	}
@@ -53,6 +57,23 @@ func (m *MicroApp) action(c *cli.Context) error {
 		cli.ShowCommandHelp(c, c.Command.Name)
 		return nil
 	}
+	if m.registry, err = registry.NewRegistryWithAddress(m.RegistryAddr, m.logger); err != nil {
+		return err
+	}
+
+	if m.RemoteQueryService {
+		m.remoteQueryService, err = rqs.NewHRemoteQueryService(m.PlatName, m.SystemName, m.ServerTypes, m.ClusterName, m.registry, VERSION)
+		if err != nil {
+			m.logger.Error(err)
+			return err
+		}
+		if err = m.remoteQueryService.Start(); err != nil {
+			m.logger.Error(err)
+			return err
+		}
+		defer m.remoteQueryService.Shutdown()
+	}
+
 	m.hydra = NewHydra(m.PlatName, m.SystemName, m.ServerTypes, m.ClusterName, m.Trace,
 		m.RegistryAddr, m.AutoCreateConf, m.IsDebug, m.RemoteLogger, m.IComponentRegistry)
 	if err := m.hydra.Start(); err != nil {

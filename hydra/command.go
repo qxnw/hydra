@@ -96,6 +96,11 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 		EnvVar:      "hydra-rpclog",
 		Usage:       "启用远程日志",
 	})
-
+	flags = append(flags, cli.BoolFlag{
+		Name:        "rqs,R",
+		Destination: &m.RemoteQueryService,
+		EnvVar:      "hydra-rqs",
+		Usage:       "启用远程查询服务",
+	})
 	return flags
 }

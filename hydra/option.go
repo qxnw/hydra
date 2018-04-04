@@ -12,18 +12,19 @@ var (
 )
 
 type option struct {
-	RegistryAddr    string   `json:"--registry" valid:"ascii,required"`
-	Name            string   `json:"--name" `
-	PlatName        string   `json:"--plat" valid:"ascii,required"`
-	SystemName      string   `json:"--system" valid:"ascii,required"`
-	ServerTypeNames string   `json:"--serverTypes" valid:"ascii,required"`
-	ServerTypes     []string `valid:"ascii,required"`
-	ClusterName     string   `json:"--cluster" valid:"ascii,required"`
-	IsDebug         bool
-	AutoCreateConf  bool
-	Trace           string
-	remoteLogger    bool
-	RemoteLogger    bool
+	RegistryAddr       string   `json:"--registry" valid:"ascii,required"`
+	Name               string   `json:"--name" `
+	PlatName           string   `json:"--plat" valid:"ascii,required"`
+	SystemName         string   `json:"--system" valid:"ascii,required"`
+	ServerTypeNames    string   `json:"--serverTypes" valid:"ascii,required"`
+	ServerTypes        []string `valid:"ascii,required"`
+	ClusterName        string   `json:"--cluster" valid:"ascii,required"`
+	IsDebug            bool
+	AutoCreateConf     bool
+	Trace              string
+	remoteLogger       bool
+	RemoteLogger       bool
+	RemoteQueryService bool
 }
 
 //Option 配置选项
@@ -76,6 +77,13 @@ func WithServerTypes(serverType ...string) Option {
 func WithClusterName(clusterName string) Option {
 	return func(o *option) {
 		o.ClusterName = clusterName
+	}
+}
+
+//WithRemoteQueryService 启动远程查询服务
+func WithRemoteQueryService(remoteQueryService bool) Option {
+	return func(o *option) {
+		o.RemoteQueryService = remoteQueryService
 	}
 }
 
