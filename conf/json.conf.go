@@ -75,6 +75,9 @@ func (j *JSONConf) GetString(key string, def ...string) (r string) {
 		switch v := val.(type) {
 		case string:
 			return v
+		case map[string]interface{}:
+			buffer, _ := json.Marshal(j.data)
+			return string(buffer)
 		default:
 			return fmt.Sprint(val)
 		}

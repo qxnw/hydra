@@ -15,5 +15,9 @@ func init() {
 }
 func RegistryFactory(f LoggerAppenderFactory, appender *Appender) {
 	registedFactory.SetIfAbsent(f.GetType(), f)
-	manager.configs = append(manager.configs, appender)
+	manager.append(appender)
+}
+func UnRegistryFactory(tp string) {
+	registedFactory.Remove(tp)
+	manager.remote(tp)
 }

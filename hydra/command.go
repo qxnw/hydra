@@ -42,13 +42,15 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 		flags = append(flags, cli.StringFlag{
 			Name:        "registry,r",
 			Destination: &m.RegistryAddr,
+			EnvVar:      "hydra-registry",
 			Usage:       "注册中心:格式:proto://addr1,addr2",
 		})
 	}
 	if m.PlatName == "" && m.SystemName == "" && len(m.ServerTypes) == 0 && m.ClusterName == "" {
 		flags = append(flags, cli.StringFlag{
-			Name:  "name,n",
-			Usage: "服务全称:格式:/平台名称/系统名称/服务器类型/集群名称",
+			Name:   "name,n",
+			EnvVar: "hydra-name",
+			Usage:  "服务全称:格式:/平台名称/系统名称/服务器类型/集群名称",
 		})
 	} else {
 		if m.PlatName == "" {
@@ -76,6 +78,7 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 			flags = append(flags, cli.StringFlag{
 				Name:        "cluster,c",
 				Destination: &m.ClusterName,
+				EnvVar:      "hydra-cluster",
 				Usage:       "集群名称",
 			})
 		}
@@ -84,11 +87,13 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 	flags = append(flags, cli.StringFlag{
 		Name:        "trace",
 		Destination: &m.Trace,
+		EnvVar:      "hydra-trace",
 		Usage:       fmt.Sprintf("性能跟踪%v", supportTraces),
 	})
 	flags = append(flags, cli.BoolFlag{
 		Name:        "remote-logger,l",
 		Destination: &m.remoteLogger,
+		EnvVar:      "hydra-rpclog",
 		Usage:       "启用远程日志",
 	})
 

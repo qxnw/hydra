@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/component"
-	"github.com/qxnw/hydra/hydra/log"
+	"github.com/qxnw/hydra/hydra/rpclog"
 	"github.com/qxnw/hydra/servers"
 
 	"github.com/qxnw/hydra/registry"
@@ -32,6 +32,7 @@ type Hydra struct {
 	clusterName    string
 	registryAddr   string
 	systemRootName string
+	rpcLoggerPath  string
 	mu             sync.Mutex
 	registry       registry.IRegistry
 	watcher        *watcher.ConfWatcher
@@ -51,6 +52,7 @@ func NewHydra(platName string, systemName string, serverTypes []string, clusterN
 		cHandler:       r,
 		logger:         logger.New("hydra"),
 		systemRootName: filepath.Join("/", platName, systemName, strings.Join(serverTypes, "-"), clusterName),
+		rpcLoggerPath:  filepath.Join("/", platName, "/var/global/logger"),
 		closeChan:      make(chan struct{}),
 		interrupt:      make(chan os.Signal, 1),
 		isDebug:        isDebug,
@@ -72,7 +74,8 @@ func (h *Hydra) Start() (err error) {
 		logger.AddWriteThread(49)
 	}
 	if h.remoteLogger {
-		if err := log.ConfigRemoteLogger(h.platName, h.systemName, h.registryAddr, h.logger); err != nil {
+		_, err := rpclog.NewRPCLogger(h.rpcLoggerPath, h.registryAddr, h.logger)
+		if err != nil {
 			return err
 		}
 	}

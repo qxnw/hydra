@@ -2,6 +2,7 @@ package logger
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -19,6 +20,7 @@ type loggerManager struct {
 	factory   ILoggerAppenderFactory
 	configs   []*Appender
 	ticker    *time.Ticker
+	lock      sync.RWMutex
 	isClose   bool
 }
 type appenderEntity struct {
@@ -39,6 +41,25 @@ func newLoggerManager() (m *loggerManager, err error) {
 	}
 	return nil, errors.New("未启动日志")
 }
+func (a *loggerManager) append(app *Appender) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	for _, v := range a.configs {
+		if v.Type == app.Type {
+			return
+		}
+	}
+	a.configs = append(a.configs, app)
+}
+func (a *loggerManager) remote(t string) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	for i, v := range a.configs {
+		if v.Type == t {
+			a.configs = append(a.configs[:i], a.configs[i+1])
+		}
+	}
+}
 
 // Log 将日志内容写入appender, 如果appender不存在则创建
 // callBack回调函数,如果不需要传nil
@@ -46,6 +67,8 @@ func (a *loggerManager) Log(event *LogEvent) {
 	if a.isClose {
 		return
 	}
+	a.lock.RLock()
+	defer a.lock.RUnlock()
 	for _, config := range a.configs {
 		uniq := a.factory.MakeUniq(config, event)
 		_, currentAppender, err := a.appenders.SetIfAbsentCb(uniq, func(p ...interface{}) (entity interface{}, err error) {

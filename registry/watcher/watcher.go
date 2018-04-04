@@ -23,11 +23,11 @@ type Watcher struct {
 	timeSpan   time.Duration
 	changed    int32
 	notifyChan chan *ContentChangeArgs
-	*logger.Logger
-	registry  registry.IRegistry
-	mu        sync.Mutex
-	done      bool
-	closeChan chan struct{}
+	logger     *logger.Logger
+	registry   registry.IRegistry
+	mu         sync.Mutex
+	done       bool
+	closeChan  chan struct{}
 }
 
 //NewWatcher 初始化监控
@@ -36,7 +36,7 @@ func NewWatcher(path string, timeSpan time.Duration, registry registry.IRegistry
 		path:       path,
 		timeSpan:   timeSpan,
 		registry:   registry,
-		Logger:     logger,
+		logger:     logger,
 		notifyChan: make(chan *ContentChangeArgs, 1),
 		closeChan:  make(chan struct{}),
 	}
@@ -78,7 +78,7 @@ LOOP:
 	//获取节点值
 	data, version, err := w.registry.GetValue(w.path)
 	if err != nil {
-		w.Debugf("获取节点值失败：%s(err:%v)", w.path, err)
+		w.logger.Debugf("获取节点值失败：%s(err:%v)", w.path, err)
 		goto LOOP
 	}
 	w.notifyChanged(data, version)

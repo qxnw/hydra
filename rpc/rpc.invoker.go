@@ -100,7 +100,7 @@ func (r *Invoker) Request(service string, method string, header map[string]strin
 	if err != nil {
 		return
 	}
-	rservice, _, _, _ := r.resolvePath(service)
+	rservice, _, _, _ := ResolvePath(service, r.domain, r.server)
 	status, result, params, err = client.Request(rservice, method, header, form, failFast)
 	if status != 200 || err != nil {
 		if err != nil {
@@ -118,7 +118,7 @@ func (r *Invoker) Request(service string, method string, header map[string]strin
 //order.request,order.request@api.hydra
 //order.request@api
 func (r *Invoker) GetClient(addr string) (c *Client, err error) {
-	service, domain, server, err := r.resolvePath(addr)
+	service, domain, server, err := ResolvePath(addr, r.domain, r.server)
 	if err != nil {
 		return
 	}
@@ -164,12 +164,12 @@ func (r *Invoker) Close() {
 	})
 }
 
-//resolvePath   解析注册中心地址
+//ResolvePath   解析注册中心地址
 //domain:hydra,server:merchant_cron
 //order.request#merchant_api.hydra 解析为:service: /order/request,server:merchant_api,domain:hydra
 //order.request 解析为 service: /order/request,server:merchant_cron,domain:hydra
 //order.request#merchant_rpc 解析为 service: /order/request,server:merchant_rpc,domain:hydra
-func (r *Invoker) resolvePath(address string) (service string, domain string, server string, err error) {
+func ResolvePath(address string, d string, s string) (service string, domain string, server string, err error) {
 	raddress := strings.TrimRight(address, "@")
 	addrs := strings.SplitN(raddress, "@", 2)
 	if len(addrs) == 1 {
@@ -177,8 +177,8 @@ func (r *Invoker) resolvePath(address string) (service string, domain string, se
 			return "", "", "", fmt.Errorf("服务地址%s不能为空", address)
 		}
 		service = "/" + strings.Trim(strings.Replace(raddress, ".", "/", -1), "/")
-		domain = r.domain
-		server = r.server
+		domain = d
+		server = s
 		return
 	}
 	if addrs[0] == "" {
@@ -198,7 +198,7 @@ func (r *Invoker) resolvePath(address string) (service string, domain string, se
 		if raddr[0] == "" {
 			return "", "", "", fmt.Errorf("%s错误，服务器名称不能为空", address)
 		}
-		domain = r.domain
+		domain = d
 		server = raddr[0]
 		return
 	}
@@ -206,6 +206,6 @@ func (r *Invoker) resolvePath(address string) (service string, domain string, se
 		return "", "", "", fmt.Errorf(`%s错误,未指定服务器名称和域名称`, addrs[1])
 	}
 	domain = raddr[1]
-	server = r.server
+	server = s
 	return
 }
