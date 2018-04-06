@@ -105,7 +105,6 @@ LOOP:
 	h.logger.Infof("hydra 正在关闭...")
 	h.rspServer.Shutdown()
 	h.logger.Infof("hydra 已安全退出")
-	logger.Close()
 	return nil
 }
 

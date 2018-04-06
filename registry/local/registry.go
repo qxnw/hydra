@@ -24,5 +24,5 @@ func (z *lkRegistry) Resolve(servers []string, log *logger.Logger) (registry.IRe
 }
 
 func init() {
-	registry.Register("local", &lkRegistry{})
+	registry.Register("lfs", &lkRegistry{})
 }

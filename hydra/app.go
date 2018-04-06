@@ -58,6 +58,7 @@ func (m *MicroApp) action(c *cli.Context) (err error) {
 		return nil
 	}
 	if m.registry, err = registry.NewRegistryWithAddress(m.RegistryAddr, m.logger); err != nil {
+		m.logger.Error(err)
 		return err
 	}
 
