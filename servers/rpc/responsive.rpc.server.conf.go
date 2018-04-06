@@ -72,25 +72,25 @@ func (w *RpcResponsiveServer) SetConf(restart bool, conf conf.IServerConf) (err 
 	if ok, err = SetJWT(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "jwt设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "jwt设置")
 
 	//设置请求头
 	if ok, err = SetHeaders(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "header设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf, getEnableName(ok), "header设置")
 
 	//设置metric
 	if ok, err = SetMetric(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "metric设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf,  getEnableName(ok), "metric设置")
 
 	//设置host
 	if ok, err = SetHosts(w.server, conf); err != nil {
 		return err
 	}
-	servers.TraceIf(ok, w.Infof, w.Debugf, conf.GetServerName(), getEnableName(ok), "host设置")
+	servers.TraceIf(ok, w.Infof, w.Debugf,  getEnableName(ok), "host设置")
 	return nil
 }
 func getEnableName(b bool) string {

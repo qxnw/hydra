@@ -18,7 +18,7 @@ func (s *WebServer) getHandler(routers []*conf.Router) (h x.Handler, err error) 
 	}
 	engine := gin.New()
 	if s.views, err = s.loadHTMLGlob(engine); err != nil {
-		s.Logger.Warnf("%s未找到模板:%v", s.conf.Name, err)
+		s.Logger.Debugf("%s未找到模板:%v", s.conf.Name, err)
 		return nil, err
 	}
 	engine.Use(middleware.Logging(s.conf)) //记录请求日志
@@ -64,7 +64,7 @@ func (s *WebServer) loadHTMLGlob(engine *gin.Engine) (viewFiles []string, err er
 		engine.LoadHTMLFiles(viewFiles...)
 	}
 	s.conf.SetMetadata("viewFiles", viewFiles)
-	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Warnf, s.conf.Name,
+	servers.TraceIf(len(viewFiles) > 0, s.Logger.Infof, s.Logger.Debugf,
 		getEnableName(len(viewFiles) > 0), "view模板", strings.Join(viewFiles, "\n"))
 	return nil, nil
 }
