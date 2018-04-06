@@ -11,7 +11,7 @@ func main() {
 		hydra.WithPlatName("hydra-20"),
 		hydra.WithSystemName("collector"),
 		hydra.WithServerTypes("cron-rpc"),
-		hydra.WithAutoCreateConf(true),
+		hydra.WithAutoCreateConf(),
 		hydra.WithDebug())
 
 	app.Autoflow("/user/login", user.NewLoginHandler)

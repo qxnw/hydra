@@ -52,9 +52,9 @@ func WithSystemName(systemName string) Option {
 }
 
 //WithAutoCreateConf 自动创建配置节点
-func WithAutoCreateConf(b bool) Option {
+func WithAutoCreateConf() Option {
 	return func(o *option) {
-		o.AutoCreateConf = b
+		o.AutoCreateConf = true
 	}
 }
 
