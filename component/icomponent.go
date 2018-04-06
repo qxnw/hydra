@@ -12,12 +12,12 @@ type IComponent interface {
 	IsMicroService(service string) bool
 	IsAutoflowService(service string) bool
 	IsPageService(service string) bool
-	IsCustomerService(group string, service string) bool
+	IsCustomerService(service string,group ...string) bool
 	GetFallbackHandlers() map[string]interface{}
 	AddFallbackHandlers(map[string]interface{})
 	LoadServices() error
 
-	GetGroupServices(group string) []string
+	GetGroupServices(group ...string) []string
 	GetServices() []string
 
 	GetGroups(service string) []string

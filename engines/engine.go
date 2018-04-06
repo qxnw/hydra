@@ -85,7 +85,7 @@ func (r *ServiceEngine) UpdateVarConf(conf conf.IServerConf) {
 
 //GetServices 获取组件提供的所有服务
 func (r *ServiceEngine) GetServices() []string {
-	return r.GetGroupServices(component.GetGroupName(r.GetServerType()))
+	return r.GetGroupServices(component.GetGroupName(r.GetServerType())...)
 }
 
 //Execute 执行外部请求
@@ -129,7 +129,7 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	case "rpc":
 		return nil
 	default:
-		if r.IsCustomerService(component.GetGroupName(r.GetServerType()), service) {
+		if r.IsCustomerService(service,component.GetGroupName(r.GetServerType())...) {
 			return nil
 		}
 	}

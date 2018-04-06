@@ -98,26 +98,29 @@ func (r *StandardComponent) AddCustomerService(service string, h interface{}, gr
 
 //IsMicroService 是否是微服务
 func (r *StandardComponent) IsMicroService(service string) bool {
-	return r.IsCustomerService(MicroService, service)
+	return r.IsCustomerService(service,MicroService)
 }
 
 //IsAutoflowService 是否是自动流程服务
 func (r *StandardComponent) IsAutoflowService(service string) bool {
-	return r.IsCustomerService(AutoflowService, service)
+	return r.IsCustomerService(service,AutoflowService)
 }
 
 //IsPageService 是否是页面服务
 func (r *StandardComponent) IsPageService(service string) bool {
-	return r.IsCustomerService(PageService, service)
+	return r.IsCustomerService(service,PageService)
 }
 
 //IsCustomerService 是否是指定的分组服务
-func (r *StandardComponent) IsCustomerService(group string, service string) bool {
+func (r *StandardComponent) IsCustomerService(service string,group ...string) bool {
 	groups := r.GetGroups(service)
 	for _, v := range groups {
-		if v == group {
-			return true
+		for _,g:=range group{
+			if v == g {
+				return true
+			}
 		}
+		
 	}
 	return false
 }
@@ -329,8 +332,12 @@ func (r *StandardComponent) GetServices() []string {
 }
 
 //GetGroupServices 根据分组获取服务
-func (r *StandardComponent) GetGroupServices(group string) []string {
-	return r.GroupServices[group]
+func (r *StandardComponent) GetGroupServices(group ...string) []string {
+	srvs:=make([]string,0,4)
+	for _,g:=range group{
+		srvs=append(srvs,r.GroupServices[g]...)
+	}
+	return srvs
 }
 
 //GetGroups 获取服务的分组列表
@@ -396,6 +403,9 @@ func (r *StandardComponent) Handle(name string, engine string, service string, c
 		c.Response.SetStatus(404)
 		return fmt.Errorf("%s:未找到服务:%s", r.Name, service)
 	}
+	if r.IsPageService(service){
+		c.Response.SetTextHTML()
+	}
 	switch handler := h.(type) {
 	case Handler:
 		rs = handler.Handle(name, engine, service, c)
@@ -448,14 +458,14 @@ func (r *StandardComponent) Close() error {
 }
 
 //GetGroupName 获取分组类型[api,rpc > micro mq,cron > autoflow, web > page,others > customer]
-func GetGroupName(serverType string) string {
+func GetGroupName(serverType string) []string {
 	switch serverType {
 	case "api", "rpc":
-		return MicroService
+		return []string{MicroService}
 	case "mqc", "cron":
-		return AutoflowService
+		return []string{AutoflowService}
 	case "web":
-		return PageService
+		return []string{PageService,MicroService}
 	}
-	return CustomerService
+	return []string{CustomerService}
 }

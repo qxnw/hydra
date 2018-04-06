@@ -18,12 +18,15 @@ func (r *Response) SeTextJSON() {
 	r.Params["Content-Type"] = "application/json; charset=UTF-8"
 }
 
-//SetTextXML 将content type设置为application/xml; charset=UTF-8
+//SetTextXML 将content type设置为text/xml; charset=UTF-8
 func (r *Response) SetTextXML() {
 	r.Params["Content-Type"] = "text/xml; charset=UTF-8"
 }
-
-//SetPlainContentType 将content type设置为text/plain; charset=UTF-8
+//SetTextHTML 将content type设置为text/html; charset=UTF-8
+func (r *Response) SetTextHTML() {
+	r.Params["Content-Type"] = "text/html; charset=UTF-8"
+}
+//SetTextPlain 将content type设置为text/plain; charset=UTF-8
 func (r *Response) SetTextPlain() {
 	r.Params["Content-Type"] = "text/plain; charset=UTF-8"
 }

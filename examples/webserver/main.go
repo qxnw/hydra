@@ -16,7 +16,7 @@ func main() {
 
 	app.Page("/user/login", user.NewLoginHandler)
 	app.Page("/order/query", order.NewQueryHandler)
-	app.Page("/order/bind", order.NewBindHandler)
+	app.Micro("/order/bind", order.NewBindHandler)
 
 	app.Start()
 }
