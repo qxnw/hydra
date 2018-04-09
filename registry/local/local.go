@@ -273,7 +273,7 @@ func checkPrivileges() error {
 	if runtime.GOOS == "windows" {
 		return nil
 	}
-	return ErrUnsupportedSystem
+	return fmt.Errorf("%v %s", ErrUnsupportedSystem, runtime.GOOS)
 }
 
 var ErrUnsupportedSystem = errors.New("Unsupported system")
