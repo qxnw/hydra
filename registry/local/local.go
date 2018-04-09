@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -268,6 +269,9 @@ func checkPrivileges() error {
 			}
 			return ErrRootPrivileges
 		}
+	}
+	if runtime.GOOS == "windows" {
+		return nil
 	}
 	return ErrUnsupportedSystem
 }
