@@ -71,7 +71,8 @@ type ServerConf struct {
 
 //NewServerConf 构建服务器配置缓存
 func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int32, rgst registry.IRegistry) (s *ServerConf, err error) {
-	sections := strings.Split(strings.Trim(mainConfpath, "/"), "/")
+
+	sections := strings.Split(strings.Trim(mainConfpath, string(filepath.Separator)), string(filepath.Separator))
 	if len(sections) != 5 {
 		err = fmt.Errorf("conf配置文件格式错误，格式:/platName/sysName/serverType/clusterName/conf 当前值：%s", mainConfpath)
 		return
