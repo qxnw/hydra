@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 type inputParams struct {
@@ -20,7 +21,7 @@ func (i *inputParams) Check(names ...string) error {
 	return nil
 }
 
-func (i *inputParams) Get(name string, p ...string) (string, error) {
+func (i *inputParams) Get(name string) (string, error) {
 	return i.data.Get(name)
 }
 func (i *inputParams) GetString(name string, p ...string) string {
@@ -80,6 +81,25 @@ func (i *inputParams) GetFloat64(name string, p ...float64) float64 {
 		return p[0]
 	}
 	return 0
+}
+func (i *inputParams) GetDataTime(name string, p ...time.Time) (time.Time, error) {
+	return i.GetDataTimeByFormat(name, "20060102150405", p...)
+}
+
+//GetFloat64 获取float64数字
+func (i *inputParams) GetDataTimeByFormat(name string, format string, p ...time.Time) (time.Time, error) {
+	value, err := i.Get(name)
+	var v time.Time
+	if err == nil {
+		v, err = time.Parse(format, value)
+	}
+	if err == nil {
+		return v, nil
+	}
+	if len(p) > 0 {
+		return p[0], nil
+	}
+	return v, err
 }
 
 //Translate 翻译带有@变量的字符串

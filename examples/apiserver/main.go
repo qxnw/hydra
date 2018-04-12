@@ -13,7 +13,6 @@ func main() {
 		hydra.WithServerTypes("api"),
 		hydra.WithAutoCreateConf(),
 		hydra.WithDebug())
-
 	app.Micro("/user/login", user.NewLoginHandler)
 	app.Micro("/order/query", order.NewQueryHandler)
 	app.Micro("/order/bind", order.NewBindHandler)

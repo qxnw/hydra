@@ -48,9 +48,10 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 	}
 	if m.PlatName == "" && m.SystemName == "" && len(m.ServerTypes) == 0 && m.ClusterName == "" {
 		flags = append(flags, cli.StringFlag{
-			Name:   "name,n",
-			EnvVar: "hydra-name",
-			Usage:  "服务全称:格式:/平台名称/系统名称/服务器类型/集群名称",
+			Name:        "name,n",
+			EnvVar:      "hydra-name",
+			Destination: &m.Name,
+			Usage:       "服务全称:格式:/平台名称/系统名称/服务器类型/集群名称",
 		})
 	} else {
 		if m.PlatName == "" {

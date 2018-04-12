@@ -12,7 +12,7 @@ type IComponent interface {
 	IsMicroService(service string) bool
 	IsAutoflowService(service string) bool
 	IsPageService(service string) bool
-	IsCustomerService(service string,group ...string) bool
+	IsCustomerService(service string, group ...string) bool
 	GetFallbackHandlers() map[string]interface{}
 	AddFallbackHandlers(map[string]interface{})
 	LoadServices() error
@@ -81,6 +81,12 @@ type FallbackServiceFunc func(name string, engine string, service string, c *con
 
 func (h FallbackServiceFunc) Fallback(name string, engine string, service string, c *context.Context) (rs interface{}) {
 	return h(name, engine, service, c)
+}
+
+type ComponentFunc func(c IContainer) error
+
+func (h ComponentFunc) Handle(c IContainer) error {
+	return h(c)
 }
 
 type ServiceFunc func(name string, engine string, service string, c *context.Context) (rs interface{})

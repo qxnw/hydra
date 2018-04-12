@@ -2,6 +2,8 @@ package context
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 
@@ -107,6 +109,60 @@ func (r *Request) Body2Input(encoding ...string) (map[string]string, error) {
 	return qString, nil
 }
 
+//Get 获取请求数据值
+func (r *Request) Get(name string) (result string, err error) {
+	if result, err = r.Form.Get(name); err == nil {
+		return result, nil
+	}
+	if result, err = r.QueryString.Get(name); err == nil {
+		return result, nil
+	}
+	return "", fmt.Errorf("%s值不存在", name)
+}
+
+func (r *Request) GetString(name string, p ...string) string {
+	v, err := r.Get(name)
+	if err == nil {
+		return v
+	}
+	if len(p) > 0 {
+		return p[0]
+	}
+	return ""
+}
+
+//GetInt 获取int数字
+func (r *Request) GetInt(name string, p ...int) int {
+	value, err := r.Get(name)
+	var v int
+	if err == nil {
+		v, err = strconv.Atoi(value)
+	}
+	if err == nil {
+		return v
+	}
+	if len(p) > 0 {
+		return p[0]
+	}
+	return 0
+}
+
+//GetInt64 获取int64数字
+func (r *Request) GetInt64(name string, p ...int64) int64 {
+	value, err := r.Get(name)
+	var v int64
+	if err == nil {
+		v, err = strconv.ParseInt(value, 10, 64)
+	}
+	if err == nil {
+		return v
+	}
+	if len(p) > 0 {
+		return p[0]
+	}
+	return 0
+}
+
 //Translate 根据输入参数[Param,Form,QueryString,Setting]
 func (r *Request) Translate(format string, a bool) string {
 	str, i := r.Param.Translate(format, false)
@@ -125,6 +181,43 @@ func (r *Request) Translate(format string, a bool) string {
 
 	str, _ = r.Setting.Translate(str, a)
 	return str
+}
+
+//GetFloat64 获取float64数字
+func (r *Request) GetFloat64(name string, p ...float64) float64 {
+	value, err := r.Get(name)
+	var v float64
+	if err == nil {
+		v, err = strconv.ParseFloat(value, 64)
+	}
+	if err == nil {
+		return v
+	}
+	if len(p) > 0 {
+		return p[0]
+	}
+	return 0
+}
+
+//GetDataTime 获取日期时间
+func (r *Request) GetDataTime(name string, p ...time.Time) (time.Time, error) {
+	return r.GetDataTimeByFormat(name, "20060102150405", p...)
+}
+
+//GetDataTimeByFormat 获取日期时间
+func (r *Request) GetDataTimeByFormat(name string, format string, p ...time.Time) (time.Time, error) {
+	value, err := r.Get(name)
+	var v time.Time
+	if err == nil {
+		v, err = time.Parse(format, value)
+	}
+	if err == nil {
+		return v, nil
+	}
+	if len(p) > 0 {
+		return p[0], nil
+	}
+	return v, err
 }
 
 //clear 清空数据

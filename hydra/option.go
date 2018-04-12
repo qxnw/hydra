@@ -96,6 +96,7 @@ func WithName(name string) Option {
 		if err != nil {
 			panic(fmt.Errorf("%s %v", name, err))
 		}
+		o.ServerTypeNames = strings.Join(o.ServerTypes, "-")
 
 	}
 }

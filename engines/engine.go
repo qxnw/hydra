@@ -67,6 +67,12 @@ func (r *ServiceEngine) SetHandler(h component.IComponentHandler) error {
 	if h == nil {
 		return nil
 	}
+	funcs := h.GetInitializings()
+	for _, f := range funcs {
+		if err := f(r); err != nil {
+			return err
+		}
+	}
 	r.cHandler = h
 	svs := h.GetServices()
 	for group, handlers := range svs {
@@ -102,19 +108,26 @@ func (r *ServiceEngine) Execute(name string, engine string, service string, ctx 
 		return rh
 	}
 
-	if r.cHandler != nil && r.cHandler.GetHandling() != nil {
-		if rh := r.cHandler.GetHandling()(name, engine, service, ctx); ctx.Response.HasError(rh) {
-			return rh
+	if r.cHandler != nil && r.cHandler.GetHandlings() != nil {
+		hds := r.cHandler.GetHandlings()
+		for _, h := range hds {
+			if rh := h(name, engine, service, ctx); ctx.Response.HasError(rh) {
+				return rh
+			}
 		}
 	}
 
 	if rs = r.Handle(name, engine, service, ctx); ctx.Response.HasError(rs) {
 		return rs
 	}
-	if r.cHandler != nil && r.cHandler.GetHandled() != nil {
-		if rh := r.cHandler.GetHandled()(name, engine, service, ctx); ctx.Response.HasError(rh) {
-			return rh
+	if r.cHandler != nil && r.cHandler.GetHandleds() != nil {
+		hdd := r.cHandler.GetHandleds()
+		for _, h := range hdd {
+			if rh := h(name, engine, service, ctx); ctx.Response.HasError(rh) {
+				return rh
+			}
 		}
+
 	}
 	if rd := r.Handled(name, engine, service, ctx); ctx.Response.HasError(rd) {
 		return rd
@@ -129,7 +142,7 @@ func (r *ServiceEngine) Handling(name string, engine string, service string, c *
 	case "rpc":
 		return nil
 	default:
-		if r.IsCustomerService(service,component.GetGroupName(r.GetServerType())...) {
+		if r.IsCustomerService(service, component.GetGroupName(r.GetServerType())...) {
 			return nil
 		}
 	}
@@ -144,6 +157,14 @@ func (r *ServiceEngine) GetRegistry() registry.IRegistry {
 
 //Close 关闭引擎
 func (r *ServiceEngine) Close() error {
+	if r.cHandler != nil {
+		funcs := r.cHandler.GetClosings()
+		for _, f := range funcs {
+			if err := f(r); err != nil {
+				r.logger.Error(err)
+			}
+		}
+	}
 	r.StandardComponent.Close()
 	r.Invoker.Close()
 	r.IComponentCache.Close()

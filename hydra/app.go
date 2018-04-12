@@ -89,6 +89,10 @@ func (m *MicroApp) checkInput() (err error) {
 	if m.ServerTypeNames != "" && len(m.ServerTypes) == 0 {
 		WithServerTypes(m.ServerTypeNames)(m.option)
 	}
+	if m.PlatName == "" && m.Name != "" {
+		WithName(m.Name)(m.option)
+	}
+
 	if b, err := govalidator.ValidateStruct(m.option); !b {
 		err = fmt.Errorf("validate(%v) %v", reflect.TypeOf(m.option), err)
 		return err

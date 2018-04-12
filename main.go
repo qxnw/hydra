@@ -10,6 +10,5 @@ func main() {
 		hydra.WithServerTypes("api"),
 		hydra.WithAutoCreateConf(),
 		hydra.WithDebug())
-
 	app.Start()
 }
