@@ -28,6 +28,9 @@ func New(addrs []string, conf string) (m *redisClient, err error) {
 func (c *redisClient) Get(key string) (string, error) {
 	data, err := c.client.Get(key).Result()
 	if err != nil {
+		if err.Error() == "redis: nil" {
+			return data, nil
+		}
 		return "", err
 	}
 	return data, nil
