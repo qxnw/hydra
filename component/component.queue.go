@@ -9,9 +9,17 @@ import (
 	"github.com/qxnw/lib4go/queue"
 )
 
+//QueueTypeNameInVar queue在var配置中的类型名称
+const QueueTypeNameInVar = "queue"
+
+//QueueNameInVar queue名称在var配置中的末节点名称
+const QueueNameInVar = "queue"
+
 //IComponentQueue Component Queue
 type IComponentQueue interface {
 	GetQueue(names ...string) (q queue.IQueue, err error)
+	GetQueueBy(tpName string, name string) (c queue.IQueue, err error)
+	SaveQueueObject(tpName string, name string, f func(c conf.IConf) (queue.IQueue, error)) (bool, queue.IQueue, error)
 	Close() error
 }
 
@@ -27,7 +35,7 @@ func NewStandardQueue(c IContainer, name ...string) *StandardQueue {
 	if len(name) > 0 {
 		return &StandardQueue{IContainer: c, name: name[0], queueCache: cmap.New(2)}
 	}
-	return &StandardQueue{IContainer: c, name: "queue", queueCache: cmap.New(2)}
+	return &StandardQueue{IContainer: c, name: QueueNameInVar, queueCache: cmap.New(2)}
 }
 
 //GetQueue GetQueue
@@ -36,31 +44,39 @@ func (s *StandardQueue) GetQueue(names ...string) (q queue.IQueue, err error) {
 	if len(names) > 0 {
 		name = names[0]
 	}
-	queueConf, err := s.IContainer.GetVarConf("queue", name)
-	if err != nil {
-		return nil, fmt.Errorf("../var/queue/%s %v", name, err)
-	}
-	key := fmt.Sprintf("%s:%d", name, queueConf.GetVersion())
+	return s.GetQueueBy(QueueTypeNameInVar, name)
+}
 
-	_, iqueue, err := s.queueCache.SetIfAbsentCb(key, func(input ...interface{}) (d interface{}, err error) {
-		queueConf := input[0].(*conf.JSONConf)
+//GetQueueBy 根据类型获取缓存数据
+func (s *StandardQueue) GetQueueBy(tpName string, name string) (c queue.IQueue, err error) {
+	_, c, err = s.SaveQueueObject(tpName, name, func(jConf conf.IConf) (queue.IQueue, error) {
 		var qConf conf.QueueConf
-		if err = queueConf.Unmarshal(&qConf); err != nil {
+		if err = jConf.Unmarshal(&qConf); err != nil {
 			return nil, err
 		}
 		if b, err := govalidator.ValidateStruct(&qConf); !b {
 			return nil, err
 		}
-		return queue.NewQueue(qConf.Proto, string(queueConf.GetRaw()))
-	}, queueConf)
-	if err != nil {
-		err = fmt.Errorf("创建queue失败:%s,err:%v", string(queueConf.GetRaw()), err)
-		return
-		return
-	}
-	q = iqueue.(queue.IQueue)
-	return
+		return queue.NewQueue(qConf.Proto, string(jConf.GetRaw()))
+	})
+	return c, err
+}
 
+//SaveQueueObject 缓存对象
+func (s *StandardQueue) SaveQueueObject(tpName string, name string, f func(c conf.IConf) (queue.IQueue, error)) (bool, queue.IQueue, error) {
+	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
+	if err != nil {
+		return false, nil, fmt.Errorf("../var/%s/%s %v", tpName, name, err)
+	}
+	key := fmt.Sprintf("%s/%s:%d", tpName, name, cacheConf.GetVersion())
+	ok, ch, err := s.queueCache.SetIfAbsentCb(key, func(input ...interface{}) (c interface{}, err error) {
+		return f(cacheConf)
+	})
+	if err != nil {
+		err = fmt.Errorf("创建queue失败:%s,err:%v", string(cacheConf.GetRaw()), err)
+		return ok, nil, err
+	}
+	return ok, ch.(queue.IQueue), err
 }
 
 //Close 释放所有缓存配置

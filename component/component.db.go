@@ -9,9 +9,17 @@ import (
 	"github.com/qxnw/lib4go/db"
 )
 
+//DBTypeNameInVar DB在var配置中的类型名称
+const DBTypeNameInVar = "db"
+
+//DBNameInVar DB名称在var配置中的末节点名称
+const DBNameInVar = "db"
+
 //IComponentDB Component DB
 type IComponentDB interface {
 	GetDB(names ...string) (d db.IDB, err error)
+	GetDBBy(tpName string, name string) (c db.IDB, err error)
+	SaveDBObject(tpName string, name string, f func(c conf.IConf) (db.IDB, error)) (bool, db.IDB, error)
 	Close() error
 }
 
@@ -27,7 +35,7 @@ func NewStandardDB(c IContainer, name ...string) *StandardDB {
 	if len(name) > 0 {
 		return &StandardDB{IContainer: c, name: name[0], dbMap: cmap.New(2)}
 	}
-	return &StandardDB{IContainer: c, name: "db", dbMap: cmap.New(2)}
+	return &StandardDB{IContainer: c, name: DBNameInVar, dbMap: cmap.New(2)}
 }
 
 //GetDB 获取数据库操作对象
@@ -36,13 +44,12 @@ func (s *StandardDB) GetDB(names ...string) (d db.IDB, err error) {
 	if len(names) > 0 {
 		name = names[0]
 	}
-	dbConf, err := s.IContainer.GetVarConf("db", name)
-	if err != nil {
-		return nil, fmt.Errorf("../var/db/%s %v", name, err)
-	}
-	key := fmt.Sprintf("%s:%d", name, dbConf.GetVersion())
-	_, dbc, err := s.dbMap.SetIfAbsentCb(key, func(input ...interface{}) (d interface{}, err error) {
-		jConf := input[0].(*conf.JSONConf)
+	return s.GetDBBy(DBTypeNameInVar, name)
+}
+
+//GetDBBy 根据类型获取缓存数据
+func (s *StandardDB) GetDBBy(tpName string, name string) (c db.IDB, err error) {
+	_, c, err = s.SaveDBObject(tpName, name, func(jConf conf.IConf) (db.IDB, error) {
 		var dbConf conf.DBConf
 		if err = jConf.Unmarshal(&dbConf); err != nil {
 			return nil, err
@@ -55,13 +62,25 @@ func (s *StandardDB) GetDB(names ...string) (d db.IDB, err error) {
 			dbConf.MaxOpen,
 			dbConf.MaxIdle,
 			dbConf.LefeTime)
-	}, dbConf)
+	})
+	return c, err
+}
+
+//SaveDBObject 缓存对象
+func (s *StandardDB) SaveDBObject(tpName string, name string, f func(c conf.IConf) (db.IDB, error)) (bool, db.IDB, error) {
+	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
-		err = fmt.Errorf("创建db失败:%s,err:%v", string(dbConf.GetRaw()), err)
-		return
+		return false, nil, fmt.Errorf("../var/%s/%s %v", tpName, name, err)
 	}
-	d = dbc.(db.IDB)
-	return
+	key := fmt.Sprintf("%s/%s:%d", tpName, name, cacheConf.GetVersion())
+	ok, ch, err := s.dbMap.SetIfAbsentCb(key, func(input ...interface{}) (c interface{}, err error) {
+		return f(cacheConf)
+	})
+	if err != nil {
+		err = fmt.Errorf("创建db失败:%s,err:%v", string(cacheConf.GetRaw()), err)
+		return ok, nil, err
+	}
+	return ok, ch.(db.IDB), err
 }
 
 //Close 释放所有缓存配置

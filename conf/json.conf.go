@@ -17,6 +17,8 @@ type IConf interface {
 	GeJSON(section string) (r []byte, version int32, err error)
 	GetSection(section string) (c *JSONConf, err error)
 	HasSection(section string) bool
+	GetRaw() []byte
+	Unmarshal(v interface{}) error
 }
 
 //JSONConf json配置文件
