@@ -304,10 +304,6 @@
 			"Rev": "6906aac1294f2f3a5f6024956be02f9a51648256"
 		},
 		{
-			"ImportPath": "github.com/qxnw/lib4go/sysinfo/pipes",
-			"Rev": "6906aac1294f2f3a5f6024956be02f9a51648256"
-		},
-		{
 			"ImportPath": "github.com/qxnw/lib4go/transform",
 			"Rev": "6906aac1294f2f3a5f6024956be02f9a51648256"
 		},
