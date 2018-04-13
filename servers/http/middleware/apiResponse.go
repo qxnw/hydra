@@ -42,7 +42,7 @@ func APIResponse(conf *conf.MetadataConf) gin.HandlerFunc {
 		case context.CT_HTML:
 			ctx.Data(nctx.Response.GetStatus(), "text/html", []byte(fmt.Sprint(nctx.Response.GetContent())))
 		default:
-			ctx.SecureJSON(nctx.Response.GetStatus(), getMessage(nctx.Response.GetContent()))
+			ctx.JSON(nctx.Response.GetStatus(), getMessage(nctx.Response.GetContent()))
 		}
 	}
 }
