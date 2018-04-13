@@ -201,6 +201,9 @@ func (c *ServerConf) GetServerPubRootPath() string {
 //GetAppConf 获取系统配置
 func (c *ServerConf) GetAppConf(v interface{}) error {
 	_, err := c.GetSubObject("app", v)
+	if err != nil {
+		return fmt.Errorf("获取app配置出错:%v", err)
+	}
 	return err
 }
 

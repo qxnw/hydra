@@ -30,7 +30,7 @@ func (m *MicroApp) getCommands() []cli.Command {
 	return []cli.Command{
 		{
 			Name:   "start",
-			Usage:  "启动hydra服务器",
+			Usage:  "启动服务器",
 			Flags:  m.getStartFlags(),
 			Action: m.action,
 		},
@@ -42,14 +42,14 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 		flags = append(flags, cli.StringFlag{
 			Name:        "registry,r",
 			Destination: &m.RegistryAddr,
-			EnvVar:      "hydra-registry",
+			EnvVar:      "hydra_registry",
 			Usage:       "注册中心:格式:proto://addr1,addr2",
 		})
 	}
 	if m.PlatName == "" && m.SystemName == "" && len(m.ServerTypes) == 0 && m.ClusterName == "" {
 		flags = append(flags, cli.StringFlag{
 			Name:        "name,n",
-			EnvVar:      "hydra-name",
+			EnvVar:      "hydra_name",
 			Destination: &m.Name,
 			Usage:       "服务全称:格式:/平台名称/系统名称/服务器类型/集群名称",
 		})
@@ -58,6 +58,7 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 			flags = append(flags, cli.StringFlag{
 				Name:        "plat,p",
 				Destination: &m.PlatName,
+				EnvVar:      "hydra_plat",
 				Usage:       "平台名称",
 			})
 		}
@@ -65,13 +66,15 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 			flags = append(flags, cli.StringFlag{
 				Name:        "system,s",
 				Destination: &m.SystemName,
+				EnvVar:      "hydra_system",
 				Usage:       "系统名称",
 			})
 		}
 		if len(m.ServerTypes) == 0 {
 			flags = append(flags, cli.StringFlag{
-				Name:        "serverType,s",
+				Name:        "server-types,s",
 				Destination: &m.ServerTypeNames,
+				EnvVar:      "hydra_server_types",
 				Usage:       fmt.Sprintf("服务类型%v", supportServerType),
 			})
 		}
@@ -79,7 +82,7 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 			flags = append(flags, cli.StringFlag{
 				Name:        "cluster,c",
 				Destination: &m.ClusterName,
-				EnvVar:      "hydra-cluster",
+				EnvVar:      "hydra_cluster",
 				Usage:       "集群名称",
 			})
 		}
@@ -88,13 +91,13 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 	flags = append(flags, cli.StringFlag{
 		Name:        "trace",
 		Destination: &m.Trace,
-		EnvVar:      "hydra-trace",
+		EnvVar:      "hydra_trace",
 		Usage:       fmt.Sprintf("性能跟踪%v", supportTraces),
 	})
 	flags = append(flags, cli.BoolFlag{
 		Name:        "remote-logger,l",
 		Destination: &m.remoteLogger,
-		EnvVar:      "hydra-rpclog",
+		EnvVar:      "hydra_rpclog",
 		Usage:       "启用远程日志",
 	})
 	flags = append(flags, cli.BoolFlag{
