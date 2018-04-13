@@ -38,7 +38,8 @@ type Auth struct {
 	Disable    bool     `json:"disable"`
 }
 type Routers struct {
-	Routers []*Router `json:"routers"`
+	Setting map[string]string `json:"args"`
+	Routers []*Router         `json:"routers"`
 }
 type Router struct {
 	Name    string            `json:"name" valid:"ascii,required"`

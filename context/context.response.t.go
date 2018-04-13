@@ -22,10 +22,12 @@ func (r *Response) SeTextJSON() {
 func (r *Response) SetTextXML() {
 	r.Params["Content-Type"] = "text/xml; charset=UTF-8"
 }
+
 //SetTextHTML 将content type设置为text/html; charset=UTF-8
 func (r *Response) SetTextHTML() {
 	r.Params["Content-Type"] = "text/html; charset=UTF-8"
 }
+
 //SetTextPlain 将content type设置为text/plain; charset=UTF-8
 func (r *Response) SetTextPlain() {
 	r.Params["Content-Type"] = "text/plain; charset=UTF-8"
@@ -89,9 +91,6 @@ func (r *Response) getStatus(c interface{}) int {
 		}
 		return r.Status
 	default:
-		if r.Status >= 100 && r.Status < 400 {
-			return r.Status
-		}
-		return 200
+		return r.Status
 	}
 }

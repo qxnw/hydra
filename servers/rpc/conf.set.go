@@ -84,6 +84,11 @@ func SetRouters(engine servers.IRegistryEngine, cnf conf.IServerConf, set ISetRo
 		if router.Engine == "" {
 			router.Engine = "*"
 		}
+		for k, v := range routers.Setting {
+			if _, ok := router.Setting[k]; !ok {
+				router.Setting[k] = v
+			}
+		}
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting, ext)
 	}
 	err = set.SetRouters(routers.Routers)

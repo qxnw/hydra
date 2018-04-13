@@ -81,6 +81,11 @@ func SetQueues(engine servers.IRegistryEngine, set IQueues, cnf conf.IServerConf
 		if queue.Name == "" {
 			queue.Name = queue.Service
 		}
+		for k, v := range queues.Setting {
+			if _, ok := queue.Setting[k]; !ok {
+				queue.Setting[k] = v
+			}
+		}
 		queue.Handler = middleware.ContextHandler(engine, queue.Name, queue.Engine, queue.Service, queue.Setting, ext)
 		nqueues = append(nqueues, queue)
 	}

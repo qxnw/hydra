@@ -71,6 +71,11 @@ func SetTasks(engine servers.IRegistryEngine, set ITasks, cnf conf.IServerConf, 
 		if task.Name == "" {
 			task.Name = task.Service
 		}
+		for k, v := range tasks.Setting {
+			if _, ok := task.Setting[k]; !ok {
+				task.Setting[k] = v
+			}
+		}
 		task.Handler = middleware.ContextHandler(engine, task.Name, task.Engine, task.Service, task.Setting, ext)
 		ntasks = append(ntasks, task)
 	}

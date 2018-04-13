@@ -87,6 +87,11 @@ func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf c
 		if router.Engine == "" {
 			router.Engine = "*"
 		}
+		for k, v := range routers.Setting {
+			if _, ok := router.Setting[k]; !ok {
+				router.Setting[k] = v
+			}
+		}
 		router.Handler = middleware.ContextHandler(engine, router.Name, router.Engine, router.Service, router.Setting)
 	}
 	err = set.SetRouters(routers.Routers)

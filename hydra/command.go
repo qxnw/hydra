@@ -70,7 +70,7 @@ func (m *MicroApp) getStartFlags() []cli.Flag {
 		}
 		if len(m.ServerTypes) == 0 {
 			flags = append(flags, cli.StringFlag{
-				Name:        "serverType,t",
+				Name:        "serverType,s",
 				Destination: &m.ServerTypeNames,
 				Usage:       fmt.Sprintf("服务类型%v", supportServerType),
 			})
