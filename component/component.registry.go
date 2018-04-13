@@ -117,6 +117,9 @@ func (s *ServiceRegistry) add(group string, name string, h interface{}) {
 
 //Customer 自定义服务
 func (s *ServiceRegistry) Customer(group string, name string, h interface{}) {
+	if _, ok := s.services[group][name]; ok {
+		return
+	}
 	if s.isConstructor(h) {
 		s.add(group, name, h)
 		return
