@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/conf"
@@ -67,7 +68,7 @@ func (s *StandardInfluxDB) GetInfluxBy(tpName string, name string) (c influxdb.I
 func (s *StandardInfluxDB) SaveInfluxObject(tpName string, name string, f func(c conf.IConf) (influxdb.IInfluxClient, error)) (bool, influxdb.IInfluxClient, error) {
 	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
-		return false, nil, fmt.Errorf("../var/%s/%s %v", tpName, name, err)
+		return false, nil, fmt.Errorf("%s %v", filepath.Join("/", s.GetPlatName(), "var", tpName, name), err)
 	}
 	key := fmt.Sprintf("%s/%s:%d", tpName, name, cacheConf.GetVersion())
 	ok, ch, err := s.influxdbCache.SetIfAbsentCb(key, func(input ...interface{}) (c interface{}, err error) {

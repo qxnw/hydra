@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/lib4go/concurrent/cmap"
@@ -30,12 +31,12 @@ func NewVarObjectCache(c IContainer) *VarObjectCache {
 func (s *VarObjectCache) GetObject(tpName string, name string) (c interface{}, err error) {
 	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
-		return nil, fmt.Errorf("../var/%s/%s %v", tpName, name, err)
+		return nil, fmt.Errorf("%s %v", filepath.Join("/", s.GetPlatName(), "var", tpName, name), err)
 	}
 	key := fmt.Sprintf("%s/%s:%d", tpName, name, cacheConf.GetVersion())
 	c, ok := s.cacheMap.Get(key)
 	if !ok {
-		err = fmt.Errorf("缓存对象未创建:/%s/%s", tpName, name)
+		err = fmt.Errorf("缓存对象未创建:%s", filepath.Join("/", s.GetPlatName(), "var", tpName, name))
 		return
 	}
 	return c, nil
@@ -45,7 +46,7 @@ func (s *VarObjectCache) GetObject(tpName string, name string) (c interface{}, e
 func (s *VarObjectCache) SaveObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error) {
 	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
-		return false, nil, fmt.Errorf("../var/%s/%s %v", tpName, name, err)
+		return false, nil, fmt.Errorf("%s %v", filepath.Join("/", s.GetPlatName(), "var", tpName, name), err)
 	}
 	key := fmt.Sprintf("%s/%s:%d", tpName, name, cacheConf.GetVersion())
 	ok, ch, err := s.cacheMap.SetIfAbsentCb(key, func(input ...interface{}) (c interface{}, err error) {
