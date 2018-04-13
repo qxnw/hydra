@@ -34,7 +34,7 @@ type ServiceEngine struct {
 	component.IComponentDB
 	component.IComponentInfluxDB
 	component.IComponentQueue
-	component.IComponentVarObject
+	component.IComponentGlobalVarObject
 }
 
 //NewServiceEngine 构建服务引擎
@@ -46,7 +46,7 @@ func NewServiceEngine(conf conf.IServerConf, registryAddr string, logger *logger
 	e.IComponentDB = component.NewStandardDB(e, "db")
 	e.IComponentInfluxDB = component.NewStandardInfluxDB(e, "influx")
 	e.IComponentQueue = component.NewStandardQueue(e, "queue")
-	e.IComponentVarObject = component.NewVarObjectCache(e)
+	e.IComponentGlobalVarObject = component.NewGlobalVarObjectCache(e)
 	if e.registry, err = registry.NewRegistryWithAddress(registryAddr, logger); err != nil {
 		return
 	}
@@ -173,7 +173,7 @@ func (r *ServiceEngine) Close() error {
 	r.IComponentDB.Close()
 	r.IComponentInfluxDB.Close()
 	r.IComponentQueue.Close()
-	r.IComponentVarObject.Close()
+	r.IComponentGlobalVarObject.Close()
 	return nil
 }
 func formatName(name string) string {

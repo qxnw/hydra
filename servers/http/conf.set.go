@@ -87,6 +87,9 @@ func SetHttpRouters(engine servers.IRegistryEngine, set ISetRouterHandler, cnf c
 		if router.Engine == "" {
 			router.Engine = "*"
 		}
+		if router.Setting == nil {
+			router.Setting = make(map[string]string)
+		}
 		for k, v := range routers.Setting {
 			if _, ok := router.Setting[k]; !ok {
 				router.Setting[k] = v

@@ -35,8 +35,8 @@ type IContainer interface {
 	GetQueueBy(tpName string, name string) (c queue.IQueue, err error)
 	SaveQueueObject(tpName string, name string, f func(c conf.IConf) (queue.IQueue, error)) (bool, queue.IQueue, error)
 
-	GetObject(tpName string, name string) (c interface{}, err error)
-	SaveObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error)
+	GetGlobalObject(tpName string, name string) (c interface{}, err error)
+	SaveGlobalObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error)
 	Close() error
 }
 

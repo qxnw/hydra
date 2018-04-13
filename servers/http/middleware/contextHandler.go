@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -179,10 +180,12 @@ func makeExtData(c *gin.Context) map[string]interface{} {
 	}
 
 	input["__func_body_get_"] = func(ch string) (string, error) {
-		if buff, ok := c.Get("__body_"); ok {
-			return encoding.Convert(buff.([]byte), ch)
+		buff, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			return "", err
 		}
-		return "", errors.New("body读取错误")
+		return encoding.Convert(buff, ch)
+
 	}
 	return input
 }

@@ -8,27 +8,29 @@ import (
 	"github.com/qxnw/lib4go/concurrent/cmap"
 )
 
-//IComponentVarObject Component Cache
-type IComponentVarObject interface {
-	GetObject(tpName string, name string) (c interface{}, err error)
-	SaveObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error)
+var _ IComponentGlobalVarObject = &GlobalVarObjectCache{}
+
+//IComponentGlobalVarObject Component Cache
+type IComponentGlobalVarObject interface {
+	GetGlobalObject(tpName string, name string) (c interface{}, err error)
+	SaveGlobalObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error)
 	Close() error
 }
 
-//VarObjectCache cache
-type VarObjectCache struct {
+//GlobalVarObjectCache cache
+type GlobalVarObjectCache struct {
 	IContainer
 	cacheMap  cmap.ConcurrentMap
 	closeList []CloseHandler
 }
 
-//NewVarObjectCache 创建cache
-func NewVarObjectCache(c IContainer) *VarObjectCache {
-	return &VarObjectCache{IContainer: c, cacheMap: cmap.New(2), closeList: make([]CloseHandler, 0, 1)}
+//NewGlobalVarObjectCache 创建cache
+func NewGlobalVarObjectCache(c IContainer) *GlobalVarObjectCache {
+	return &GlobalVarObjectCache{IContainer: c, cacheMap: cmap.New(2), closeList: make([]CloseHandler, 0, 1)}
 }
 
-//GetObject 根据类型获取缓存数据
-func (s *VarObjectCache) GetObject(tpName string, name string) (c interface{}, err error) {
+//GetGlobalObject 获取全局对象
+func (s *GlobalVarObjectCache) GetGlobalObject(tpName string, name string) (c interface{}, err error) {
 	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
 		return nil, fmt.Errorf("%s %v", filepath.Join("/", s.GetPlatName(), "var", tpName, name), err)
@@ -42,8 +44,8 @@ func (s *VarObjectCache) GetObject(tpName string, name string) (c interface{}, e
 	return c, nil
 }
 
-//SaveObject 缓存对象
-func (s *VarObjectCache) SaveObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error) {
+//SaveGlobalObject 缓存全局对象
+func (s *GlobalVarObjectCache) SaveGlobalObject(tpName string, name string, f func(c conf.IConf) (interface{}, error)) (bool, interface{}, error) {
 	cacheConf, err := s.IContainer.GetVarConf(tpName, name)
 	if err != nil {
 		return false, nil, fmt.Errorf("%s %v", filepath.Join("/", s.GetPlatName(), "var", tpName, name), err)
@@ -68,7 +70,7 @@ func (s *VarObjectCache) SaveObject(tpName string, name string, f func(c conf.IC
 }
 
 //Close 关闭缓存连接
-func (s *VarObjectCache) Close() error {
+func (s *GlobalVarObjectCache) Close() error {
 	s.cacheMap.Clear()
 	for _, f := range s.closeList {
 		f.Close()

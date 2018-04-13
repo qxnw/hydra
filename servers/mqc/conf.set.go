@@ -81,6 +81,9 @@ func SetQueues(engine servers.IRegistryEngine, set IQueues, cnf conf.IServerConf
 		if queue.Name == "" {
 			queue.Name = queue.Service
 		}
+		if queue.Setting == nil {
+			queue.Setting = make(map[string]string)
+		}
 		for k, v := range queues.Setting {
 			if _, ok := queue.Setting[k]; !ok {
 				queue.Setting[k] = v

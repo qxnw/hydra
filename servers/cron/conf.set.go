@@ -71,6 +71,9 @@ func SetTasks(engine servers.IRegistryEngine, set ITasks, cnf conf.IServerConf, 
 		if task.Name == "" {
 			task.Name = task.Service
 		}
+		if task.Setting == nil {
+			task.Setting = make(map[string]string)
+		}
 		for k, v := range tasks.Setting {
 			if _, ok := task.Setting[k]; !ok {
 				task.Setting[k] = v
