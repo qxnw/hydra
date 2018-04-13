@@ -91,6 +91,9 @@ func (r *Response) getStatus(c interface{}) int {
 		}
 		return r.Status
 	default:
+		if r.Status == 0 {
+			r.Status = 200
+		}
 		return r.Status
 	}
 }
