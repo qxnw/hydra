@@ -1,7 +1,8 @@
 package rpclog
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/json"
 
 	"github.com/golang/snappy"
 	"github.com/qxnw/hydra/rpc"
@@ -23,9 +24,12 @@ func (r *rpcWriter) Write(p []byte) (n int, err error) {
 	p[0] = byte('[')
 	p = append(p, byte(']'))
 	dst := snappy.Encode(nil, p)
-	str := fmt.Sprintf("%s", string(dst))
+	var buff bytes.Buffer
+	if err := json.Compact(&buff, []byte(dst)); err != nil {
+		return 0, err
+	}
 	_, _, _, err = r.rpcInvoker.Request(r.service, "GET", map[string]string{}, map[string]string{
-		"__body": str,
+		"__body": string(buff.Bytes()),
 	}, true)
 	if err != nil && !r.writeError {
 		r.writeError = true
