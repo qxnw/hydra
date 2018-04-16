@@ -17,6 +17,9 @@ func NewProcessor() *Processor {
 	}
 }
 func (r *Processor) Request(context context.Context, request *pb.RequestContext) (p *pb.ResponseContext, err error) {
+	if request.Header == nil {
+		request.Header = make(map[string]string)
+	}
 	response, err := r.Dispatcher.HandleRequest(request)
 	if err != nil {
 		return

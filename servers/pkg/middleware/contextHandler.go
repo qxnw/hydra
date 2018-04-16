@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
@@ -38,7 +39,6 @@ func getLogger(c *dispatcher.Context) *logger.Logger {
 func getExpendTime(c *dispatcher.Context) time.Duration {
 	start, _ := c.Get("__start_time_")
 	return time.Since(start.(time.Time))
-
 }
 func getJWTRaw(c *dispatcher.Context) interface{} {
 	jwt, _ := c.Get("__jwt_")
@@ -140,10 +140,21 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 			return err
 		}
 		return json.Unmarshal(buffer, v)
-
 	}
 	input["__func_body_get_"] = func(ch string) (string, error) {
 		if buff, ok := c.Get("__body_"); ok {
+			if s, ok := buff.(string); ok {
+				if v, ok := c.Request.GetHeader()["__encode_snappy_"]; ok && v == "true" {
+					buff := []byte(s)
+					var nbuff []byte
+					nbuffer, err := snappy.Decode(nbuff, buff)
+					if err != nil {
+						return "", err
+					}
+					return string(nbuffer), nil
+				}
+				return s, nil
+			}
 			return encoding.Convert(buff.([]byte), ch)
 		}
 		return "", errors.New("body读取错误")

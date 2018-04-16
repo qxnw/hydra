@@ -9,10 +9,12 @@ import (
 
 	"github.com/qxnw/lib4go/jsons"
 	"github.com/qxnw/lib4go/logger"
+	"github.com/zkfy/log"
 )
 
 //RPCAppender 文件输出器
 type RPCAppender struct {
+	output      *log.Logger
 	name        string
 	buffer      *bytes.Buffer
 	lastWrite   time.Time
@@ -27,6 +29,8 @@ type RPCAppender struct {
 //NewRPCAppender 构建writer日志输出对象
 func NewRPCAppender(writer io.WriteCloser, layout *logger.Appender) (fa *RPCAppender, err error) {
 	fa = &RPCAppender{layout: layout, writer: writer}
+	fa.output = log.New(fa.buffer, "", log.Llongcolor)
+	fa.output.SetOutputLevel(log.Ldebug)
 	fa.Level = logger.GetLevel(layout.Level)
 	fa.intervalStr = layout.Interval
 	fa.buffer = bytes.NewBufferString("")
@@ -86,9 +90,12 @@ START:
 		case _, ok := <-f.ticker.C:
 			if ok {
 				f.locker.Lock()
-				f.buffer.WriteTo(f.writer)
+				_, err := f.buffer.WriteTo(f.writer)
 				f.buffer.Reset()
 				f.locker.Unlock()
+				if err != nil {
+					log.Error(err)
+				}
 			} else {
 				break START
 			}

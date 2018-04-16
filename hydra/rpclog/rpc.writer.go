@@ -3,6 +3,7 @@ package rpclog
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/golang/snappy"
 	"github.com/qxnw/hydra/rpc"
@@ -10,7 +11,6 @@ import (
 
 type rpcWriter struct {
 	rpcInvoker *rpc.Invoker
-	writeError bool
 	service    string
 }
 
@@ -23,20 +23,20 @@ func (r *rpcWriter) Write(p []byte) (n int, err error) {
 	}
 	p[0] = byte('[')
 	p = append(p, byte(']'))
-	dst := snappy.Encode(nil, p)
 	var buff bytes.Buffer
-	if err := json.Compact(&buff, []byte(dst)); err != nil {
+	if err := json.Compact(&buff, []byte(p)); err != nil {
+		err = fmt.Errorf("json.compact.err:%v", err)
 		return 0, err
 	}
-	_, _, _, err = r.rpcInvoker.Request(r.service, "GET", map[string]string{}, map[string]string{
-		"__body": string(buff.Bytes()),
+
+	dst := snappy.Encode(nil, buff.Bytes())
+	_, _, _, err = r.rpcInvoker.Request(r.service, "GET", map[string]string{
+		"__encode_snappy_": "true",
+	}, map[string]string{
+		"__body_": string(dst),
 	}, true)
-	if err != nil && !r.writeError {
-		r.writeError = true
-		return len(p) - 1, nil
-	}
-	if err == nil && r.writeError {
-		r.writeError = false
+	if err != nil {
+		return 0, err
 	}
 	return len(p) - 1, nil
 }

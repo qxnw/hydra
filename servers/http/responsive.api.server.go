@@ -129,11 +129,10 @@ func (w *ApiResponsiveServer) Shutdown() {
 		close(w.closeChan)
 	})
 	w.unpublish()
+	w.server.Shutdown(10 * time.Second)
 	if w.engine != nil {
 		w.engine.Close()
 	}
-	w.server.Shutdown(10 * time.Second)
-
 }
 
 //GetAddress 获取服务器地址
