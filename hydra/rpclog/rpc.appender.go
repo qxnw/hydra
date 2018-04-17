@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ type RPCAppender struct {
 func NewRPCAppender(writer io.WriteCloser, layout *logger.Appender) (fa *RPCAppender, err error) {
 	fa = &RPCAppender{layout: layout, writer: writer}
 	fa.output = log.New(fa.buffer, "", log.Llongcolor)
+	fa.output.SetOutput(os.Stderr)
 	fa.output.SetOutputLevel(log.Ldebug)
 	fa.Level = logger.GetLevel(layout.Level)
 	fa.intervalStr = layout.Interval
