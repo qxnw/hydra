@@ -23,7 +23,10 @@ type PlatBinder struct {
 //NewPlatBinder 平台绑定
 func NewPlatBinder() *PlatBinder {
 	return &PlatBinder{
-		varConf: make(map[string]string),
+		varConf:                   make(map[string]string),
+		varParamsForInput:         make(map[string][]string),
+		varConfParamsForTranslate: make(map[string]map[string]string),
+		rvarConf:                  make(map[string]string),
 	}
 }
 

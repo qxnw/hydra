@@ -29,9 +29,12 @@ type MainBinder struct {
 //NewMainBinder 构建主配置绑定
 func NewMainBinder() *MainBinder {
 	return &MainBinder{
-		subConf:            make(map[string]string),
-		mainParamsForInput: make([]string, 0, 2),
-		subParamsForInput:  make(map[string][]string),
+		subConf:                    make(map[string]string),
+		mainParamsForInput:         make([]string, 0, 2),
+		subParamsForInput:          make(map[string][]string),
+		mainConfParamsForTranslate: make(map[string]string),
+		subConfParamsForTranslate:  make(map[string]map[string]string),
+		rsubConf:                   make(map[string]string),
 	}
 }
 
