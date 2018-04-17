@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/component"
-	"github.com/qxnw/hydra/conf"
+	"github.com/qxnw/hydra/conf/binder"
 	"github.com/qxnw/hydra/hydra/rpclog"
 	"github.com/qxnw/hydra/servers"
 
@@ -26,7 +26,7 @@ type Hydra struct {
 	logger         *logger.Logger
 	closeChan      chan struct{}
 	interrupt      chan os.Signal
-	binder         conf.IBinder
+	binder         *binder.ServerBinder
 	isDebug        bool
 	platName       string
 	systemName     string
@@ -47,7 +47,7 @@ type Hydra struct {
 }
 
 //NewHydra 创建hydra服务器
-func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, binder conf.IBinder, isDebug bool, remoteLogger bool, r component.IComponentHandler) *Hydra {
+func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, binder *binder.ServerBinder, isDebug bool, remoteLogger bool, r component.IComponentHandler) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
 		cHandler:       r,
@@ -118,7 +118,7 @@ func (h *Hydra) startWatch() (err error) {
 	}
 
 	//自动创建配置
-	creator := conf.NewCreator(h.platName, h.systemName, h.serverTypes, h.clusterName, h.binder, h.registry, h.logger)
+	creator := binder.NewCreator(h.platName, h.systemName, h.serverTypes, h.clusterName, h.binder, h.registry, h.logger)
 	if err := creator.Start(); err != nil {
 		return err
 	}

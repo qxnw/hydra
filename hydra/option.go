@@ -3,8 +3,6 @@ package hydra
 import (
 	"fmt"
 	"strings"
-
-	"github.com/qxnw/hydra/conf"
 )
 
 var (
@@ -26,7 +24,6 @@ type option struct {
 	remoteLogger       bool
 	RemoteLogger       bool
 	RemoteQueryService bool
-	Binder             conf.IBinder
 }
 
 //Option 配置选项
@@ -107,13 +104,6 @@ func WithDebug() Option {
 func WithProduct() Option {
 	return func(o *option) {
 		o.IsDebug = false
-	}
-}
-
-//WithConfBinder 设置配置绑定程序
-func WithConfBinder(binder conf.IBinder) Option {
-	return func(o *option) {
-		o.Binder = binder
 	}
 }
 

@@ -4,9 +4,7 @@
 
 package binding
 
-import (
-	"net/http"
-)
+import "net/http"
 
 const defaultMemory = 32 * 1024 * 1024
 

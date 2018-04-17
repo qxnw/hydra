@@ -5,9 +5,10 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/qxnw/hydra/conf/binder"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/qxnw/hydra/component"
-	"github.com/qxnw/hydra/conf"
 	_ "github.com/qxnw/hydra/hydra/impt"
 	"github.com/qxnw/hydra/hydra/rqs"
 	"github.com/qxnw/hydra/registry"
@@ -17,9 +18,10 @@ import (
 
 //MicroApp  微服务应用
 type MicroApp struct {
-	app    *cli.App
-	logger *logger.Logger
-	hydra  *Hydra
+	app           *cli.App
+	logger        *logger.Logger
+	SettingBinder *binder.ServerBinder
+	hydra         *Hydra
 	*option
 	remoteQueryService *rqs.RemoteQueryService
 	registry           registry.IRegistry
@@ -28,7 +30,8 @@ type MicroApp struct {
 
 //NewApp 创建微服务应用
 func NewApp(opts ...Option) (m *MicroApp) {
-	m = &MicroApp{option: &option{Binder: &conf.NilBinder{}}, IComponentRegistry: component.NewServiceRegistry()}
+	m = &MicroApp{option: &option{}, IComponentRegistry: component.NewServiceRegistry()}
+	m.SettingBinder = binder.NewServerBinder()
 	for _, opt := range opts {
 		opt(m.option)
 	}
@@ -78,7 +81,7 @@ func (m *MicroApp) action(c *cli.Context) (err error) {
 	}
 
 	m.hydra = NewHydra(m.PlatName, m.SystemName, m.ServerTypes, m.ClusterName, m.Trace,
-		m.RegistryAddr, m.Binder, m.IsDebug, m.RemoteLogger, m.IComponentRegistry)
+		m.RegistryAddr, m.SettingBinder, m.IsDebug, m.RemoteLogger, m.IComponentRegistry)
 	if err := m.hydra.Start(); err != nil {
 		m.logger.Error(err)
 		return err
