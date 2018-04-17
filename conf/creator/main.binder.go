@@ -60,6 +60,7 @@ func (c *MainBinder) NeedScanCount() int {
 
 //Scan 绑定参数
 func (c *MainBinder) Scan(platName string, mainConf string) error {
+	fmt.Printf("m:%v,sub:%v\n", c.mainParamsForInput, c.subParamsForInput)
 	for _, p := range c.mainParamsForInput {
 		fmt.Printf("请输入:%s中%s的值:", mainConf, p)
 		var value string
