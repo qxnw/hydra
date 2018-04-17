@@ -41,10 +41,7 @@ func NewMainBinder() *MainBinder {
 //SetMainConf 设置主配置内容
 func (c *MainBinder) SetMainConf(s string) {
 	c.mainConf = s
-	params := getParams(s)
-	if len(params) > 0 {
-		c.mainParamsForInput = params
-	}
+	c.mainParamsForInput = getParams(s)
 }
 
 //SetSubConf 设置子配置内容
@@ -79,7 +76,7 @@ func (c *MainBinder) Scan(platName string, mainConf string) error {
 			c.subConfParamsForTranslate[n][p] = value
 		}
 	}
-	c.rmainConf = translate(mainConf, c.mainConfParamsForTranslate)
+	c.rmainConf = translate(c.mainConf, c.mainConfParamsForTranslate)
 	for k, v := range c.subConf {
 		c.rsubConf[filepath.Join(mainConf, k)] = translate(v, c.subConfParamsForTranslate[k])
 	}
