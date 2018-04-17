@@ -3,6 +3,8 @@ package hydra
 import (
 	"fmt"
 	"strings"
+
+	"github.com/qxnw/hydra/conf"
 )
 
 var (
@@ -20,11 +22,11 @@ type option struct {
 	ServerTypes        []string `valid:"ascii,required"`
 	ClusterName        string   `json:"--cluster" valid:"ascii,required"`
 	IsDebug            bool
-	AutoCreateConf     bool
 	Trace              string
 	remoteLogger       bool
 	RemoteLogger       bool
 	RemoteQueryService bool
+	Binder             conf.IBinder
 }
 
 //Option 配置选项
@@ -48,13 +50,6 @@ func WithPlatName(platName string) Option {
 func WithSystemName(systemName string) Option {
 	return func(o *option) {
 		o.SystemName = systemName
-	}
-}
-
-//WithAutoCreateConf 自动创建配置节点
-func WithAutoCreateConf() Option {
-	return func(o *option) {
-		o.AutoCreateConf = true
 	}
 }
 
@@ -112,6 +107,13 @@ func WithDebug() Option {
 func WithProduct() Option {
 	return func(o *option) {
 		o.IsDebug = false
+	}
+}
+
+//WithConfBinder 设置配置绑定程序
+func WithConfBinder(binder conf.IBinder) Option {
+	return func(o *option) {
+		o.Binder = binder
 	}
 }
 

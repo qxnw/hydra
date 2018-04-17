@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/qxnw/hydra/component"
+	"github.com/qxnw/hydra/conf"
 	"github.com/qxnw/hydra/hydra/rpclog"
 	"github.com/qxnw/hydra/servers"
 
@@ -25,6 +26,7 @@ type Hydra struct {
 	logger         *logger.Logger
 	closeChan      chan struct{}
 	interrupt      chan os.Signal
+	binder         conf.IBinder
 	isDebug        bool
 	platName       string
 	systemName     string
@@ -41,18 +43,18 @@ type Hydra struct {
 	rspServer      *rspServer
 	trace          string
 	done           bool
-	autoCreateNode bool
 	remoteLogger   bool
 }
 
 //NewHydra 创建hydra服务器
-func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, autoCreateNode bool, isDebug bool, remoteLogger bool, r component.IComponentHandler) *Hydra {
+func NewHydra(platName string, systemName string, serverTypes []string, clusterName string, trace string, registryAddr string, binder conf.IBinder, isDebug bool, remoteLogger bool, r component.IComponentHandler) *Hydra {
 	servers.IsDebug = isDebug
 	return &Hydra{
 		cHandler:       r,
 		logger:         logger.New("hydra"),
 		systemRootName: filepath.Join("/", platName, systemName, strings.Join(serverTypes, "-"), clusterName),
 		rpcLoggerPath:  filepath.Join("/", platName, "/var/global/logger"),
+		binder:         binder,
 		closeChan:      make(chan struct{}),
 		interrupt:      make(chan os.Signal, 1),
 		isDebug:        isDebug,
@@ -61,7 +63,6 @@ func NewHydra(platName string, systemName string, serverTypes []string, clusterN
 		serverTypes:    serverTypes,
 		clusterName:    clusterName,
 		registryAddr:   registryAddr,
-		autoCreateNode: autoCreateNode,
 		remoteLogger:   remoteLogger,
 		trace:          trace,
 	}
@@ -116,7 +117,13 @@ func (h *Hydra) startWatch() (err error) {
 		return
 	}
 
-	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, h.autoCreateNode, h.logger)
+	//自动创建配置
+	creator := conf.NewCreator(h.platName, h.systemName, h.serverTypes, h.clusterName, h.binder, h.registry, h.logger)
+	if err := creator.Start(); err != nil {
+		return err
+	}
+	//启动配置监听
+	h.watcher, err = watcher.NewConfWatcher(h.platName, h.systemName, h.serverTypes, h.clusterName, h.registry, h.logger)
 	if err != nil {
 		err = fmt.Errorf("watcher初始化失败 %s,%+v", filepath.Join(h.platName, h.systemName), err)
 		return

@@ -28,7 +28,7 @@ type ConfWatcher struct {
 }
 
 //NewConfWatcher 初始化服务器监控程序
-func NewConfWatcher(platName string, systemName string, serverTypes []string, clusterName string, rgst registry.IRegistry, autoCreate bool, logger *logger.Logger) (w *ConfWatcher, err error) {
+func NewConfWatcher(platName string, systemName string, serverTypes []string, clusterName string, rgst registry.IRegistry, logger *logger.Logger) (w *ConfWatcher, err error) {
 	w = &ConfWatcher{
 		timeSpan:   time.Second,
 		registry:   rgst,
@@ -38,11 +38,6 @@ func NewConfWatcher(platName string, systemName string, serverTypes []string, cl
 	w.paths = make([]string, 0, len(serverTypes))
 	for _, tp := range serverTypes {
 		w.paths = append(w.paths, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
-	}
-	if autoCreate {
-		if err = w.createMainConf(); err != nil {
-			return nil, err
-		}
 	}
 
 	w.watchers = make([]*Watcher, 0, len(w.paths))
@@ -69,23 +64,4 @@ func (c *ConfWatcher) Close() {
 	for _, wacher := range c.watchers {
 		wacher.Close()
 	}
-}
-func (c *ConfWatcher) createMainConf() error {
-	extPath := ""
-	if !c.registry.CanWirteDataInDir() {
-		extPath = ".init"
-	}
-	for _, path := range c.paths {
-		rpath := filepath.Join(path, extPath)
-		b, err := c.registry.Exists(rpath)
-		if err != nil {
-			return err
-		}
-		if !b {
-			if err := c.registry.CreatePersistentNode(rpath, "{}"); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
