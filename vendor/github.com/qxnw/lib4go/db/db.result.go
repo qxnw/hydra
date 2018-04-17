@@ -5,6 +5,19 @@ import (
 	"strconv"
 )
 
+type IQueryRow interface {
+	GetString(name string) string
+	GetInt(name string, def ...int) int
+	GetInt64(name string, def ...int64) int64
+	GetFloat32(name string) float32
+	GetFloat64(name string) float64
+	Has(name string) bool
+	GetMustString(name string) (string, error)
+	GetMustInt(name string) (int, error)
+	GetMustFloat32(name string) (float32, error)
+	GetMustFloat64(name string) (float64, error)
+}
+
 type QueryRow map[string]interface{}
 
 //GetString 从对象中获取数据值，如果不是字符串则返回空
