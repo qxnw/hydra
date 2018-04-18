@@ -1,6 +1,7 @@
 package creator
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/qxnw/hydra/registry"
@@ -11,6 +12,7 @@ import (
 type Creator struct {
 	registry    registry.IRegistry
 	logger      *logger.Logger
+	showTitle   bool
 	binder      IBinder
 	platName    string
 	systemName  string
@@ -32,59 +34,118 @@ func NewCreator(platName string, systemName string, serverTypes []string, cluste
 	return
 }
 
-//Start 绑定输入参数并创建配置文件
+//Start 扫描并绑定所有参数
 func (c *Creator) Start() (err error) {
-	if err := c.binder.Scan(c.platName, c.systemName, c.serverTypes, c.clusterName); err != nil {
-		return err
-	}
 	for _, tp := range c.serverTypes {
-		p := filepath.Join("/", c.platName, c.systemName, tp, c.clusterName, "conf")
-		conf := c.binder.GetMainConf(tp)
-		data, ok := conf["."]
-		if ok {
-			if err = c.createMainConf(p, data); err != nil {
+		mainConfNames := c.binder.GetMainConfNames(c.platName, c.systemName, tp, c.clusterName)
+		for _, mainPath := range mainConfNames {
+			//检查主配置
+			ok, err := c.registry.Exists(c.getRealMainPath(mainPath))
+			if err != nil {
 				return err
 			}
-		} else {
-			if err = c.createMainConf(p, "{}"); err != nil {
-				return err
+			if ok {
+				continue
 			}
-		}
-		for k, v := range conf {
-			if k != "." {
-				if err = c.registry.CreatePersistentNode(k, v); err != nil {
-					return err
+			if c.binder.GetMainConfScanNum(tp) > 0 {
+				if !c.checkContinue() {
+					return nil
 				}
 			}
+			if err := c.binder.ScanMainConf(mainPath, tp); err != nil {
+				return err
+			}
+			content := c.binder.GetMainConf(tp)
+			if err := c.createMainConf(mainPath, content); err != nil {
+				return err
+			}
 		}
-
 	}
-	//创建平台配置
-	platConfs := c.binder.GetPlatConf()
-	for k, v := range platConfs {
-		if err = c.registry.CreatePersistentNode(k, v); err != nil {
+	//检查子配置
+	for _, tp := range c.serverTypes {
+		mainPath := filepath.Join("/", c.platName, c.systemName, tp, c.clusterName, "conf")
+		subNames := c.binder.GetSubConfNames(tp)
+		for _, subName := range subNames {
+			ok, err := c.registry.Exists(filepath.Join(mainPath, subName))
+			if err != nil {
+				return err
+			}
+			if ok {
+				continue
+			}
+			if c.binder.GetSubConfScanNum(tp, subName) > 0 {
+				if !c.checkContinue() {
+					return nil
+				}
+			}
+			if err := c.binder.ScanSubConf(mainPath, tp, subName); err != nil {
+				return err
+			}
+			content := c.binder.GetSubConf(tp, subName)
+			if err := c.createConf(filepath.Join("/", mainPath, subName), content); err != nil {
+				return err
+			}
+		}
+	}
+
+	//检查平台配置
+	varNames := c.binder.GetVarConfNames()
+	for _, varName := range varNames {
+		ok, err := c.registry.Exists(filepath.Join("/", c.platName, "var", varName))
+		if err != nil {
+			return err
+		}
+		if ok {
+			continue
+		}
+		if c.binder.GetVarConfScanNum(varName) > 0 {
+			if !c.checkContinue() {
+				return nil
+			}
+		}
+		if err := c.binder.ScanVarConf(c.platName, varName); err != nil {
+			return err
+		}
+		content := c.binder.GetVarConf(varName)
+		if err := c.createConf(filepath.Join("/", c.platName, "var", varName), content); err != nil {
 			return err
 		}
 	}
 	return nil
+
 }
-func (c *Creator) createMainConf(path string, data string) error {
+func (c *Creator) createConf(path string, data string) error {
+	if data == "" {
+		return nil
+	}
+	return c.registry.CreatePersistentNode(path, data)
+}
+
+func (c *Creator) getRealMainPath(path string) string {
 	extPath := ""
 	if !c.registry.CanWirteDataInDir() {
 		extPath = ".init"
 	}
+	return filepath.Join(path, extPath)
+}
+func (c *Creator) createMainConf(path string, data string) error {
 	if data == "" {
 		data = "{}"
 	}
-	rpath := filepath.Join(path, extPath)
-	b, err := c.registry.Exists(rpath)
-	if err != nil {
-		return err
+	rpath := c.getRealMainPath(path)
+	return c.registry.CreatePersistentNode(rpath, data)
+}
+func (c *Creator) checkContinue() bool {
+	if !c.showTitle {
+		c.showTitle = true
+	} else {
+		return true
 	}
-	if !b {
-		if err := c.registry.CreatePersistentNode(rpath, data); err != nil {
-			return err
-		}
+	var index string
+	fmt.Print("当前注册中心有一些参数未配置，是否立即配置这些参数(yes|NO):")
+	fmt.Scan(&index)
+	if index != "y" && index != "Y" && index != "yes" && index != "YES" {
+		return false
 	}
-	return nil
+	return true
 }

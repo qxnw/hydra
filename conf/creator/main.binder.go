@@ -6,12 +6,15 @@ import (
 	"regexp"
 )
 
+var _ IMainBinder = &MainBinder{}
+
 type IMainBinder interface {
 	SetMainConf(s string)
 	SetSubConf(n string, s string)
-	Scan(platName string, mainConf string) error
-	NeedScanCount() int
-	GetNodeConf() map[string]string
+	GetSubConfNames() []string
+	Scan(mainConf string, nodeName string) error
+	NeedScanCount(nodeName string) int
+	GetNodeConf(nodeName string) string
 }
 
 //MainBinder 主配置绑定
@@ -53,52 +56,65 @@ func (c *MainBinder) SetSubConf(n string, s string) {
 	}
 }
 
+//GetSubConfNames 获取子系统名称
+func (c *MainBinder) GetSubConfNames() []string {
+	v := make([]string, 0, len(c.subConf))
+	for k := range c.subConf {
+		v = append(v, k)
+	}
+	return v
+}
+
 //NeedScanCount 待输入个数
-func (c *MainBinder) NeedScanCount() int {
-	return len(c.mainParamsForInput) + len(c.subParamsForInput)
+func (c *MainBinder) NeedScanCount(nodeName string) int {
+	if nodeName == "" {
+		return len(c.mainParamsForInput)
+	}
+	return len(c.subParamsForInput[nodeName])
 }
 
 //Scan 绑定参数
-func (c *MainBinder) Scan(platName string, mainConf string) error {
-	fmt.Printf("m:%v,sub:%v\n", c.mainParamsForInput, c.subParamsForInput)
-	for _, p := range c.mainParamsForInput {
-		fmt.Printf("请输入:%s中%s的值:", mainConf, p)
-		var value string
-		fmt.Scan(&value)
-		c.mainConfParamsForTranslate[p] = value
-
-	}
-	for n, ps := range c.subParamsForInput {
-		c.subConfParamsForTranslate[n] = make(map[string]string)
-		for _, p := range ps {
-			fmt.Printf("请输入:%s中%s的值:", filepath.Join(mainConf, n), p)
+func (c *MainBinder) Scan(mainConf string, nodeName string) error {
+	if nodeName == "" {
+		for _, p := range c.mainParamsForInput {
+			fmt.Printf("请输入:%s中%s的值:", mainConf, p)
 			var value string
 			fmt.Scan(&value)
-			c.subConfParamsForTranslate[n][p] = value
+			c.mainConfParamsForTranslate[p] = value
+		}
+		c.rmainConf = translate(c.mainConf, c.mainConfParamsForTranslate)
+	} else {
+		c.subConfParamsForTranslate[nodeName] = make(map[string]string)
+		for _, p := range c.subParamsForInput[nodeName] {
+			fmt.Printf("请输入:%s中%s的值:", filepath.Join(mainConf, nodeName), p)
+			var value string
+			fmt.Scan(&value)
+			c.subConfParamsForTranslate[nodeName][p] = value
+		}
+		if v, ok := c.subConf[nodeName]; ok {
+			c.rsubConf[nodeName] = translate(v, c.subConfParamsForTranslate[nodeName])
 		}
 	}
-	c.rmainConf = translate(c.mainConf, c.mainConfParamsForTranslate)
-	for k, v := range c.subConf {
-		c.rsubConf[filepath.Join(mainConf, k)] = translate(v, c.subConfParamsForTranslate[k])
-	}
+
 	return nil
 }
 
 //GetNodeConf 获取节点配置
-func (c *MainBinder) GetNodeConf() map[string]string {
-	nmap := make(map[string]string)
-	nmap["."] = c.rmainConf
-	for k, v := range c.rsubConf {
-		nmap[k] = v
+func (c *MainBinder) GetNodeConf(nodeName string) string {
+	if nodeName == "" {
+		return c.rmainConf
 	}
-	return nmap
+	if v, ok := c.rsubConf[nodeName]; ok {
+		return v
+	}
+	return ""
 }
 
 //getParams 翻译带有@变量的字符串
 func getParams(format string) []string {
-	brackets, _ := regexp.Compile(`\{@\w+\}`)
+	brackets, _ := regexp.Compile(`\{#\w+\}`)
 	p1 := brackets.FindAllString(format, -1)
-	brackets, _ = regexp.Compile(`@\w+`)
+	brackets, _ = regexp.Compile(`#\w+`)
 	p2 := brackets.FindAllString(format, -1)
 	r := make([]string, 0, len(p1)+len(p2))
 	for _, v := range p1 {
@@ -112,15 +128,21 @@ func getParams(format string) []string {
 
 //translate 翻译带有@变量的字符串
 func translate(format string, data map[string]string) string {
-	brackets, _ := regexp.Compile(`\{@\w+\}`)
+	brackets, _ := regexp.Compile(`\{#\w+\}`)
 	result := brackets.ReplaceAllStringFunc(format, func(s string) string {
 		key := s[2 : len(s)-1]
-		return data[key]
+		if v, ok := data[key]; ok {
+			return v
+		}
+		return s
 	})
-	word, _ := regexp.Compile(`@\w+`)
+	word, _ := regexp.Compile(`#\w+`)
 	result = word.ReplaceAllStringFunc(result, func(s string) string {
 		key := s[1:]
-		return data[key]
+		if v, ok := data[key]; ok {
+			return v
+		}
+		return s
 	})
 	return result
 }

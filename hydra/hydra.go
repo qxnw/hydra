@@ -162,7 +162,7 @@ func (h *Hydra) loopRecvNotify() {
 	notify := make(chan struct{}, 1)
 	go func() {
 		select {
-		case <-time.After(time.Second * 3):
+		case <-time.After(time.Second * 10):
 			h.logger.Warnf("%s 未配置", h.systemRootName)
 		case <-notify:
 			break
