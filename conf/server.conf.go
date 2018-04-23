@@ -89,8 +89,12 @@ func NewServerConf(mainConfpath string, mainConfRaw []byte, mainConfVersion int3
 		subNodeConfs: make(map[string]JSONConf),
 		varNodeConfs: make(map[string]JSONConf),
 	}
+	rdata, err := decrypt(mainConfRaw)
+	if err != nil {
+		return nil, err
+	}
 	//初始化主配置
-	if s.JSONConf, err = NewJSONConf(mainConfRaw, mainConfVersion); err != nil {
+	if s.JSONConf, err = NewJSONConf(rdata, mainConfVersion); err != nil {
 		err = fmt.Errorf("%s配置有误:%v", mainConfpath, err)
 		return nil, err
 	}
@@ -119,7 +123,11 @@ func (c *ServerConf) loadChildNodeConf() error {
 		if err != nil {
 			return err
 		}
-		childConf, err := NewJSONConf(data, version)
+		rdata, err := decrypt(data)
+		if err != nil {
+			return err
+		}
+		childConf, err := NewJSONConf(rdata, version)
 		if err != nil {
 			err = fmt.Errorf("%s配置有误:%v", childConfPath, err)
 			return err
@@ -157,7 +165,11 @@ func (c *ServerConf) loadVarNodeConf() error {
 			if err != nil {
 				return err
 			}
-			varConf, err := NewJSONConf(data, version)
+			rdata, err := decrypt(data)
+			if err != nil {
+				return err
+			}
+			varConf, err := NewJSONConf(rdata, version)
 			if err != nil {
 				err = fmt.Errorf("%s配置有误:%v", nodePath, err)
 				return err
@@ -332,5 +344,4 @@ func (c *ServerConf) GetClusterName() string {
 //GetServerName 获取服务器名称
 func (c *ServerConf) GetServerName() string {
 	return fmt.Sprintf("%s.%s(%s)", c.sysName, c.clusterName, c.serverType)
-	//return filepath.Join("/", c.platName, c.sysName, c.serverType, c.clusterName)
 }
