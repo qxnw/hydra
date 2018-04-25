@@ -13,6 +13,7 @@ import (
 	_ "github.com/qxnw/hydra/servers/rpc"
 	_ "github.com/qxnw/lib4go/cache/memcache"
 	_ "github.com/qxnw/lib4go/cache/redis"
+	_ "github.com/qxnw/lib4go/mq/mqtt"
 	_ "github.com/qxnw/lib4go/mq/redis"
 	_ "github.com/qxnw/lib4go/mq/stomp"
 	_ "github.com/qxnw/lib4go/mq/xmq"
