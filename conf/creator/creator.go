@@ -37,28 +37,27 @@ func NewCreator(platName string, systemName string, serverTypes []string, cluste
 //Start 扫描并绑定所有参数
 func (c *Creator) Start() (err error) {
 	for _, tp := range c.serverTypes {
-		mainConfNames := c.binder.GetMainConfNames(c.platName, c.systemName, tp, c.clusterName)
-		for _, mainPath := range mainConfNames {
-			//检查主配置
-			ok, err := c.registry.Exists(c.getRealMainPath(mainPath))
-			if err != nil {
-				return err
+		mainPath := filepath.Join("/", c.platName, c.systemName, tp, c.clusterName, "conf")
+		//检查主配置
+		ok, err := c.registry.Exists(c.getRealMainPath(mainPath))
+		if err != nil {
+			return err
+		}
+		if ok {
+			continue
+		}
+		if c.binder.GetMainConfScanNum(tp) > 0 {
+			if !c.checkContinue() {
+				return nil
 			}
-			if ok {
-				continue
-			}
-			if c.binder.GetMainConfScanNum(tp) > 0 {
-				if !c.checkContinue() {
-					return nil
-				}
-			}
-			if err := c.binder.ScanMainConf(mainPath, tp); err != nil {
-				return err
-			}
-			content := c.binder.GetMainConf(tp)
-			if err := c.createMainConf(mainPath, content); err != nil {
-				return err
-			}
+		}
+		if err := c.binder.ScanMainConf(mainPath, tp); err != nil {
+			return err
+		}
+
+		content := c.binder.GetMainConf(tp)
+		if err := c.createMainConf(mainPath, content); err != nil {
+			return err
 		}
 	}
 	//检查子配置

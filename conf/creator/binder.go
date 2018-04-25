@@ -51,11 +51,11 @@ func NewBinder() *Binder {
 
 //GetMainConfNames 获取已配置的主配置名称
 func (s *Binder) GetMainConfNames(platName string, systemName string, tp string, clusterName string) []string {
-	names := make([]string, 0, 2)
-	binder := s.binders[tp]
-	if v := binder.NeedScanCount(""); v > 0 {
-		names = append(names, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
-	}
+	names := make([]string, 0, 1)
+	//	binder := s.binders[tp]
+	//	if v := binder.NeedScanCount(""); v > 0 {
+	names = append(names, filepath.Join("/", platName, systemName, tp, clusterName, "conf"))
+	//	}
 	return names
 }
 
