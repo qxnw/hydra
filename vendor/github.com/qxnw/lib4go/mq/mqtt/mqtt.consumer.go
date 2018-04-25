@@ -26,6 +26,7 @@ type Consumer struct {
 	address    string
 	client     *mqtt.ClientConn
 	queues     cmap.ConcurrentMap
+	subChan    chan string
 	connecting bool
 	closeCh    chan struct{}
 	done       bool
@@ -42,6 +43,7 @@ func NewConsumer(address string, opts ...mq.Option) (consumer *Consumer, err err
 	consumer.OptionConf = &mq.OptionConf{Logger: logger.GetSession("mqtt", logger.CreateSession())}
 	consumer.closeCh = make(chan struct{})
 	consumer.queues = cmap.New(2)
+	consumer.subChan = make(chan string, 3)
 	for _, opt := range opts {
 		opt(consumer.OptionConf)
 	}
@@ -68,11 +70,17 @@ func (consumer *Consumer) Connect() (err error) {
 
 //recvMessage 循环接收，并放入指定的队列
 func (consumer *Consumer) recvMessage() {
+
 START:
 	for {
 		select {
 		case <-consumer.closeCh:
 			break START
+		case q := <-consumer.subChan:
+			tq := make([]proto.TopicQos, 1)
+			tq[0].Topic = q
+			tq[0].Qos = proto.QosAtMostOnce
+			consumer.client.Subscribe(tq)
 		case msg := <-consumer.client.Incoming:
 			nmsg := NewMessage()
 			if err := msg.Payload.WritePayload(nmsg); err != nil {
@@ -116,12 +124,7 @@ func (consumer *Consumer) Consume(queue string, concurrency int, callback func(m
 				}
 			}()
 		}
-
-		tq := make([]proto.TopicQos, 1)
-		tq[0].Topic = queue
-		tq[0].Qos = proto.QosAtMostOnce
-		consumer.client.Subscribe(tq)
-
+		consumer.subChan <- queue
 		return msgChan, nil
 	}, queue)
 	return
