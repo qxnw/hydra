@@ -9,7 +9,7 @@ import (
 
 type Conf struct {
 	Address  string `json:"address" valid:"dialstring,required"`
-	DumpData bool   `json:"dump" valid:"required"`
+	DumpData bool   `json:"dump"`
 	UserName string `json:"userName"`
 	Password string `json:"password"`
 }
