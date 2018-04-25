@@ -11,7 +11,6 @@ func main() {
 		hydra.WithPlatName("hydra-20"),
 		hydra.WithSystemName("collector"),
 		hydra.WithServerTypes("web"),
-		hydra.WithAutoCreateConf(),
 		hydra.WithDebug())
 
 	app.Page("/user/login", user.NewLoginHandler)

@@ -15,7 +15,6 @@ func main() {
 		hydra.WithPlatName("hydra-20"),
 		hydra.WithSystemName("collector"),
 		hydra.WithServerTypes("api"),
-		hydra.WithAutoCreateConf(),
 		hydra.WithDebug())
 	app.Initializing(func(c component.IContainer) error {
 		_, _, err := c.SaveObject("a", "b", func(c conf.IConf) (interface{}, error) {
