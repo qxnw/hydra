@@ -15,7 +15,7 @@ type Conf struct {
 }
 
 func NewConf(j string) (*Conf, error) {
-	conf := &Conf{}
+	conf := Conf{}
 	err := json.Unmarshal([]byte(j), &conf)
 	if err != nil {
 		return nil, err
@@ -24,5 +24,5 @@ func NewConf(j string) (*Conf, error) {
 		err = fmt.Errorf("mqtt 配置文件有误:%v", err)
 		return nil, err
 	}
-	return conf, nil
+	return &conf, nil
 }
