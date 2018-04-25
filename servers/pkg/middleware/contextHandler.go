@@ -11,7 +11,6 @@ import (
 	"github.com/qxnw/hydra/context"
 	"github.com/qxnw/hydra/servers"
 	"github.com/qxnw/hydra/servers/pkg/dispatcher"
-	"github.com/qxnw/lib4go/encoding"
 	"github.com/qxnw/lib4go/logger"
 )
 
@@ -142,20 +141,17 @@ func makeExtData(c *dispatcher.Context, ext map[string]interface{}) map[string]i
 		return json.Unmarshal(buffer, v)
 	}
 	input["__func_body_get_"] = func(ch string) (string, error) {
-		if buff, ok := c.Get("__body_"); ok {
-			if s, ok := buff.(string); ok {
-				if v, ok := c.Request.GetHeader()["__encode_snappy_"]; ok && v == "true" {
-					buff := []byte(s)
-					var nbuff []byte
-					nbuffer, err := snappy.Decode(nbuff, buff)
-					if err != nil {
-						return "", err
-					}
-					return string(nbuffer), nil
+		if s, ok := c.Request.GetForm()["__body_"]; ok {
+			if v, ok := c.Request.GetHeader()["__encode_snappy_"]; ok && v == "true" {
+				buff := []byte(s)
+				var nbuff []byte
+				nbuffer, err := snappy.Decode(nbuff, buff)
+				if err != nil {
+					return "", err
 				}
-				return s, nil
+				return string(nbuffer), nil
 			}
-			return encoding.Convert(buff.([]byte), ch)
+			return s, nil
 		}
 		return "", errors.New("body读取错误")
 
