@@ -15,7 +15,7 @@ func (m *MicroApp) getCliApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = filepath.Base(os.Args[0])
 	app.Version = VERSION
-	app.Usage = "基于hydra的微服务"
+	app.Usage = "基于hydra的微服务应用"
 	cli.HelpFlag = cli.BoolFlag{
 		Name:  "help,h",
 		Usage: "查看帮助信息",
