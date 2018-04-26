@@ -2,6 +2,8 @@ package hydra
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli"
 )
@@ -11,16 +13,16 @@ var VERSION string = "2.0.0"
 
 func (m *MicroApp) getCliApp() *cli.App {
 	app := cli.NewApp()
-	app.Name = "hydra"
+	app.Name = filepath.Base(os.Args[0])
 	app.Version = VERSION
-	app.Usage = "hydra微服务"
+	app.Usage = "基于hydra的微服务"
 	cli.HelpFlag = cli.BoolFlag{
 		Name:  "help,h",
 		Usage: "查看帮助信息",
 	}
 	cli.VersionFlag = cli.BoolFlag{
 		Name:  "version,v",
-		Usage: "查看hydra版本信息",
+		Usage: "查看版本信息",
 	}
 	app.Commands = m.getCommands()
 	return app
